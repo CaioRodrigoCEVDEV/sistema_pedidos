@@ -9,6 +9,7 @@
   "author": "Caio - Heitor - Alan",
   "license": "ISC",
   "dependencies": {
+    "@tailwindcss/cli": "^4.1.10",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "cookie-parser": "^1.4.7",
@@ -16,6 +17,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "pg": "^8.16.0"
+    "pg": "^8.16.0",
+    "tailwindcss": "^4.1.10"
   }
 }
