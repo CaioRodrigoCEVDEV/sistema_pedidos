@@ -16,7 +16,7 @@
 <body>
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" href="#">JP Peças</a>
+            <a class="navbar-brand" href="#">Navbar</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
                 <span class="navbar-toggler-icon"></span>
@@ -40,47 +40,34 @@
         </nav>
     </header>
     <main>
-        <div class="alert alert-dismissible fade show shadow p-3 bg-white rounded" role="alert">
-            <strong>Primeira vez utilizando nosso sitema de pedidos?</strong> Assista o tutorial caso tenha alguma
-            dificuldade.
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-            <hr>
-            <p class="mb-0"><button type="button" class="btn btn-danger"> <i class="bi bi-youtube"> </i>Tutorial em
-                    video </i></button></p>
-        </div>
         <div class=" bg-light w-auto p-3 shadow-sm mb-5">
-
-            <h3>Selecione a marca</h3>
-            <a href="modelo.html">
-                <div class="card">
-                    <h5 class="card-title p-2">Samsung</h5>
-                    <img class="card-img-top p-2" src="../images/logo/samsung.png" alt="Imagem de capa do card">
-                </div>
-            </a>
-            <hr>
-            <a href="modelo.html">
-                <div class="card">
-                    <h5 class="card-title p-2">Xiaomi</h5>
-                    <img class="card-img-top p-2" src="../images/logo/xiaomi.png" alt="Imagem de capa do card">
-                </div>
-            </a>
-            <hr>
-            <a href="modelo.html">
-                <div class="card">
-                    <h5 class="card-title p-2">Apple</h5>
-                    <img class="card-img-top p-2" src="../images/logo/apple.png" alt="Imagem de capa do card">
-                </div>
-            </a>
-            <hr>
-            <a href="modelo.html">
-                <div class="card">
-                    <h5 class="card-title p-2">Motorola</h5>
-                    <img class="card-img-top p-2" src="../images/logo/motorola.png" alt="Imagem de capa do card">
-                </div>
-            </a>
-
+            <h1 class="text-center">Samsung</h1>
+            <form class="form-inline my-2 my-lg-0 mb-2">
+                <input class="form-control mr-sm-2" type="search" placeholder="Pesquisar" aria-label="Pesquisar">
+            </form>
+            <h3 class="text-center" style="font-size: 20px;">Selecione o Modelo</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Modelo</th>
+                        <th scope="col">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>A02</td>
+                        <td><a href="pecas.html" class="btn btn-primary">Selecionar</a></td>
+                    </tr>
+                    <tr>
+                        <td>A03</td>
+                        <td><a href="pecas.html" class="btn btn-primary">Selecionar</a></td>
+                    </tr>
+                    <tr>
+                        <td>A20</td>
+                        <td><a href="pecas.html" class="btn btn-primary">Selecionar</a></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </main>
     <a href="#" class="button-cart">
