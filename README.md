@@ -1,4 +1,4 @@
-# 💰 Sistema de peddos simples
+# 💰 Sistema de pedidos simples
 
 Sistema web para pedidos simples com login e senha para administrador, onde o usuário comum pode selecionar os produtos, inserir no carrinho e finalizar enviando o pedido ao whatsapp e o administrador pode acessar o painal registrar os produtos e visualizar o dashboard.
 
