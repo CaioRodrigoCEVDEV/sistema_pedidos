@@ -3,6 +3,6 @@ const router = express.Router();
 const modeloController = require('../controllers/modeloController');
 //const autenticarToken = require('../src/middleware/authMiddleware');  // desatvado por enquanto 
 
-router.get('/modelo', modeloController.listarModelo);
+router.get('/modelo/:id', modeloController.listarModelo);
 
 module.exports = router;

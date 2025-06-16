@@ -136,7 +136,9 @@ CREATE TABLE public.modelo (
 	modcod serial4 NOT NULL,
 	moddes varchar(40) NULL,
 	modsit bpchar(1) DEFAULT 'N'::bpchar NULL,
-	CONSTRAINT pk_modelo PRIMARY KEY (modcod)
+	modmarcascod int4 NULL,
+	CONSTRAINT pk_modelo PRIMARY KEY (modcod),
+	CONSTRAINT fk_modelo_marcas FOREIGN KEY (modmarcascod) REFERENCES public.marcas(marcascod)
 );
 
 -- Permissions
@@ -148,6 +150,7 @@ GRANT ALL ON TABLE public.modelo TO postgres;
 - **modcod**: Código do modelo (chave primária).
 - **moddes**: Descrição (ex: "S25 ultra").
 - **modsit**: Situação (ex: "A","I","X").
+- **modmarcascod**: Código do modelo (chave estrangeira MARCAS).
 
 
 ### ➕ Inserção de exemplo:
