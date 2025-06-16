@@ -26,9 +26,6 @@ app.use(modeloRoutes);
 const proRoutes = require('./routes/proRoutes');
 app.use(proRoutes);
 
-const qualidadeRoutes = require('./routes/qualidadeRoutes');
-app.use(qualidadeRoutes);
-
 const tipoRoutes = require('./routes/tipoRoutes');
 app.use(tipoRoutes);
 
