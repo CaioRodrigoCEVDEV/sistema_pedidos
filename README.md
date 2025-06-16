@@ -248,7 +248,6 @@ CREATE TABLE public.pro (
 	promarcascod int4 NULL,
 	protipocod int4 NULL,
 	promodcod int4 NULL,
-	proqualicod int4 NULL,
 	prosit bpchar(1) DEFAULT 'N'::bpchar NULL,
 	provl numeric(14, 4) NULL,
 	prousucad int4 NULL,
@@ -258,10 +257,8 @@ CREATE TABLE public.pro (
 	CONSTRAINT pk_pro PRIMARY KEY (procod),
 	CONSTRAINT fk_pro_marcas FOREIGN KEY (promarcascod) REFERENCES public.marcas(marcascod),
 	CONSTRAINT fk_pro_modelo FOREIGN KEY (promodcod) REFERENCES public.modelo(modcod),
-	CONSTRAINT fk_pro_qualidade FOREIGN KEY (proqualicod) REFERENCES public.qualidade(qualicod),
 	CONSTRAINT fk_pro_tipo FOREIGN KEY (protipocod) REFERENCES public.tipo(tipocod)
 );
-
 -- Permissions
 
 ALTER TABLE public.pro OWNER TO postgres;
