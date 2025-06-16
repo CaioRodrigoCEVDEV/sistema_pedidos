@@ -10,7 +10,6 @@ Sistema web para pedidos simples com login e senha para administrador, onde o us
 | HTML5        | Node.js        | **Servidor & Roteamento:**               |
 | CSS3         | Express        | • express                                 |
 | JavaScript   | PostgreSQL     |                                           |
-| TailwindCSS       |                                           |
 |              |                | **Banco de Dados:**                      |
 |              |                | • pg                                      |
 |              |                | **Autenticação & Sessões:**             |
