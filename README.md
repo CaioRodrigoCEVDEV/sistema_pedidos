@@ -238,3 +238,24 @@ INSERT INTO pro (procod, prodes, promarcascod, protipocod, promodcod, proqualico
 - Permissões completas: `postgres`
 
 ---
+
+
+# 💰 View Tipo de Peças
+
+```sql
+CREATE OR REPLACE VIEW public.vw_tipo_pecas
+AS SELECT tipo.tipocod,
+    tipo.tipodes,
+    pro.promarcascod,
+    pro.promodcod
+   FROM pro
+     JOIN tipo ON tipo.tipocod = pro.protipocod
+  GROUP BY tipo.tipocod, tipo.tipodes, pro.promarcascod, pro.promodcod;
+
+-- Permissions
+
+ALTER TABLE public.vw_tipo_pecas OWNER TO postgres;
+GRANT ALL ON TABLE public.vw_tipo_pecas TO postgres;
+```
+
+---
