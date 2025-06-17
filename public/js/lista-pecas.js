@@ -1,5 +1,11 @@
+const params = new URLSearchParams(window.location.search);
+
+const id = params.get('id');
+const marca = params.get('marca');
+const modelo = params.get('modelo');
+
 document.addEventListener("DOMContentLoaded", function () {
-    fetch(`http://127.0.0.1:3000/pro/4?marca=1&modelo=1`)
+    fetch(`http://127.0.0.1:3000/pro/${id}?marca=${marca}&modelo=${modelo}`)
         .then((res) => res.json())
         .then((dados) => {
             const corpoTabela = document.getElementById("corpoTabela");
@@ -11,7 +17,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             <td>${dado.prodes}</td>
                             <td>${dado.provl}</td>
                             <td>
-                                <a href="pecas"><button class="btn btn-success btn-sm">Adicionar</button></a>
+                                <a href="#"><button class="btn btn-success btn-sm">Adicionar</button></a>
                             </td>
                             `;
                 corpoTabela.appendChild(tr);

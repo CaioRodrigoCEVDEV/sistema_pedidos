@@ -5,7 +5,7 @@ exports.listarTipo = async (req, res) => {
     
     try {
         const result = await pool.query(
-            'select  tipocod,tipodes, promodcod from vw_tipo_pecas  where promodcod = $1 ', [id]
+            'select  tipocod,tipodes, promarcascod,promodcod from vw_tipo_pecas  where promodcod = $1 ', [id]
         );
         res.status(200).json(result.rows);
     } catch (error) {

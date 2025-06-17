@@ -1,6 +1,10 @@
+const params = new URLSearchParams(window.location.search);
+
+const id = params.get('id');
+
 //popular table com os dados do modelo
 document.addEventListener("DOMContentLoaded", function () {
-fetch(`http://127.0.0.1:3000/modelo/1`)
+fetch(`http://127.0.0.1:3000/modelo/${id}`)
     .then((res) => res.json())
     .then((dados) => {
       const corpoTabela = document.getElementById("corpoTabela");
@@ -11,7 +15,7 @@ fetch(`http://127.0.0.1:3000/modelo/1`)
         tr.innerHTML = `
                       <td>${dado.moddes}</td>
                       <td>
-                        <a href="pecas"><button class="btn btn-success btn-sm">Selecionar</button></a>
+                        <a href="pecas?id=${dado.modcod}"><button class="btn btn-success btn-sm">Selecionar</button></a>
                       </td>
                         `;
         corpoTabela.appendChild(tr);
