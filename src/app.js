@@ -33,6 +33,9 @@ app.use(proRoutes);
 const tipoRoutes = require('./routes/tipoRoutes');
 app.use(tipoRoutes);
 
+app.get('/index', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/html/index.html'));
+});
 app.get('/modelo', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/html/modelo.html'));
 });
@@ -45,5 +48,5 @@ app.get('/lista-pecas', (req, res) => {
 
 // Inicia o servidor
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta http://127.0.0.1:${PORT}/teste`);
+  console.log(`Servidor rodando na porta http://127.0.0.1:${PORT}/index`);
 });
