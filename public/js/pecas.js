@@ -1,6 +1,6 @@
 //popular table com os dados do modelo
 document.addEventListener("DOMContentLoaded", function () {
-fetch(`http://127.0.0.1:3000/tipo/`)
+fetch(`http://127.0.0.1:3000/tipo/1`)
     .then((res) => res.json())
     .then((dados) => {
       const corpoTabela = document.getElementById("corpoTabela");
