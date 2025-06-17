@@ -51,7 +51,7 @@ HTTPS=false
 ---
 # 📦 Estrutura do Banco de Dados
 
-Este repositório contém a definição de um banco de dados PostgreSQL com três tabelas principais: `usu`, `pro` , `modelo`, `tipo`, `qualidade` e `marcas`.
+Este repositório contém a definição de um banco de dados PostgreSQL com três tabelas principais: `usu`, `pro` , `modelo`, `tipo` e `marcas`.
 
 ---
 
@@ -98,7 +98,7 @@ Tabela com as marcas disponíveis no sistema.
 CREATE TABLE public.marcas (
 	marcascod serial4 NOT NULL,
 	marcasdes varchar(40) NULL,
-	marcassit bpchar(1) DEFAULT 'N'::bpchar NULL,
+	marcassit bpchar(1) DEFAULT 'A'::bpchar NULL,
 	CONSTRAINT pk_marcas PRIMARY KEY (marcascod)
 );
 
@@ -134,7 +134,7 @@ Tabela com os modelos disponíveis no sistema.
 CREATE TABLE public.modelo (
 	modcod serial4 NOT NULL,
 	moddes varchar(40) NULL,
-	modsit bpchar(1) DEFAULT 'N'::bpchar NULL,
+	modsit bpchar(1) DEFAULT 'A'::bpchar NULL,
 	modmarcascod int4 NULL,
 	CONSTRAINT pk_modelo PRIMARY KEY (modcod),
 	CONSTRAINT fk_modelo_marcas FOREIGN KEY (modmarcascod) REFERENCES public.marcas(marcascod)
@@ -163,45 +163,6 @@ INSERT INTO modelo (modcod, moddes, modsit) VALUES (1, 'A10', 'A');
 
 ---
 
-
-
-## 💳 Tabela `qualidade` (Qualidade dos produtos)
-
-Tabela com as qualidades dos produtos disponíveis no sistema.
-
-```sql
-
-CREATE TABLE public.qualidade (
-	qualicod serial4 NOT NULL,
-	qualides varchar(40) NULL,
-	qualisit bpchar(1) DEFAULT 'N'::bpchar NULL,
-	CONSTRAINT pk_qualidade PRIMARY KEY (qualicod)
-);
-
--- Permissions
-
-ALTER TABLE public.qualidade OWNER TO postgres;
-GRANT ALL ON TABLE public.qualidade TO postgres;
-```
-- **qualicod**: Código da qualidade (chave primária).
-- **moqualidesddes**: Descrição (ex: "Original","Paralela").
-- **qualisit**: Situação (ex: "A","I","X").
-
-
-### ➕ Inserção de exemplo:
-```sql
-INSERT INTO qualidade (qualicod, qualides, qualisit) VALUES (1, 'Original', 'A');
-```
-
-### 🔐 Permissões:
-- Dono: `postgres`
-- Permissões completas: `postgres`
-
----
-
-
-
-
 ## 📄 Tabela `tipo` (tipo do produto)
 
 Registra o tipo dos produtos, Tela, Bateria e etc.
@@ -211,7 +172,7 @@ Registra o tipo dos produtos, Tela, Bateria e etc.
 CREATE TABLE public.tipo (
 	tipocod serial4 NOT NULL,
 	tipodes varchar(40) NULL,
-	tiposit bpchar(1) DEFAULT 'N'::bpchar NULL,
+	tiposit bpchar(1) DEFAULT 'A'::bpchar NULL,
 	CONSTRAINT pk_tipo PRIMARY KEY (tipocod)
 );
 
@@ -247,7 +208,7 @@ CREATE TABLE public.pro (
 	promarcascod int4 NULL,
 	protipocod int4 NULL,
 	promodcod int4 NULL,
-	prosit bpchar(1) DEFAULT 'N'::bpchar NULL,
+	prosit bpchar(1) DEFAULT 'A'::bpchar NULL,
 	provl numeric(14, 4) NULL,
 	prousucad int4 NULL,
 	prodtcad timestamp DEFAULT CURRENT_TIMESTAMP NULL,
