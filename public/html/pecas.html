@@ -42,44 +42,47 @@
     <main>
         <div class=" bg-light w-auto p-3 shadow-sm mb-5">
             <h1 class="text-center">Samsung</h1>
-            <form class="form-inline my-2 my-lg-0 mb-2">
-                <input class="form-control mr-sm-2" type="search" placeholder="Pesquisar" aria-label="Pesquisar">
-                <!-- <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Pesquisar</button> -->
-            </form>
-            <div class=" bg-light w-auto p-3 shadow-sm mb-5">
+            <h3 style="font-size: 15px; text-align: center;">Selecione o tipo de peça</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col" class="text-center">Nome</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabela">
+                </tbody>
+            </table>
 
-                <h3 class="text-center" style="font-size: 20px;">Selecione uma peça</h3>
-                <a href="lista-pecas.html">
-                    <div class="card text-center">
+                <!-- <h3 class="text-center" style="font-size: 20px;">Selecione uma peça</h3>
+                <a href="lista-pecas">
+                    <div class="card text-center" name="tela">
                         <h5 class="card-title p-2">Tela</h5>
                     </div>
                 </a>
                 <hr>
-                <a href="lista-pecas.html">
-                    <div class="card text-center">
+                <a href="lista-pecas">
+                    <div class="card text-center" name="bateria">
                         <h5 class="card-title p-2">Bateria</h5>
                     </div>
                 </a>
                 <hr>
-                <a href="lista-pecas.html">
-                    <div class="card text-center">
+                <a href="lista-pecas">
+                    <div class="card text-center" name="placa">
                         <h5 class="card-title p-2">Placa</h5>
-
                     </div>
                 </a>
                 <hr>
-                <a href="lista-pecas.html">
-                    <div class="card text-center">
+                <a href="lista-pecas">
+                    <div class="card text-center" name="flat">
                         <h5 class="card-title p-2">Flat</h5>
                     </div>
-                </a>
-
-            </div>
+                </a> -->
         </div>
     </main>
     <a href="#" class="button-cart">
         <i class="bi bi-cart2"></i>
     </a>
+    <script src="../js/pecas.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
         crossorigin="anonymous"></script>

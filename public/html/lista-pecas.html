@@ -44,7 +44,7 @@
             <h1 class="text-center">Samsung</h1>
             <!-- <h3 class="text-center" style="font-size: 20px;">Selecione o Modelo</h3> -->
             <form class="form-inline my-2 my-lg-0 mb-2">
-                <input class="form-control mr-sm-2" type="search" placeholder="Pesquisar" aria-label="Pesquisar">
+                <input class="form-control mr-sm-2" type="search" placeholder="Pesquisar" aria-label="Pesquisar" id="pesquisa">
                 <!-- <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Pesquisar</button> -->
             </form>
             <table class="table">
@@ -55,22 +55,7 @@
                         <th scope="col">Ações</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>China S/Aro </td>
-                        <td>R$ 100,00 </td>
-                        <td><a href="#" class="btn btn-outline-success">Adicionar</a></td>
-                    </tr>
-                    <tr>
-                        <td>China C/Aro</td>
-                        <td>R$ 150,00 </td>
-                        <td><a href="#" class="btn btn-outline-success">Adicionar</a></td>
-                    </tr>
-                    <tr>
-                        <td>Original S/Aro</td>
-                        <td>R$ 300,00 </td>
-                        <td><a href="#" class="btn btn-outline-success">Adicionar</a></td>
-                    </tr>
+                <tbody id="corpoTabela">
                 </tbody>
             </table>
         </div>
@@ -78,6 +63,7 @@
     <a href="#" class="button-cart">
         <i class="bi bi-cart2"></i>
     </a>
+        <script src="../js/lista-pecas.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
         crossorigin="anonymous"></script>

@@ -43,7 +43,7 @@
         <div class=" bg-light w-auto p-3 shadow-sm mb-5">
             <h1 class="text-center">Samsung</h1>
             <form class="form-inline my-2 my-lg-0 mb-2">
-                <input class="form-control mr-sm-2" type="search" placeholder="Pesquisar" aria-label="Pesquisar">
+                <input class="form-control mr-sm-2" type="search" placeholder="Pesquisar" aria-label="Pesquisar" id="pesquisa">
             </form>
             <h3 class="text-center" style="font-size: 20px;">Selecione o Modelo</h3>
             <table class="table">
@@ -53,19 +53,7 @@
                         <th scope="col">Ações</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>A02</td>
-                        <td><a href="pecas.html" class="btn btn-primary">Selecionar</a></td>
-                    </tr>
-                    <tr>
-                        <td>A03</td>
-                        <td><a href="pecas.html" class="btn btn-primary">Selecionar</a></td>
-                    </tr>
-                    <tr>
-                        <td>A20</td>
-                        <td><a href="pecas.html" class="btn btn-primary">Selecionar</a></td>
-                    </tr>
+                <tbody id="corpoTabela">
                 </tbody>
             </table>
         </div>
@@ -82,6 +70,7 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
         integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
         crossorigin="anonymous"></script>
+    <script src="../js/modelo.js"></script>
 </body>
 
 </html>
