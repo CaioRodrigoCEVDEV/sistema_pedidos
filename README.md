@@ -98,7 +98,7 @@ Tabela com as marcas disponíveis no sistema.
 CREATE TABLE public.marcas (
 	marcascod serial4 NOT NULL,
 	marcasdes varchar(40) NULL,
-	marcasit bpchar(1) DEFAULT 'N'::bpchar NULL,
+	marcassit bpchar(1) DEFAULT 'N'::bpchar NULL,
 	CONSTRAINT pk_marcas PRIMARY KEY (marcascod)
 );
 
