@@ -38,14 +38,20 @@
                 </ul>
             </div>
         </nav>
+        <div class="container mt-3">
+            <button class="btn btn-secondary" onclick="window.history.back();">
+                <i class="fa fa-arrow-left"></i> Voltar
+            </button>
+        </div>
     </header>
     <main>
         <div class=" bg-light w-auto p-3 shadow-sm mb-5">
-            <h1 class="text-center">Samsung</h1>
+            <h1 class="text-center" id="marcaTitulo"></h1>
+            <h3 class="text-center" style="font-size: 15px;">Selecione o Modelo</h3>
             <form class="form-inline my-2 my-lg-0 mb-2">
                 <input class="form-control mr-sm-2" type="search" placeholder="Pesquisar" aria-label="Pesquisar" id="pesquisa">
             </form>
-            <h3 class="text-center" style="font-size: 20px;">Selecione o Modelo</h3>
+            
             <table class="table">
                 <thead>
                     <tr>
@@ -58,7 +64,7 @@
             </table>
         </div>
     </main>
-    <a href="#" class="button-cart">
+    <a href="carrinho" class="button-cart">
         <i class="bi bi-cart2"></i>
     </a>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"

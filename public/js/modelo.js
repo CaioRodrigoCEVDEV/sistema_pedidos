@@ -1,6 +1,6 @@
 const params = new URLSearchParams(window.location.search);
-
 const id = params.get('id');
+const marcascod = params.get('marcascod');
 
 //popular table com os dados do modelo
 document.addEventListener("DOMContentLoaded", function () {
@@ -15,7 +15,7 @@ fetch(`http://127.0.0.1:3000/modelo/${id}`)
         tr.innerHTML = `
                       <td>${dado.moddes}</td>
                       <td>
-                        <a href="pecas?id=${dado.modcod}"><button class="btn btn-success btn-sm">Selecionar</button></a>
+                        <a href="pecas?id=${dado.modcod}&marcascod=${dado.modmarcascod}"><button class="btn btn-success btn-sm">Selecionar</button></a>
                       </td>
                         `;
         corpoTabela.appendChild(tr);
@@ -37,3 +37,14 @@ document.getElementById("pesquisa").addEventListener("input", function () {
     }
   });
 })
+
+// Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
+fetch(`http://127.0.0.1:3000/marcas/${marcascod}`)
+  .then(res => res.json())
+  .then(marcas => {
+    document.getElementById('marcaTitulo').textContent = marcas[0].marcasdes || 'Marca não encontrada';
+  })
+  .catch(() => {
+    document.getElementById('marcaTitulo').textContent = '';
+  });
+

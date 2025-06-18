@@ -45,6 +45,9 @@ app.get('/pecas', (req, res) => {
 app.get('/lista-pecas', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/html/lista-pecas.html'));
 });
+app.get('/carrinho', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/html/carrinho.html'));
+});
 
 // Inicia o servidor
 app.listen(PORT, () => {

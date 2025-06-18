@@ -38,10 +38,15 @@
                 </ul>
             </div>
         </nav>
+        <div class="container mt-3">
+            <button class="btn btn-secondary" onclick="window.history.back();">
+                <i class="fa fa-arrow-left"></i> Voltar
+            </button>
+        </div>
     </header>
     <main>
         <div class=" bg-light w-auto p-3 shadow-sm mb-5">
-            <h1 class="text-center">Samsung</h1>
+            <h1 class="text-center" id="marcaTitulo"></h1>
             <h3 style="font-size: 15px; text-align: center;">Selecione o tipo de peça</h3>
             <table class="table">
                 <thead>
@@ -79,7 +84,7 @@
                 </a> -->
         </div>
     </main>
-    <a href="#" class="button-cart">
+    <a href="carrinho" class="button-cart">
         <i class="bi bi-cart2"></i>
     </a>
     <script src="../js/pecas.js"></script>

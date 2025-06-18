@@ -1,11 +1,11 @@
 const params = new URLSearchParams(window.location.search);
 
 const id = params.get('id');
-const marca = params.get('marca');
 const modelo = params.get('modelo');
+const marcascod = params.get('marcascod');
 
 document.addEventListener("DOMContentLoaded", function () {
-    fetch(`http://127.0.0.1:3000/pro/${id}?marca=${marca}&modelo=${modelo}`)
+    fetch(`http://127.0.0.1:3000/pro/${id}?marca=${marcascod}&modelo=${modelo}`)
         .then((res) => res.json())
         .then((dados) => {
             const corpoTabela = document.getElementById("corpoTabela");
@@ -14,12 +14,20 @@ document.addEventListener("DOMContentLoaded", function () {
             dados.forEach((dado) => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                            <td>${dado.prodes}</td>
-                            <td>${dado.provl}</td>
-                            <td>
-                                <a href="#"><button class="btn btn-success btn-sm">Adicionar</button></a>
-                            </td>
-                            `;
+                  <td>${dado.prodes}</td>
+                  <td>${dado.provl}</td>
+                  <td><input type="number" style="width:40px" id="qtde_peca_${dado.procod}"></td>
+                  <td>
+                    <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button>
+                  </td>
+                `;
+
+                // Função global para adicionar ao carrinho com a quantidade informada
+                window.adicionarAoCarrinho = function(procod) {
+                  const input = document.getElementById(`qtde_peca_${procod}`);
+                  const qtde = input ? input.value : 1;
+                  window.location.href = `carrinho?id=${procod}&qtde=${qtde}`;
+                };
                 corpoTabela.appendChild(tr);
             });
     
@@ -39,3 +47,13 @@ document.getElementById("pesquisa").addEventListener("input", function () {
     }
   });
 })
+
+// Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
+fetch(`http://127.0.0.1:3000/marcas/${marcascod}`)
+  .then(res => res.json())
+  .then(marcas => {
+    document.getElementById('marcaTitulo').textContent = marcas[0].marcasdes || 'Marca não encontrada';
+  })
+  .catch(() => {
+    document.getElementById('marcaTitulo').textContent = '';
+  });
