@@ -259,3 +259,22 @@ GRANT ALL ON TABLE public.vw_tipo_pecas TO postgres;
 ```
 
 ---
+
+
+# 💰 View Marcas
+
+```sql
+
+CREATE OR REPLACE VIEW public.vw_marcas
+AS SELECT marcas.marcascod,
+    marcas.marcasdes,
+    marcas.marcassit
+   FROM marcas;
+
+-- Permissions
+
+ALTER TABLE public.vw_marcas OWNER TO postgres;
+GRANT ALL ON TABLE public.vw_marcas TO postgres;
+```
+
+---
