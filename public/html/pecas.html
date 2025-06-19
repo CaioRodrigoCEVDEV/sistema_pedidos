@@ -45,9 +45,11 @@
         </div>
     </header>
     <main>
-        <div class=" bg-light w-auto p-3 shadow-sm mb-5">
-            <h1 class="text-center" id="marcaTitulo"></h1>
-            <h3 style="font-size: 15px; text-align: center;">Selecione o tipo de peça</h3>
+        <div class="bg-light w-auto p-3 shadow-sm mb-5">
+            <div id="sticky-header" class="bg-light" style="position: sticky; top: 0; z-index: 1020;">
+                <h1 class="text-center" id="marcaTitulo"></h1>
+                <h3 class="text-center" style="font-size: 15px;">Selecione o tipo de peça</h3>
+            </div>
             <table class="table">
                 <thead>
                     <tr>
@@ -57,36 +59,31 @@
                 <tbody id="corpoTabela">
                 </tbody>
             </table>
-
-                <!-- <h3 class="text-center" style="font-size: 20px;">Selecione uma peça</h3>
-                <a href="lista-pecas">
-                    <div class="card text-center" name="tela">
-                        <h5 class="card-title p-2">Tela</h5>
-                    </div>
-                </a>
-                <hr>
-                <a href="lista-pecas">
-                    <div class="card text-center" name="bateria">
-                        <h5 class="card-title p-2">Bateria</h5>
-                    </div>
-                </a>
-                <hr>
-                <a href="lista-pecas">
-                    <div class="card text-center" name="placa">
-                        <h5 class="card-title p-2">Placa</h5>
-                    </div>
-                </a>
-                <hr>
-                <a href="lista-pecas">
-                    <div class="card text-center" name="flat">
-                        <h5 class="card-title p-2">Flat</h5>
-                    </div>
-                </a> -->
         </div>
     </main>
-    <a href="carrinho" class="button-cart">
+    <a href="javascript:void(0);" class="button-cart" id="openCartModal">
         <i class="bi bi-cart2"></i>
     </a>
+
+    <!-- Modal do Carrinho -->
+    <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="cartModalLabel">Itens no Carrinho</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body" id="cartItems">
+            <!-- Itens do carrinho serão inseridos aqui via JS -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <script src="../js/pecas.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"

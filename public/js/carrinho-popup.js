@@ -1,59 +1,3 @@
-const params = new URLSearchParams(window.location.search);
-
-const id = params.get('id');
-const modelo = params.get('modelo');
-const marcascod = params.get('marcascod');
-
-document.addEventListener("DOMContentLoaded", function () {
-  fetch(`http://127.0.0.1:3000/pro/${id}?marca=${marcascod}&modelo=${modelo}`)
-    .then((res) => res.json())
-    .then((dados) => {
-      const corpoTabela = document.getElementById("corpoTabela");
-      corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
-
-      dados.forEach((dado) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${dado.prodes}</td>
-            <td>${dado.provl}</td>
-            <td><input type="number" style="width:40px" id="qtde_peca_${dado.procod}"></td>
-            <td>
-              <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button>
-            </td>
-          `;
-
-        // Removido: função duplicada e desnecessária aqui, pois já está definida globalmente abaixo.
-        corpoTabela.appendChild(tr);
-      });
-
-    })
-    .catch((erro) => console.error(erro));
-});
-
-document.getElementById("pesquisa").addEventListener("input", function () {
-  const pesquisa = this.value.toLowerCase();
-  const linhas = document.querySelectorAll("#corpoTabela tr");
-
-  linhas.forEach((linha) => {
-    const celula = linha.querySelector("td");
-    if (celula) {
-      const conteudoCelula = celula.textContent.toLowerCase();
-      linha.style.display = conteudoCelula.includes(pesquisa) ? "" : "none";
-    }
-  });
-})
-
-// Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
-fetch(`http://127.0.0.1:3000/marcas/${marcascod}`)
-  .then(res => res.json())
-  .then(marcas => {
-    document.getElementById('marcaTitulo').textContent = marcas[0].marcasdes || 'Marca não encontrada';
-  })
-  .catch(() => {
-    document.getElementById('marcaTitulo').textContent = '';
-  });
-
-
 // Função para atualizar o ícone do carrinho (exibe badge com quantidade de itens)
 function atualizarIconeCarrinho() {
   const cart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -131,7 +75,7 @@ document.getElementById('openCartModal').addEventListener('click', function () {
     cartItemsDiv.innerHTML = '<ul class="list-group">' +
       cart.map((item, idx) => `
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>${item.nome} <small class="text-muted">(R$ ${item.preco ? Number(item.preco).toFixed(2) : '0.00'})</small></span>
+          <span>${item.nome}</span>
           <span>
             <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
             <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
@@ -140,34 +84,18 @@ document.getElementById('openCartModal').addEventListener('click', function () {
       `).join('') +
       '</ul>';
   }
-
-  // Adiciona botão "Ir para o carrinho" no footer do modal
-  const cartModalFooter = document.querySelector('#cartModal .modal-footer');
-  if (cartModalFooter) {
-    // Remove botão antigo se houver
-    const oldBtn = document.getElementById('goToCartBtn');
-    if (oldBtn) oldBtn.remove();
-
-    // Cria botão
-    const goToCartBtn = document.createElement('a');
-    goToCartBtn.id = 'goToCartBtn';
-    goToCartBtn.className = 'btn btn-primary ml-2';
-
-    // Passa o carrinho como JSON na URL (codificado em base64 para evitar problemas de caracteres)
-    const cartJson = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(cart)))));
-    console.log("Cart antes de serializar:", cart);
-    goToCartBtn.href = cart.length > 0 ? `carrinho?cart=${cartJson}` : '#';
-    goToCartBtn.textContent = 'Ir para o carrinho';
-    goToCartBtn.style.marginLeft = '8px';
-    goToCartBtn.onclick = function(e) {
-      if (cart.length === 0) e.preventDefault();
-    };
-
-    cartModalFooter.appendChild(goToCartBtn);
-  }
 });
 
-// Modifique a função adicionarAoCarrinho para salvar o preço no carrinho
+// Função global para remover item do carrinho
+window.removerItemCarrinho = function(idx) {
+  let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+  cart.splice(idx, 1);
+  localStorage.setItem('cart', JSON.stringify(cart));
+  atualizarIconeCarrinho();
+  // Reabrir/atualizar modal
+  document.getElementById('openCartModal').click();
+};
+
 window.adicionarAoCarrinho = function (procod) {
   const input = document.getElementById(`qtde_peca_${procod}`);
   const qtde = input ? parseInt(input.value, 10) || 1 : 1;
@@ -175,7 +103,6 @@ window.adicionarAoCarrinho = function (procod) {
   // Busca os dados da linha correspondente
   const tr = input.closest('tr');
   const nome = tr.querySelector('td').textContent;
-  const preco = tr.querySelectorAll('td')[1].textContent; // dado.provl
 
   // Recupera o carrinho do localStorage
   let cart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -185,7 +112,7 @@ window.adicionarAoCarrinho = function (procod) {
   if (idx > -1) {
     cart[idx].qt += qtde;
   } else {
-    cart.push({ id: procod, nome, qt: qtde, preco });
+    cart.push({ id: procod, nome, qt: qtde });
   }
 
   // Salva o carrinho atualizado
@@ -198,14 +125,5 @@ window.adicionarAoCarrinho = function (procod) {
   mostrarPopupAdicionado();
 };
 
+// Atualiza o ícone do carrinho ao carregar a página
 document.addEventListener('DOMContentLoaded', atualizarIconeCarrinho);
-
-// Função global para remover item do carrinho
-window.removerItemCarrinho = function(idx) {
-  let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-  cart.splice(idx, 1);
-  localStorage.setItem('cart', JSON.stringify(cart));
-  atualizarIconeCarrinho();
-  // Reabrir/atualizar modal
-  document.getElementById('openCartModal').click();
-};

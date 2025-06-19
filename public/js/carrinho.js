@@ -3,33 +3,48 @@ const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
 const modelo = params.get('modelo');
 const marcascod = params.get('marcascod');
-const qtde = params.get('qtde'); // Pega a quantidade do parâmetro ou define como 1 se não estiver presente
+const qtde = params.get('qtde'); 
 
 document.addEventListener("DOMContentLoaded", function () {
-    fetch(`http://127.0.0.1:3000/pro/carrinho/${id}`)
-        .then((res) => res.json())
-        .then((dados) => {
-            const corpoTabela = document.getElementById("carrinhoCorpo");
-            corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
+    const urlParams = new URLSearchParams(window.location.search);
+    const cartParam = urlParams.get('cart');
 
-            dados.forEach((dado) => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                            <td>${dado.prodes}</td>
-                            <td>${qtde}</td>
-                            <td>${dado.provl}</td>
-                            `;
-                corpoTabela.appendChild(tr);
-            });
+    if (!cartParam) return;
 
-            const total = document.getElementById("totalCarrinho");
-            const totalValue = dados.reduce((acc, dado) => acc + (dado.provl * qtde), 0);
-            total.innerHTML = ""; // Limpa o conteúdo atual do total
-            total.innerHTML = totalValue.toFixed(2);
-    
-        })
-        .catch((erro) => console.error(erro));
+    try {
+        const jsonStr = decodeURIComponent(atob(decodeURIComponent(cartParam)));
+        const dados = JSON.parse(jsonStr);
+
+        const corpoTabela = document.getElementById("carrinhoCorpo");
+        corpoTabela.innerHTML = "";
+
+        let totalValue = 0;
+
+        dados.forEach((dado) => {
+            const nome = dado.nome || '---';
+            const qtde = dado.qt || 0;
+            const valor = parseFloat(dado.preco) || 0;
+
+            totalValue += valor * qtde;
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${nome}</td>
+                <td>${qtde}</td>
+                <td>${valor.toFixed(2)}</td>
+            `;
+            corpoTabela.appendChild(tr);
+        });
+
+        const total = document.getElementById("totalCarrinho");
+        total.innerHTML = totalValue.toFixed(2);
+
+    } catch (erro) {
+        console.error("Erro ao processar carrinho:", erro);
+    }
 });
+
+
 
 // função para retirar balcão pegar o id do produto e a quantidade e valor total gerar um formulario e abrir conversa no whatsapp
 function enviarWhatsApp() {
@@ -53,4 +68,18 @@ function enviarWhatsApp() {
 
     const whatsappUrl = `https://api.whatsapp.com/send?phone=5561995194930&text=${encodeURIComponent(mensagem)}`;
     window.open(whatsappUrl, "_blank");
-} 
+
+    // Limpa o carrinho
+    corpoTabela.innerHTML = "";
+    document.getElementById("totalCarrinho").textContent = "0.00";
+
+    // Remove o parâmetro cart da URL
+    const url = new URL(window.location);
+    url.searchParams.delete('cart');
+    window.history.replaceState({}, document.title, url.pathname);
+
+    // Redireciona para o index após um pequeno delay
+    setTimeout(() => {
+        window.location.href = "index";
+    }, 500);
+}
