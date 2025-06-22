@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${dado.prodes}</td>
-            <td>${dado.provl}</td>
+            <td>${Number(dado.provl).toFixed(2)}</td>
             <td><input type="number" style="width:40px" id="qtde_peca_${dado.procod}"></td>
             <td>
               <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button>
