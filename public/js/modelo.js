@@ -4,7 +4,7 @@ const marcascod = params.get('marcascod');
 
 //popular table com os dados do modelo
 document.addEventListener("DOMContentLoaded", function () {
-fetch(`http://127.0.0.1:3000/modelo/${id}`)
+  fetch(`http://127.0.0.1:3000/modelo/${id}`)
     .then((res) => res.json())
     .then((dados) => {
       const corpoTabela = document.getElementById("corpoTabela");
@@ -13,9 +13,9 @@ fetch(`http://127.0.0.1:3000/modelo/${id}`)
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-                      <td>${dado.moddes}</td>
-                      <td>
-                        <a href="pecas?id=${dado.modcod}&marcascod=${dado.modmarcascod}"><button class="btn btn-success btn-sm">Selecionar</button></a>
+                      <td class="text-center">${dado.moddes}</td> 
+                      <td class="text-center">
+                        <a href="pecas?id=${dado.modcod}&marcascod=${dado.modmarcascod}"><button class="btn btn-outline-success btn-sm">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>
                       </td>
                         `;
         corpoTabela.appendChild(tr);
@@ -154,7 +154,7 @@ document.getElementById('openCartModal').addEventListener('click', function () {
     goToCartBtn.href = cart.length > 0 ? `carrinho?cart=${cartJson}` : '#';
     goToCartBtn.textContent = 'Ir para o carrinho';
     goToCartBtn.style.marginLeft = '8px';
-    goToCartBtn.onclick = function(e) {
+    goToCartBtn.onclick = function (e) {
       if (cart.length === 0) e.preventDefault();
     };
 
@@ -196,7 +196,7 @@ window.adicionarAoCarrinho = function (procod) {
 document.addEventListener('DOMContentLoaded', atualizarIconeCarrinho);
 
 // Função global para remover item do carrinho
-window.removerItemCarrinho = function(idx) {
+window.removerItemCarrinho = function (idx) {
   let cart = JSON.parse(localStorage.getItem('cart') || '[]');
   cart.splice(idx, 1);
   localStorage.setItem('cart', JSON.stringify(cart));
