@@ -18,7 +18,7 @@
         integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
 </head>
 
-<body>
+<body class="bg-light">
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm  bg-white rounded">
             <a class="navbar-brand" href="#"><img src="../images/logo/engrenagem-jp-pequeno.png" width="30" height="30"
@@ -40,7 +40,7 @@
         </nav>
     </header>
     <main>
-<div class="container-float bg-light">
+        <div class="container-float bg-light">
             <div class="style-title-card">
                 <h3>Tipos de peça: </i></h3>
             </div>
@@ -58,7 +58,7 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th scope="col" class="text-center">Modelo</th>
+                            <th scope="col" class="text-center">Peças</th>
                             <th scope="col" class="text-center">Ações</th>
                         </tr>
                     </thead>
@@ -69,30 +69,31 @@
         </div>
     </main>
 
-    
-    
+
+
 
     <!-- Modal do Carrinho -->
-     <a href="javascript:void(0);" class="button-cart" id="openCartModal">
+    <a href="javascript:void(0);" class="button-cart" id="openCartModal">
         <i class="bi bi-cart2"></i>
     </a>
-    <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="cartModalLabel">Itens no Carrinho</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body" id="cartItems">
-            <!-- Itens do carrinho serão inseridos aqui via JS -->
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
-          </div>
+    <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cartModalLabel">Itens no Carrinho</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="cartItems">
+                    <!-- Itens do carrinho serão inseridos aqui via JS -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
     <script src="../js/pecas.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
