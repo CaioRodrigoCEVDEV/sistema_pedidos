@@ -1,30 +1,36 @@
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
 
-//popular table com os dados do modelo
-document.addEventListener("DOMContentLoaded", function () {
-fetch(`http://127.0.0.1:3000/marcas/`)
-    .then((res) => res.json())
-    .then((dados) => {
-      const corpoTabela = document.getElementById("marcaTitulo");
-      corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('http://127.0.0.1:3000/marcas/')
+    .then(res => res.json())
+    .then(dados => {
+      const holder = document.getElementById('marcaTitulo');
+      if (!holder) return;
+      holder.innerHTML = ''; // zera antes
 
-      dados.forEach((dado) => {
-        const div = document.createElement("div");
-        div.innerHTML = `
-                        <div class="col-md-4 mb-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}"><button class="btn btn-primary btn-block">${dado.marcasdes}</button></a>
-                                </div>
-                            </div>
-                        </div>
-                        `;
-        corpoTabela.appendChild(div);
+      let html = '<div class="row">';
+      dados.forEach((dado, i) => {
+        html += `
+        
+          <div class="col-12 col-sm-6 col-md-4 mb-3 d-flex justify-content-center">
+            <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-50">
+              <button class="btn btn-md btn-outline-dark w-100">${dado.marcasdes}</button>
+            </a>
+          </div>`;
+
+        // fecha/abre linha a cada 3 itens (12/4 = 3)
+        if ((i + 1) % 3 === 0 && i !== dados.length - 1) {
+          html += '</div><div class="row">';
+        }
       });
+      html += '</div>';
+
+      holder.innerHTML = html;
     })
-    .catch((erro) => console.error(erro));
+    .catch(console.error);
 });
+
 
 // Função para atualizar o ícone do carrinho (exibe badge com quantidade de itens)
 function atualizarIconeCarrinho() {

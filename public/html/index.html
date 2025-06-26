@@ -4,19 +4,79 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>JP Peças</title>
+    <link rel="shortcut icon" href="../images/logo/engrenagem-jp-pequeno.png" type="image/x-icon">
     <link rel="stylesheet" href="../css/style-main.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
         integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
         integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
+    <style>
+        :root {
+            /* Cores padronizadas */
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --border-color: #bdc3c7;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --border-radius: 6px;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+
+            background-color: rgb(255, 255, 255);
+        }
+
+        .container-float {
+            max-width: 800px;
+            min-height: 70vh;
+            margin: auto;
+            margin-top: 2rem;
+            padding: 0;
+            box-shadow: rgba(0, 0, 0, 0.168) 5px 5px 10px;
+            border-radius: 10px;
+        }
+
+        .card-custom-css {
+            height: 90%;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 0px 0px 8px 8px;
+            background-color: #f8f9fa;
+        }
+
+        .style-title-card {
+            background-color: #343a40;
+            border-radius: 8px 8px 0px 0px;
+            color: #ffffff;
+            width: 100%;
+            height: 10%;
+            text-align: left;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1rem 1.5rem;
+            border-bottom: none;
+            font-weight: 600;
+
+        }
+
+        .style-title-card h2 {
+            margin-left: 0.2em;
+        }
+    </style>
 </head>
 
 <body>
     <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" href="#">JP Peças</a>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm  bg-white rounded">
+            <a class="navbar-brand" href="#"><img src="../images/logo/engrenagem-jp-pequeno.png" width="30" height="30" alt=""> JP Peças</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
                 <span class="navbar-toggler-icon"></span>
@@ -24,23 +84,19 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item active">
-                        <a class="nav-link" href="#">Home <span class="sr-only">(Página atual)</span></a>
+                        <a class="nav-link" href="#">Inicio <span class="sr-only">(Página atual)</span></a>
                     </li>
+                    
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Destaques</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Preços</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link " href="#">Desativado</a>
+                        <a class="nav-link " href="#">Acesso</a>
                     </li>
                 </ul>
             </div>
         </nav>
     </header>
+
     <main>
-        <div class="alert alert-dismissible fade show shadow p-3 bg-white rounded" role="alert">
+        <div class="alert alert-dismissible fade show shadow p-3 bg-white rounded" style="max-width: 800px; margin: auto;" role="alert">
             <strong>Primeira vez utilizando nosso sitema de pedidos?</strong> Assista o tutorial caso tenha alguma
             dificuldade.
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -50,38 +106,17 @@
             <p class="mb-0"><button type="button" class="btn btn-danger"> <i class="bi bi-youtube"> </i>Tutorial em
                     video </i></button></p>
         </div>
-        <h3 class="text-center">Selecione a marca</h3>
-        <div class=" bg-light w-auto p-3 shadow-sm mb-5">
-            <div class="container mt-3" id="marcaTitulo"></div>   
+
+        <div class="container-float">
+            
+            <div class="style-title-card">
+                <h3> Selecione a marca <i class="bi bi-caret-down-fill"></i></h3>
+            </div>
 
             
-            <!-- <a href="modelo?id=1">
-                <div class="card">
-                    <h5 class="card-title p-2" id="marca"></h5>
-                    <img class="card-img-top p-2" src="../images/logo/samsung.png" alt="Imagem de capa do card">
-                </div>
-            </a>
-            <hr>
-            <a href="modelo?id=3">
-                <div class="card">
-                    <h5 class="card-title p-2">Xiaomi</h5>
-                    <img class="card-img-top p-2" src="../images/logo/xiaomi.png" alt="Imagem de capa do card">
-                </div>
-            </a>
-            <hr>
-            <a href="modelo?id=2">
-                <div class="card">
-                    <h5 class="card-title p-2">Apple</h5>
-                    <img class="card-img-top p-2" src="../images/logo/apple.png" alt="Imagem de capa do card">
-                </div>
-            </a>
-            <hr>
-            <a href="modelo?id=4">
-                <div class="card">
-                    <h5 class="card-title p-2">Motorola</h5>
-                    <img class="card-img-top p-2" src="../images/logo/motorola.png" alt="Imagem de capa do card">
-                </div>
-            </a> -->
+                <div class="container mt-3" id="marcaTitulo"><!--Conteudo inserido via js--></div>
+        </div>
+
         </div>
     </main>
     <a href="javascript:void(0);" class="button-cart" id="openCartModal">
@@ -89,23 +124,26 @@
     </a>
 
     <!-- Modal do Carrinho -->
-    <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="cartModalLabel">Itens no Carrinho</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body" id="cartItems">
-            <!-- Itens do carrinho serão inseridos aqui via JS -->
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
-          </div>
+    <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cartModalLabel">Itens no Carrinho</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="cartItems">
+                    <!-- Itens do carrinho serão inseridos aqui via JS -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                </div>
+            </div>
         </div>
-      </div>
+    </div>
+    
     </div>
     <script src="../js/index.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
