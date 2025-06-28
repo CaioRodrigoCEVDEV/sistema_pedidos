@@ -1,4 +1,5 @@
 require('dotenv').config();
+const jwt = require('jsonwebtoken');
 const express = require('express');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
@@ -9,6 +10,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares
+const autenticarToken = require('./middlewares/middlewares');
+const { error } = require('console');
+
 app.set('views', path.join(__dirname, 'views'));
 app.use(morgan('dev'));
 app.use(bodyParser.json());
@@ -20,6 +24,9 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Rotas
 const mainRoutes = require('./routes');
 app.use('/', mainRoutes);
+
+const loginRoute = require('./routes/loginRoute');
+app.use(loginRoute);
 
 const marcasRoutes = require('./routes/marcasRoutes');
 app.use(marcasRoutes);
