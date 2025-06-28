@@ -214,5 +214,7 @@ function enviarWhatsAppEntrega() {
         setTimeout(() => {
             window.location.href = "index";
         }, 500);
+        localStorage.setItem('cart', JSON.stringify([]));
+        atualizarIconeCarrinho();
     };
 }
