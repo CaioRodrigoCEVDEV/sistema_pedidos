@@ -83,16 +83,20 @@ function enviarWhatsApp() {
     // Limpa o carrinho
     corpoTabela.innerHTML = "";
     document.getElementById("totalCarrinho").textContent = "0.00";
+    
 
     // Remove o parâmetro cart da URL
     const url = new URL(window.location);
     url.searchParams.delete('cart');
     window.history.replaceState({}, document.title, url.pathname);
+    
 
     // Redireciona para o index após um pequeno delay
     setTimeout(() => {
         window.location.href = "index";
     }, 500);
+    localStorage.setItem('cart', JSON.stringify([]));
+    atualizarIconeCarrinho();
 }
 
 // quando clicar lá no botão de entrega, abrir um popup com nome completo e endereço
