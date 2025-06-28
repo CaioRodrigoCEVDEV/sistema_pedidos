@@ -66,7 +66,12 @@ app.get('/carrinho', (req, res) => {
 app.get('/registro', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/html/register/registro.html'));
 });
-
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/html/auth/admin/html/index.html'));
+});
+app.get('/dashboard/modelo', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/html/auth/admin/html/modelo.html'));
+});
 
 
 app.get('/config.js', (req, res) => {
