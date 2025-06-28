@@ -2,7 +2,7 @@ const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
 
 document.addEventListener('DOMContentLoaded', () => {
-  fetch('http://127.0.0.1:3000/marcas/')
+  fetch(`${BASE_URL}/marcas/`)
     .then(res => res.json())
     .then(dados => {
       const holder = document.getElementById('marcaTitulo');

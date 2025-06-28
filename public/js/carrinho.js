@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", function () {
 function enviarWhatsApp() {
     const corpoTabela = document.getElementById("carrinhoCorpo");
     const linhas = corpoTabela.querySelectorAll("tr");
-    let mensagem = "Pedido de Peças:\n\n";
+    let mensagem = "Pedido de Peças: &#128230;\n\n";
 
     linhas.forEach((linha) => {
         const colunas = linha.querySelectorAll("td");

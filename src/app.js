@@ -9,6 +9,9 @@ var path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(express.static('../public/'));
+
+
 // Middlewares
 const autenticarToken = require('./middlewares/middlewares');
 const { error } = require('console');
@@ -18,8 +21,9 @@ app.use(morgan('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+
 // Serve arquivos estáticos da pasta 'public' fora da src
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, '../public/')));
 
 // Rotas
 const mainRoutes = require('./routes');
@@ -40,6 +44,10 @@ app.use(proRoutes);
 const tipoRoutes = require('./routes/tipoRoutes');
 app.use(tipoRoutes);
 
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/html/auth/login.html'));
+});
+
 app.get('/index', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/html/index.html'));
 });
@@ -59,7 +67,15 @@ app.get('/registro', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/html/register/registro.html'));
 });
 
+
+
+app.get('/config.js', (req, res) => {
+  res.type('application/javascript');
+  res.send(`const BASE_URL = '${process.env.BASE_URL}';`);
+});
+
+
 // Inicia o servidor
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta http://127.0.0.1:${PORT}/index`);
+  console.log(`Servidor rodando na porta ${process.env.BASE_URL}/login`);
 });
