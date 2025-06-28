@@ -56,12 +56,14 @@ let marcadorEmoji = "\u{25CF}";
 let confirmeEmoji = "\u{2705}";
 let caminhaoEmoji = "\u{1F69A}";
 let pessoaEmoji = "\u{1F464}";
+let observacaoEmoji = "\u{1F4CC}";
 
 
 // função para retirar balcão pegar o id do produto e a quantidade e valor total gerar um formulario e abrir conversa no whatsapp
 function enviarWhatsApp() {
     const corpoTabela = document.getElementById("carrinhoCorpo");
     const linhas = corpoTabela.querySelectorAll("tr");
+    const observacoes = document.getElementById("observacoes").value.trim();
     
     let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de peças\n\n`;
 
@@ -73,10 +75,13 @@ function enviarWhatsApp() {
 
         mensagem += `${marcadorEmoji} Descrição: ${descricao}\n${marcadorEmoji} Quantidade: ${quantidade}\n${dinheiroEmoji} Valor: R$ ${valor}\n\n`;
     });
-
+    if (observacoes) {
+        mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
+    }
+    
     const total = document.getElementById("totalCarrinho").textContent;
     mensagem += `${sacoDinheiroEmoji} Total: R$ ${total}\n\n`;
-    mensagem += ` ${lojaEmoji}${maoEmoji} Retirar no balcão\n`;
+    mensagem += ` ${lojaEmoji}${maoEmoji} Retirar no balcão\n\n`;
     mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
     const whatsappUrl = `https://api.whatsapp.com/send?phone=5561995194930&text=${encodeURIComponent(mensagem)}`;
@@ -157,7 +162,8 @@ function enviarWhatsAppEntrega() {
     document.getElementById("popupEnviarBtn").onclick = function () {
         const nomeCompleto = document.getElementById("popupNomeCompleto").value.trim();
         const endereco = document.getElementById("popupEndereco").value.trim();
-
+        const observacoes = document.getElementById("observacoes").value.trim();
+        
         if (!nomeCompleto || !endereco) {
             alert("Nome completo e endereço são obrigatórios.");
             return;
@@ -175,6 +181,9 @@ function enviarWhatsAppEntrega() {
 
             mensagem += `${marcadorEmoji} Descrição: ${descricao}\n${marcadorEmoji} Quantidade: ${quantidade}\n${dinheiroEmoji} Valor: R$ ${valor}\n\n`;
         });
+        if (observacoes) {
+        mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
+    }
 
         const total = document.getElementById("totalCarrinho").textContent;
         mensagem += `${sacoDinheiroEmoji} Total: R$ ${total}\n\n`;
