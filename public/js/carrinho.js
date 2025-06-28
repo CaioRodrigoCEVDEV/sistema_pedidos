@@ -44,13 +44,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+//Emojis para mensagens
+let listaEmoji = "\u{1F9FE}";
+let caixaEmoji = "\u{1F4E6}";
+let celularEmoji = "\u{1F4F2}";
+let sacoDinheiroEmoji = "\u{1F4B0}";
+let dinheiroEmoji = "\u{1F4B5}";
+let lojaEmoji = "\u{1F3EC}";
+let maoEmoji = "\u{1F91D}";
+let marcadorEmoji = "\u{25CF}";
+let confirmeEmoji = "\u{2705}";
 
 
 // função para retirar balcão pegar o id do produto e a quantidade e valor total gerar um formulario e abrir conversa no whatsapp
 function enviarWhatsApp() {
     const corpoTabela = document.getElementById("carrinhoCorpo");
     const linhas = corpoTabela.querySelectorAll("tr");
-    let mensagem = "Pedido de Peças:\n\n";
+    
+    let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de peças\n\n`;
 
     linhas.forEach((linha) => {
         const colunas = linha.querySelectorAll("td");
@@ -58,13 +69,13 @@ function enviarWhatsApp() {
         const quantidade = colunas[1].textContent;
         const valor = colunas[2].textContent;
 
-        mensagem += `Descrição: ${descricao}\nQuantidade: ${quantidade}\nValor: R$ ${valor}\n\n`;
+        mensagem += `${marcadorEmoji} Descrição: ${descricao}\n${marcadorEmoji} Quantidade: ${quantidade}\n${dinheiroEmoji} Valor: R$ ${valor}\n\n`;
     });
 
     const total = document.getElementById("totalCarrinho").textContent;
-    mensagem += `Total: R$ ${total}\n\n`;
-    mensagem += "Retirar no balcão\n";
-    mensagem += "Por favor, confirme o pedido.";
+    mensagem += `${sacoDinheiroEmoji} Total: R$ ${total}\n\n`;
+    mensagem += ` ${lojaEmoji}${maoEmoji} Retirar no balcão\n`;
+    mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
     const whatsappUrl = `https://api.whatsapp.com/send?phone=5561995194930&text=${encodeURIComponent(mensagem)}`;
     window.open(whatsappUrl, "_blank");
@@ -152,7 +163,7 @@ function enviarWhatsAppEntrega() {
 
         const corpoTabela = document.getElementById("carrinhoCorpo");
         const linhas = corpoTabela.querySelectorAll("tr");
-        let mensagem = "Pedido de Peças:\n\n";
+        let mensagem = "Pedido de Peças: teste teste\n\n";
 
         linhas.forEach((linha) => {
             const colunas = linha.querySelectorAll("td");

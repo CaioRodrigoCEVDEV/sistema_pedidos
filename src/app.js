@@ -8,6 +8,10 @@ var path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+
+app.use(express.static('public/'));
+app.use(express.static('public/html/js/'));
+
 // Middlewares
 app.set('views', path.join(__dirname, 'views'));
 app.use(morgan('dev'));
@@ -52,7 +56,11 @@ app.get('/registro', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/html/register/registro.html'));
 });
 
+app.get('/config.js', (req, res) => {
+  res.type('application/javascript');
+  res.send(`const BASE_URL = '${process.env.BASE_URL}';`);
+});
 // Inicia o servidor
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta http://127.0.0.1:${PORT}/index`);
+  console.log(`Servidor rodando na porta ${process.env.BASE_URL}/index`);
 });

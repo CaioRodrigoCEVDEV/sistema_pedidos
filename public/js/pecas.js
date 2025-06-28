@@ -5,7 +5,7 @@ const marcascod = params.get('marcascod');
 
 //popular table com os dados do modelo
 document.addEventListener("DOMContentLoaded", function () {
-fetch(`http://127.0.0.1:3000/tipo/${id}`)
+fetch(`${BASE_URL}/tipo/${id}`)
     .then((res) => res.json())
     .then((dados) => {
       const corpoTabela = document.getElementById("corpoTabela");
@@ -26,7 +26,7 @@ fetch(`http://127.0.0.1:3000/tipo/${id}`)
 });
 
 // Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
-fetch(`http://127.0.0.1:3000/marcas/${marcascod}`)
+fetch(`${BASE_URL}/marcas/${marcascod}`)
   .then(res => res.json())
   .then(marcas => {
     document.getElementById('marcaTitulo').textContent = marcas[0].marcasdes || 'Marca não encontrada';

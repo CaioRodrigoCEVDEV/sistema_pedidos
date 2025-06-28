@@ -5,7 +5,7 @@ const modelo = params.get('modelo');
 const marcascod = params.get('marcascod');
 
 document.addEventListener("DOMContentLoaded", function () {
-  fetch(`http://127.0.0.1:3000/pro/${id}?marca=${marcascod}&modelo=${modelo}`)
+  fetch(`${BASE_URL}/pro/${id}?marca=${marcascod}&modelo=${modelo}`)
     .then((res) => res.json())
     .then((dados) => {
       const corpoTabela = document.getElementById("corpoTabela");
@@ -45,7 +45,7 @@ document.getElementById("pesquisa").addEventListener("input", function () {
 })
 
 // Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
-fetch(`http://127.0.0.1:3000/marcas/${marcascod}`)
+fetch(`${BASE_URL}/marcas/${marcascod}`)
   .then(res => res.json())
   .then(marcas => {
     document.getElementById('marcaTitulo').textContent = marcas[0].marcasdes || 'Marca não encontrada';
