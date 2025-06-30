@@ -18,7 +18,6 @@ document.addEventListener("DOMContentLoaded", function () {
             <td>${Number(dado.provl).toFixed(2)}</td>
             
             <td>
-            <input type="number" style="width:40px" id="qtde_peca_${dado.procod}">
               <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button>
             </td>
           `;
@@ -170,11 +169,13 @@ document.getElementById('openCartModal').addEventListener('click', function () {
 
 // Modifique a função adicionarAoCarrinho para salvar o preço no carrinho
 window.adicionarAoCarrinho = function (procod) {
-  const input = document.getElementById(`qtde_peca_${procod}`);
-  const qtde = input ? parseInt(input.value, 10) || 1 : 1;
+  const qtde = 1; // Default quantity to 1
 
   // Busca os dados da linha correspondente
-  const tr = input.closest('tr');
+  // Precisamos encontrar a linha da tabela (tr) de uma forma diferente agora que o input se foi.
+  // Assumindo que o botão clicado está dentro da célula (td) que está dentro da linha (tr)
+  const button = event.target; // Get the button that was clicked
+  const tr = button.closest('tr');
   const nome = tr.querySelector('td').textContent;
   const preco = tr.querySelectorAll('td')[1].textContent; // dado.provl
 
