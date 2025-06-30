@@ -5,44 +5,158 @@ const modelo = params.get('modelo');
 const marcascod = params.get('marcascod');
 const qtde = params.get('qtde'); 
 
+function renderCart() {
+    const corpoTabela = document.getElementById("carrinhoCorpo");
+    const totalCarrinhoElement = document.getElementById("totalCarrinho");
+    corpoTabela.innerHTML = ""; // Limpa a tabela antes de renderizar
+
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    let totalValue = 0;
+
+    if (cart.length === 0) {
+        corpoTabela.innerHTML = '<tr><td colspan="4" class="text-center">Seu carrinho está vazio.</td></tr>';
+        totalCarrinhoElement.innerHTML = "0.00";
+        // Opcional: remover o parâmetro 'cart' da URL se o carrinho do localStorage estiver vazio
+        const url = new URL(window.location);
+        if (url.searchParams.has('cart')) {
+            url.searchParams.delete('cart');
+            window.history.replaceState({}, document.title, url.pathname + url.search);
+        }
+        return;
+    }
+
+    cart.forEach((item, index) => { // Adicionado index para identificar o item
+        const nome = item.nome || '---';
+        const qtde = item.qt || 0;
+        const valor = parseFloat(item.preco) || 0;
+        const itemTotal = valor * qtde;
+        totalValue += itemTotal;
+
+        const tr = document.createElement("tr");
+        // Usar item.id se disponível e único, caso contrário, index é uma fallback.
+        // Assumindo que item.id existe e é o procod.
+        const itemId = item.id;
+
+        tr.innerHTML = `
+            <td>${nome}</td>
+            <td class="text-center">
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="decrementQuantity('${itemId}')" style="flex-shrink: 0;">-</button>
+                    <span class="mx-2" style="min-width: 20px; text-align: center;">${qtde}</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="incrementQuantity('${itemId}')" style="flex-shrink: 0;">+</button>
+                </div>
+            </td>
+            <td>${valor.toFixed(2)}</td>
+            <td>${itemTotal.toFixed(2)}</td>
+        `;
+        corpoTabela.appendChild(tr);
+    });
+
+    totalCarrinhoElement.innerHTML = totalValue.toFixed(2);
+
+    // Atualiza o parâmetro 'cart' na URL para refletir o estado do localStorage
+    // Isso é útil se o usuário recarregar a página ou compartilhar o link,
+    // embora o localStorage seja a fonte primária de verdade dentro da sessão.
+    try {
+        const cartJson = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(cart)))));
+        const url = new URL(window.location);
+        if (cart.length > 0) {
+            url.searchParams.set('cart', cartJson);
+        } else {
+            url.searchParams.delete('cart'); // Remove se o carrinho estiver vazio
+        }
+        window.history.replaceState({}, document.title, url.pathname + url.search);
+    } catch (e) {
+        console.error("Error updating URL cart parameter:", e);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     const urlParams = new URLSearchParams(window.location.search);
     const cartParam = urlParams.get('cart');
+    let cartFromUrl = [];
 
-    if (!cartParam) return;
-
-    try {
-        const jsonStr = decodeURIComponent(atob(decodeURIComponent(cartParam)));
-        const dados = JSON.parse(jsonStr);
-
-        const corpoTabela = document.getElementById("carrinhoCorpo");
-        corpoTabela.innerHTML = "";
-
-        let totalValue = 0;
-
-        dados.forEach((dado) => {
-            const nome = dado.nome || '---';
-            const qtde = dado.qt || 0;
-            const valor = parseFloat(dado.preco) || 0;
-
-            totalValue += valor * qtde;
-
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${nome}</td>
-                <td>${qtde}</td>
-                <td>${valor.toFixed(2)}</td>
-            `;
-            corpoTabela.appendChild(tr);
-        });
-
-        const total = document.getElementById("totalCarrinho");
-        total.innerHTML = totalValue.toFixed(2);
-
-    } catch (erro) {
-        console.error("Erro ao processar carrinho:", erro);
+    if (cartParam) {
+        try {
+            const jsonStr = decodeURIComponent(atob(decodeURIComponent(cartParam)));
+            cartFromUrl = JSON.parse(jsonStr);
+        } catch (erro) {
+            console.error("Erro ao processar carrinho da URL:", erro);
+            // Se houver erro ao ler da URL, priorizar o localStorage ou começar vazio.
+        }
     }
+
+    // Sincronizar localStorage com dados da URL se vierem da URL e o localStorage estiver vazio ou diferente
+    // Normalmente, o localStorage deve ser a fonte de verdade se já populado.
+    // Se o carrinho da URL existir, ele populará o localStorage.
+    let localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    if (cartFromUrl.length > 0) {
+        // Aqui você pode adicionar uma lógica de mesclagem se necessário,
+        // por agora, vamos sobrescrever o localStorage se a URL tiver um carrinho.
+        // Isso é útil se o link do carrinho foi compartilhado.
+        localStorage.setItem('cart', JSON.stringify(cartFromUrl));
+    } else if (localCart.length > 0 && !cartParam) {
+        // Se não há cartParam mas há localCart, atualiza a URL com o localCart
+         try {
+            const cartJson = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(localCart)))));
+            const url = new URL(window.location);
+            url.searchParams.set('cart', cartJson);
+            window.history.replaceState({}, document.title, url.pathname + url.search);
+        } catch (e) {
+            console.error("Error setting URL from localStorage:", e);
+        }
+    }
+
+    renderCart();
 });
+
+window.incrementQuantity = function(itemId) {
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const itemIndex = cart.findIndex(item => item.id === itemId);
+
+    if (itemIndex > -1) {
+        cart[itemIndex].qt += 1;
+        localStorage.setItem('cart', JSON.stringify(cart));
+        renderCart();
+        atualizarIconeCarrinho(); // Se houver um ícone de carrinho global para atualizar
+    }
+}
+
+window.decrementQuantity = function(itemId) {
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const itemIndex = cart.findIndex(item => item.id === itemId);
+
+    if (itemIndex > -1) {
+        cart[itemIndex].qt -= 1;
+        if (cart[itemIndex].qt <= 0) {
+            cart.splice(itemIndex, 1); // Remove item if quantity is 0 or less
+        }
+        localStorage.setItem('cart', JSON.stringify(cart));
+        renderCart();
+        atualizarIconeCarrinho(); // Se houver um ícone de carrinho global para atualizar
+    }
+}
+
+// Função para atualizar o ícone do carrinho (exemplo, pode já existir em outro script)
+// Se não existir ou precisar ser adaptada, defina-a aqui ou garanta que está acessível.
+function atualizarIconeCarrinho() {
+    // Esta função pode precisar ser importada ou adaptada de pecas.js ou globalmente
+    // Por enquanto, é um placeholder se não estiver já definida e funcionando globalmente.
+    // console.log("atualizarIconeCarrinho chamada em carrinho.js");
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    // Exemplo de lógica de atualização de badge (simplificado):
+    const totalItems = cart.reduce((sum, item) => sum + item.qt, 0);
+    const badgeElement = document.getElementById('cartBadge'); // Supondo que exista um badge com este ID
+    if (badgeElement) {
+        badgeElement.textContent = totalItems > 0 ? totalItems : '';
+        badgeElement.style.display = totalItems > 0 ? 'flex' : 'none';
+    }
+    // Se você tiver um ícone de carrinho mais complexo ou em outro local (ex: header),
+    // ajuste o seletor e a lógica de atualização conforme necessário.
+}
+// Chame atualizarIconeCarrinho no carregamento da página também, se necessário
+document.addEventListener('DOMContentLoaded', atualizarIconeCarrinho);
+
 
 //Emojis para mensagens
 let listaEmoji = "\u{1F9FE}";
@@ -61,53 +175,63 @@ let observacaoEmoji = "\u{1F4CC}";
 
 // função para retirar balcão pegar o id do produto e a quantidade e valor total gerar um formulario e abrir conversa no whatsapp
 function enviarWhatsApp() {
-    const corpoTabela = document.getElementById("carrinhoCorpo");
-    const linhas = corpoTabela.querySelectorAll("tr");
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     const observacoes = document.getElementById("observacoes").value.trim();
     
+    if (cart.length === 0) {
+        alert("Seu carrinho está vazio!");
+        return;
+    }
+
     let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de peças\n\n`;
+    let totalValue = 0;
 
-    linhas.forEach((linha) => {
-        const colunas = linha.querySelectorAll("td");
-        const descricao = colunas[0].textContent;
-        const quantidade = colunas[1].textContent;
-        const valor = colunas[2].textContent;
+    cart.forEach((item) => {
+        const nome = item.nome || '---';
+        const qtde = item.qt || 0;
+        const valor = parseFloat(item.preco) || 0;
+        totalValue += valor * qtde;
 
-        mensagem += `${marcadorEmoji} Descrição: ${descricao}\n${marcadorEmoji} Quantidade: ${quantidade}\n${dinheiroEmoji} Valor: R$ ${valor}\n\n`;
+        mensagem += `${marcadorEmoji} Descrição: ${nome}\n`;
+        mensagem += `${marcadorEmoji} Quantidade: ${qtde}\n`;
+        mensagem += `${dinheiroEmoji} Valor Unit.: R$ ${valor.toFixed(2)}\n\n`;
     });
+
     if (observacoes) {
         mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
     }
     
-    const total = document.getElementById("totalCarrinho").textContent;
-    mensagem += `${sacoDinheiroEmoji} Total: R$ ${total}\n\n`;
+    mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n\n`;
     mensagem += ` ${lojaEmoji}${maoEmoji} Retirar no balcão\n\n`;
     mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
     const whatsappUrl = `https://api.whatsapp.com/send?phone=5561995194930&text=${encodeURIComponent(mensagem)}`;
     window.open(whatsappUrl, "_blank");
 
-    // Limpa o carrinho
-    corpoTabela.innerHTML = "";
-    document.getElementById("totalCarrinho").textContent = "0.00";
+    // Limpa o carrinho no localStorage e na tela
+    localStorage.setItem('cart', JSON.stringify([]));
+    renderCart(); // Isso vai limpar a tabela e zerar o total
     
-
     // Remove o parâmetro cart da URL
     const url = new URL(window.location);
     url.searchParams.delete('cart');
-    window.history.replaceState({}, document.title, url.pathname);
+    window.history.replaceState({}, document.title, url.pathname + url.search);
     
-
     // Redireciona para o index após um pequeno delay
     setTimeout(() => {
         window.location.href = "index";
     }, 500);
-    localStorage.setItem('cart', JSON.stringify([]));
-    atualizarIconeCarrinho();
+    // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
 }
 
 // quando clicar lá no botão de entrega, abrir um popup com nome completo e endereço
 function enviarWhatsAppEntrega() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    if (cart.length === 0) {
+        alert("Seu carrinho está vazio!");
+        return;
+    }
+
     // Cria o overlay do popup
     const overlay = document.createElement("div");
     overlay.style.position = "fixed";
@@ -173,39 +297,41 @@ function enviarWhatsAppEntrega() {
             return;
         }
 
-        const corpoTabela = document.getElementById("carrinhoCorpo");
-        const linhas = corpoTabela.querySelectorAll("tr");
         let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de peças\n`;
+        let totalValue = 0;
 
-        linhas.forEach((linha) => {
-            const colunas = linha.querySelectorAll("td");
-            const descricao = colunas[0].textContent;
-            const quantidade = colunas[1].textContent;
-            const valor = colunas[2].textContent;
+        cart.forEach((item) => {
+            const nome = item.nome || '---';
+            const qtde = item.qt || 0;
+            const valor = parseFloat(item.preco) || 0;
+            totalValue += valor * qtde;
 
-            mensagem += `${marcadorEmoji} Descrição: ${descricao}\n${marcadorEmoji} Quantidade: ${quantidade}\n${dinheiroEmoji} Valor: R$ ${valor}\n\n`;
+            mensagem += `${marcadorEmoji} Descrição: ${nome}\n`;
+            mensagem += `${marcadorEmoji} Quantidade: ${qtde}\n`;
+            mensagem += `${dinheiroEmoji} Valor Unit.: R$ ${valor.toFixed(2)}\n\n`;
         });
-        if (observacoes) {
-        mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
-    }
 
-        const total = document.getElementById("totalCarrinho").textContent;
-        mensagem += `${sacoDinheiroEmoji} Total: R$ ${total}\n\n`;
+        if (observacoes) {
+            mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
+        }
+
+        mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n\n`;
         mensagem += `${pessoaEmoji} Nome Completo: ${nomeCompleto}\n`;
+        mensagem += `${marcadorEmoji} Endereço: ${endereco}\n`; // Adicionado marcador para endereço
         mensagem += `${caminhaoEmoji} Entrega\n\n`;
         mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
         const whatsappUrl = `https://api.whatsapp.com/send?phone=5561995194930&text=${encodeURIComponent(mensagem)}`;
         window.open(whatsappUrl, "_blank");
 
-        // Limpa o carrinho
-        corpoTabela.innerHTML = "";
-        document.getElementById("totalCarrinho").textContent = "0.00";
+        // Limpa o carrinho no localStorage e na tela
+        localStorage.setItem('cart', JSON.stringify([]));
+        renderCart(); // Limpa a tabela e zera o total
 
         // Remove o parâmetro cart da URL
         const url = new URL(window.location);
         url.searchParams.delete('cart');
-        window.history.replaceState({}, document.title, url.pathname);
+        window.history.replaceState({}, document.title, url.pathname + url.search);
 
         // Remove popup
         document.body.removeChild(overlay);
@@ -214,7 +340,6 @@ function enviarWhatsAppEntrega() {
         setTimeout(() => {
             window.location.href = "index";
         }, 500);
-        localStorage.setItem('cart', JSON.stringify([]));
-        atualizarIconeCarrinho();
+        // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
     };
 }
