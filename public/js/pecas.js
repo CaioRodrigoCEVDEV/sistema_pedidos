@@ -196,3 +196,7 @@ window.removerItemCarrinho = function(idx) {
   // Reabrir/atualizar modal
   document.getElementById('openCartModal').click();
 };
+
+window.addEventListener('pageshow', function(event) {
+    atualizarIconeCarrinho();
+});

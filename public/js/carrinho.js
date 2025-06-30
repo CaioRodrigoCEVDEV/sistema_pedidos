@@ -157,6 +157,18 @@ function atualizarIconeCarrinho() {
 // Chame atualizarIconeCarrinho no carregamento da página também, se necessário
 document.addEventListener('DOMContentLoaded', atualizarIconeCarrinho);
 
+window.addEventListener('pageshow', function(event) {
+    // carrinho.js already calls renderCart() on DOMContentLoaded,
+    // and renderCart() itself updates the total and the items based on localStorage.
+    // It also calls atualizarIconeCarrinho indirectly if it's part of renderCart or if renderCart affects the badge count.
+    // However, to be absolutely sure the badge is updated if only localStorage changed
+    // and the page is restored from bfcache (where DOMContentLoaded might not fire again),
+    // we explicitly call renderCart() which includes total and item updates,
+    // and ensure atualizarIconeCarrinho is also called if it's a separate global concern.
+    renderCart(); // This will re-read from localStorage and update the table and totals.
+    atualizarIconeCarrinho(); // Explicitly update badge, in case renderCart doesn't cover it or it's managed separately.
+});
+
 
 //Emojis para mensagens
 let listaEmoji = "\u{1F9FE}";
