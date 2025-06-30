@@ -43,29 +43,46 @@
     </header>
 
     <main>
-        <div class="alert alert-dismissible fade show shadow p-3 bg-white rounded"
-            style="max-width: 800px; margin: auto;" role="alert">
-            <strong>Primeira vez utilizando nosso sitema de pedidos?</strong> Assista o tutorial caso tenha alguma
-            dificuldade.
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-            <hr>
-            <p class="mb-0"><button type="button" class="btn btn-danger"> <i class="bi bi-youtube"> </i>Tutorial em
-                    video </i></button></p>
-        </div>
-
-        <div class="container-float">
-
-            <div class="style-title-card">
-                <h3> Selecione a marca <i class="bi bi-caret-down-fill"></i></h3>
+        <form class="form-inline my-2 my-lg-0 mb-2">
+            <label for="">Pesquisa Geral</label>
+            <input class="form-control m-2 mr-sm-2 " type="search" placeholder="Pesquisar" aria-label="Pesquisar" id="pesquisa">
+        </form>
+        <div id="cardsArea">
+            <div class="alert alert-dismissible fade show shadow p-3 bg-white rounded"
+                style="max-width: 800px; margin: auto;" role="alert">
+                <strong>Primeira vez utilizando nosso sitema de pedidos?</strong> Assista o tutorial caso tenha alguma
+                dificuldade.
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <hr>
+                <p class="mb-0"><button type="button" class="btn btn-danger"> <i class="bi bi-youtube"> </i>Tutorial em
+                        video </i></button></p>
             </div>
 
+            <div class="container-float">
+                <div class="style-title-card">
+                    <h3> Selecione a marca <i class="bi bi-caret-down-fill"></i></h3>
+                </div>
 
-            <div class="container mt-3" id="marcaTitulo"><!--Conteudo inserido via js--></div>
+                <div class="container mt-3" id="marcaTitulo"><!--Conteudo inserido via js--></div>
+            </div>
         </div>
-
-
+        <div class="container-float" id="tabelaArea" style="display: none;">
+            <div class="container-float bg-light">
+                <table class="table" id="tabelaProdutos">
+                        <thead>
+                            <tr>
+                                <th scope="col">Peça</th>
+                                <th scope="col">Valor</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                        </thead>
+                            <tbody id="corpoTabela">
+                        </tbody>
+                    </table>
+            </div>
+        </div>
     </main>
     <a href="javascript:void(0);" class="button-cart" id="openCartModal">
         <i class="bi bi-cart2"></i>

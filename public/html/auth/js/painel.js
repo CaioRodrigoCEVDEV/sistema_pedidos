@@ -225,3 +225,10 @@ document
         console.error(erro);
       });
   });
+
+// Impede que o dropdown feche ao clicar em qualquer elemento dentro dele
+document.querySelectorAll(".dropdown-menu").forEach(function (menu) {
+  menu.addEventListener("click", function (e) {
+    e.stopPropagation();
+  });
+});

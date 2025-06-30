@@ -1,13 +1,13 @@
 const params = new URLSearchParams(window.location.search);
-const id = params.get('id');
+const id = params.get("id");
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   fetch(`${BASE_URL}/marcas/`)
-    .then(res => res.json())
-    .then(dados => {
-      const holder = document.getElementById('marcaTitulo');
+    .then((res) => res.json())
+    .then((dados) => {
+      const holder = document.getElementById("marcaTitulo");
       if (!holder) return;
-      holder.innerHTML = ''; // zera antes
+      holder.innerHTML = ""; // zera antes
 
       let html = '<div class="row">';
       dados.forEach((dado, i) => {
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
           html += '</div><div class="row">';
         }
       });
-      html += '</div>';
+      html += "</div>";
 
       holder.innerHTML = html;
     })
@@ -32,7 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 //Função para criar marca
-document.getElementById("cadastrarMarca").addEventListener("submit", function (e) {
+document
+  .getElementById("cadastrarMarca")
+  .addEventListener("submit", function (e) {
     e.preventDefault();
 
     const form = e.target;
@@ -40,26 +42,18 @@ document.getElementById("cadastrarMarca").addEventListener("submit", function (e
     const data = Object.fromEntries(formData.entries());
 
     fetch(`${BASE_URL}/marcas`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
     })
-        .then(res => res.json())
-        .then(resposta => {
-            alert("Dados salvos com sucesso!");
-            console.log(resposta);
-            location.reload(); // Atualiza a página após gravar
-        })
-        .catch(erro => {
-            alert("Erro ao salvar os dados.");
-            console.error(erro);
-        });
-
-});
-
-
-
-
-  
-
-
+      .then((res) => res.json())
+      .then((resposta) => {
+        alert("Dados salvos com sucesso!");
+        console.log(resposta);
+        location.reload(); // Atualiza a página após gravar
+      })
+      .catch((erro) => {
+        alert("Erro ao salvar os dados.");
+        console.error(erro);
+      });
+  });
