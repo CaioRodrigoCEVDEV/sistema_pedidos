@@ -155,7 +155,12 @@ document.getElementById('openCartModal').addEventListener('click', function () {
     goToCartBtn.textContent = 'Ir para o carrinho';
     goToCartBtn.style.marginLeft = '8px';
     goToCartBtn.onclick = function (e) {
-      if (cart.length === 0) e.preventDefault();
+      if (cart.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      // Explicitly hide the modal before navigating
+      $('#cartModal').modal('hide');
     };
 
     cartModalFooter.appendChild(goToCartBtn);
@@ -204,3 +209,7 @@ window.removerItemCarrinho = function (idx) {
   // Reabrir/atualizar modal
   document.getElementById('openCartModal').click();
 };
+
+window.addEventListener('pageshow', function(event) {
+    atualizarIconeCarrinho();
+});
