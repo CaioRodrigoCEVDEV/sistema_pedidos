@@ -160,7 +160,13 @@ document.getElementById('openCartModal').addEventListener('click', function () {
     goToCartBtn.textContent = 'Ir para o carrinho';
     goToCartBtn.style.marginLeft = '8px';
     goToCartBtn.onclick = function(e) {
-      if (cart.length === 0) e.preventDefault();
+      if (cart.length === 0) {
+        e.preventDefault();
+        return; // Don't proceed if cart is empty
+      }
+      // Explicitly hide the modal before navigating
+      $('#cartModal').modal('hide');
+      // Allow default navigation by not calling e.preventDefault() when cart is not empty
     };
 
     cartModalFooter.appendChild(goToCartBtn);
