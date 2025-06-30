@@ -40,9 +40,11 @@ function renderCart() {
         tr.innerHTML = `
             <td>${nome}</td>
             <td class="text-center">
-                <button class="btn btn-sm btn-outline-secondary" onclick="decrementQuantity('${itemId}')">-</button>
-                <span class="mx-2">${qtde}</span>
-                <button class="btn btn-sm btn-outline-secondary" onclick="incrementQuantity('${itemId}')">+</button>
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="decrementQuantity('${itemId}')" style="flex-shrink: 0;">-</button>
+                    <span class="mx-2" style="min-width: 20px; text-align: center;">${qtde}</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="incrementQuantity('${itemId}')" style="flex-shrink: 0;">+</button>
+                </div>
             </td>
             <td>${valor.toFixed(2)}</td>
             <td>${itemTotal.toFixed(2)}</td>
