@@ -65,7 +65,7 @@ app.get("/carrinho", (req, res) => {
 app.get("/registro", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/register/registro.html"));
 });
-app.get("/painel", (req, res) => {
+app.get("/painel", autenticarToken,(req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel.html")
   );
