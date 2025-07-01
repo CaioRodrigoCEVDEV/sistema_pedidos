@@ -26,7 +26,7 @@ exports.validarLogin = async (req, res) => {
         const token = jwt.sign({ 
             usuemail: usuario.usuemail,
             usucod: usuario.usucod,
-            usunome: usuario.usunome}, 'chave-secreta', { expiresIn: '10m' });
+            usunome: usuario.usunome}, 'chave-secreta', { expiresIn: '60m' });
 
         res.cookie('token',token,{
             httpOnly: true,

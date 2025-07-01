@@ -17,7 +17,7 @@ document.getElementById('formLogin').addEventListener('submit', async (e) => {
     const data = await response.json();
 
     if (response.ok) {
-      window.location.href = `${BASE_URL}/index`;
+      window.location.href = `${BASE_URL}/painel`;
     } else {
         alertPersonalizado(data.mensagem || 'Email ou senha incorretos!', 2000);
     }

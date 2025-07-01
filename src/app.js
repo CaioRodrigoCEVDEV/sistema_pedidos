@@ -98,5 +98,5 @@ app.get("/config.js", (req, res) => {
 
 // Inicia o servidor
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${process.env.BASE_URL}/login`);
+  console.log(`Servidor rodando na porta ${process.env.BASE_URL}/index`);
 });
