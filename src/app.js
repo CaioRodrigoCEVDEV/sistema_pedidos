@@ -96,6 +96,18 @@ app.get("/config.js", (req, res) => {
   res.send(`const BASE_URL = '${process.env.BASE_URL}';`);
 });
 
+app.get('/auth/sair', (req, res) => {
+  const token_session = req.cookies.token;
+  if (token_session) {
+    res.clearCookie('usunome', { path: '/' });
+    res.clearCookie('token', { path: '/' });
+    res.json({ message: 'Logout realizado com sucesso.' });
+  } else {
+    res.status(401).json({ error: "erro ao sair" });
+  }
+});
+
+
 // Inicia o servidor
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${process.env.BASE_URL}/index`);
