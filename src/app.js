@@ -70,22 +70,22 @@ app.get("/painel", autenticarToken,(req, res) => {
     path.join(__dirname, "../public/html/auth/admin/html/painel.html")
   );
 });
-app.get("/dashboard", (req, res) => {
+app.get("/dashboard",autenticarToken, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/index.html")
   );
 });
-app.get("/dashboard/modelo", (req, res) => {
+app.get("/dashboard/modelo",autenticarToken, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/modelo.html")
   );
 });
-app.get("/dashboard/modelo/pecas", (req, res) => {
+app.get("/dashboard/modelo/pecas",autenticarToken, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/pecas.html")
   );
 });
-app.get("/dashboard/modelo/pecas/lista", (req, res) => {
+app.get("/dashboard/modelo/pecas/lista",autenticarToken, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/lista-pecas.html")
   );
