@@ -72,7 +72,7 @@
               <a class="nav-link" href="perfil">Perfil</a>
             </li>
             <li class="nav-item">
-              <button class="nav-link" id="buttonSair" >Sair</button>
+              <button class="nav-link" id="buttonSair">Sair</button>
             </li>
           </ul>
         </div>
@@ -80,7 +80,17 @@
     </header>
 
     <main>
-      <div class="container py-4">
+      <form class="form-inline my-2 my-lg-0 mb-2">
+        <label for="">Pesquisa Geral</label>
+        <input
+          class="form-control m-2 mr-sm-2"
+          type="search"
+          placeholder="Pesquisar"
+          aria-label="Pesquisar"
+          id="pesquisa"
+        />
+      </form>
+      <div id="cardsArea" class="container py-4">
         <div class="row justify-content-center">
           <div class="col-12 col-md-10 col-lg-8">
             <div class="card shadow-sm mb-4">
@@ -302,6 +312,20 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+      <div class="container-float" id="tabelaArea" style="display: none">
+        <div class="container-float bg-light">
+          <table class="table" id="tabelaProdutos">
+            <thead>
+              <tr>
+                <th scope="col">Peça</th>
+                <th scope="col">Valor</th>
+                <th scope="col">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="corpoTabela"></tbody>
+          </table>
         </div>
       </div>
     </main>
