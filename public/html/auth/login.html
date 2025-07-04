@@ -14,29 +14,40 @@
         integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
     <style>
         body {
-            background-color: #f8f9fa;
+            background: linear-gradient(135deg, #e9ecef, #ffffff);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .login-container {
-            max-width: 400px;
+            max-width: 420px;
             width: 100%;
-            padding: 20px;
+            padding: 40px 30px;
             background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
         }
 
         .login-container h2 {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .login-container .btn-primary {
+            background-color: #3498db;
+            border: none;
+        }
+
+        .login-container .btn-primary:hover {
+            background-color: #2980b9;
         }
 
         .login-container .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 1rem;
         }
 
         .login-container .btn {
@@ -44,11 +55,11 @@
         }
 
         .login-container .text-center {
-            margin-top: 15px;
+            margin-top: 20px;
         }
 
         .login-container .text-center a {
-            color: #007bff;
+            color: #3498db;
             text-decoration: none;
         }
 
@@ -59,7 +70,8 @@
 </head>
 
 <body>
-    <div class="login-container">
+    <div class="login-container text-center">
+        <img src="../../images/logo/engrenagem-jp-pequeno.png" alt="Logo JP Peças" width="72" height="72" class="mb-3">
         <h2>Login - JP Peças</h2>
         <form id="formLogin">
             <div class="form-group">
