@@ -240,7 +240,6 @@ inputPesquisa.addEventListener("input", function () {
           <td>${produto.prodes}</td>
           <td>${produto.provl}</td>
           <td>
-              <input type="number" style="width:40px" id="qtde_peca_${produto.procod}">
               <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${produto.procod}')">Adicionar</button>
             </td>
         `;

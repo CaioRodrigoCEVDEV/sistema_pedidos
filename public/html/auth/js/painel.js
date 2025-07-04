@@ -226,6 +226,161 @@ document
       });
   });
 
+const inputPesquisa = document.getElementById("pesquisa");
+const tabelaArea = document.getElementById("tabelaArea");
+const cardsArea = document.getElementById("cardsArea");
+const corpoTabela = document.getElementById("corpoTabela");
+
+inputPesquisa.addEventListener("input", function () {
+  const pesquisa = this.value.trim().toLowerCase();
+
+  if (!pesquisa) {
+    tabelaArea.style.display = "none"; // esconde tabela
+    cardsArea.style.display = "block"; // mostra cards
+    corpoTabela.innerHTML = ""; // limpa tabela
+    return;
+  }
+
+  fetch(`${BASE_URL}/pros/`)
+    .then((res) => res.json())
+    .then((produtos) => {
+      const filtrados = produtos.filter(
+        (produto) =>
+          produto.prodes && produto.prodes.toLowerCase().includes(pesquisa)
+      );
+
+      if (filtrados.length === 0) {
+        tabelaArea.style.display = "none"; // esconde tabela se nada encontrado
+        cardsArea.style.display = "block"; // mostra cards
+        corpoTabela.innerHTML = "";
+        return;
+      }
+
+      corpoTabela.innerHTML = "";
+      filtrados.forEach((produto) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${produto.prodes}</td>
+          <td>${produto.provl}</td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="editarProduto('${produto.procod}')">
+              <i class="fa fa-edit"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="excluirProduto('${produto.procod}')">
+              <i class="fa fa-trash"></i>
+            </button>
+          </td>
+        `;
+        corpoTabela.appendChild(tr);
+      });
+
+      tabelaArea.style.display = "block"; // mostra tabela
+      cardsArea.style.display = "none"; // esconde cards
+    })
+    .catch((error) => {
+      console.error("Erro no fetch:", error);
+      tabelaArea.style.display = "none";
+      cardsArea.style.display = "block";
+      corpoTabela.innerHTML = "";
+    });
+});
+
+function editarProduto(codigo) {
+  fetch(`${BASE_URL}/pro/painel/${codigo}`)
+    .then((res) => res.json())
+    .then((produto) => {
+      console.log(codigo, produto);
+      // Cria o popup
+      let popup = document.createElement("div");
+      popup.id = "popupEditarProduto";
+      popup.style.position = "fixed";
+      popup.style.top = "0";
+      popup.style.left = "0";
+      popup.style.width = "100vw";
+      popup.style.height = "100vh";
+      popup.style.background = "rgba(0,0,0,0.5)";
+      popup.style.display = "flex";
+      popup.style.alignItems = "center";
+      popup.style.justifyContent = "center";
+      popup.style.zIndex = "9999";
+
+      // Preenche os campos com os dados carregados do produto
+      popup.innerHTML = `
+        <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+          <h5>Editar Produto</h5>
+          <form id="formEditarProduto">
+            <div class="mb-3">
+              <label for="editarDescricao" class="form-label">Descrição</label>
+              <input type="text" class="form-control" id="editarDescricao" name="prodes" value="${
+                produto[0].prodes || ""
+              }" required>
+            </div>
+            <div class="mb-3">
+              <label for="editarValor" class="form-label">Valor</label>
+              <input type="number" step="0.01" class="form-control" id="editarValor" name="provl" value="${
+                produto[0].provl || ""
+              }" required>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+              <button type="button" class="btn btn-secondary" id="cancelarEditarProduto">Cancelar</button>
+              <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+          </form>
+        </div>
+      `;
+
+      document.body.appendChild(popup);
+
+      document.getElementById("cancelarEditarProduto").onclick = function () {
+        document.body.removeChild(popup);
+      };
+
+      document.getElementById("formEditarProduto").onsubmit = function (e) {
+        e.preventDefault();
+        const prodes = document.getElementById("editarDescricao").value.trim();
+        const provl = document.getElementById("editarValor").value;
+
+        fetch(`${BASE_URL}/pro/${codigo}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prodes, provl }),
+        })
+          .then((res) => res.json())
+          .then(() => {
+            alert("Produto atualizado com sucesso!");
+            document.body.removeChild(popup);
+            location.reload();
+          })
+          .catch((erro) => {
+            alert("Erro ao atualizar o produto.");
+            console.error(erro);
+          });
+      };
+    })
+    .catch((erro) => {
+      alert("Erro ao buscar os dados do produto.");
+      console.error(erro);
+    });
+}
+
+// Função para excluir produto
+function excluirProduto(codigo) {
+  if (confirm("Tem certeza que deseja excluir este produto?")) {
+    fetch(`${BASE_URL}/pro/${codigo}`, {
+      method: "DELETE",
+    })
+      .then((res) => res.json())
+      .then((resposta) => {
+        alert("Produto excluído com sucesso!");
+        location.reload(); // Atualiza a página após exclusão
+      })
+      .catch((erro) => {
+        alert("Erro ao excluir o produto.");
+        console.error(erro);
+      });
+  }
+}
+
 // Impede que o dropdown feche ao clicar em qualquer elemento dentro dele
 document.querySelectorAll(".dropdown-menu").forEach(function (menu) {
   menu.addEventListener("click", function (e) {
