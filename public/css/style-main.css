@@ -2,6 +2,10 @@ main {
     margin: 0.5em;
 }
 
+.navbar {
+    margin-top: 10px;
+}
+
 .teste {
     background-color: aqua;
 }
