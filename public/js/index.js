@@ -148,7 +148,12 @@ document.getElementById("openCartModal").addEventListener("click", function () {
     goToCartBtn.textContent = "Ir para o carrinho";
     goToCartBtn.style.marginLeft = "8px";
     goToCartBtn.onclick = function (e) {
-      if (cart.length === 0) e.preventDefault();
+      if (cart.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      // Explicitly hide the modal before navigating (consistent with pecas.js and lista-pecas.js)
+      $("#cartModal").modal("hide");
     };
 
     cartModalFooter.appendChild(goToCartBtn);
@@ -370,7 +375,13 @@ document.getElementById("openCartModal").addEventListener("click", function () {
     goToCartBtn.textContent = "Ir para o carrinho";
     goToCartBtn.style.marginLeft = "8px";
     goToCartBtn.onclick = function (e) {
-      if (cart.length === 0) e.preventDefault();
+      if (cart.length === 0) {
+        e.preventDefault();
+        return; // Don't proceed if cart is empty
+      }
+      // Explicitly hide the modal before navigating
+      $("#cartModal").modal("hide");
+      // Allow default navigation by not calling e.preventDefault() when cart is not empty
     };
 
     cartModalFooter.appendChild(goToCartBtn);
@@ -379,11 +390,13 @@ document.getElementById("openCartModal").addEventListener("click", function () {
 
 // Modifique a função adicionarAoCarrinho para salvar o preço no carrinho
 window.adicionarAoCarrinho = function (procod) {
-  const input = document.getElementById(`qtde_peca_${procod}`);
-  const qtde = input ? parseInt(input.value, 10) || 1 : 1;
+  const qtde = 1; // Default quantity to 1
 
   // Busca os dados da linha correspondente
-  const tr = input.closest("tr");
+  // Precisamos encontrar a linha da tabela (tr) de uma forma diferente agora que o input se foi.
+  // Assumindo que o botão clicado está dentro da célula (td) que está dentro da linha (tr)
+  const button = event.target; // Get the button that was clicked
+  const tr = button.closest("tr");
   const nome = tr.querySelector("td").textContent;
   const preco = tr.querySelectorAll("td")[1].textContent; // dado.provl
 
@@ -419,3 +432,7 @@ window.removerItemCarrinho = function (idx) {
   // Reabrir/atualizar modal
   document.getElementById("openCartModal").click();
 };
+
+window.addEventListener("pageshow", function (event) {
+  atualizarIconeCarrinho();
+});
