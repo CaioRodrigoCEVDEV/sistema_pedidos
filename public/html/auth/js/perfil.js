@@ -29,6 +29,7 @@ document.getElementById('formPerfil').addEventListener('submit', async (e) => {
     if (response.ok) {
       alert('Dados atualizados com sucesso!');
       document.getElementById('senha').value = '';
+      window.location.href = `${BASE_URL}/painel`;
     } else {
       alert(data.error || data.mensagem || 'Erro ao atualizar dados');
     }
