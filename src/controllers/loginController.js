@@ -43,19 +43,19 @@ exports.validarLogin = async (req, res) => {
 };
 
 exports.atualizarCadastro = async (req, res) => {
-    const {id} = req.params;
-    const { usunome,usuemail,ususenha } = req.body;
+    const { id } = req.params;
+    const { usunome, usuemail, ususenha } = req.body;
 
     try {
         // Gera o hash MD5 da nova senha
         const newSenhaHash = crypto.createHash('md5').update(ususenha).digest('hex');
 
-        const result = await pool.query('UPDATE usu SET usunome = $1, ususenha = $2 WHERE usucod = $3', [usunome,newSenhaHash,id]);
+        await pool.query('UPDATE usu SET usunome = $1, ususenha = $2 WHERE usucod = $3', [usunome, newSenhaHash, id]);
 
         const token = jwt.sign({ 
             usuemail: usuemail,
             usucod: id,
-            usunome: usunome}, 'chave-secreta', { expiresIn: '10m' });
+            usunome: usunome }, 'chave-secreta', { expiresIn: '60m' });
 
         res.cookie('token',token,{
             httpOnly: true,
@@ -95,8 +95,11 @@ exports.cadastrarlogin = async (req, res) => {
 
 exports.listarlogin = async (req, res) => {
     try {
-        const result = await pool.query('SELECT usucod,usunome,usuemail, ususenha FROM usu where usucod = $1', [req.cookies.usucod]);
-        res.status(200).json(result.rows);
+        const result = await pool.query(
+            'SELECT usucod, usunome, usuemail FROM usu WHERE usucod = $1',
+            [req.token.usucod]
+        );
+        res.status(200).json(result.rows[0]);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao listar documentos' });
