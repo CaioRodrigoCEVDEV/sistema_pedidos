@@ -84,212 +84,13 @@
                 Gerenciamento
               </a>
               <div
-                class="dropdown-menu p-3 w-100"
+                class="dropdown-menu"
                 aria-labelledby="gerenciamentoDropdown"
-                style="max-width: none"
               >
-                <div class="row">
-                  <!-- Marca -->
-                  <div class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static">
-                    <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
-                      type="button"
-                      id="dropdownMarca"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Cadastrar Marca <i class="bi bi-plus-square"></i>
-                    </button>
-                    <div
-                      class="dropdown-menu p-3 w-100 mt-2"
-                      aria-labelledby="dropdownMarca"
-                      style="min-width: 220px"
-                      onclick="event.stopPropagation();"
-                    >
-                      <form id="cadastrarPainelMarca" class="form">
-                        <div class="form-group mb-2">
-                          <input
-                            type="text"
-                            name="marcasdes"
-                            id="marcaDescricao"
-                            placeholder="Descrição da Marca"
-                            class="form-control"
-                            required
-                          />
-                        </div>
-                        <button type="submit" class="btn btn-success btn-block">
-                          Cadastrar
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                  <!-- Modelo -->
-                  <div class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static">
-                    <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
-                      type="button"
-                      id="dropdownModelo"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Cadastrar Modelo <i class="bi bi-plus-square"></i>
-                    </button>
-                    <div
-                      class="dropdown-menu p-3 w-100 mt-2"
-                      aria-labelledby="dropdownModelo"
-                      style="min-width: 220px"
-                      onclick="event.stopPropagation();"
-                    >
-                      <form id="cadastrarPainelModelo" class="form">
-                        <div class="form-group mb-2">
-                          <input
-                            type="text"
-                            name="moddes"
-                            placeholder="Descrição do Modelo"
-                            class="form-control"
-                            required
-                          />
-                        </div>
-                        <div class="form-group mb-2">
-                          <div class="custom-select-wrapper">
-                            <select
-                              name=""
-                              id="painelMarca"
-                              class="form-control custom-select"
-                              required
-                              onclick="event.stopPropagation();"
-                            >
-                              <option value="">Selecione a Marca</option>
-                            </select>
-                          </div>
-                        </div>
-                        <button type="submit" class="btn btn-success btn-block">
-                          Cadastrar
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                  <!-- Tipo de Peça -->
-                  <div class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static">
-                    <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
-                      type="button"
-                      id="dropdownTipo"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Cadastrar Tipo de Peça <i class="bi bi-plus-square"></i>
-                    </button>
-                    <div
-                      class="dropdown-menu p-3 w-100 mt-2"
-                      aria-labelledby="dropdownTipo"
-                      style="min-width: 220px"
-                      onclick="event.stopPropagation();"
-                    >
-                      <form id="cadastrarPainelTipo" class="form">
-                        <div class="form-group mb-2">
-                          <input
-                            type="text"
-                            name="tipodes"
-                            placeholder="Descrição do Tipo"
-                            class="form-control"
-                            required
-                          />
-                        </div>
-                        <button type="submit" class="btn btn-success btn-block">
-                          Cadastrar
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                  <!-- Peça -->
-                  <div class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static">
-                    <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
-                      type="button"
-                      id="dropdownPeca"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Cadastrar Peça <i class="bi bi-plus-square"></i>
-                    </button>
-                    <div
-                      class="dropdown-menu p-3 w-100 mt-2"
-                      aria-labelledby="dropdownPeca"
-                      style="min-width: 220px"
-                      onclick="event.stopPropagation();"
-                    >
-                      <form id="cadastrarPainelPeca" class="form">
-                        <div class="form-group mb-2">
-                          <input
-                            type="text"
-                            name="prodes"
-                            placeholder="Descrição da Peça"
-                            class="form-control"
-                            required
-                          />
-                        </div>
-                        <div class="form-group mb-2">
-                          <input
-                            type="number"
-                            name="provl"
-                            placeholder="Valor R$"
-                            class="form-control"
-                            min="0"
-                            step="0.01"
-                            required
-                          />
-                        </div>
-                        <div class="form-group mb-2">
-                          <div class="custom-select-wrapper">
-                            <select
-                              name=""
-                              id="selectPainelMarca"
-                              class="form-control custom-select"
-                              required
-                              onclick="event.stopPropagation();"
-                            >
-                              <option value="">Selecione a Marca</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div class="form-group mb-2">
-                          <div class="custom-select-wrapper">
-                            <select
-                              name=""
-                              id="selectPainelModelo"
-                              class="form-control custom-select"
-                              required
-                              onclick="event.stopPropagation();"
-                            >
-                              <option value="">Selecione o Modelo</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div class="form-group mb-2">
-                          <div class="custom-select-wrapper">
-                            <select
-                              name=""
-                              id="selectPainelTipo"
-                              class="form-control custom-select"
-                              required
-                              onclick="event.stopPropagation();"
-                            >
-                              <option value="">Selecione o Tipo</option>
-                            </select>
-                          </div>
-                        </div>
-                        <button type="submit" class="btn btn-success btn-block">
-                          Cadastrar
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
+                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#modalMarca">Cadastrar Marca</a>
+                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#modalModelo">Cadastrar Modelo</a>
+                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#modalTipo">Cadastrar Tipo de Peça</a>
+                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#modalPeca">Cadastrar Peça</a>
               </div>
             </li>
             <li class="nav-item">
@@ -385,8 +186,182 @@
             <tbody id="corpoTabela"></tbody>
           </table>
         </div>
+  </div>
+  </main>
+
+    <!-- Modais de cadastro -->
+    <!-- Marca -->
+    <div class="modal fade" id="modalMarca" tabindex="-1" role="dialog" aria-labelledby="modalMarcaLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalMarcaLabel">Cadastrar Marca</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="cadastrarPainelMarca" class="form">
+              <div class="form-group mb-2">
+                <input
+                  type="text"
+                  name="marcasdes"
+                  id="marcaDescricao"
+                  placeholder="Descrição da Marca"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <button type="submit" class="btn btn-success btn-block">Cadastrar</button>
+            </form>
+          </div>
+        </div>
       </div>
-    </main>
+    </div>
+
+    <!-- Modelo -->
+    <div class="modal fade" id="modalModelo" tabindex="-1" role="dialog" aria-labelledby="modalModeloLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalModeloLabel">Cadastrar Modelo</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="cadastrarPainelModelo" class="form">
+              <div class="form-group mb-2">
+                <input
+                  type="text"
+                  name="moddes"
+                  placeholder="Descrição do Modelo"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="form-group mb-2">
+                <div class="custom-select-wrapper">
+                  <select
+                    name=""
+                    id="painelMarca"
+                    class="form-control custom-select"
+                    required
+                  >
+                    <option value="">Selecione a Marca</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-success btn-block">Cadastrar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tipo de Peça -->
+    <div class="modal fade" id="modalTipo" tabindex="-1" role="dialog" aria-labelledby="modalTipoLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalTipoLabel">Cadastrar Tipo de Peça</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="cadastrarPainelTipo" class="form">
+              <div class="form-group mb-2">
+                <input
+                  type="text"
+                  name="tipodes"
+                  placeholder="Descrição do Tipo"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <button type="submit" class="btn btn-success btn-block">Cadastrar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Peça -->
+    <div class="modal fade" id="modalPeca" tabindex="-1" role="dialog" aria-labelledby="modalPecaLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalPecaLabel">Cadastrar Peça</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="cadastrarPainelPeca" class="form">
+              <div class="form-group mb-2">
+                <input
+                  type="text"
+                  name="prodes"
+                  placeholder="Descrição da Peça"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="form-group mb-2">
+                <input
+                  type="number"
+                  name="provl"
+                  placeholder="Valor R$"
+                  class="form-control"
+                  min="0"
+                  step="0.01"
+                  required
+                />
+              </div>
+              <div class="form-group mb-2">
+                <div class="custom-select-wrapper">
+                  <select
+                    name=""
+                    id="selectPainelMarca"
+                    class="form-control custom-select"
+                    required
+                  >
+                    <option value="">Selecione a Marca</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group mb-2">
+                <div class="custom-select-wrapper">
+                  <select
+                    name=""
+                    id="selectPainelModelo"
+                    class="form-control custom-select"
+                    required
+                  >
+                    <option value="">Selecione o Modelo</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group mb-2">
+                <div class="custom-select-wrapper">
+                  <select
+                    name=""
+                    id="selectPainelTipo"
+                    class="form-control custom-select"
+                    required
+                  >
+                    <option value="">Selecione o Tipo</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-success btn-block">Cadastrar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <script src="/config.js"></script>
     <script src="html/auth/js/painel.js"></script>
