@@ -194,18 +194,26 @@ window.addEventListener("pageshow", function (event) {
 });
 
 //Emojis para mensagens
-let listaEmoji = "\u{1F9FE}";
-let caixaEmoji = "\u{1F4E6}";
-let celularEmoji = "\u{1F4F2}";
-let sacoDinheiroEmoji = "\u{1F4B0}";
-let dinheiroEmoji = "\u{1F4B5}";
-let lojaEmoji = "\u{1F3EC}";
-let maoEmoji = "\u{1F91D}";
-let marcadorEmoji = "\u{25CF}";
-let confirmeEmoji = "\u{2705}";
-let caminhaoEmoji = "\u{1F69A}";
-let pessoaEmoji = "\u{1F464}";
-let observacaoEmoji = "\u{1F4CC}";
+let listaEmoji = "\u{1F9FE}"; // 🧾
+let caixaEmoji = "\u{1F4E6}"; // 📦
+let celularEmoji = "\u{1F4F2}"; // 📲
+let sacoDinheiroEmoji = "\u{1F4B0}"; // 💰
+let dinheiroEmoji = "\u{1F4B5}"; // 💵
+let lojaEmoji = "\u{1F3EC}"; // 🏬
+let maoEmoji = "\u{1F91D}"; // 🤝
+let marcadorEmoji = "\u{25CF}"; // ● (usado em outros locais)
+let confirmeEmoji = "\u{2705}"; // ✅
+let caminhaoEmoji = "\u{1F69A}"; // 🚚
+let pessoaEmoji = "\u{1F464}"; // 👤
+let observacaoEmoji = "\u{1F4CC}"; // 📌
+
+const indent = "      "; // seis espaços para identação nas mensagens
+
+// Novos emojis para detalhamento da mensagem
+let descricaoEmoji = "\u{1F9FE}"; // 🧾
+let marcaEmoji = "\u{1F3F7}"; // 🏷️
+let tipoEmoji = "\u{1F9E9}"; // 🧩
+let quantidadeEmoji = "\u{1F522}"; // 🔢
 
 // função para retirar balcão pegar o id do produto e a quantidade e valor total gerar um formulario e abrir conversa no whatsapp
 function enviarWhatsApp() {
@@ -217,26 +225,32 @@ function enviarWhatsApp() {
     return;
   }
 
-  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de peças\n\n`;
+  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de Itens:\n\n`;
   let totalValue = 0;
 
   cart.forEach((item) => {
     const nome = item.nome || "---";
     const qtde = item.qt || 0;
     const valor = parseFloat(item.preco) || 0;
+    const marca = item.marca || "";
+    const tipo = item.tipo || "";
     totalValue += valor * qtde;
 
-    mensagem += `${marcadorEmoji} Descrição: ${nome}\n`;
-    mensagem += `${marcadorEmoji} Quantidade: ${qtde}\n`;
-    mensagem += `${dinheiroEmoji} Valor Unit.: R$ ${valor.toFixed(2)}\n\n`;
+    mensagem += `${descricaoEmoji} Descrição: ${nome}\n`;
+    mensagem += `${indent}${marcaEmoji} Marca: ${marca}\n`;
+    mensagem += `${indent}${tipoEmoji} Tipo: ${tipo}\n`;
+    mensagem += `${indent}${quantidadeEmoji} Quantidade: ${qtde}\n`;
+    mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(2)}\n`;
+    mensagem += `${indent}${dinheiroEmoji} Subtotal: R$ ${(valor * qtde).toFixed(2)}\n\n`;
   });
 
   if (observacoes) {
     mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
   }
 
-  mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n\n`;
-  mensagem += ` ${lojaEmoji}${maoEmoji} Retirar no balcão\n\n`;
+  mensagem += `${listaEmoji} Resumo do Pedido:\n`;
+  mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
+  mensagem += `${indent}${lojaEmoji} Retirada: No balcão\n\n`;
   mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
   const whatsappUrl = `https://api.whatsapp.com/send?phone=5561993737662&text=${encodeURIComponent(
@@ -335,28 +349,34 @@ function enviarWhatsAppEntrega() {
       return;
     }
 
-    let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de peças\n`;
+    let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de Itens:\n\n`;
     let totalValue = 0;
 
     cart.forEach((item) => {
       const nome = item.nome || "---";
       const qtde = item.qt || 0;
       const valor = parseFloat(item.preco) || 0;
+      const marca = item.marca || "";
+      const tipo = item.tipo || "";
       totalValue += valor * qtde;
 
-      mensagem += `${marcadorEmoji} Descrição: ${nome}\n`;
-      mensagem += `${marcadorEmoji} Quantidade: ${qtde}\n`;
-      mensagem += `${dinheiroEmoji} Valor Unit.: R$ ${valor.toFixed(2)}\n\n`;
+      mensagem += `${descricaoEmoji} Descrição: ${nome}\n`;
+      mensagem += `${indent}${marcaEmoji} Marca: ${marca}\n`;
+      mensagem += `${indent}${tipoEmoji} Tipo: ${tipo}\n`;
+      mensagem += `${indent}${quantidadeEmoji} Quantidade: ${qtde}\n`;
+      mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(2)}\n`;
+      mensagem += `${indent}${dinheiroEmoji} Subtotal: R$ ${(valor * qtde).toFixed(2)}\n\n`;
     });
 
     if (observacoes) {
       mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
     }
 
-    mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n\n`;
-    mensagem += `${pessoaEmoji} Nome Completo: ${nomeCompleto}\n`;
-    mensagem += `${marcadorEmoji} Endereço: ${endereco}\n`; // Adicionado marcador para endereço
-    mensagem += `${caminhaoEmoji} Entrega\n\n`;
+    mensagem += `${listaEmoji} Resumo do Pedido:\n`;
+    mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
+    mensagem += `${indent}${pessoaEmoji} Nome Completo: ${nomeCompleto}\n`;
+    mensagem += `${indent}${marcadorEmoji} Endereço: ${endereco}\n`;
+    mensagem += `${indent}${caminhaoEmoji} Entrega\n\n`;
     mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
     const whatsappUrl = `https://api.whatsapp.com/send?phone=5561993737662&text=${encodeURIComponent(
