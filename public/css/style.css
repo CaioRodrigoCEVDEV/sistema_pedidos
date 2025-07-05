@@ -201,7 +201,8 @@ body {
 }
 
 @media (min-width: 820px) {
-    #carrinhoCorpo {
+    #carrinhoCorpo,
+    #corpoTabela {
         display: table;
         width: 100%;
     }
