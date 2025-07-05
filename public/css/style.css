@@ -153,14 +153,23 @@ body {
 
 @media (max-width: 819px) {
     .cart-item {
-        flex-direction: row;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        column-gap: 0.5rem;
+        align-items: center;
     }
     .cart-item > div {
-        flex: 1 1 50%;
+        margin: 0.25rem 0;
+    }
+    .cart-item .item-name,
+    .cart-item .item-qty,
+    .cart-item .item-tipo {
+        grid-column: 1;
+        text-align: left;
     }
     .cart-item .item-price,
     .cart-item .item-total {
+        grid-column: 2;
         text-align: right;
     }
 }
