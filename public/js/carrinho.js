@@ -41,6 +41,7 @@ function renderCart() {
     // Adicionado index para identificar o item
     const nome = item.nome || " ";
     const tipo = item.tipo || " ";
+    const marca = item.marca || " ";
     const qtde = item.qt || 0;
     const valor = parseFloat(item.preco) || 0;
     const itemTotal = valor * qtde;
@@ -53,7 +54,9 @@ function renderCart() {
     const itemId = item.id;
 
     tr.innerHTML = `
-            <div class="item-name">${nome} - ${tipo}</div>
+            <div class="item-name">${nome}</div>
+            <div class="item-tipo"> ${marcadorEmoji} Tipo: ${tipo}</div>
+            <div class="item-tipo">${marcadorEmoji} Marca: ${marca}</div>
             <div class="item-qty">
                 <button class="btn btn-sm btn-outline-secondary" onclick="decrementQuantity('${itemId}')">-</button>
                 <span class="mx-2">${qtde}</span>
