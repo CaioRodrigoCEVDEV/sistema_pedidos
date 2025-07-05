@@ -229,7 +229,7 @@ function enviarWhatsApp() {
   mensagem += ` ${lojaEmoji}${maoEmoji} Retirar no balcão\n\n`;
   mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
-  const whatsappUrl = `https://api.whatsapp.com/send?phone=5561995194930&text=${encodeURIComponent(
+  const whatsappUrl = `https://api.whatsapp.com/send?phone=5561993737662&text=${encodeURIComponent(
     mensagem
   )}`;
   window.open(whatsappUrl, "_blank");
@@ -349,7 +349,7 @@ function enviarWhatsAppEntrega() {
     mensagem += `${caminhaoEmoji} Entrega\n\n`;
     mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=5561995194930&text=${encodeURIComponent(
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=5561993737662&text=${encodeURIComponent(
       mensagem
     )}`;
     window.open(whatsappUrl, "_blank");
