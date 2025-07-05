@@ -44,7 +44,7 @@ exports.listarProdutoCarrinho = async (req, res) => {
 
   try {
     const result = await pool.query(
-      "select procod, prodes, provl from pro where procod = $1 ",
+      "select procod, prodes, provl,tipodes from pro join tipo on tipocod = protipocod  where procod = $1",
       [id]
     );
     res.status(200).json(result.rows);
