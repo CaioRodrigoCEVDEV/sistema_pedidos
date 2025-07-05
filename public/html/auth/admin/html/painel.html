@@ -71,82 +71,26 @@
             <li class="nav-item">
               <a class="nav-link" href="perfil">Perfil</a>
             </li>
-            <li class="nav-item">
-              <button class="nav-link" id="buttonSair">Sair</button>
-            </li>
-          </ul>
-        </div>
-      </nav>
-    </header>
-
-    <main>
-      <form class="form-inline my-2 my-lg-0 mb-2">
-        <label for="">Pesquisa Geral</label>
-        <input
-          class="form-control m-2 mr-sm-2"
-          type="search"
-          placeholder="Pesquisar"
-          aria-label="Pesquisar"
-          id="pesquisa"
-        />
-      </form>
-      <div class="container mt-4">
-        <div class="row text-center" id="statsCards">
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">
-                  <i class="bi bi-tags-fill mr-1"></i>Marcas
-                </h5>
-                <p class="card-text" id="totalMarcas">0</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">
-                  <i class="bi bi-car-front-fill mr-1"></i>Modelos
-                </h5>
-                <p class="card-text" id="totalModelos">0</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">
-                  <i class="bi bi-card-checklist mr-1"></i>Tipos
-                </h5>
-                <p class="card-text" id="totalTipos">0</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">
-                  <i class="bi bi-gear-fill mr-1"></i>Peças
-                </h5>
-                <p class="card-text" id="totalPecas">0</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div id="cardsArea" class="container py-4">
-        <div class="row justify-content-center">
-          <div class="col-12 col-md-10 col-lg-8">
-            <div class="card shadow-sm mb-4">
-              <div class="card-body">
-                <h4 class="card-title mb-4 text-primary font-weight-bold">
-                  Gerenciamento
-                </h4>
+            <li class="nav-item dropdown position-static">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="gerenciamentoDropdown"
+                role="button"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                Gerenciamento
+              </a>
+              <div
+                class="dropdown-menu p-3 w-100"
+                aria-labelledby="gerenciamentoDropdown"
+                style="max-width: none"
+              >
                 <div class="row">
                   <!-- Marca -->
-                  <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
-                  >
+                  <div class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static">
                     <button
                       class="btn btn-outline-primary btn-block dropdown-toggle"
                       type="button"
@@ -181,9 +125,7 @@
                     </div>
                   </div>
                   <!-- Modelo -->
-                  <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
-                  >
+                  <div class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static">
                     <button
                       class="btn btn-outline-primary btn-block dropdown-toggle"
                       type="button"
@@ -230,9 +172,7 @@
                     </div>
                   </div>
                   <!-- Tipo de Peça -->
-                  <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
-                  >
+                  <div class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static">
                     <button
                       class="btn btn-outline-primary btn-block dropdown-toggle"
                       type="button"
@@ -266,9 +206,7 @@
                     </div>
                   </div>
                   <!-- Peça -->
-                  <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
-                  >
+                  <div class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static">
                     <button
                       class="btn btn-outline-primary btn-block dropdown-toggle"
                       type="button"
@@ -352,7 +290,83 @@
                     </div>
                   </div>
                 </div>
-                <!-- Conteúdo dinâmico pode ser inserido aqui -->
+              </div>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" id="buttonSair">Sair</button>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <form class="form-inline my-2 my-lg-0 mb-2">
+        <label for="">Pesquisa Geral</label>
+        <input
+          class="form-control m-2 mr-sm-2"
+          type="search"
+          placeholder="Pesquisar"
+          aria-label="Pesquisar"
+          id="pesquisa"
+        />
+      </form>
+      <div class="container mt-4">
+        <div class="row text-center" id="statsCards">
+          <div class="col-md-3 mb-3">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-tags-fill mr-1"></i>Marcas
+                </h5>
+                <p class="card-text" id="totalMarcas">0</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-car-front-fill mr-1"></i>Modelos
+                </h5>
+                <p class="card-text" id="totalModelos">0</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-card-checklist mr-1"></i>Tipos
+                </h5>
+                <p class="card-text" id="totalTipos">0</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-gear-fill mr-1"></i>Peças
+                </h5>
+                <p class="card-text" id="totalPecas">0</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="cardsArea" class="container py-4">
+        <div class="row justify-content-center">
+          <div class="col-12 col-md-10 col-lg-8">
+            <div class="card shadow-sm mb-4">
+              <div class="card-body">
+                <h4 class="card-title mb-4 text-primary font-weight-bold">
+                  Gerenciamento
+                </h4>
+                <p>
+                  Use o menu "Gerenciamento" acima para cadastrar marcas,
+                  modelos, tipos de peça e peças.
+                </p>
               </div>
             </div>
           </div>
