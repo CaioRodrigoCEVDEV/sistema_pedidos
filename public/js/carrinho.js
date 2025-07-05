@@ -62,8 +62,8 @@ function renderCart() {
                 <span class="mx-2">${qtde}</span>
                 <button class="btn btn-sm btn-outline-secondary" onclick="incrementQuantity('${itemId}')">+</button>
             </div>
-            <div class="item-price">${formatarMoeda(valor)}</div>
-            <div class="item-total">${formatarMoeda(itemTotal)}</div>
+            <div class="item-price">Valor Unitário: ${formatarMoeda(valor)}</div>
+            <div class="item-total">SubTotal: ${formatarMoeda(itemTotal)}</div>
         `;
     corpoTabela.appendChild(tr);
   });
