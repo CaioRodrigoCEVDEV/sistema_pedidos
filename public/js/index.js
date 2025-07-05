@@ -171,7 +171,7 @@ window.adicionarAoCarrinho = function (procod) {
   // Busca os dados da linha correspondente
   const tr = input.closest("tr");
   const nome = tr.querySelector("td").textContent;
-  const preco = tr.querySelectorAll("td")[1].textContent; // dado.provl
+  const preco = parseFloat(tr.dataset.preco);
 
   // Recupera o carrinho do localStorage
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
@@ -239,6 +239,7 @@ inputPesquisa.addEventListener("input", function () {
       corpoTabela.innerHTML = "";
       filtrados.forEach((produto) => {
         const tr = document.createElement("tr");
+        tr.dataset.preco = produto.provl;
         tr.innerHTML = `
           <td>${produto.prodes}</td>
           <td>${formatarMoeda(produto.provl)}</td>
@@ -400,7 +401,7 @@ window.adicionarAoCarrinho = function (procod) {
   const button = event.target; // Get the button that was clicked
   const tr = button.closest("tr");
   const nome = tr.querySelector("td").textContent;
-  const preco = tr.querySelectorAll("td")[1].textContent; // dado.provl
+  const preco = parseFloat(tr.dataset.preco);
 
   // Recupera o carrinho do localStorage
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");

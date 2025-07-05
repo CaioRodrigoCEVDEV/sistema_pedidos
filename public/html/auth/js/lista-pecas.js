@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
+        tr.dataset.preco = dado.provl;
         tr.innerHTML = `
             <td>${dado.prodes}</td>
             <td>${formatarMoeda(dado.provl)}</td>

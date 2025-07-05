@@ -23,7 +23,7 @@ function renderCart() {
   if (cart.length === 0) {
     corpoTabela.innerHTML =
       '<tr><td colspan="4" class="text-center">Seu carrinho está vazio.</td></tr>';
-    totalCarrinhoElement.innerHTML = "0.00";
+    totalCarrinhoElement.innerHTML = formatarMoeda(0);
     // Opcional: remover o parâmetro 'cart' da URL se o carrinho do localStorage estiver vazio
     const url = new URL(window.location);
     if (url.searchParams.has("cart")) {
@@ -65,7 +65,7 @@ function renderCart() {
     corpoTabela.appendChild(tr);
   });
 
-  totalCarrinhoElement.innerHTML = totalValue.toFixed(2);
+  totalCarrinhoElement.innerHTML = formatarMoeda(totalValue);
 
   // Atualiza o parâmetro 'cart' na URL para refletir o estado do localStorage
   // Isso é útil se o usuário recarregar a página ou compartilhar o link,

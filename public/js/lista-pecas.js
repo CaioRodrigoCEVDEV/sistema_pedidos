@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
+        tr.dataset.preco = dado.provl;
         tr.innerHTML = `
             <td>${dado.prodes}</td>
             <td>${formatarMoeda(dado.provl)}</td>
@@ -202,7 +203,7 @@ window.adicionarAoCarrinho = function (procod) {
   const button = event.target; // Get the button that was clicked
   const tr = button.closest("tr");
   const nome = tr.querySelector("td").textContent;
-  const preco = tr.querySelectorAll("td")[1].textContent; // dado.provl
+  const preco = parseFloat(tr.dataset.preco);
 
   // Recupera o carrinho do localStorage
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");

@@ -266,6 +266,7 @@ inputPesquisa.addEventListener("input", function () {
       corpoTabela.innerHTML = "";
       filtrados.forEach((produto) => {
         const tr = document.createElement("tr");
+        tr.dataset.preco = produto.provl;
         tr.innerHTML = `
           <td>${produto.prodes}</td>
           <td>${formatarMoeda(produto.provl)}</td>
