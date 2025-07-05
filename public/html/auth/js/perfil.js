@@ -31,6 +31,12 @@ document.getElementById('formPerfil').addEventListener('submit', async (e) => {
   const usunome = document.getElementById('nome').value;
   const usuemail = document.getElementById('email').value;
   const ususenha = document.getElementById('senha').value;
+  const confirmSenha = document.getElementById('confirmarSenha').value;
+
+  if (ususenha !== confirmSenha) {
+    alert('As senhas não coincidem.');
+    return;
+  }
   try {
     const response = await fetch(`${BASE_URL}/auth/atualizarCadastro/${id}`, {
       method: 'PUT',
@@ -42,6 +48,7 @@ document.getElementById('formPerfil').addEventListener('submit', async (e) => {
     if (response.ok) {
       alert('Dados atualizados com sucesso!');
       document.getElementById('senha').value = '';
+      document.getElementById('confirmarSenha').value = '';
       window.location.href = `${BASE_URL}/painel`;
     } else {
       alert(data.error || data.mensagem || 'Erro ao atualizar dados');
