@@ -232,7 +232,8 @@ function enviarWhatsApp() {
     mensagem += `${marcadorEmoji} Marca: ${marca}\n`;
     mensagem += `${marcadorEmoji} Tipo: ${tipo}\n`;
     mensagem += `${marcadorEmoji} Quantidade: ${qtde}\n`;
-    mensagem += `${dinheiroEmoji} Valor Unit.: R$ ${valor.toFixed(2)}\n\n`;
+    mensagem += `${dinheiroEmoji} Valor Unit.: R$ ${valor.toFixed(2)}\n`;
+    mensagem += `${dinheiroEmoji} SubTotal: R$ ${(valor * qtde).toFixed(2)}\n\n`;
   });
 
   if (observacoes) {
@@ -354,7 +355,8 @@ function enviarWhatsAppEntrega() {
       mensagem += `${marcadorEmoji} Marca: ${marca}\n`;
       mensagem += `${marcadorEmoji} Tipo: ${tipo}\n`;
       mensagem += `${marcadorEmoji} Quantidade: ${qtde}\n`;
-      mensagem += `${dinheiroEmoji} Valor Unit.: R$ ${valor.toFixed(2)}\n\n`;
+      mensagem += `${dinheiroEmoji} Valor Unit.: R$ ${valor.toFixed(2)}\n`;
+      mensagem += `${dinheiroEmoji} SubTotal: R$ ${(valor * qtde).toFixed(2)}\n\n`;
     });
 
     if (observacoes) {
