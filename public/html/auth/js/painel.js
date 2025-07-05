@@ -449,10 +449,11 @@ function carregarMarcas() {
       tbody.innerHTML = "";
       dados.forEach((m) => {
         const tr = document.createElement("tr");
+        tr.setAttribute("data-marca-id", m.marcascod);
         tr.innerHTML = `
-          <td>${m.marcasdes}</td>
+          <td class="marca-des">${m.marcasdes}</td>
           <td>
-            <button class="btn btn-sm btn-primary" onclick="editarMarca(${m.marcascod}, '${m.marcasdes.replace(/'/g, "\'")}')"><i class='fa fa-edit'></i></button>
+            <button class="btn btn-sm btn-primary" onclick="editarMarca(${m.marcascod}, '${m.marcasdes.replace(/'/g, "\\'")}')"><i class='fa fa-edit'></i></button>
             <button class="btn btn-sm btn-danger" onclick="excluirMarca(${m.marcascod})"><i class='fa fa-trash'></i></button>
           </td>`;
         tbody.appendChild(tr);
@@ -469,9 +470,13 @@ function editarMarca(id, nome) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ marcasdes: novo }),
   })
-    .then((r) => r.json())
+  .then((r) => r.json())
     .then(() => {
-      carregarMarcas();
+      const row = document.querySelector(
+        `#listaMarcas tr[data-marca-id='${id}'] .marca-des`
+      );
+      if (row) row.textContent = novo;
+      else carregarMarcas();
     })
     .catch(() => alert("Erro ao atualizar marca"));
 }
@@ -480,7 +485,13 @@ function excluirMarca(id) {
   if (!confirm("Excluir esta marca?")) return;
   fetch(`${BASE_URL}/marcas/${id}`, { method: "DELETE" })
     .then((r) => r.json())
-    .then(() => carregarMarcas())
+    .then(() => {
+      const row = document.querySelector(
+        `#listaMarcas tr[data-marca-id='${id}']`
+      );
+      if (row) row.remove();
+      else carregarMarcas();
+    })
     .catch(() => alert("Erro ao excluir marca"));
 }
 
