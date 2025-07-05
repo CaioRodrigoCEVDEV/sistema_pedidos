@@ -200,20 +200,28 @@ body {
     color: var(--success-color);
 
 @media (min-width: 820px) {
+    #carrinhoCorpo {
+        display: table;
+        width: 100%;
+    }
     .cart-item {
-        flex-direction: row;
-        align-items: center;
+        display: table-row;
     }
     .cart-item > div {
-        flex: 1;
+        display: table-cell;
+        padding: 0.5rem;
+        vertical-align: middle;
+    }
+    .cart-item .item-name {
+        text-align: left;
+        font-weight: 600;
     }
     .cart-item .item-qty {
-        justify-content: center;
+        text-align: center;
     }
     .cart-item .item-price,
-    .cart-item .item-total,
-    .cart-item .item-tipo {
-        flex: 0 0 120px;
+    .cart-item .item-total {
+        text-align: right;
     }
 }
 #totalCarrinho {
