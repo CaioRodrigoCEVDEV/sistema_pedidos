@@ -201,7 +201,8 @@ body {
 }
 
 @media (min-width: 820px) {
-    #carrinhoCorpo {
+    #carrinhoCorpo,
+    div#corpoTabela {
         display: table;
         width: 100%;
     }
@@ -223,6 +224,18 @@ body {
     .cart-item .item-price,
     .cart-item .item-total {
         text-align: right;
+    }
+}
+.cart-item .btn-add {
+    margin-left: 0.5rem;
+}
+
+@media (max-width: 819px) {
+    .cart-item .btn-add {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        margin-left: 0;
     }
 }
 #totalCarrinho {

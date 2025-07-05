@@ -40,16 +40,14 @@
     </header>
     <main>
         <div class="container-float bg-light">
-            <div class="style-title-card">
+            <div class="style-title-card d-flex justify-content-between align-items-center">
                 <h3>Peça</i></h3>
+                <button class="btn btn-sm btn-outline-light" onclick="window.history.back();">
+                    <i class="bi bi-box-arrow-in-left"></i> Voltar
+                </button>
             </div>
 
             <div class="bg-light p-3  mb-5">
-                <div class="container mt-3 text-right m-2">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="window.history.back();">
-                        <i class="bi bi-box-arrow-in-left"></i> Voltar
-                    </button>
-                </div>
                 <div id="sticky-header" class="bg-light" style="position: sticky; top: 0; z-index: 1020;">
                     <h1 class="text-left" id="marcaTitulo"></h1>
                     <h3 class="text-center" style="font-size: 1.3rem;">Adicione peças ao carrinho</h3>
@@ -58,18 +56,7 @@
                         id="pesquisa">
                 </form>
                 </div>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Peça</th>
-                            <th scope="col">Tipo</th>
-                            <th scope="col">Valor</th>
-                            <th scope="col">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpoTabela">
-                    </tbody>
-                </table>
+                <div id="corpoTabela"></div>
             </div>
         </div>
 
