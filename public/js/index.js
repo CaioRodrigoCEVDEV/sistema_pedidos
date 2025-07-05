@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
       dados.forEach((dado, i) => {
         html += `
         
-          <div class="col-12 col-sm-6 col-md-4 mb-3 d-flex justify-content-center">
+          <div class="col-6 col-sm-6 col-md-4 mb-3 d-flex justify-content-center">
             <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-50">
               <button class="btn btn-md btn-outline-dark w-100">${dado.marcasdes}</button>
             </a>
