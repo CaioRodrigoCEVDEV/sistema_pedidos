@@ -227,9 +227,16 @@ body {
     }
 }
 .cart-item .btn-add {
-    display: block;
-    width: 100%;
-    margin-top: 0.25rem;
+    margin-left: 0.5rem;
+}
+
+@media (max-width: 819px) {
+    .cart-item .btn-add {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        margin-left: 0;
+    }
 }
 #totalCarrinho {
     font-weight: 600;
