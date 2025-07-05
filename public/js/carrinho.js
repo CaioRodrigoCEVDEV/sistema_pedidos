@@ -5,6 +5,13 @@ const modelo = params.get("modelo");
 const marcascod = params.get("marcascod");
 const qtde = params.get("qtde");
 
+function formatarMoeda(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 function renderCart() {
   const corpoTabela = document.getElementById("carrinhoCorpo");
   const totalCarrinhoElement = document.getElementById("totalCarrinho");
@@ -16,7 +23,7 @@ function renderCart() {
   if (cart.length === 0) {
     corpoTabela.innerHTML =
       '<tr><td colspan="4" class="text-center">Seu carrinho está vazio.</td></tr>';
-    totalCarrinhoElement.innerHTML = "0.00";
+    totalCarrinhoElement.innerHTML = formatarMoeda(0);
     // Opcional: remover o parâmetro 'cart' da URL se o carrinho do localStorage estiver vazio
     const url = new URL(window.location);
     if (url.searchParams.has("cart")) {
@@ -52,13 +59,13 @@ function renderCart() {
                     <button class="btn btn-sm btn-outline-secondary" onclick="incrementQuantity('${itemId}')" style="flex-shrink: 0;">+</button>
                 </div>
             </td>
-            <td>${valor.toFixed(2)}</td>
-            <td>${itemTotal.toFixed(2)}</td> 
+            <td>${formatarMoeda(valor)}</td>
+            <td>${formatarMoeda(itemTotal)}</td>
         `;
     corpoTabela.appendChild(tr);
   });
 
-  totalCarrinhoElement.innerHTML = totalValue.toFixed(2);
+  totalCarrinhoElement.innerHTML = formatarMoeda(totalValue);
 
   // Atualiza o parâmetro 'cart' na URL para refletir o estado do localStorage
   // Isso é útil se o usuário recarregar a página ou compartilhar o link,

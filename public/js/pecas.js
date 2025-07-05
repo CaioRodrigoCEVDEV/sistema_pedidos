@@ -174,7 +174,7 @@ window.adicionarAoCarrinho = function (procod) {
   // Busca os dados da linha correspondente
   const tr = input.closest("tr");
   const nome = tr.querySelector("td").textContent;
-  const preco = tr.querySelectorAll("td")[1].textContent; // dado.provl
+  const preco = parseFloat(tr.dataset.preco || 0);
 
   // Recupera o carrinho do localStorage
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");

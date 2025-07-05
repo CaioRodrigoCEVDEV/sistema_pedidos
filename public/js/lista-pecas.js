@@ -4,6 +4,13 @@ const id = params.get("id");
 const modelo = params.get("modelo");
 const marcascod = params.get("marcascod");
 
+function formatarMoeda(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   fetch(`${BASE_URL}/pro/${id}?marca=${marcascod}&modelo=${modelo}`)
     .then((res) => res.json())
@@ -13,9 +20,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
+        tr.dataset.preco = dado.provl;
         tr.innerHTML = `
             <td>${dado.prodes}</td>
-            <td>${Number(dado.provl).toFixed(2)}</td>
+            <td>${formatarMoeda(dado.provl)}</td>
             
             <td>
               <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${
@@ -195,7 +203,7 @@ window.adicionarAoCarrinho = function (procod) {
   const button = event.target; // Get the button that was clicked
   const tr = button.closest("tr");
   const nome = tr.querySelector("td").textContent;
-  const preco = tr.querySelectorAll("td")[1].textContent; // dado.provl
+  const preco = parseFloat(tr.dataset.preco);
 
   // Recupera o carrinho do localStorage
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");

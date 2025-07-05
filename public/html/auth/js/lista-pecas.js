@@ -6,6 +6,13 @@ const marcascod = params.get("marcascod");
 
 console.log("ID:", id);
 
+function formatarMoeda(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   fetch(`${BASE_URL}/pro/${id}?marca=${marcascod}&modelo=${modelo}`)
     .then((res) => res.json())
@@ -15,9 +22,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
+        tr.dataset.preco = dado.provl;
         tr.innerHTML = `
             <td>${dado.prodes}</td>
-            <td>${Number(dado.provl).toFixed(2)}</td>
+            <td>${formatarMoeda(dado.provl)}</td>
             
             <td>
             <input type="number" style="width:40px" id="qtde_peca_${

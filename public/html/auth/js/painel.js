@@ -5,6 +5,13 @@ let marcacodModelo = null;
 let tipo = null;
 let modelo = null;
 
+function formatarMoeda(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   fetch(`${BASE_URL}/marcas/`)
     .then((res) => res.json())
@@ -259,9 +266,10 @@ inputPesquisa.addEventListener("input", function () {
       corpoTabela.innerHTML = "";
       filtrados.forEach((produto) => {
         const tr = document.createElement("tr");
+        tr.dataset.preco = produto.provl;
         tr.innerHTML = `
           <td>${produto.prodes}</td>
-          <td>${produto.provl}</td>
+          <td>${formatarMoeda(produto.provl)}</td>
           <td>
             <button class="btn btn-primary btn-sm" onclick="editarProduto('${produto.procod}')">
               <i class="fa fa-edit"></i>

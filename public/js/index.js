@@ -1,6 +1,13 @@
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 
+function formatarMoeda(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   fetch(`${BASE_URL}/marcas/`)
     .then((res) => res.json())
@@ -164,7 +171,7 @@ window.adicionarAoCarrinho = function (procod) {
   // Busca os dados da linha correspondente
   const tr = input.closest("tr");
   const nome = tr.querySelector("td").textContent;
-  const preco = tr.querySelectorAll("td")[1].textContent; // dado.provl
+  const preco = parseFloat(tr.dataset.preco);
 
   // Recupera o carrinho do localStorage
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
@@ -232,9 +239,10 @@ inputPesquisa.addEventListener("input", function () {
       corpoTabela.innerHTML = "";
       filtrados.forEach((produto) => {
         const tr = document.createElement("tr");
+        tr.dataset.preco = produto.provl;
         tr.innerHTML = `
           <td>${produto.prodes}</td>
-          <td>${produto.provl}</td>
+          <td>${formatarMoeda(produto.provl)}</td>
           <td>
               <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${produto.procod}')">Adicionar</button>
             </td>
@@ -393,7 +401,7 @@ window.adicionarAoCarrinho = function (procod) {
   const button = event.target; // Get the button that was clicked
   const tr = button.closest("tr");
   const nome = tr.querySelector("td").textContent;
-  const preco = tr.querySelectorAll("td")[1].textContent; // dado.provl
+  const preco = parseFloat(tr.dataset.preco);
 
   // Recupera o carrinho do localStorage
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
