@@ -39,7 +39,8 @@ function renderCart() {
 
   cart.forEach((item, index) => {
     // Adicionado index para identificar o item
-    const nome = item.nome || "---";
+    const nome = item.nome || " ";
+    const tipo = item.tipo || " ";
     const qtde = item.qt || 0;
     const valor = parseFloat(item.preco) || 0;
     const itemTotal = valor * qtde;
@@ -51,7 +52,7 @@ function renderCart() {
     const itemId = item.id;
 
     tr.innerHTML = `
-            <td>${nome}</td>
+            <td>${nome} - ${tipo} </td>
             <td class="text-center">
                 <div style="display: flex; align-items: center; justify-content: center;">
                     <button class="btn btn-sm btn-outline-secondary" onclick="decrementQuantity('${itemId}')" style="flex-shrink: 0;">-</button>

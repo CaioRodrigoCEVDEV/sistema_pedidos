@@ -6,7 +6,7 @@ exports.listarProduto = async (req, res) => {
 
   try {
     const result = await pool.query(
-      "select procod, prodes, provl from pro where promarcascod = $1 and promodcod  = $2 and protipocod  = $3",
+      "select procod, prodes, provl,tipodes from pro join tipo on tipocod = protipocod where promarcascod = $1 and promodcod  = $2 and protipocod  = $3",
       [marca, modelo, id]
     );
     res.status(200).json(result.rows);

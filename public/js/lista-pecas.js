@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const tr = document.createElement("tr");
         tr.dataset.preco = dado.provl;
         tr.innerHTML = `
-            <td>${dado.prodes}</td>
+            <td>${dado.prodes} - ${dado.tipodes}</td>
             <td>${formatarMoeda(dado.provl)}</td>
             
             <td>
