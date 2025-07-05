@@ -226,6 +226,11 @@ body {
         text-align: right;
     }
 }
+.cart-item .btn-add {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+}
 #totalCarrinho {
     font-weight: 600;
     color: var(--success-color);

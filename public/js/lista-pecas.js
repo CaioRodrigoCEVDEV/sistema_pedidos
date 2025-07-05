@@ -25,9 +25,10 @@ document.addEventListener("DOMContentLoaded", function () {
         item.innerHTML = `
             <div class="item-name">${dado.prodes} </div>
             <div class="item-tipo">${dado.tipodes}</div>
-            <div class="item-price">${formatarMoeda(dado.provl)}</div>
-            <div class="item-qty">
-              <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button>
+            <div class="item-price">${formatarMoeda(dado.provl)}
+              <div class="mt-1">
+                <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button>
+              </div>
             </div>
           `;
 
