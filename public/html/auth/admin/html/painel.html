@@ -179,6 +179,13 @@
                         </button>
                       </form>
                     </div>
+                    <button
+                      class="btn btn-outline-secondary btn-block mt-2"
+                      type="button"
+                      onclick="toggleMarcas()"
+                    >
+                      Gerenciar
+                    </button>
                   </div>
                   <!-- Modelo -->
                   <div
@@ -228,6 +235,13 @@
                         </button>
                       </form>
                     </div>
+                    <button
+                      class="btn btn-outline-secondary btn-block mt-2"
+                      type="button"
+                      onclick="toggleModelos()"
+                    >
+                      Gerenciar
+                    </button>
                   </div>
                   <!-- Tipo de Peça -->
                   <div
@@ -264,6 +278,13 @@
                         </button>
                       </form>
                     </div>
+                    <button
+                      class="btn btn-outline-secondary btn-block mt-2"
+                      type="button"
+                      onclick="toggleTipos()"
+                    >
+                      Gerenciar
+                    </button>
                   </div>
                   <!-- Peça -->
                   <div
@@ -350,15 +371,58 @@
                         </button>
                       </form>
                     </div>
+                    <button
+                      class="btn btn-outline-secondary btn-block mt-2"
+                      type="button"
+                      onclick="togglePecas()"
+                    >
+                      Gerenciar
+                    </button>
                   </div>
                 </div>
                 <!-- Conteúdo dinâmico pode ser inserido aqui -->
+                <div id="areaMarcas" class="mt-3 management-area" style="display:none;">
+                  <h5>Marcas cadastradas</h5>
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Marca</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="listaMarcas"></tbody>
+                  </table>
+                </div>
+                <div id="areaModelos" class="mt-3 management-area" style="display:none;">
+                  <h5>Modelos cadastrados</h5>
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Modelo</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="listaModelos"></tbody>
+                  </table>
+                </div>
+                <div id="areaTipos" class="mt-3 management-area" style="display:none;">
+                  <h5>Tipos cadastrados</h5>
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Tipo</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="listaTipos"></tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="container-float" id="tabelaArea" style="display: none">
+      <div class="container-float management-area" id="tabelaArea" style="display: none">
         <div class="container-float bg-light">
           <table class="table" id="tabelaProdutos">
             <thead>
