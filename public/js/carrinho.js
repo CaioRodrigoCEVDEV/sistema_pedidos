@@ -5,6 +5,13 @@ const modelo = params.get("modelo");
 const marcascod = params.get("marcascod");
 const qtde = params.get("qtde");
 
+function formatarMoeda(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 function renderCart() {
   const corpoTabela = document.getElementById("carrinhoCorpo");
   const totalCarrinhoElement = document.getElementById("totalCarrinho");
@@ -52,8 +59,8 @@ function renderCart() {
                     <button class="btn btn-sm btn-outline-secondary" onclick="incrementQuantity('${itemId}')" style="flex-shrink: 0;">+</button>
                 </div>
             </td>
-            <td>${valor.toFixed(2)}</td>
-            <td>${itemTotal.toFixed(2)}</td> 
+            <td>${formatarMoeda(valor)}</td>
+            <td>${formatarMoeda(itemTotal)}</td>
         `;
     corpoTabela.appendChild(tr);
   });

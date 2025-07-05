@@ -4,6 +4,13 @@ const id = params.get("id");
 const modelo = params.get("modelo");
 const marcascod = params.get("marcascod");
 
+function formatarMoeda(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   fetch(`${BASE_URL}/pro/${id}?marca=${marcascod}&modelo=${modelo}`)
     .then((res) => res.json())
@@ -15,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${dado.prodes}</td>
-            <td>${Number(dado.provl).toFixed(2)}</td>
+            <td>${formatarMoeda(dado.provl)}</td>
             
             <td>
               <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${

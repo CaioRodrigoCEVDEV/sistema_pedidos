@@ -1,6 +1,13 @@
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 
+function formatarMoeda(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   fetch(`${BASE_URL}/marcas/`)
     .then((res) => res.json())
@@ -234,7 +241,7 @@ inputPesquisa.addEventListener("input", function () {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${produto.prodes}</td>
-          <td>${produto.provl}</td>
+          <td>${formatarMoeda(produto.provl)}</td>
           <td>
               <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${produto.procod}')">Adicionar</button>
             </td>
