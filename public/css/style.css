@@ -155,12 +155,12 @@ body {
     color: var(--success-color);
 }
 
-#totalCarrinho, #carrinhoTotal {
+#totalCarrinho {
     font-weight: 600;
     color: var(--success-color);
 }
 
-@media (min-width: 576px) {
+@media (min-width: 820px) {
     .cart-item {
         flex-direction: row;
         align-items: center;
