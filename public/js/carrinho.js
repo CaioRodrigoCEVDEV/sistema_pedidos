@@ -15,14 +15,14 @@ function formatarMoeda(valor) {
 function renderCart() {
   const corpoTabela = document.getElementById("carrinhoCorpo");
   const totalCarrinhoElement = document.getElementById("totalCarrinho");
-  corpoTabela.innerHTML = ""; // Limpa a tabela antes de renderizar
+  corpoTabela.innerHTML = ""; // Limpa a lista antes de renderizar
 
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
   let totalValue = 0;
 
   if (cart.length === 0) {
     corpoTabela.innerHTML =
-      '<tr><td colspan="4" class="text-center">Seu carrinho está vazio.</td></tr>';
+      '<div class="text-center">Seu carrinho está vazio.</div>';
     totalCarrinhoElement.innerHTML = formatarMoeda(0);
     // Opcional: remover o parâmetro 'cart' da URL se o carrinho do localStorage estiver vazio
     const url = new URL(window.location);
@@ -46,22 +46,21 @@ function renderCart() {
     const itemTotal = valor * qtde;
     totalValue += itemTotal;
 
-    const tr = document.createElement("tr");
+    const tr = document.createElement("div");
+    tr.className = "cart-item";
     // Usar item.id se disponível e único, caso contrário, index é uma fallback.
     // Assumindo que item.id existe e é o procod.
     const itemId = item.id;
 
     tr.innerHTML = `
-            <td>${nome} - ${tipo} </td>
-            <td class="text-center">
-                <div style="display: flex; align-items: center; justify-content: center;">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="decrementQuantity('${itemId}')" style="flex-shrink: 0;">-</button>
-                    <span class="mx-2" style="min-width: 20px; text-align: center;">${qtde}</span>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="incrementQuantity('${itemId}')" style="flex-shrink: 0;">+</button>
-                </div>
-            </td>
-            <td>${formatarMoeda(valor)}</td>
-            <td>${formatarMoeda(itemTotal)}</td>
+            <div class="item-name">${nome} - ${tipo}</div>
+            <div class="item-qty">
+                <button class="btn btn-sm btn-outline-secondary" onclick="decrementQuantity('${itemId}')">-</button>
+                <span class="mx-2">${qtde}</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="incrementQuantity('${itemId}')">+</button>
+            </div>
+            <div class="item-price">${formatarMoeda(valor)}</div>
+            <div class="item-total">${formatarMoeda(itemTotal)}</div>
         `;
     corpoTabela.appendChild(tr);
   });
