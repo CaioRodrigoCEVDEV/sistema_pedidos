@@ -414,3 +414,173 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Erro ao carregar totais", err);
   }
 });
+
+// ------- GESTÃO MARCAS ---------
+function toggleMarcas() {
+  const area = document.getElementById("areaMarcas");
+  if (area.style.display === "none" || !area.style.display) {
+    carregarMarcas();
+    area.style.display = "block";
+  } else {
+    area.style.display = "none";
+  }
+}
+
+function carregarMarcas() {
+  fetch(`${BASE_URL}/marcas`)
+    .then((r) => r.json())
+    .then((dados) => {
+      const tbody = document.getElementById("listaMarcas");
+      tbody.innerHTML = "";
+      dados.forEach((m) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${m.marcasdes}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="editarMarca(${m.marcascod}, '${m.marcasdes.replace(/'/g, "\'")}')"><i class='fa fa-edit'></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirMarca(${m.marcascod})"><i class='fa fa-trash'></i></button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(console.error);
+}
+
+function editarMarca(id, nome) {
+  const novo = prompt("Nova descrição:", nome);
+  if (!novo) return;
+  fetch(`${BASE_URL}/marcas/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ marcasdes: novo }),
+  })
+    .then((r) => r.json())
+    .then(() => {
+      carregarMarcas();
+    })
+    .catch(() => alert("Erro ao atualizar marca"));
+}
+
+function excluirMarca(id) {
+  if (!confirm("Excluir esta marca?")) return;
+  fetch(`${BASE_URL}/marcas/${id}`, { method: "DELETE" })
+    .then((r) => r.json())
+    .then(() => carregarMarcas())
+    .catch(() => alert("Erro ao excluir marca"));
+}
+
+// ------- GESTÃO MODELOS ---------
+function toggleModelos() {
+  const area = document.getElementById("areaModelos");
+  if (area.style.display === "none" || !area.style.display) {
+    carregarModelos();
+    area.style.display = "block";
+  } else {
+    area.style.display = "none";
+  }
+}
+
+function carregarModelos() {
+  fetch(`${BASE_URL}/modelos`)
+    .then((r) => r.json())
+    .then((dados) => {
+      const tbody = document.getElementById("listaModelos");
+      tbody.innerHTML = "";
+      dados.forEach((m) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${m.moddes}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="editarModelo(${m.modcod}, '${m.moddes.replace(/'/g, "\'")}', ${m.modmarcascod})"><i class='fa fa-edit'></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirModelo(${m.modcod})"><i class='fa fa-trash'></i></button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(console.error);
+}
+
+function editarModelo(id, nome, marca) {
+  const novo = prompt("Nova descrição:", nome);
+  if (!novo) return;
+  fetch(`${BASE_URL}/modelo/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ moddes: novo, modmarcascod: marca }),
+  })
+    .then((r) => r.json())
+    .then(() => {
+      carregarModelos();
+    })
+    .catch(() => alert("Erro ao atualizar modelo"));
+}
+
+function excluirModelo(id) {
+  if (!confirm("Excluir este modelo?")) return;
+  fetch(`${BASE_URL}/modelo/${id}`, { method: "DELETE" })
+    .then((r) => r.json())
+    .then(() => carregarModelos())
+    .catch(() => alert("Erro ao excluir modelo"));
+}
+
+// ------- GESTÃO TIPOS ---------
+function toggleTipos() {
+  const area = document.getElementById("areaTipos");
+  if (area.style.display === "none" || !area.style.display) {
+    carregarTipos();
+    area.style.display = "block";
+  } else {
+    area.style.display = "none";
+  }
+}
+
+function carregarTipos() {
+  fetch(`${BASE_URL}/tipos`)
+    .then((r) => r.json())
+    .then((dados) => {
+      const tbody = document.getElementById("listaTipos");
+      tbody.innerHTML = "";
+      dados.forEach((t) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${t.tipodes}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="editarTipo(${t.tipocod}, '${t.tipodes.replace(/'/g, "\'")}')"><i class='fa fa-edit'></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirTipo(${t.tipocod})"><i class='fa fa-trash'></i></button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(console.error);
+}
+
+function editarTipo(id, nome) {
+  const novo = prompt("Nova descrição:", nome);
+  if (!novo) return;
+  fetch(`${BASE_URL}/tipo/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tipodes: novo }),
+  })
+    .then((r) => r.json())
+    .then(() => carregarTipos())
+    .catch(() => alert("Erro ao atualizar tipo"));
+}
+
+function excluirTipo(id) {
+  if (!confirm("Excluir este tipo?")) return;
+  fetch(`${BASE_URL}/tipo/${id}`, { method: "DELETE" })
+    .then((r) => r.json())
+    .then(() => carregarTipos())
+    .catch(() => alert("Erro ao excluir tipo"));
+}
+
+// ------- GESTÃO PEÇAS ---------
+function togglePecas() {
+  const area = document.getElementById("tabelaArea");
+  if (area.style.display === "none" || !area.style.display) {
+    area.style.display = "block";
+  } else {
+    area.style.display = "none";
+  }
+}
