@@ -224,9 +224,13 @@ function enviarWhatsApp() {
     const nome = item.nome || "---";
     const qtde = item.qt || 0;
     const valor = parseFloat(item.preco) || 0;
+    const marca = item.marca || "";
+    const tipo = item.tipo || "";
     totalValue += valor * qtde;
 
     mensagem += `${marcadorEmoji} Descrição: ${nome}\n`;
+    mensagem += `${marcadorEmoji} Marca: ${marca}\n`;
+    mensagem += `${marcadorEmoji} Tipo: ${tipo}\n`;
     mensagem += `${marcadorEmoji} Quantidade: ${qtde}\n`;
     mensagem += `${dinheiroEmoji} Valor Unit.: R$ ${valor.toFixed(2)}\n\n`;
   });
@@ -342,9 +346,13 @@ function enviarWhatsAppEntrega() {
       const nome = item.nome || "---";
       const qtde = item.qt || 0;
       const valor = parseFloat(item.preco) || 0;
+      const marca = item.marca || "";
+      const tipo = item.tipo || "";
       totalValue += valor * qtde;
 
       mensagem += `${marcadorEmoji} Descrição: ${nome}\n`;
+      mensagem += `${marcadorEmoji} Marca: ${marca}\n`;
+      mensagem += `${marcadorEmoji} Tipo: ${tipo}\n`;
       mensagem += `${marcadorEmoji} Quantidade: ${qtde}\n`;
       mensagem += `${dinheiroEmoji} Valor Unit.: R$ ${valor.toFixed(2)}\n\n`;
     });
