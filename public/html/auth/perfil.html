@@ -13,6 +13,7 @@
             background-color: #f8f9fa;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
         }
@@ -37,7 +38,7 @@
     </style>
 </head>
 <body>
-    <div class="perfil-container">
+    <div class="perfil-container mb-4">
         <h2>Meu Perfil</h2>
         <form id="formPerfil">
             <div class="form-group">
@@ -54,6 +55,51 @@
             </div>
             <button type="submit" class="btn btn-primary">Salvar</button>
         </form>
+    </div>
+
+    <div class="container">
+        <div class="row text-center" id="perfilStats">
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-tags-fill mr-1"></i>Marcas
+                        </h5>
+                        <p class="card-text" id="perfilTotalMarcas">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-car-front-fill mr-1"></i>Modelos
+                        </h5>
+                        <p class="card-text" id="perfilTotalModelos">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-card-checklist mr-1"></i>Tipos
+                        </h5>
+                        <p class="card-text" id="perfilTotalTipos">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-gear-fill mr-1"></i>Peças
+                        </h5>
+                        <p class="card-text" id="perfilTotalPecas">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="/config.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
