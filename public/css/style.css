@@ -152,9 +152,16 @@ body {
 }
 
 @media (max-width: 819px) {
+    .cart-item {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    .cart-item > div {
+        flex: 1 1 50%;
+    }
     .cart-item .item-price,
     .cart-item .item-total {
-        text-align: left;
+        text-align: right;
     }
 }
 .item-total {
