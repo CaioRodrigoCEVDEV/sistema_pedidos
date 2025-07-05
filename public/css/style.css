@@ -150,6 +150,13 @@ body {
 .cart-item .item-total {
     text-align: right;
 }
+
+@media (max-width: 819px) {
+    .cart-item .item-price,
+    .cart-item .item-total {
+        text-align: left;
+    }
+}
 .item-total {
     font-weight: 600;
     color: var(--success-color);
