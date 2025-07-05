@@ -139,6 +139,7 @@ body {
 }
 .cart-item .item-name {
     font-weight: 600;
+    flex-grow: 2; /* ocupa espaço livre antes de qty, preço e total */
 }
 .cart-item .item-qty {
     display: flex;
@@ -163,6 +164,6 @@ body {
     }
     .cart-item .item-price,
     .cart-item .item-total {
-        flex-basis: 120px;
+        flex: 0 0 120px; /* largura fixa para nao comprimir o nome */
     }
 }
