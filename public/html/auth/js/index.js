@@ -2,7 +2,7 @@ const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 
 document.addEventListener("DOMContentLoaded", () => {
-  fetch(`${BASE_URL}/marcas/`)
+  fetch(`${BASE_URL}/marcas/`, { cache: "no-store" })
     .then((res) => res.json())
     .then((dados) => {
       const holder = document.getElementById("marcaTitulo");

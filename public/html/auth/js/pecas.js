@@ -53,7 +53,7 @@ document
   });
 
 // Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
-fetch(`${BASE_URL}/marcas/${marcascod}`)
+fetch(`${BASE_URL}/marcas/${marcascod}`, { cache: "no-store" })
   .then((res) => res.json())
   .then((marcas) => {
     document.getElementById("marcaTitulo").textContent =

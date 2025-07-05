@@ -13,7 +13,7 @@ function formatarMoeda(valor) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  fetch(`${BASE_URL}/marcas/`)
+  fetch(`${BASE_URL}/marcas/`, { cache: "no-store" })
     .then((res) => res.json())
     .then((dados) => {
       const holder = document.getElementById("painelMarca");
@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  fetch(`${BASE_URL}/marcas/`)
+  fetch(`${BASE_URL}/marcas/`, { cache: "no-store" })
     .then((res) => res.json())
     .then((dados) => {
       const holder = document.getElementById("selectPainelMarca");
@@ -400,7 +400,7 @@ document.querySelectorAll(".dropdown-menu").forEach(function (menu) {
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     const [marcas, modelos, tipos, pecas] = await Promise.all([
-      fetch(`${BASE_URL}/marcas`).then((r) => r.json()),
+      fetch(`${BASE_URL}/marcas`, { cache: "no-store" }).then((r) => r.json()),
       fetch(`${BASE_URL}/modelos`).then((r) => r.json()),
       fetch(`${BASE_URL}/tipos`).then((r) => r.json()),
       fetch(`${BASE_URL}/pros`).then((r) => r.json()),
@@ -442,7 +442,7 @@ function toggleMarcas() {
 }
 
 function carregarMarcas() {
-  fetch(`${BASE_URL}/marcas`)
+  fetch(`${BASE_URL}/marcas`, { cache: "no-store" })
     .then((r) => r.json())
     .then((dados) => {
       const tbody = document.getElementById("listaMarcas");

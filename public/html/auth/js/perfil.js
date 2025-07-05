@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const [marcas, modelos, tipos, pecas] = await Promise.all([
-      fetch(`${BASE_URL}/marcas`).then(r => r.json()),
+      fetch(`${BASE_URL}/marcas`, { cache: 'no-store' }).then(r => r.json()),
       fetch(`${BASE_URL}/modelos`).then(r => r.json()),
       fetch(`${BASE_URL}/tipos`).then(r => r.json()),
       fetch(`${BASE_URL}/pros`).then(r => r.json()),
