@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", function () {
         item.innerHTML = `
                       <div class="item-name text-center">${dado.tipodes}</div>
                       <div class="item-qty text-center">
-                        <a href="lista-pecas?id=${dado.tipocod}&marcascod=${dado.promarcascod}&modelo=${dado.promodcod}"><button class="btn btn-outline-success btn-sm">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>
+                        <a href="lista-pecas?id=${dado.tipocod}&marcascod=${dado.promarcascod}&modelo=${dado.promodcod}"><button class="btn btn-success btn-sm btn-add">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>
                       </div>
                         `;
         corpoTabela.appendChild(item);
