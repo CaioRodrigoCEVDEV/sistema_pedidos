@@ -415,15 +415,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+const AREAS_GESTAO = ["areaMarcas", "areaModelos", "areaTipos", "tabelaArea"];
+
+function mostrarArea(id, loadFn) {
+  AREAS_GESTAO.forEach((areaId) => {
+    const el = document.getElementById(areaId);
+    if (el && areaId !== id) {
+      el.style.display = "none";
+    }
+  });
+
+  const alvo = document.getElementById(id);
+  if (!alvo) return;
+
+  if (alvo.style.display === "none" || !alvo.style.display) {
+    if (typeof loadFn === "function") loadFn();
+    alvo.style.display = "block";
+  } else {
+    alvo.style.display = "none";
+  }
+}
+
 // ------- GESTÃO MARCAS ---------
 function toggleMarcas() {
-  const area = document.getElementById("areaMarcas");
-  if (area.style.display === "none" || !area.style.display) {
-    carregarMarcas();
-    area.style.display = "block";
-  } else {
-    area.style.display = "none";
-  }
+  mostrarArea("areaMarcas", carregarMarcas);
 }
 
 function carregarMarcas() {
@@ -471,13 +486,7 @@ function excluirMarca(id) {
 
 // ------- GESTÃO MODELOS ---------
 function toggleModelos() {
-  const area = document.getElementById("areaModelos");
-  if (area.style.display === "none" || !area.style.display) {
-    carregarModelos();
-    area.style.display = "block";
-  } else {
-    area.style.display = "none";
-  }
+  mostrarArea("areaModelos", carregarModelos);
 }
 
 function carregarModelos() {
@@ -525,13 +534,7 @@ function excluirModelo(id) {
 
 // ------- GESTÃO TIPOS ---------
 function toggleTipos() {
-  const area = document.getElementById("areaTipos");
-  if (area.style.display === "none" || !area.style.display) {
-    carregarTipos();
-    area.style.display = "block";
-  } else {
-    area.style.display = "none";
-  }
+  mostrarArea("areaTipos", carregarTipos);
 }
 
 function carregarTipos() {
@@ -577,10 +580,5 @@ function excluirTipo(id) {
 
 // ------- GESTÃO PEÇAS ---------
 function togglePecas() {
-  const area = document.getElementById("tabelaArea");
-  if (area.style.display === "none" || !area.style.display) {
-    area.style.display = "block";
-  } else {
-    area.style.display = "none";
-  }
+  mostrarArea("tabelaArea");
 }

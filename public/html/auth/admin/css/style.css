@@ -101,3 +101,13 @@ body {
     min-width: 220px;
     }
 }
+
+/* Tabelas de gerenciamento */
+.management-area {
+    width: 100%;
+    margin: 1rem auto;
+    overflow-x: auto;
+}
+.management-area table {
+    width: 100%;
+}
