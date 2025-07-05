@@ -11,14 +11,15 @@ document.addEventListener("DOMContentLoaded", function () {
       corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
 
       dados.forEach((dado) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-                      <td class="text-center">${dado.moddes}</td> 
-                      <td class="text-center">
+        const item = document.createElement("div");
+        item.className = "cart-item";
+        item.innerHTML = `
+                      <div class="item-name text-center">${dado.moddes}</div>
+                      <div class="item-qty text-center">
                         <a href="pecas?id=${dado.modcod}&marcascod=${dado.modmarcascod}"><button class="btn btn-outline-success btn-sm">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>
-                      </td>
+                      </div>
                         `;
-        corpoTabela.appendChild(tr);
+        corpoTabela.appendChild(item);
       });
     })
     .catch((erro) => console.error(erro));
@@ -27,10 +28,10 @@ document.addEventListener("DOMContentLoaded", function () {
 // função para pesquisar modelo usando o input com id "pesquisa" usando a table com id "corpoTabela"
 document.getElementById("pesquisa").addEventListener("input", function () {
   const pesquisa = this.value.toLowerCase();
-  const linhas = document.querySelectorAll("#corpoTabela tr");
+  const linhas = document.querySelectorAll("#corpoTabela .cart-item");
 
   linhas.forEach((linha) => {
-    const celula = linha.querySelector("td");
+    const celula = linha.querySelector(".item-name");
     if (celula) {
       const conteudoCelula = celula.textContent.toLowerCase();
       linha.style.display = conteudoCelula.includes(pesquisa) ? "" : "none";

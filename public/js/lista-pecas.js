@@ -19,22 +19,19 @@ document.addEventListener("DOMContentLoaded", function () {
       corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
 
       dados.forEach((dado) => {
-        const tr = document.createElement("tr");
-        tr.dataset.preco = dado.provl;
-        tr.innerHTML = `
-            <td>${dado.prodes} </td>
-            <td>${dado.tipodes}</td>
-            <td>${formatarMoeda(dado.provl)}</td>
-            
-            <td>
-              <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${
-                dado.procod
-              }')">Adicionar</button>
-            </td>
+        const item = document.createElement("div");
+        item.className = "cart-item";
+        item.dataset.preco = dado.provl;
+        item.innerHTML = `
+            <div class="item-name">${dado.prodes} </div>
+            <div class="item-tipo">${dado.tipodes}</div>
+            <div class="item-price">${formatarMoeda(dado.provl)}</div>
+            <div class="item-qty">
+              <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button>
+            </div>
           `;
 
-        // Removido: função duplicada e desnecessária aqui, pois já está definida globalmente abaixo.
-        corpoTabela.appendChild(tr);
+        corpoTabela.appendChild(item);
       });
     })
     .catch((erro) => console.error(erro));
@@ -42,10 +39,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
 document.getElementById("pesquisa").addEventListener("input", function () {
   const pesquisa = this.value.toLowerCase();
-  const linhas = document.querySelectorAll("#corpoTabela tr");
+  const linhas = document.querySelectorAll("#corpoTabela .cart-item");
 
   linhas.forEach((linha) => {
-    const celula = linha.querySelector("td");
+    const celula = linha.querySelector(".item-name");
     if (celula) {
       const conteudoCelula = celula.textContent.toLowerCase();
       linha.style.display = conteudoCelula.includes(pesquisa) ? "" : "none";
@@ -203,10 +200,10 @@ window.adicionarAoCarrinho = function (procod) {
   // Precisamos encontrar a linha da tabela (tr) de uma forma diferente agora que o input se foi.
   // Assumindo que o botão clicado está dentro da célula (td) que está dentro da linha (tr)
   const button = event.target; // Get the button that was clicked
-  const tr = button.closest("tr");
-  const nome = tr.querySelector("td").textContent;
-  const preco = parseFloat(tr.dataset.preco);
-  const tipo = tr.querySelector("td:nth-child(2)").textContent; // Obtém o tipo da segunda coluna
+  const itemDiv = button.closest(".cart-item");
+  const nome = itemDiv.querySelector(".item-name").textContent;
+  const preco = parseFloat(itemDiv.dataset.preco);
+  const tipo = itemDiv.querySelector(".item-tipo").textContent;
   const marca = document.getElementById("marcaTitulo").textContent;
 
   // Recupera o carrinho do localStorage

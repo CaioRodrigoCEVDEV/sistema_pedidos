@@ -12,14 +12,15 @@ document.addEventListener("DOMContentLoaded", function () {
       corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
 
       dados.forEach((dado) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-                      <td class="text-center">${dado.tipodes}</td>
-                      <td class="text-center">
+        const item = document.createElement("div");
+        item.className = "cart-item";
+        item.innerHTML = `
+                      <div class="item-name text-center">${dado.tipodes}</div>
+                      <div class="item-qty text-center">
                         <a href="lista-pecas?id=${dado.tipocod}&marcascod=${dado.promarcascod}&modelo=${dado.promodcod}"><button class="btn btn-outline-success btn-sm">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>
-                      </td>
+                      </div>
                         `;
-        corpoTabela.appendChild(tr);
+        corpoTabela.appendChild(item);
       });
     })
     .catch((erro) => console.error(erro));
