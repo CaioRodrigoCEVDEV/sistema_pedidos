@@ -11,21 +11,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Erro ao carregar dados do usuário', err);
   }
 
-  try {
-    const [marcas, modelos, tipos, pecas] = await Promise.all([
-      fetch(`${BASE_URL}/marcas`).then(r => r.json()),
-      fetch(`${BASE_URL}/modelos`).then(r => r.json()),
-      fetch(`${BASE_URL}/tipos`).then(r => r.json()),
-      fetch(`${BASE_URL}/pros`).then(r => r.json())
-    ]);
-
-    document.getElementById('totalMarcas').textContent = marcas.length;
-    document.getElementById('totalModelos').textContent = modelos.length;
-    document.getElementById('totalTipos').textContent = tipos.length;
-    document.getElementById('totalPecas').textContent = pecas.length;
-  } catch (err) {
-    console.error('Erro ao carregar totais', err);
-  }
 });
 
 document.getElementById('formPerfil').addEventListener('submit', async (e) => {
