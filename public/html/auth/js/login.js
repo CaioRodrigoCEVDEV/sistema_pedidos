@@ -1,12 +1,62 @@
 
+const SECRET = 'jppecas-remember';
+
+async function getCryptoKey() {
+  const enc = new TextEncoder();
+  const keyMaterial = await window.crypto.subtle.importKey(
+    'raw',
+    enc.encode(SECRET),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveKey']
+  );
+  return window.crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: enc.encode(SECRET),
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encrypt(text) {
+  const key = await getCryptoKey();
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const encoded = new TextEncoder().encode(text);
+  const cipher = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+  const result = new Uint8Array(iv.byteLength + cipher.byteLength);
+  result.set(iv);
+  result.set(new Uint8Array(cipher), iv.byteLength);
+  return btoa(String.fromCharCode(...result));
+}
+
+async function decrypt(cipherText) {
+  try {
+    const data = Uint8Array.from(atob(cipherText), c => c.charCodeAt(0));
+    const iv = data.slice(0, 12);
+    const cipher = data.slice(12);
+    const key = await getCryptoKey();
+    const plain = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher);
+    return new TextDecoder().decode(plain);
+  } catch (_) {
+    return '';
+  }
+}
+
 // Preenche os campos caso as credenciais estejam salvas
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   if (localStorage.getItem('rememberLogin') === 'true') {
     const savedEmail = localStorage.getItem('savedEmail');
     const savedPassword = localStorage.getItem('savedPassword');
     if (savedEmail && savedPassword) {
+      const decryptedPass = await decrypt(savedPassword);
       document.getElementById('email').value = savedEmail;
-      document.getElementById('password').value = savedPassword;
+      document.getElementById('password').value = decryptedPass;
       document.getElementById('remember').checked = true;
     }
   }
@@ -32,9 +82,10 @@ document.getElementById('formLogin').addEventListener('submit', async (e) => {
 
     if (response.ok) {
       if (remember) {
+        const encrypted = await encrypt(ususenha);
         localStorage.setItem('rememberLogin', 'true');
         localStorage.setItem('savedEmail', usuemail);
-        localStorage.setItem('savedPassword', ususenha);
+        localStorage.setItem('savedPassword', encrypted);
       } else {
         localStorage.removeItem('rememberLogin');
         localStorage.removeItem('savedEmail');
