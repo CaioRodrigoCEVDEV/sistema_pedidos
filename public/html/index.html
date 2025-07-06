@@ -43,10 +43,7 @@
     </header>
 
     <main>
-        <form class="form-inline my-2 my-lg-0 mb-2">
-            <label for="">Pesquisa Geral</label> 
-            <input class="form-control m-2 mr-sm-2 " type="search" placeholder="Pesquisar" aria-label="Pesquisar" id="pesquisa">
-        </form>
+        
         <div id="cardsArea">
             <div class="alert alert-dismissible fade show shadow p-3 bg-white rounded" id="tutorialAlert"
                 style="max-width: 800px; margin: auto; display: none;" role="alert">
@@ -65,7 +62,12 @@
                     <h3> Selecione a marca <i class="bi bi-caret-down-fill"></i></h3>
                 </div>
 
-                <div class="container mt-3" id="marcaTitulo"><!--Conteudo inserido via js--></div>
+                <div class="container mt-3" id="marcaTitulo">
+                    <form class="form-inline my-2 my-lg-0 mb-2">
+            <label for="">Pesquisa Geral</label> 
+            <input class="form-control m-2 mr-sm-2 " type="search" placeholder="Pesquisar" aria-label="Pesquisar" id="pesquisa">
+        </form>
+                    <!--Conteudo inserido via js--></div>
             </div>
         </div>
         <div class="container-float" id="tabelaArea" style="display: none;">
