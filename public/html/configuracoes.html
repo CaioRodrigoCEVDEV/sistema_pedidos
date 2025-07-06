@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Perfil - JP Peças</title>
+    <title>Configurações - JP Peças</title>
     <link rel="stylesheet" href="../css/style-main.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
@@ -19,30 +19,35 @@
         header {
             width: 100%;
         }
-        .perfil-container {
-            max-width: 400px;
+        .settings-container {
+            max-width: 500px;
             width: 100%;
             padding: 20px;
             background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        .perfil-container h2 {
+        .settings-container h2 {
             text-align: center;
             margin-bottom: 20px;
         }
-        .perfil-container .form-group {
+        .settings-container .form-group {
             margin-bottom: 15px;
         }
-        .perfil-container .btn {
+        .settings-container .btn {
             width: 100%;
+        }
+        img#logoAtual {
+            max-height: 120px;
+            display: block;
+            margin: 0 auto 15px auto;
         }
     </style>
 </head>
 <body>
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm bg-white rounded">
-            <a class="navbar-brand" href="index"><img src="../../images/logo/engrenagem-jp-pequeno.png" width="30" height="30" alt=""> JP Peças</a>
+            <a class="navbar-brand" href="index"><img src="../images/logo/engrenagem-jp-pequeno.png" width="30" height="30" alt=""> JP Peças</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -69,31 +74,32 @@
             </div>
         </nav>
     </header>
-    <div class="perfil-container mb-4">
-        <h2>Meu Perfil</h2>
-        <form id="formPerfil">
-            <div class="form-group">
-                <label for="nome">Nome</label>
-                <input type="text" class="form-control" id="nome" required>
-            </div>
-            <div class="form-group">
-                <label for="email">E-mail</label>
-                <input type="email" class="form-control" id="email" disabled>
-            </div>
-            <div class="form-group">
-                <label for="senha">Senha</label>
-                <input type="password" class="form-control" id="senha" placeholder="Nova senha" required>
-            </div>
-            <div class="form-group">
-                <label for="confirmarSenha">Repetir Senha</label>
-                <input type="password" class="form-control" id="confirmarSenha" placeholder="Repita a nova senha" required>
-            </div>
+    <div class="settings-container mt-4 mb-4">
+        <h2>Configurações</h2>
+        <form id="formConfiguracoes">
+            <section class="mb-4">
+                <h5>Logo da Empresa</h5>
+                <img src="../images/logo/engrenagem-jp-pequeno.png" alt="Logo atual" id="logoAtual">
+                <div class="form-group">
+                    <label for="logoUpload">Enviar nova logo</label>
+                    <input type="file" class="form-control-file" id="logoUpload">
+                </div>
+            </section>
+            <section class="mb-4">
+                <h5>Números de WhatsApp</h5>
+                <div class="form-group">
+                    <label for="whats1">Número 1</label>
+                    <input type="text" class="form-control" id="whats1" placeholder="(00) 00000-0000">
+                </div>
+                <div class="form-group">
+                    <label for="whats2">Número 2</label>
+                    <input type="text" class="form-control" id="whats2" placeholder="(00) 00000-0000">
+                </div>
+            </section>
             <button type="submit" class="btn btn-primary">Salvar</button>
         </form>
     </div>
-
     <script src="/config.js"></script>
-    <script src="/html/auth/js/perfil.js"></script>
     <script src="/html/auth/js/logout.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
