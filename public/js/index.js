@@ -451,6 +451,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  // Hide the alert initially and display it after a brief delay
+  alertEl.style.display = "none";
+  setTimeout(() => {
+    alertEl.style.display = "block";
+  }, 1500);
+
   if (closeBtn) {
     closeBtn.addEventListener("click", () => {
       localStorage.setItem("tutorialAlertClosed", "true");
