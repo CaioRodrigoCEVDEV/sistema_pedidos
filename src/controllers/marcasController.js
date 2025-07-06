@@ -4,7 +4,7 @@ exports.listarMarcas = async (req, res) => {
     
     try {
         const result = await pool.query(
-            'select * from marcas'
+            'select * from marcas order by marcascod asc'
         );
         res.status(200).json(result.rows);
     } catch (error) {
