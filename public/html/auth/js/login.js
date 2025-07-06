@@ -1,8 +1,22 @@
 
+// Preenche os campos caso as credenciais estejam salvas
+window.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('rememberLogin') === 'true') {
+    const savedEmail = localStorage.getItem('savedEmail');
+    const savedPassword = localStorage.getItem('savedPassword');
+    if (savedEmail && savedPassword) {
+      document.getElementById('email').value = savedEmail;
+      document.getElementById('password').value = savedPassword;
+      document.getElementById('remember').checked = true;
+    }
+  }
+});
+
 document.getElementById('formLogin').addEventListener('submit', async (e) => {
   e.preventDefault();
   const usuemail = document.getElementById('email').value;
   const ususenha = document.getElementById('password').value;
+  const remember = document.getElementById('remember').checked;
 
   try {
     const response = await fetch(`${BASE_URL}/auth/login`, {
@@ -17,6 +31,15 @@ document.getElementById('formLogin').addEventListener('submit', async (e) => {
     const data = await response.json();
 
     if (response.ok) {
+      if (remember) {
+        localStorage.setItem('rememberLogin', 'true');
+        localStorage.setItem('savedEmail', usuemail);
+        localStorage.setItem('savedPassword', ususenha);
+      } else {
+        localStorage.removeItem('rememberLogin');
+        localStorage.removeItem('savedEmail');
+        localStorage.removeItem('savedPassword');
+      }
       window.location.href = `${BASE_URL}/painel`;
     } else {
         alertPersonalizado(data.mensagem || 'Email ou senha incorretos!', 2000);
