@@ -2,6 +2,24 @@ main {
     margin: 0.5em;
 }
 
+body {
+    background-color: #f8f9fa;
+}
+
+.stat-card {
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.stat-card i {
+    font-size: 1.5rem;
+}
+
+.stat-card p {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
 .teste {
     background-color: aqua;
 }

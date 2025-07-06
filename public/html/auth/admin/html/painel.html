@@ -16,13 +16,13 @@
     <link rel="stylesheet" href="css/style-main.css" />
     <link
       rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
-      integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      integrity="sha384-GOaE1XrXwZq8X5p1+t0NenE2x0RvrRZtGJPD7W82dManIeZDV4SSQSSHqKPaWY5D"
       crossorigin="anonymous"
     />
     <link
       rel="stylesheet"
-      href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
     />
     <link
       rel="stylesheet"
@@ -34,112 +34,89 @@
 
   <body>
     <header>
-      <nav
-        class="navbar navbar-expand-lg navbar-light bg-light shadow-sm bg-white rounded"
-      >
-        <a class="navbar-brand" href="index"
-          ><img
-            src="../images/logo/engrenagem-jp-pequeno.png"
-            width="30"
-            height="30"
-            alt=""
-          />
-          JP Peças</a
-        >
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-toggle="collapse"
-          data-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-expanded="false"
-          aria-label="Alterna navegação"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav">
-            <li class="nav-item active">
-              <a class="nav-link" href="index"
-                >Inicio <span class="sr-only">(Página atual)</span></a
-              >
-            </li>
-
-            <li class="nav-item">
-              <a class="nav-link" href="painel">Acesso</a>
-            </li>
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="navbarDropdown"
-                role="button"
-                data-toggle="dropdown"
-                aria-haspopup="true"
-                aria-expanded="false"
-              >
-                Conta
-              </a>
-              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                <a class="dropdown-item" href="perfil">Perfil</a>
-                <a class="dropdown-item" href="configuracoes">Configurações</a>
-                <div class="dropdown-divider"></div>
-                <button class="dropdown-item" id="buttonSair">Sair</button>
-              </div>
-            </li>
-          </ul>
+      <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm fixed-top">
+        <div class="container">
+          <a class="navbar-brand d-flex align-items-center" href="index">
+            <img src="../images/logo/engrenagem-jp-pequeno.png" width="30" height="30" alt="" class="me-2" />
+            JP Peças
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link active" href="index">Inicio</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="painel">Acesso</a>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Conta
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                  <li><a class="dropdown-item" href="perfil">Perfil</a></li>
+                  <li><a class="dropdown-item" href="configuracoes">Configurações</a></li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li><button class="dropdown-item" id="buttonSair">Sair</button></li>
+                </ul>
+              </li>
+            </ul>
+          </div>
         </div>
       </nav>
     </header>
 
-    <main>
-      <form class="form-inline my-2 my-lg-0 mb-2">
-        <label for="">Pesquisa Geral</label>
-        <input
-          class="form-control m-2 mr-sm-2"
-          type="search"
-          placeholder="Pesquisar"
-          aria-label="Pesquisar"
-          id="pesquisa"
-        />
-      </form>
-      <div class="container mt-4">
-        <div class="row text-center" id="statsCards">
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
+      <main class="pt-5">
+        <div class="container mt-4">
+          <div class="row justify-content-center mb-4">
+            <div class="col-12 col-md-6">
+              <input
+                class="form-control"
+                type="search"
+                placeholder="Pesquisa geral"
+                aria-label="Pesquisar"
+                id="pesquisa"
+              />
+            </div>
+          </div>
+          <div class="row text-center row-cols-2 row-cols-md-4 g-3" id="statsCards">
+          <div class="col">
+            <div class="card shadow-sm stat-card">
               <div class="card-body">
                 <h5 class="card-title">
-                  <i class="bi bi-tags-fill mr-1"></i>Marcas
+                  <i class="bi bi-tags-fill me-2"></i>Marcas
                 </h5>
                 <p class="card-text" id="totalMarcas">0</p>
               </div>
             </div>
           </div>
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
+          <div class="col">
+            <div class="card shadow-sm stat-card">
               <div class="card-body">
                 <h5 class="card-title">
-                  <i class="bi bi-car-front-fill mr-1"></i>Modelos
+                  <i class="bi bi-car-front-fill me-2"></i>Modelos
                 </h5>
                 <p class="card-text" id="totalModelos">0</p>
               </div>
             </div>
           </div>
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
+          <div class="col">
+            <div class="card shadow-sm stat-card">
               <div class="card-body">
                 <h5 class="card-title">
-                  <i class="bi bi-card-checklist mr-1"></i>Tipos
+                  <i class="bi bi-card-checklist me-2"></i>Tipos
                 </h5>
                 <p class="card-text" id="totalTipos">0</p>
               </div>
             </div>
           </div>
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
+          <div class="col">
+            <div class="card shadow-sm stat-card">
               <div class="card-body">
                 <h5 class="card-title">
-                  <i class="bi bi-gear-fill mr-1"></i>Peças
+                  <i class="bi bi-gear-fill me-2"></i>Peças
                 </h5>
                 <p class="card-text" id="totalPecas">0</p>
               </div>
@@ -161,11 +138,10 @@
                     class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
                   >
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary w-100 dropdown-toggle"
                       type="button"
                       id="dropdownMarca"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
+                      data-bs-toggle="dropdown"
                       aria-expanded="false"
                     >
                       Cadastrar Marca <i class="bi bi-plus-square"></i>
@@ -187,13 +163,13 @@
                             required
                           />
                         </div>
-                        <button type="submit" class="btn btn-success btn-block">
+                        <button type="submit" class="btn btn-success w-100">
                           Cadastrar
                         </button>
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary w-100 mt-2"
                       type="button"
                       onclick="toggleMarcas()"
                     >
@@ -205,11 +181,10 @@
                     class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
                   >
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary w-100 dropdown-toggle"
                       type="button"
                       id="dropdownModelo"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
+                      data-bs-toggle="dropdown"
                       aria-expanded="false"
                     >
                       Cadastrar Modelo <i class="bi bi-plus-square"></i>
@@ -243,13 +218,13 @@
                             </select>
                           </div>
                         </div>
-                        <button type="submit" class="btn btn-success btn-block">
+                        <button type="submit" class="btn btn-success w-100">
                           Cadastrar
                         </button>
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary w-100 mt-2"
                       type="button"
                       onclick="toggleModelos()"
                     >
@@ -261,11 +236,10 @@
                     class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
                   >
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary w-100 dropdown-toggle"
                       type="button"
                       id="dropdownTipo"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
+                      data-bs-toggle="dropdown"
                       aria-expanded="false"
                     >
                       Cadastrar Tipo de Peça <i class="bi bi-plus-square"></i>
@@ -286,13 +260,13 @@
                             required
                           />
                         </div>
-                        <button type="submit" class="btn btn-success btn-block">
+                        <button type="submit" class="btn btn-success w-100">
                           Cadastrar
                         </button>
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary w-100 mt-2"
                       type="button"
                       onclick="toggleTipos()"
                     >
@@ -304,11 +278,10 @@
                     class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
                   >
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary w-100 dropdown-toggle"
                       type="button"
                       id="dropdownPeca"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
+                      data-bs-toggle="dropdown"
                       aria-expanded="false"
                     >
                       Cadastrar Peça <i class="bi bi-plus-square"></i>
@@ -379,13 +352,13 @@
                             </select>
                           </div>
                         </div>
-                        <button type="submit" class="btn btn-success btn-block">
+                        <button type="submit" class="btn btn-success w-100">
                           Cadastrar
                         </button>
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary w-100 mt-2"
                       type="button"
                       onclick="togglePecas()"
                     >
@@ -451,23 +424,13 @@
       </div>
     </main>
 
-    <script src="/config.js"></script>
-    <script src="html/auth/js/painel.js"></script>
-    <script src="html/auth/js/logout.js"></script>
-    <script
-      src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
-      integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
-      integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
-      crossorigin="anonymous"
-    ></script>
+      <script src="/config.js"></script>
+      <script src="html/auth/js/painel.js"></script>
+      <script src="html/auth/js/logout.js"></script>
+      <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-xjgjG9wcOcRvCNr4C0uGAaHo9dZYkTfLZNVVRFlE0YyqS/fWznuaCG2l9VmOAXoJ"
+        crossorigin="anonymous"
+      ></script>
   </body>
 </html>
