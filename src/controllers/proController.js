@@ -18,7 +18,7 @@ exports.listarProduto = async (req, res) => {
 
 exports.listarProdutos = async (req, res) => {
   try {
-    const result = await pool.query("select procod, prodes, provl from pro order by procod asc");
+    const result = await pool.query("select procod, prodes, provl from pro order by procod desc");
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
