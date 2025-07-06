@@ -439,3 +439,28 @@ window.removerItemCarrinho = function (idx) {
 window.addEventListener("pageshow", function (event) {
   atualizarIconeCarrinho();
 });
+
+// Controle de exibição do alerta de tutorial na página inicial
+document.addEventListener("DOMContentLoaded", () => {
+  const alertEl = document.getElementById("tutorialAlert");
+  const closeBtn = document.getElementById("tutorialAlertClose");
+  if (!alertEl) return;
+
+  if (localStorage.getItem("tutorialAlertClosed") === "true") {
+    alertEl.remove();
+    return;
+  }
+
+  // Hide the alert initially and display it after a brief delay with animation
+  alertEl.style.display = "none";
+  setTimeout(() => {
+    alertEl.style.display = "block";
+    alertEl.classList.add("slide-down");
+  }, 1500);
+
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      localStorage.setItem("tutorialAlertClosed", "true");
+    });
+  }
+});
