@@ -62,7 +62,9 @@ function renderCart() {
                 <span class="mx-2">${qtde}</span>
                 <button class="btn btn-sm btn-outline-secondary" onclick="incrementQuantity('${itemId}')">+</button>
             </div>
-            <div class="item-price">Valor Unitário: ${formatarMoeda(valor)}</div>
+            <div class="item-price">Valor Unitário: ${formatarMoeda(
+              valor
+            )}</div>
             <div class="item-total">SubTotal: ${formatarMoeda(itemTotal)}</div>
         `;
     corpoTabela.appendChild(tr);
@@ -240,8 +242,9 @@ function enviarWhatsApp() {
     mensagem += `${indent}${marcaEmoji} Marca: ${marca}\n`;
     mensagem += `${indent}${tipoEmoji} Tipo: ${tipo}\n`;
     mensagem += `${indent}${quantidadeEmoji} Quantidade: ${qtde}\n`;
-    mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(2)}\n`;
-    mensagem += `${indent}${dinheiroEmoji} Subtotal: R$ ${(valor * qtde).toFixed(2)}\n\n`;
+    mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(
+      2
+    )}\n`;
   });
 
   if (observacoes) {
@@ -249,11 +252,13 @@ function enviarWhatsApp() {
   }
 
   mensagem += `${listaEmoji} Resumo do Pedido:\n`;
-  mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
+  mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(
+    2
+  )}\n`;
   mensagem += `${indent}${lojaEmoji} Retirada: No balcão\n\n`;
   mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
-  const whatsappUrl = `https://api.whatsapp.com/send?phone=5561993737662&text=${encodeURIComponent(
+  const whatsappUrl = `https://api.whatsapp.com/send?phone=5561991494321&text=${encodeURIComponent(
     mensagem
   )}`;
   window.open(whatsappUrl, "_blank");
@@ -277,129 +282,60 @@ function enviarWhatsApp() {
 // quando clicar lá no botão de entrega, abrir um popup com nome completo e endereço
 function enviarWhatsAppEntrega() {
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  const observacoes = document.getElementById("observacoes").value.trim();
   if (cart.length === 0) {
     alert("Seu carrinho está vazio!");
     return;
   }
 
-  // Cria o overlay do popup
-  const overlay = document.createElement("div");
-  overlay.style.position = "fixed";
-  overlay.style.top = 0;
-  overlay.style.left = 0;
-  overlay.style.width = "100vw";
-  overlay.style.height = "100vh";
-  overlay.style.background = "rgba(0,0,0,0.35)";
-  overlay.style.display = "flex";
-  overlay.style.alignItems = "center";
-  overlay.style.justifyContent = "center";
-  overlay.style.zIndex = 9999;
+  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de Itens:\n\n`;
+  let totalValue = 0;
 
-  // Cria o popup
-  const popup = document.createElement("div");
-  popup.style.background = "#fff";
-  popup.style.padding = "32px 28px 24px 28px";
-  popup.style.borderRadius = "16px";
-  popup.style.boxShadow = "0 8px 32px rgba(0,0,0,0.18)";
-  popup.style.minWidth = "340px";
-  popup.style.maxWidth = "90vw";
-  popup.style.fontFamily = "Segoe UI, Arial, sans-serif";
-  popup.innerHTML = `
-        <h2 style="margin-top:0;margin-bottom:18px;font-size:2rem;font-weight:700;color:#222;text-align:center;">Entrega</h2>
-        <div style="margin-bottom:16px;">
-            <label style="font-size:1rem;color:#444;">Nome completo:</label>
-            <input type="text" id="popupNomeCompleto" style="width:100%;padding:10px 12px;margin-top:4px;margin-bottom:8px;border:1.5px solid #bbb;border-radius:6px;font-size:1rem;outline:none;transition:border-color 0.2s;" autofocus>
-        </div>
-        <div style="margin-bottom:20px;">
-            <label style="font-size:1rem;color:#444;">Endereço:</label>
-            <input type="text" id="popupEndereco" style="width:100%;padding:10px 12px;margin-top:4px;margin-bottom:8px;border:1.5px solid #bbb;border-radius:6px;font-size:1rem;outline:none;transition:border-color 0.2s;">
-        </div>
-        <div style="display:flex;gap:16px;justify-content:center;">
-            <button id="popupEnviarBtn" style="padding:10px 28px;background:#198754;color:#fff;border:none;border-radius:6px;font-size:1rem;font-weight:600;cursor:pointer;transition:background 0.2s;">Enviar</button>
-            <button id="popupCancelarBtn" style="padding:10px 28px;background:#eee;color:#444;border:none;border-radius:6px;font-size:1rem;font-weight:600;cursor:pointer;transition:background 0.2s;">Cancelar</button>
-        </div>
-    `;
+  cart.forEach((item) => {
+    const nome = item.nome || "---";
+    const qtde = item.qt || 0;
+    const valor = parseFloat(item.preco) || 0;
+    const marca = item.marca || "";
+    const tipo = item.tipo || "";
+    totalValue += valor * qtde;
 
-  // Efeitos de foco nos inputs
-  popup.querySelectorAll("input").forEach((input) => {
-    input.addEventListener("focus", function () {
-      this.style.borderColor = "#198754";
-    });
-    input.addEventListener("blur", function () {
-      this.style.borderColor = "#bbb";
-    });
+    mensagem += `${descricaoEmoji} Descrição: ${nome}\n`;
+    mensagem += `${indent}${marcaEmoji} Marca: ${marca}\n`;
+    mensagem += `${indent}${tipoEmoji} Tipo: ${tipo}\n`;
+    mensagem += `${indent}${quantidadeEmoji} Quantidade: ${qtde}\n`;
+    mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(
+      2
+    )}\n`;
   });
 
-  overlay.appendChild(popup);
-  document.body.appendChild(overlay);
+  if (observacoes) {
+    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
+  }
 
-  document.getElementById("popupCancelarBtn").onclick = function () {
-    document.body.removeChild(overlay);
-  };
+  mensagem += `${listaEmoji} Resumo do Pedido:\n`;
+  mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(
+    2
+  )}\n`;
+  mensagem += `${indent}${caminhaoEmoji} Entrega\n\n`;
+  mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
-  document.getElementById("popupEnviarBtn").onclick = function () {
-    const nomeCompleto = document
-      .getElementById("popupNomeCompleto")
-      .value.trim();
-    const endereco = document.getElementById("popupEndereco").value.trim();
-    const observacoes = document.getElementById("observacoes").value.trim();
+  const whatsappUrl = `https://api.whatsapp.com/send?phone=5561991494321&text=${encodeURIComponent(
+    mensagem
+  )}`;
+  window.open(whatsappUrl, "_blank");
 
-    if (!nomeCompleto || !endereco) {
-      alert("Nome completo e endereço são obrigatórios.");
-      return;
-    }
+  /// Limpa o carrinho no localStorage e na tela
+  localStorage.setItem("cart", JSON.stringify([]));
+  renderCart(); // Isso vai limpar a tabela e zerar o total
 
-    let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de Itens:\n\n`;
-    let totalValue = 0;
+  // Remove o parâmetro cart da URL
+  const url = new URL(window.location);
+  url.searchParams.delete("cart");
+  window.history.replaceState({}, document.title, url.pathname + url.search);
 
-    cart.forEach((item) => {
-      const nome = item.nome || "---";
-      const qtde = item.qt || 0;
-      const valor = parseFloat(item.preco) || 0;
-      const marca = item.marca || "";
-      const tipo = item.tipo || "";
-      totalValue += valor * qtde;
-
-      mensagem += `${descricaoEmoji} Descrição: ${nome}\n`;
-      mensagem += `${indent}${marcaEmoji} Marca: ${marca}\n`;
-      mensagem += `${indent}${tipoEmoji} Tipo: ${tipo}\n`;
-      mensagem += `${indent}${quantidadeEmoji} Quantidade: ${qtde}\n`;
-      mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(2)}\n`;
-      mensagem += `${indent}${dinheiroEmoji} Subtotal: R$ ${(valor * qtde).toFixed(2)}\n\n`;
-    });
-
-    if (observacoes) {
-      mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
-    }
-
-    mensagem += `${listaEmoji} Resumo do Pedido:\n`;
-    mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
-    mensagem += `${indent}${pessoaEmoji} Nome Completo: ${nomeCompleto}\n`;
-    mensagem += `${indent}${marcadorEmoji} Endereço: ${endereco}\n`;
-    mensagem += `${indent}${caminhaoEmoji} Entrega\n\n`;
-    mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
-
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=5561993737662&text=${encodeURIComponent(
-      mensagem
-    )}`;
-    window.open(whatsappUrl, "_blank");
-
-    // Limpa o carrinho no localStorage e na tela
-    localStorage.setItem("cart", JSON.stringify([]));
-    renderCart(); // Limpa a tabela e zera o total
-
-    // Remove o parâmetro cart da URL
-    const url = new URL(window.location);
-    url.searchParams.delete("cart");
-    window.history.replaceState({}, document.title, url.pathname + url.search);
-
-    // Remove popup
-    document.body.removeChild(overlay);
-
-    // Redireciona para o index após um pequeno delay
-    setTimeout(() => {
-      window.location.href = "index";
-    }, 500);
-    // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
-  };
+  // Redireciona para o index após um pequeno delay
+  setTimeout(() => {
+    window.location.href = "index";
+  }, 500);
+  // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
 }

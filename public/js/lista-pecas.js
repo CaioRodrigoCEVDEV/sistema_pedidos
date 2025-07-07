@@ -25,7 +25,11 @@ document.addEventListener("DOMContentLoaded", function () {
         item.innerHTML = `
             <div class="item-name">${dado.prodes} </div>
             <div class="item-tipo">${dado.tipodes}</div>
-            <div class="item-price">${formatarMoeda(dado.provl)} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button></div>
+            <div class="item-price">${formatarMoeda(
+              dado.provl
+            )} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
+          dado.procod
+        }')">Adicionar</button></div>
           `;
 
         corpoTabela.appendChild(item);
@@ -191,7 +195,6 @@ document.getElementById("openCartModal").addEventListener("click", function () {
 // Modifique a função adicionarAoCarrinho para salvar o preço no carrinho
 window.adicionarAoCarrinho = function (procod) {
   const qtde = 1; // Default quantity to 1
-  
 
   // Busca os dados da linha correspondente
   // Precisamos encontrar a linha da tabela (tr) de uma forma diferente agora que o input se foi.
@@ -211,7 +214,7 @@ window.adicionarAoCarrinho = function (procod) {
   if (idx > -1) {
     cart[idx].qt += qtde;
   } else {
-    cart.push({ id: procod, nome,tipo:tipo,marca:marca, qt: qtde, preco });
+    cart.push({ id: procod, nome, tipo: tipo, marca: marca, qt: qtde, preco });
   }
 
   // Salva o carrinho atualizado
