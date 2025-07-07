@@ -591,5 +591,50 @@ function excluirTipo(id) {
 
 // ------- GESTÃO PEÇAS ---------
 function togglePecas() {
-  mostrarArea("tabelaArea");
+  mostrarArea("tabelaArea",carregarPecas);
 }
+
+
+function carregarPecas() {
+  fetch(`${BASE_URL}/pros`)
+    .then((r) => r.json())
+    .then((dados) => {
+      const tbody = document.getElementById("corpoTabela");
+      tbody.innerHTML = "";
+      dados.forEach((t) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${t.prodes}</td>
+          <td>${t.provl}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="editarPecas(${t.procod}, '${t.prodes.replace(/'/g, "\'")}',${t.provl})"><i class='fa fa-edit'></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirPro(${t.procod})"><i class='fa fa-trash'></i></button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(console.error);
+}
+
+function editarPecas(id, nome,valor) {
+  const novo = prompt("Nova descrição:", nome);
+  const novovalor = prompt("Nova descrição:", valor);
+  if (!novo) return;
+  fetch(`${BASE_URL}/pro/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prodes: novo, provl: novovalor }),
+  })
+    .then((r) => r.json())
+    .then(() => carregarTipos())
+    .catch(() => alert("Erro ao atualizar prodtuto"));
+}
+
+function excluirPro(id) {
+  if (!confirm("Excluir este tipo?")) return;
+  fetch(`${BASE_URL}/pro/${id}`, { method: "DELETE" })
+    .then((r) => r.json())
+    .then(() => carregarTipos())
+    .catch(() => alert("Erro ao excluir produto"));
+}
+

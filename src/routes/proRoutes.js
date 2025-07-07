@@ -4,6 +4,7 @@ const proController = require("../controllers/proController");
 //const autenticarToken = require('../src/middleware/authMiddleware');  // desatvado por enquanto
 
 router.get("/pro/:id", proController.listarProduto);
+router.put("/pro/:id", proController.editarProduto);
 router.get("/pro/painel/:id", proController.listarProdutosPainelId);
 router.get("/pros", proController.listarProdutos);
 router.post("/pro", proController.inserirProduto);
