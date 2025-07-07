@@ -9,7 +9,7 @@ Sistema web para pedidos simples com login e senha para administrador, onde o us
 |--------------|----------------|-------------------------------------------|
 | HTML5        | Node.js        | **Servidor & Roteamento:**               |
 | CSS3         | Express        | • express                                 |
-| JavaScript   | PostgreSQL     |                                           |
+| JavaScript   | PostgreSQL     | • multer                                |
 |              |                | **Banco de Dados:**                      |
 |              |                | • pg                                      |
 |              |                | **Autenticação & Sessões:**             |
@@ -34,7 +34,7 @@ git clone https://github.com/CaioRodrigoCEVDEV/sistema_pedidos.git
 
 ```bash
 npm init -y
-npm install express pg bcryptjs jsonwebtoken body-parser dotenv cookie-parser morgan
+npm install express pg bcryptjs jsonwebtoken body-parser dotenv cookie-parser morgan multer
 ```
 ### 3. Crie um arquivo .env na raiz com o seguinte conteúdo:
 

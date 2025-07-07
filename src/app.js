@@ -4,25 +4,24 @@ const express = require("express");
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
-var path = require("path");
+const multer = require("multer");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.static("../public/"));
+// Middleware para servir arquivos estáticos (inclui uploads)
+app.use(express.static(path.join(__dirname, "../public")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // <-- pasta onde salva imagens
 
 // Middlewares
 const autenticarToken = require("./middlewares/middlewares");
-const { error } = require("console");
-
 app.set("views", path.join(__dirname, "views"));
 app.use(morgan("dev"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-
-// Serve arquivos estáticos da pasta 'public' fora da src
-app.use(express.static(path.join(__dirname, "../public/")));
 
 // Rotas
 const mainRoutes = require("./routes");
@@ -43,10 +42,10 @@ app.use(proRoutes);
 const tipoRoutes = require("./routes/tipoRoutes");
 app.use(tipoRoutes);
 
+// Rotas de páginas
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/login.html"));
 });
-
 app.get("/index", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/index.html"));
 });
@@ -69,29 +68,19 @@ app.get("/configuracoes", autenticarToken, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/configuracoes.html"));
 });
 app.get("/painel", autenticarToken,(req, res) => {
-  res.sendFile(
-    path.join(__dirname, "../public/html/auth/admin/html/painel.html")
-  );
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel.html"));
 });
 app.get("/dashboard",autenticarToken, (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "../public/html/auth/admin/html/index.html")
-  );
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/index.html"));
 });
 app.get("/dashboard/modelo",autenticarToken, (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "../public/html/auth/admin/html/modelo.html")
-  );
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/modelo.html"));
 });
 app.get("/dashboard/modelo/pecas",autenticarToken, (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "../public/html/auth/admin/html/pecas.html")
-  );
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/pecas.html"));
 });
 app.get("/dashboard/modelo/pecas/lista",autenticarToken, (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "../public/html/auth/admin/html/lista-pecas.html")
-  );
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/lista-pecas.html"));
 });
 
 app.get("/config.js", (req, res) => {
@@ -110,6 +99,21 @@ app.get('/auth/sair', (req, res) => {
   }
 });
 
+//  Rota para upload de logo
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => cb(null, "logo.jpg"), 
+});
+const upload = multer({ storage });
+
+app.post("/upload-logo", autenticarToken, upload.single("logo"), (req, res) => {
+  res.redirect("/configuracoes"); 
+});
 
 // Inicia o servidor
 app.listen(PORT, () => {
