@@ -626,7 +626,7 @@ function editarPecas(id, nome,valor) {
     body: JSON.stringify({ prodes: novo, provl: novovalor }),
   })
     .then((r) => r.json())
-    .then(() => carregarTipos())
+    .then(() => carregarPecas())
     .catch(() => alert("Erro ao atualizar prodtuto"));
 }
 
@@ -634,7 +634,7 @@ function excluirPro(id) {
   if (!confirm("Excluir este tipo?")) return;
   fetch(`${BASE_URL}/pro/${id}`, { method: "DELETE" })
     .then((r) => r.json())
-    .then(() => carregarTipos())
+    .then(() => carregarPecas())
     .catch(() => alert("Erro ao excluir produto"));
 }
 
