@@ -56,6 +56,7 @@ function renderCart() {
     tr.innerHTML = `
             <div class="item-name">${nome}</div>
             <div class="item-tipo"> ${marcadorEmoji} Tipo: ${tipo}</div>
+            <div class="item-tipo"> ${marcadorEmoji} Cor: Colocar o campor do banco de dados da cor aqui</div>
             <div class="item-tipo">${marcadorEmoji} Marca: ${marca}</div>
             <div class="item-qty">
                 <button class="btn btn-sm btn-outline-secondary" onclick="decrementQuantity('${itemId}')">-</button>
@@ -239,6 +240,7 @@ function enviarWhatsApp() {
     mensagem += `${descricaoEmoji} Descrição: ${nome}\n`;
     mensagem += `${indent}${marcaEmoji} Marca: ${marca}\n`;
     mensagem += `${indent}${tipoEmoji} Tipo: ${tipo}\n`;
+    mensagem += `Cor: Cor aqui\n`;
     mensagem += `${indent}${quantidadeEmoji} Quantidade: ${qtde}\n`;
     mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(2)}\n`;
     mensagem += `${indent}${dinheiroEmoji} Subtotal: R$ ${(valor * qtde).toFixed(2)}\n\n`;
