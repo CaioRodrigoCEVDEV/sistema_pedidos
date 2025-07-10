@@ -25,7 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
               <button class="btn btn-md btn-outline-dark w-100">${dado.marcasdes}</button>
             </a>
           </div>`;
-
       });
       html += "</div>";
 
@@ -238,16 +237,25 @@ inputPesquisa.addEventListener("input", function () {
 
       corpoTabela.innerHTML = "";
       filtrados.forEach((produto) => {
-        const tr = document.createElement("tr");
-        tr.dataset.preco = produto.provl;
-        tr.innerHTML = `
-          <td>${produto.prodes}</td>
-          <td>${formatarMoeda(produto.provl)}</td>
-          <td>
-              <button class="btn btn-success btn-sm" onclick="adicionarAoCarrinho('${produto.procod}')">Adicionar</button>
-            </td>
+        const item = document.createElement("div");
+        item.className = "cart-item";
+        item.dataset.preco = produto.provl;
+        item.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; flex-direction: column;">
+              <div class="item-name">${produto.prodes}</div>
+              <div class="item-marca">${produto.marcasdes}</div>
+              <div class="item-tipo">${produto.tipodes}</div>
+            </div>
+            <div class="item-price">
+              ${formatarMoeda(produto.provl)}
+              <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
+                produto.procod
+              }')">Adicionar</button>
+            </div>
+          </div>
         `;
-        corpoTabela.appendChild(tr);
+        corpoTabela.appendChild(item);
       });
 
       tabelaArea.style.display = "block"; // mostra tabela
@@ -399,9 +407,11 @@ window.adicionarAoCarrinho = function (procod) {
   // Precisamos encontrar a linha da tabela (tr) de uma forma diferente agora que o input se foi.
   // Assumindo que o botão clicado está dentro da célula (td) que está dentro da linha (tr)
   const button = event.target; // Get the button that was clicked
-  const tr = button.closest("tr");
-  const nome = tr.querySelector("td").textContent;
-  const preco = parseFloat(tr.dataset.preco);
+  const itemDiv = button.closest(".cart-item");
+  const nome = itemDiv.querySelector(".item-name").textContent;
+  const preco = parseFloat(itemDiv.dataset.preco);
+  const tipo = itemDiv.querySelector(".item-tipo").textContent;
+  const marca = itemDiv.querySelector(".item-marca").textContent;
 
   // Recupera o carrinho do localStorage
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
@@ -411,7 +421,7 @@ window.adicionarAoCarrinho = function (procod) {
   if (idx > -1) {
     cart[idx].qt += qtde;
   } else {
-    cart.push({ id: procod, nome, qt: qtde, preco });
+    cart.push({ id: procod, nome, tipo: tipo, marca: marca, qt: qtde, preco });
   }
 
   // Salva o carrinho atualizado

@@ -111,3 +111,17 @@ body {
 .management-area table {
     width: 100%;
 }
+.item-info {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+}
+
+.item-name {
+  font-weight: bold;
+}
+
+.item-marca, .item-tipo {
+  font-size: 0.9em;
+  color: #555;
+}

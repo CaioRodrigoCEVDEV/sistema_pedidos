@@ -20,10 +20,15 @@ exports.listarProdutos = async (req, res) => {
   try {
     const result = await pool.query(`
       select 
-      procod, 
+      procod,
+      tipodes,
+      marcasdes, 
       case when prodes is null then '' else prodes end as prodes, 
       case when provl is null then 0 else provl end as provl
-      from pro order by procod desc`);
+      from pro
+      join tipo on tipocod = protipocod
+      join marcas on promarcascod = marcascod
+      order by procod desc`);
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -93,14 +98,13 @@ exports.excluirProduto = async (req, res) => {
   }
 };
 
-
 exports.editarProduto = async (req, res) => {
   const { id } = req.params;
   const { prodes, provl } = req.body;
   try {
     const result = await pool.query(
       `update pro set prodes = $1, provl = $2 where procod = $3 RETURNING *`,
-      [prodes, provl,id]
+      [prodes, provl, id]
     );
     res.status(200).json(result.rows);
   } catch (error) {
