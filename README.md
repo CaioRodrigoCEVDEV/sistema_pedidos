@@ -238,6 +238,20 @@ INSERT INTO pro (procod, prodes, promarcascod, protipocod, promodcod, proqualico
 ### 🔐 Permissões:
 - Dono: `postgres`
 - Permissões completas: `postgres`
+---
+
+## 📄 Tabela `procor` (produto)
+
+Vinculo de cores com os produtos disponiveis no sistema
+
+```sql
+
+CREATE TABLE public.procor (
+	procorprocod int NOT NULL,
+	procorcorescod int NOT NULL
+);
+
+```
 
 
 ---
