@@ -5,6 +5,7 @@ const proController = require("../controllers/proController");
 
 router.get("/pro/:id", proController.listarProduto);
 router.get("/proCores", proController.listarProCor);
+router.get("/proCoresDisponiveis/:id", proController.listarProdutoCoresDisponiveis);
 router.put("/pro/:id", proController.editarProduto);
 router.get("/pro/painel/:id", proController.listarProdutosPainelId);
 router.get("/pros", proController.listarProdutos);
