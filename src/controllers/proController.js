@@ -6,7 +6,7 @@ exports.listarProduto = async (req, res) => {
 
   try {
     const result = await pool.query(
-      "select procod, prodes, provl,tipodes from pro join tipo on tipocod = protipocod where promarcascod = $1 and promodcod  = $2 and protipocod  = $3",
+      `select procod, prodes, provl,tipodes, case when cornome is null then '' else cornome end as cornome from pro join tipo on tipocod = protipocod left join cores on corcod = procor where promarcascod = $1 and promodcod  = $2 and protipocod  = $3`,
       [marca, modelo, id]
     );
     res.status(200).json(result.rows);
