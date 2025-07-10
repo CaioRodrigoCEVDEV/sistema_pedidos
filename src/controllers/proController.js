@@ -63,11 +63,11 @@ exports.listarProdutoCarrinho = async (req, res) => {
 };
 
 exports.inserirProduto = async (req, res) => {
-  const { prodes, promarcascod, promodcod, protipocod, provl } = req.body;
+  const { prodes, promarcascod, promodcod, protipocod, provl, procor } = req.body;
   try {
     const result = await pool.query(
-      `insert into pro (prodes,promarcascod,promodcod,protipocod,provl) values ($1,$2,$3,$4,$5) RETURNING *`,
-      [prodes, promarcascod, promodcod, protipocod, provl]
+      `insert into pro (prodes,promarcascod,promodcod,protipocod,provl, procor) values ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [prodes, promarcascod, promodcod, protipocod, provl,procor]
     );
     res.status(200).json(result.rows);
   } catch (error) {
