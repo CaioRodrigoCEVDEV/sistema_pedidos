@@ -108,3 +108,17 @@ exports.editarProduto = async (req, res) => {
     res.status(500).json({ error: "Erro ao inserir produto" });
   }
 };
+
+exports.listarProCor = async (req, res) => {
+
+  try {
+    const result = await pool.query(
+      "select corcod, cornome from cores order by corcod"
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao buscar cores" });
+  }
+};
+
