@@ -119,6 +119,30 @@ document.addEventListener("DOMContentLoaded", () => {
     .catch(console.error);
 });
 
+
+document.addEventListener("DOMContentLoaded", () => {
+  fetch(`${BASE_URL}/procores/`)
+    .then((res) => res.json())
+    .then((dados) => {
+      const holder = document.getElementById("selectPainelCor");
+      if (!holder) return;
+      holder.innerHTML = ""; // zera antes
+
+      let html = '<option value="">Selecione a cor</option>';
+      dados.forEach((cores) => {
+        html += `<option value="${cores.corcod}"${
+          id == cores.corcod ? " selected" : ""
+        }>${cores.cornome}</option>`;
+      });
+      const select = document.getElementById("selectPainelCor");
+      if (select) {
+        select.innerHTML = html;
+      }
+
+      holder.innerHTML = html;
+    })
+    .catch(console.error);
+});
 //Função para criar marca
 document
   .getElementById("cadastrarPainelMarca")
@@ -215,7 +239,7 @@ document
     data.promarcascod = marcascod; // Adiciona o código da marca ao objeto data
     data.promodcod = modelo; // Adiciona o código do modelo ao objeto data
     data.protipocod = tipo; // Adiciona o código do tipo ao objeto data
-
+    data.procor = document.getElementById("selectPainelCor").value; // Adiciona o código da cor ao objeto data
     fetch(`${BASE_URL}/pro`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

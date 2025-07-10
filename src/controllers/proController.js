@@ -6,7 +6,7 @@ exports.listarProduto = async (req, res) => {
 
   try {
     const result = await pool.query(
-      "select procod, prodes, provl,tipodes from pro join tipo on tipocod = protipocod where promarcascod = $1 and promodcod  = $2 and protipocod  = $3",
+      `select procod, prodes, provl,tipodes, case when cornome is null then '' else cornome end as cornome from pro join tipo on tipocod = protipocod left join cores on corcod = procor where promarcascod = $1 and promodcod  = $2 and protipocod  = $3`,
       [marca, modelo, id]
     );
     res.status(200).json(result.rows);
@@ -68,11 +68,11 @@ exports.listarProdutoCarrinho = async (req, res) => {
 };
 
 exports.inserirProduto = async (req, res) => {
-  const { prodes, promarcascod, promodcod, protipocod, provl } = req.body;
+  const { prodes, promarcascod, promodcod, protipocod, provl, procor } = req.body;
   try {
     const result = await pool.query(
-      `insert into pro (prodes,promarcascod,promodcod,protipocod,provl) values ($1,$2,$3,$4,$5) RETURNING *`,
-      [prodes, promarcascod, promodcod, protipocod, provl]
+      `insert into pro (prodes,promarcascod,promodcod,protipocod,provl, procor) values ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [prodes, promarcascod, promodcod, protipocod, provl,procor]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -112,3 +112,17 @@ exports.editarProduto = async (req, res) => {
     res.status(500).json({ error: "Erro ao inserir produto" });
   }
 };
+
+exports.listarProCor = async (req, res) => {
+
+  try {
+    const result = await pool.query(
+      "select corcod, cornome from cores order by corcod"
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao buscar cores" });
+  }
+};
+

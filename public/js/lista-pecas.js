@@ -30,6 +30,8 @@ document.addEventListener("DOMContentLoaded", function () {
             )} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
           dado.procod
         }')">Adicionar</button></div>
+            <div class="item-tipo">${dado.cornome}</div>
+            <div class="item-price">${formatarMoeda(dado.provl)} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button></div>
           `;
 
         corpoTabela.appendChild(item);
