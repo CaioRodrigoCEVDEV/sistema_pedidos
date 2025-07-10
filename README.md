@@ -214,7 +214,9 @@ CREATE TABLE public.pro (
 	prodtcad timestamp DEFAULT CURRENT_TIMESTAMP NULL,
 	prousualt int4 NULL,
 	prodtalt timestamp NULL,
+	procor int,
 	CONSTRAINT pk_pro PRIMARY KEY (procod),
+	CONSTRAINT fk_pro_cor FOREIGN KEY (procor) REFERENCES public.cores(corcod),
 	CONSTRAINT fk_pro_marcas FOREIGN KEY (promarcascod) REFERENCES public.marcas(marcascod),
 	CONSTRAINT fk_pro_modelo FOREIGN KEY (promodcod) REFERENCES public.modelo(modcod),
 	CONSTRAINT fk_pro_tipo FOREIGN KEY (protipocod) REFERENCES public.tipo(tipocod)
@@ -237,8 +239,51 @@ INSERT INTO pro (procod, prodes, promarcascod, protipocod, promodcod, proqualico
 - Dono: `postgres`
 - Permissões completas: `postgres`
 
+
 ---
 
+## 📄 Tabela `cores` (produto)
+
+Cadastro de cores dos produtos disponiveis no sistema
+
+```sql
+
+CREATE TABLE cores (
+  corcod SERIAL PRIMARY KEY,
+  cornome VARCHAR(50) NOT NULL
+);
+
+```
+- **corcod**: Código da cor (chave primária).
+- **cornome**: Descrição (ex: "Branco","Azul").
+
+
+### ➕ Inserção de exemplo:
+```sql
+
+INSERT INTO cores (cornome) VALUES
+  ('Preto'),
+  ('Branco'),
+  ('Cinza'),
+  ('Prata'),
+  ('Azul'),
+  ('Vermelho'),
+  ('Verde'),
+  ('Amarelo'),
+  ('Marrom'),
+  ('Laranja'),
+  ('Rosa'),
+  ('Roxo'),
+  ('Dourado'),
+  ('Bege');
+
+```
+
+### 🔐 Permissões:
+- Dono: `postgres`
+- Permissões completas: `postgres`
+
+---
 
 # 💰 View Tipo de Peças
 
