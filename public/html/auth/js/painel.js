@@ -119,7 +119,6 @@ document.addEventListener("DOMContentLoaded", () => {
     .catch(console.error);
 });
 
-
 document.addEventListener("DOMContentLoaded", () => {
   fetch(`${BASE_URL}/procores/`)
     .then((res) => res.json())
@@ -398,22 +397,66 @@ function editarProduto(codigo) {
     });
 }
 
-// Função para excluir produto
-function excluirProduto(codigo) {
-  if (confirm("Tem certeza que deseja excluir este produto?")) {
-    fetch(`${BASE_URL}/pro/${codigo}`, {
-      method: "DELETE",
-    })
-      .then((res) => res.json())
-      .then((resposta) => {
-        alert("Produto excluído com sucesso!");
-        location.reload(); // Atualiza a página após exclusão
-      })
-      .catch((erro) => {
-        alert("Erro ao excluir o produto.");
-        console.error(erro);
-      });
-  }
+async function excluirProduto(id) {
+  // Cria o popup de confirmação customizado
+  let popup = document.createElement("div");
+  popup.id = "popupExcluirProduto";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Excluir Tipo</h5>
+      <p>Tem certeza que deseja excluir este Produto?</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" id="cancelarExcluirPro">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmarExcluirPro">Excluir</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+
+  document.getElementById("cancelarExcluirPro").onclick = function () {
+    document.body.removeChild(popup);
+  };
+
+  document.getElementById("confirmarExcluirPro").onclick = async function () {
+    try {
+      await fetch(`${BASE_URL}/pro/${id}`, { method: "DELETE" });
+      // Mostra mensagem de sucesso como popup temporário
+      const msg = document.createElement("div");
+      msg.textContent = "Produto excluído com sucesso!";
+      msg.style.position = "fixed";
+      msg.style.top = "20px";
+      msg.style.left = "50%";
+      msg.style.transform = "translateX(-50%)";
+      msg.style.background = "#dc3545";
+      msg.style.color = "#fff";
+      msg.style.padding = "12px 24px";
+      msg.style.borderRadius = "6px";
+      msg.style.zIndex = "10000";
+      msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+      document.body.appendChild(msg);
+      setTimeout(() => {
+        msg.remove();
+      }, 2000);
+      document.body.removeChild(popup);
+      // adicionar uma função para não recarregar a página
+      location.reload();
+    } catch (e) {
+      alert("Erro ao excluir produto");
+      document.body.removeChild(popup);
+    }
+  };
 }
 
 // Impede que o dropdown feche ao clicar em qualquer elemento dentro dele
