@@ -241,17 +241,20 @@ inputPesquisa.addEventListener("input", function () {
         item.className = "cart-item";
         item.dataset.preco = produto.provl;
         item.innerHTML = `
-          <div class="item-name">${produto.prodes} </div>
-            <div class="item-marca">${produto.marcasdes}</div>
-            <div class="item-tipo" style="display: flex; flex-direction: column;">${
-              produto.tipodes
-            }</div>
-            <div class="item-price">${formatarMoeda(
-              produto.provl
-            )} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
-          produto.procod
-        }')">Adicionar</button></div>
-          `;
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; flex-direction: column;">
+              <div class="item-name">${produto.prodes}</div>
+              <div class="item-marca">${produto.marcasdes}</div>
+              <div class="item-tipo">${produto.tipodes}</div>
+            </div>
+            <div class="item-price">
+              ${formatarMoeda(produto.provl)}
+              <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
+                produto.procod
+              }')">Adicionar</button>
+            </div>
+          </div>
+        `;
         corpoTabela.appendChild(item);
       });
 
