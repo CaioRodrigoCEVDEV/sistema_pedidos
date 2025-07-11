@@ -145,3 +145,51 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
     res.status(500).json({ error: "Erro ao buscar cores" });
   }
 };
+
+exports.inserirProdutoCoresDisponiveis = async (req, res) => {
+  const { id } = req.params;
+  //const { marca, modelo } = req.query;
+
+  try {
+    const result = await pool.query(
+      `insert into procor values($1,$2) RETURNING *`,
+      [id, req.query.corescod] 
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao inserir cores" });
+  }
+};
+
+exports.deletarProdutoCoresDisponiveis = async (req, res) => {
+  const { id } = req.params;
+  //const { marca, modelo } = req.query;
+
+  try {
+    const result = await pool.query(
+      `delete from procor where procorprocod = $1 and procorcorescod = $2 RETURNING *`,
+      [id, req.query.corescod] 
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao inserir cores" });
+  }
+};
+
+exports.alterarProdutoCoresDisponiveis = async (req, res) => {
+  const { id } = req.params;
+  //const { marca, modelo } = req.query;
+
+  try {
+    const result = await pool.query(
+      `update procor set procorcorescod = $1 where procorprocod = $2 and procorcorescod = $3 RETURNING *`,
+      [req.query.corescodnovo,id, req.query.corescod] 
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao inserir cores" });
+  }
+};

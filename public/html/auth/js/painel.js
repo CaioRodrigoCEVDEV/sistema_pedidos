@@ -119,6 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .catch(console.error);
 });
 
+// listar cor no painel/criar produto
 document.addEventListener("DOMContentLoaded", () => {
   fetch(`${BASE_URL}/procores/`)
     .then((res) => res.json())
@@ -127,21 +128,20 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!holder) return;
       holder.innerHTML = ""; // zera antes
 
-      let html = '<option value="">Selecione a cor</option>';
-      dados.forEach((cores) => {
-        html += `<option value="${cores.corcod}"${
-          id == cores.corcod ? " selected" : ""
-        }>${cores.cornome}</option>`;
+      let html = '<label>Selecione a(s) cor(es):</label><br>';
+      dados.forEach((cor) => {
+        html += `
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="procor" value="${cor.corcod}" id="cor_${cor.corcod}">
+            <label class="form-check-label" for="cor_${cor.corcod}">${cor.cornome}</label>
+          </div>
+        `;
       });
-      const select = document.getElementById("selectPainelCor");
-      if (select) {
-        select.innerHTML = html;
-      }
-
       holder.innerHTML = html;
     })
     .catch(console.error);
 });
+
 //Função para criar marca
 document
   .getElementById("cadastrarPainelMarca")
@@ -225,36 +225,58 @@ document
       });
   });
 
-//função para criar modelo
+//função para criar PRODUTO
 document
   .getElementById("cadastrarPainelPeca")
-  .addEventListener("submit", function (e) {
+  .addEventListener("submit", async function (e) {
     e.preventDefault();
 
     const form = e.target;
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
-    data.promarcascod = marcascod; // Adiciona o código da marca ao objeto data
-    data.promodcod = modelo; // Adiciona o código do modelo ao objeto data
-    data.protipocod = tipo; // Adiciona o código do tipo ao objeto data
-    data.procor = document.getElementById("selectPainelCor").value; // Adiciona o código da cor ao objeto data
-    fetch(`${BASE_URL}/pro`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-      .then((res) => res.json())
-      .then((resposta) => {
-        alert("Dados salvos com sucesso!");
-        console.log(resposta);
-        location.reload(); // Atualiza a página após gravar
-      })
-      .catch((erro) => {
-        alert("Erro ao salvar os dados.");
-        console.error(erro);
+    data.promarcascod = marcascod;
+    data.promodcod = modelo;
+    data.protipocod = tipo;
+
+    // Pega todos os checkboxes marcados de cor
+    const corCheckboxes = document.querySelectorAll('#selectPainelCor input[type="checkbox"]:checked');
+    const corIds = Array.from(corCheckboxes).map(cb => cb.value);
+    try {
+      // Cria o produto
+      const res = await fetch(`${BASE_URL}/pro`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
       });
+      const resposta = await res.json();
+      let procod = resposta.procod || (Array.isArray(resposta) && resposta[0]?.procod);
+      if (!procod) {
+        console.log("Resposta inesperada ao criar produto:", resposta);
+      } else {
+        console.log("Produto criado:", procod);
+      }
+      console.log("Cores selecionadas:", corIds);
+
+      // Grava as cores disponíveis se houver cores marcadas e procod válido
+      if (procod && corIds.length > 0) {
+        // Para cada cor marcada, faz um POST individual
+        for (const corcod of corIds) {
+          await fetch(`${BASE_URL}/proCoresDisponiveis/${procod}?corescod=${corcod}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+      }
+      //console.log(resposta);
+      location.reload();
+    } catch (erro) {
+      alert("Erro ao salvar os dados.");
+      console.error(erro);
+    }
   });
+
+
 
 const inputPesquisa = document.getElementById("pesquisa");
 const tabelaArea = document.getElementById("tabelaArea");
