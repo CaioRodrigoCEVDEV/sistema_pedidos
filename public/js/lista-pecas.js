@@ -25,7 +25,11 @@ document.addEventListener("DOMContentLoaded", function () {
         item.innerHTML = `
             <div class="item-name">${dado.prodes} </div>
             <div class="item-tipo">${dado.tipodes}</div>
-            <div class="item-price">${formatarMoeda(dado.provl)} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button></div>
+            <div class="item-price">${formatarMoeda(
+              dado.provl
+            )} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
+          dado.procod
+        }')">Adicionar</button></div>
           `;
 
         corpoTabela.appendChild(item);
@@ -188,40 +192,185 @@ document.getElementById("openCartModal").addEventListener("click", function () {
   }
 });
 
-// Modifique a função adicionarAoCarrinho para salvar o preço no carrinho
-window.adicionarAoCarrinho = function (procod) {
-  const qtde = 1; // Default quantity to 1
-
-  // Busca os dados da linha correspondente
-  // Precisamos encontrar a linha da tabela (tr) de uma forma diferente agora que o input se foi.
-  // Assumindo que o botão clicado está dentro da célula (td) que está dentro da linha (tr)
-  const button = event.target; // Get the button that was clicked
+window.adicionarAoCarrinho = async function (procod) {
+  const qtde = 1;
+  const button = event.target;
   const itemDiv = button.closest(".cart-item");
-  const nome = itemDiv.querySelector(".item-name").textContent;
-  const preco = parseFloat(itemDiv.dataset.preco);
-  const tipo = itemDiv.querySelector(".item-tipo").textContent;
-  const marca = document.getElementById("marcaTitulo").textContent;
 
-  // Recupera o carrinho do localStorage
+  if (!itemDiv) {
+    console.error("Elemento '.cart-item' não encontrado.");
+    return;
+  }
+
+  const nome = itemDiv.querySelector(".item-name")?.textContent || "Produto";
+  const preco = parseFloat(itemDiv.dataset.preco || "0");
+  const tipo = itemDiv.querySelector(".item-tipo")?.textContent || "";
+  const marca = document.getElementById("marcaTitulo")?.textContent || "";
+
+  try {
+    const response = await fetch(`/proCoresDisponiveis/${procod}`);
+    const cores = await response.json();
+
+    console.log("Cores disponíveis:", cores);
+
+    if (cores && cores.length > 0 && cores[0].cornome !== "") {
+      exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde);
+    } else {
+      adicionarProdutoAoCarrinho(procod, nome, tipo, marca, preco, qtde);
+    }
+  } catch (error) {
+    console.error("Erro ao buscar cores:", error);
+    alert("Erro ao verificar cores do produto.");
+  }
+};
+
+function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
+  const backdrop = document.createElement("div");
+  backdrop.style.position = "fixed";
+  backdrop.style.top = "0";
+  backdrop.style.left = "0";
+  backdrop.style.width = "100%";
+  backdrop.style.height = "100%";
+  backdrop.style.backgroundColor = "rgba(0, 0, 0, 0.4)";
+  backdrop.style.zIndex = "9998";
+
+  const modal = document.createElement("div");
+  modal.style.position = "fixed";
+  modal.style.top = "50%";
+  modal.style.left = "50%";
+  modal.style.transform = "translate(-50%, -50%)";
+  modal.style.background = "white";
+  modal.style.padding = "20px";
+  modal.style.borderRadius = "8px";
+  modal.style.boxShadow = "0 2px 10px rgba(0,0,0,0.3)";
+  modal.style.zIndex = "9999";
+
+  modal.innerHTML = `
+  <style>
+    #modal-cor-container {
+      max-width: 300px;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #modal-cor-container p {
+      font-size: 16px;
+      margin: 0;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    #modal-cor-container select {
+      width: 100%;
+      padding: 8px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    #modal-cor-botoes {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    #modal-cor-botoes button {
+      padding: 6px 12px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    #btn-confirmar-cor {
+      background-color: #28a745;
+      color: white;
+    }
+
+    #btn-confirmar-cor:hover {
+      background-color: #218838;
+    }
+
+    #btn-cancelar-cor {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    #btn-cancelar-cor:hover {
+      background-color: #c82333;
+    }
+  </style>
+
+  <div id="modal-cor-container">
+    <p>Escolha a cor do produto:</p>
+    <select id="select-cor">
+      ${cores
+        .map((cor) => `<option value="${cor.procod}">${cor.cornome}</option>`)
+        .join("")}
+    </select>
+    <div id="modal-cor-botoes">
+      <button id="btn-cancelar-cor">Cancelar</button>
+      <button id="btn-confirmar-cor">Confirmar</button>
+    </div>
+  </div>
+`;
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(modal);
+
+  document.getElementById("btn-confirmar-cor").onclick = function () {
+    const corSelecionada =
+      document.getElementById("select-cor").options[
+        document.getElementById("select-cor").selectedIndex
+      ].text;
+    const idComCor = `${procod}-${corSelecionada}`;
+    const nomeComCor = `${nome} (${corSelecionada})`;
+
+    adicionarProdutoAoCarrinho(
+      idComCor,
+      nomeComCor,
+      tipo,
+      marca,
+      preco,
+      qtde,
+      corSelecionada
+    );
+
+    modal.remove();
+    backdrop.remove();
+  };
+
+  document.getElementById("btn-cancelar-cor").onclick = function () {
+    modal.remove();
+    backdrop.remove();
+  };
+}
+
+function adicionarProdutoAoCarrinho(
+  id,
+  nome,
+  tipo,
+  marca,
+  preco,
+  qtde,
+  corSelecionada
+) {
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
 
-  // Verifica se o item já existe no carrinho
-  const idx = cart.findIndex((item) => item.id === procod);
+  const idx = cart.findIndex((item) => item.id === id);
   if (idx > -1) {
     cart[idx].qt += qtde;
   } else {
-    cart.push({ id: procod, nome, tipo: tipo, marca: marca, qt: qtde, preco });
+    cart.push({ id, nome, tipo, marca, preco, qt: qtde, corSelecionada });
   }
 
-  // Salva o carrinho atualizado
   localStorage.setItem("cart", JSON.stringify(cart));
-
-  // Atualiza ícone do carrinho
   atualizarIconeCarrinho();
-
-  // Mostra popup de confirmação
   mostrarPopupAdicionado();
-};
+}
 
 document.addEventListener("DOMContentLoaded", atualizarIconeCarrinho);
 
