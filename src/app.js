@@ -42,6 +42,9 @@ app.use(proRoutes);
 const tipoRoutes = require("./routes/tipoRoutes");
 app.use(tipoRoutes);
 
+const empRoutes = require("./routes/empRoutes");
+app.use(empRoutes);
+
 // Rotas de páginas
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/login.html"));
