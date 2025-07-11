@@ -25,12 +25,6 @@ document.addEventListener("DOMContentLoaded", function () {
         item.innerHTML = `
             <div class="item-name">${dado.prodes} </div>
             <div class="item-tipo">${dado.tipodes}</div>
-            <div class="item-price">${formatarMoeda(
-              dado.provl
-            )} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
-          dado.procod
-        }')">Adicionar</button></div>
-            <div class="item-tipo">${dado.cornome}</div>
             <div class="item-price">${formatarMoeda(dado.provl)} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button></div>
           `;
 
