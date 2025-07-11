@@ -245,12 +245,17 @@ INSERT INTO pro (procod, prodes, promarcascod, protipocod, promodcod, proqualico
 Vinculo de cores com os produtos disponiveis no sistema
 
 ```sql
-
 CREATE TABLE public.procor (
-	procorprocod int NOT NULL,
-	procorcorescod int NOT NULL
+	procorprocod int4 NOT NULL,
+	procorcorescod int4 NOT NULL,
+	procorid serial4 NOT NULL,
+	CONSTRAINT pk_procor PRIMARY KEY (procorprocod, procorcorescod)
 );
 
+-- Permissions
+
+ALTER TABLE public.procor OWNER TO postgres;
+GRANT ALL ON TABLE public.procor TO postgres;
 ```
 
 
