@@ -57,8 +57,8 @@
 <body>
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm bg-white rounded">
-            <a class="navbar-brand" href="index"><img src="/uploads/logo.jpg" width="30"
-                    height="30" alt=""> JP Peças</a>
+            <a class="navbar-brand" href="index" id="nomeEmpresa" ><img src="/uploads/logo.jpg" width="30"
+                    height="30" alt=""></a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
                 <span class="navbar-toggler-icon"></span>
@@ -101,22 +101,32 @@
 
                 </div>
             </section>
-            <section class="mb-4">
+            <form class="mb-4">
+                <h5>Razão Social</h5>
+                <div class="form-group">
+                    <label for="razaoSocial">Razão Social</label>
+                    <input type="text" class="form-control" id="razaoSocial" placeholder="Digite a razão social da empresa">
+                </div>
+            
+            
                 <h5>Números de WhatsApp</h5>
                 <div class="form-group">
-                    <label for="whats1">Número 1</label>
+                    <label for="whats1">Balcão</label>
                     <input type="text" class="form-control" id="whats1" placeholder="(00) 00000-0000">
                 </div>
                 <div class="form-group">
-                    <label for="whats2">Número 2</label>
+                    <label for="whats2">Entrega</label>
                     <input type="text" class="form-control" id="whats2" placeholder="(00) 00000-0000">
                 </div>
-            </section>
-            <button type="submit" class="btn btn-primary">Salvar</button>
+                <button id="saveWhats" type="submit" class="btn btn-primary">Salvar</button>
+            </form>
+            
         </div>
     </div>
     <script src="/config.js"></script>
+    <script src="../js/configWhatsapp.js"></script>
     <script src="/html/auth/js/logout.js"></script>
+    <script src="../js/nomeEmpresa.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
         crossorigin="anonymous"></script>

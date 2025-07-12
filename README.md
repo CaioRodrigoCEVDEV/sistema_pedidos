@@ -196,6 +196,49 @@ INSERT INTO tipo (tipocod, tipodes, tiposit) VALUES (1, 'Tela', 'A');
 
 ---
 
+## 📄 Tabela `cores` (produto)
+
+Cadastro de cores dos produtos disponiveis no sistema
+
+```sql
+
+CREATE TABLE cores (
+  corcod SERIAL PRIMARY KEY,
+  cornome VARCHAR(50) NOT NULL
+);
+
+```
+- **corcod**: Código da cor (chave primária).
+- **cornome**: Descrição (ex: "Branco","Azul").
+
+
+### ➕ Inserção de exemplo:
+```sql
+
+INSERT INTO cores (cornome) VALUES
+  ('Preto'),
+  ('Branco'),
+  ('Cinza'),
+  ('Prata'),
+  ('Azul'),
+  ('Vermelho'),
+  ('Verde'),
+  ('Amarelo'),
+  ('Marrom'),
+  ('Laranja'),
+  ('Rosa'),
+  ('Roxo'),
+  ('Dourado'),
+  ('Bege');
+
+```
+
+### 🔐 Permissões:
+- Dono: `postgres`
+- Permissões completas: `postgres`
+
+---
+
 ## 📄 Tabela `pro` (produto)
 
 Cadastro dos produtos disponiveis no sistema
@@ -257,51 +300,23 @@ CREATE TABLE public.procor (
 ALTER TABLE public.procor OWNER TO postgres;
 GRANT ALL ON TABLE public.procor TO postgres;
 ```
-
-
 ---
 
-## 📄 Tabela `cores` (produto)
-
-Cadastro de cores dos produtos disponiveis no sistema
+## 📄 Tabela `emp` (Empresa)
 
 ```sql
-
-CREATE TABLE cores (
-  corcod SERIAL PRIMARY KEY,
-  cornome VARCHAR(50) NOT NULL
+CREATE TABLE public.emp (
+	emprazao varchar(254) NULL,
+	empwhatsapp1 varchar(13) NULL,
+	empwhatsapp2 varchar(13) NULL
 );
-
 ```
-- **corcod**: Código da cor (chave primária).
-- **cornome**: Descrição (ex: "Branco","Azul").
-
-
 ### ➕ Inserção de exemplo:
-```sql
-
-INSERT INTO cores (cornome) VALUES
-  ('Preto'),
-  ('Branco'),
-  ('Cinza'),
-  ('Prata'),
-  ('Azul'),
-  ('Vermelho'),
-  ('Verde'),
-  ('Amarelo'),
-  ('Marrom'),
-  ('Laranja'),
-  ('Rosa'),
-  ('Roxo'),
-  ('Dourado'),
-  ('Bege');
-
 ```
-
-### 🔐 Permissões:
-- Dono: `postgres`
-- Permissões completas: `postgres`
-
+INSERT INTO public.emp
+(emprazao, empwhatsapp1, empwhatsapp2)
+VALUES('Razao Social ou Fantasia', '5561983216765', '5561991494321');
+```
 ---
 
 # 💰 View Tipo de Peças

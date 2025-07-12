@@ -1,4 +1,5 @@
 .env
+src/uploads/logo.jpg
 node_modules/
 package-lock.json
 package.json

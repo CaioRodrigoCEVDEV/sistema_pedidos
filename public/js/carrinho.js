@@ -243,7 +243,7 @@ function enviarWhatsApp() {
     mensagem += `${descricaoEmoji} Descrição: ${nome}\n`;
     mensagem += `${indent}${marcaEmoji} Marca: ${marca}\n`;
     mensagem += `${indent}${tipoEmoji} Tipo: ${tipo}\n`;
-    mensagem += `Cor: Cor aqui\n`;
+    //mensagem += `Cor: Cor aqui\n`;  preguiça de adicionar cor
     mensagem += `${indent}${quantidadeEmoji} Quantidade: ${qtde}\n`;
     mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(
       2

@@ -6,7 +6,8 @@ exports.listarProduto = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `select procod, prodes, provl,tipodes, case when cornome is null then '' else cornome end as cornome from pro join tipo on tipocod = protipocod left join cores on corcod = procor where promarcascod = $1 and promodcod  = $2 and protipocod  = $3`,
+      `select procod, prodes, provl,tipodes, case when cornome is null then '' else cornome end as cornome from pro join tipo on tipocod = protipocod left join procor on procorprocod = procod
+        left join cores on corcod = procorcorescod where promarcascod = $1 and promodcod  = $2 and protipocod  = $3`,
       [marca, modelo, id]
     );
     res.status(200).json(result.rows);
@@ -68,11 +69,11 @@ exports.listarProdutoCarrinho = async (req, res) => {
 };
 
 exports.inserirProduto = async (req, res) => {
-  const { prodes, promarcascod, promodcod, protipocod, provl, procor } = req.body;
+  const { prodes, promarcascod, promodcod, protipocod, provl } = req.body;
   try {
     const result = await pool.query(
-      `insert into pro (prodes,promarcascod,promodcod,protipocod,provl, procor) values ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [prodes, promarcascod, promodcod, protipocod, provl,procor]
+      `insert into pro (prodes,promarcascod,promodcod,protipocod,provl) values ($1,$2,$3,$4,$5) RETURNING *`,
+      [prodes, promarcascod, promodcod, protipocod, provl]
     );
     res.status(200).json(result.rows);
   } catch (error) {
