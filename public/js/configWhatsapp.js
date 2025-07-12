@@ -79,7 +79,8 @@ document.getElementById('saveWhats').addEventListener('click', function(event) {
     })
     .then(response => response.json())
     .then(data => {
-        alert('Números de WhatsApp atualizados com sucesso!');
+        alert('Dados atualizados com sucesso!');
+        window.location.reload();
     })
     .catch(error => {
         alert('Erro ao atualizar os números de WhatsApp. Por favor, tente novamente.');
