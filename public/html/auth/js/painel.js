@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!holder) return;
       holder.innerHTML = ""; // zera antes
 
-      let html = '<label>Selecione a(s) cor(es):</label><br>';
+      let html = "<label>Selecione a(s) cor(es):</label><br>";
       dados.forEach((cor) => {
         html += `
           <div class="form-check">
@@ -240,8 +240,10 @@ document
     data.protipocod = tipo;
 
     // Pega todos os checkboxes marcados de cor
-    const corCheckboxes = document.querySelectorAll('#selectPainelCor input[type="checkbox"]:checked');
-    const corIds = Array.from(corCheckboxes).map(cb => cb.value);
+    const corCheckboxes = document.querySelectorAll(
+      '#selectPainelCor input[type="checkbox"]:checked'
+    );
+    const corIds = Array.from(corCheckboxes).map((cb) => cb.value);
     try {
       // Cria o produto
       const res = await fetch(`${BASE_URL}/pro`, {
@@ -250,7 +252,8 @@ document
         body: JSON.stringify(data),
       });
       const resposta = await res.json();
-      let procod = resposta.procod || (Array.isArray(resposta) && resposta[0]?.procod);
+      let procod =
+        resposta.procod || (Array.isArray(resposta) && resposta[0]?.procod);
       if (!procod) {
         console.log("Resposta inesperada ao criar produto:", resposta);
       } else {
@@ -262,10 +265,13 @@ document
       if (procod && corIds.length > 0) {
         // Para cada cor marcada, faz um POST individual
         for (const corcod of corIds) {
-          await fetch(`${BASE_URL}/proCoresDisponiveis/${procod}?corescod=${corcod}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" }
-          });
+          await fetch(
+            `${BASE_URL}/proCoresDisponiveis/${procod}?corescod=${corcod}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            }
+          );
         }
       }
       //console.log(resposta);
@@ -275,8 +281,6 @@ document
       console.error(erro);
     }
   });
-
-
 
 const inputPesquisa = document.getElementById("pesquisa");
 const tabelaArea = document.getElementById("tabelaArea");
@@ -312,6 +316,7 @@ inputPesquisa.addEventListener("input", function () {
       filtrados.forEach((produto) => {
         const tr = document.createElement("tr");
         tr.dataset.preco = produto.provl;
+        tr.id = `produto-${produto.procod}`; // <- aqui
         tr.innerHTML = `
           <td>${produto.prodes}</td>
           <td>${formatarMoeda(produto.provl)}</td>
@@ -419,6 +424,40 @@ function editarProduto(codigo) {
     });
 }
 
+function carregarProPesquisa() {
+  fetch(`${BASE_URL}/pros/`)
+    .then((res) => res.json())
+    .then((produtos) => {
+      const filtrados = produtos.filter(
+        (produto) =>
+          produto.prodes && produto.prodes.toLowerCase().includes(pesquisa)
+      );
+      corpoTabela.innerHTML = "";
+      filtrados.forEach((produto) => {
+        const tr = document.createElement("tr");
+        tr.dataset.preco = produto.provl;
+        tr.id = `produto-${produto.procod}`; // <- aqui
+        tr.innerHTML = `
+          <td>${produto.prodes}</td>
+          <td>${formatarMoeda(produto.provl)}</td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="editarProduto('${
+              produto.procod
+            }')">
+              <i class="fa fa-edit"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="excluirProduto('${
+              produto.procod
+            }')">
+              <i class="fa fa-trash"></i>
+            </button>
+          </td>
+        `;
+        corpoTabela.appendChild(tr);
+      });
+    });
+}
+
 async function excluirProduto(id) {
   // Cria o popup de confirmação customizado
   let popup = document.createElement("div");
@@ -454,6 +493,11 @@ async function excluirProduto(id) {
   document.getElementById("confirmarExcluirPro").onclick = async function () {
     try {
       await fetch(`${BASE_URL}/pro/${id}`, { method: "DELETE" });
+
+      // Remove a linha da tabela diretamente pelo ID
+      const linha = document.getElementById(`produto-${id}`);
+      if (linha) linha.remove();
+
       // Mostra mensagem de sucesso como popup temporário
       const msg = document.createElement("div");
       msg.textContent = "Produto excluído com sucesso!";
@@ -471,9 +515,8 @@ async function excluirProduto(id) {
       setTimeout(() => {
         msg.remove();
       }, 2000);
+
       document.body.removeChild(popup);
-      // adicionar uma função para não recarregar a página
-      location.reload();
     } catch (e) {
       alert("Erro ao excluir produto");
       document.body.removeChild(popup);
