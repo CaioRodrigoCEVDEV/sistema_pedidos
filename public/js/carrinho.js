@@ -58,7 +58,6 @@ function renderCart() {
             <div class="item-name">${nome}</div>
             <div class="item-marca">${marcadorEmoji} Marca: ${marca}</div>
             <div class="item-tipo"> ${marcadorEmoji} Tipo: ${tipo}</div>
-            <div class="item-cor"> ${marcadorEmoji} Cor: ${cor}</div>
             <div class="item-qty">
                 <button class="btn btn-sm btn-outline-secondary" onclick="decrementQuantity('${itemId}')">-</button>
                 <span class="mx-2">${qtde}</span>
