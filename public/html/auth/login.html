@@ -65,7 +65,19 @@
 
         .login-container .text-center a:hover {
             text-decoration: underline;
+            
         }
+
+         html, body {
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  @media screen and (max-height: 700px) {
+    body {
+      min-height: 110vh; /* força rolagem em telas pequenas */
+    }
+  }
     </style>
 </head>
 
