@@ -73,20 +73,23 @@
     <div class="login-container text-center">
         <img src="/uploads/logo.jpg" alt="Logo JP Peças" width="220" height="220" class="mb-3">
         <h2 id="nomeEmpresa" >Login - </h2>
-        <form id="formLogin">
+        <form id="formLogin" class="text-left">
             <div class="form-group">
-                <label for="email">E-mail</label>
+                <label for="email" class="text-left w-100">E-mail</label>
                 <input type="email" class="form-control" id="email" placeholder="Digite seu e-mail" required>
             </div>
             <div class="form-group">
-                <label for="password">Senha</label>
+                <label for="password" class="text-left w-100">Senha</label>
                 <input type="password" class="form-control" id="password" placeholder="Digite sua senha" required>
             </div>
             <div class="form-check text-left mb-3">
                 <input type="checkbox" class="form-check-input" id="remember"disabled> <!--disable por que a funcionalidae de salvar a senha em cache com criptografia so funciona em https, ai teriamos que ver com o cliente se ele quer contratar dominio que ai ja vendemos mais 3 serviços pra ele,  email, dominio e um site estatico -->
                 <label class="form-check-label" for="remember">Salvar usuário e senha</label>
             </div>
-            <button type="submit" class="btn btn-primary">Entrar</button>
+            <button type="submit" class="btn btn-primary w-25">Entrar</button>
+            <button class="btn btn-outline-dark w-25" onclick="window.history.back();">
+                    <i class="bi bi-box-arrow-in-left"></i> Voltar
+                </button>
         </form>
     </div>
     <script src="/config.js"></script>
