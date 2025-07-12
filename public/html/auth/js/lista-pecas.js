@@ -4,7 +4,7 @@ const id = params.get("id");
 const modelo = params.get("modelo");
 const marcascod = params.get("marcascod");
 
-console.log("ID:", id);
+// console.log("ID:", id);
 
 function formatarMoeda(valor) {
   return Number(valor).toLocaleString("pt-BR", {
