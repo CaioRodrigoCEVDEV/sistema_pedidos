@@ -209,7 +209,7 @@ document.getElementById("openCartModal").addEventListener("click", function () {
     const cartJson = encodeURIComponent(
       btoa(unescape(encodeURIComponent(JSON.stringify(cart))))
     );
-    console.log("Cart antes de serializar:", cart);
+    // console.log("Cart antes de serializar:", cart);
     goToCartBtn.href = cart.length > 0 ? `carrinho?cart=${cartJson}` : "#";
     goToCartBtn.textContent = "Ir para o carrinho";
     goToCartBtn.style.marginLeft = "8px";
@@ -246,7 +246,7 @@ window.adicionarAoCarrinho = async function (procod) {
     const response = await fetch(`/proCoresDisponiveis/${procod}`);
     const cores = await response.json();
 
-    console.log("Cores disponíveis:", cores);
+    // console.log("Cores disponíveis:", cores);
 
     if (cores && cores.length > 0 && cores[0].cornome !== "") {
       exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde);
@@ -394,7 +394,7 @@ function adicionarProdutoAoCarrinho(
   corSelecionada
 ) {
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  console.log("cor:", corSelecionada);
+  // console.log("cor:", corSelecionada);
 
   const idx = cart.findIndex((item) => item.id === id);
   if (idx > -1) {

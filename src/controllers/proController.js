@@ -29,7 +29,7 @@ exports.listarProdutos = async (req, res) => {
       case when provl is null then 0 else provl end as provl
       from pro
       join tipo on tipocod = protipocod
-      join marcas on promarcascod = marcascod
+      join marcas on promarcascod = marcascod and marcassit = 'A'
       order by procod desc`);
     res.status(200).json(result.rows);
   } catch (error) {
@@ -116,7 +116,6 @@ exports.editarProduto = async (req, res) => {
 };
 
 exports.listarProCor = async (req, res) => {
-
   try {
     const result = await pool.query(
       "select corcod, cornome from cores order by corcod"
@@ -127,7 +126,6 @@ exports.listarProCor = async (req, res) => {
     res.status(500).json({ error: "Erro ao buscar cores" });
   }
 };
-
 
 exports.listarProdutoCoresDisponiveis = async (req, res) => {
   const { id } = req.params;
@@ -155,7 +153,7 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
   try {
     const result = await pool.query(
       `insert into procor values($1,$2) RETURNING *`,
-      [id, req.query.corescod] 
+      [id, req.query.corescod]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -171,7 +169,7 @@ exports.deletarProdutoCoresDisponiveis = async (req, res) => {
   try {
     const result = await pool.query(
       `delete from procor where procorprocod = $1 and procorcorescod = $2 RETURNING *`,
-      [id, req.query.corescod] 
+      [id, req.query.corescod]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -187,7 +185,7 @@ exports.alterarProdutoCoresDisponiveis = async (req, res) => {
   try {
     const result = await pool.query(
       `update procor set procorcorescod = $1 where procorprocod = $2 and procorcorescod = $3 RETURNING *`,
-      [req.query.corescodnovo,id, req.query.corescod] 
+      [req.query.corescodnovo, id, req.query.corescod]
     );
     res.status(200).json(result.rows);
   } catch (error) {

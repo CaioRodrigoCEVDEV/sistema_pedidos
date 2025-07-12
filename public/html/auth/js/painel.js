@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (tipoHolder) {
         tipoHolder.addEventListener("change", (e) => {
           tipo = e.target.value; // Atualiza o código do tipo selecionado
-          console.log("Tipo selecionado:", tipo);
+          // console.log("Tipo selecionado:", tipo);
         });
       }
 
@@ -82,11 +82,11 @@ document.addEventListener("DOMContentLoaded", () => {
             dados.forEach((modelo) => {
               modeloHolder.innerHTML += `<option value="${modelo.modcod}">${modelo.moddes}</option>`;
             });
-            console.log("Marca selecionada:", marcascod);
+            // console.log("Marca selecionada:", marcascod);
 
             modeloHolder.addEventListener("change", (e) => {
               modelo = e.target.value; // Atualiza o código do modelo selecionado
-              console.log("Modelo selecionado:", modelo);
+              // console.log("Modelo selecionado:", modelo);
             });
           })
           .catch(console.error);
@@ -745,15 +745,7 @@ async function excluirMarca(id) {
 
   document.getElementById("confirmarExcluirMarca").onclick = async function () {
     try {
-      // Se houver modelos vinculados, exclui todos antes da marca
-      if (modelosVinculados.length > 0) {
-        for (const modelo of modelosVinculados) {
-          await fetch(`${BASE_URL}/modelo/${modelo.modcod}`, {
-            method: "DELETE",
-          });
-        }
-      }
-      await fetch(`${BASE_URL}/marcas/${id}`, { method: "DELETE" });
+      await fetch(`${BASE_URL}/marcas/status/${id}`, { method: "PUT" });
       // Mostra mensagem de sucesso como popup temporário
       const msg = document.createElement("div");
       msg.textContent = "Marca excluída com sucesso!";

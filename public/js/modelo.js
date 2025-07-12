@@ -161,7 +161,7 @@ document.getElementById("openCartModal").addEventListener("click", function () {
     const cartJson = encodeURIComponent(
       btoa(unescape(encodeURIComponent(JSON.stringify(cart))))
     );
-    console.log("Cart antes de serializar:", cart);
+    // console.log("Cart antes de serializar:", cart);
     goToCartBtn.href = cart.length > 0 ? `carrinho?cart=${cartJson}` : "#";
     goToCartBtn.textContent = "Ir para o carrinho";
     goToCartBtn.style.marginLeft = "8px";
