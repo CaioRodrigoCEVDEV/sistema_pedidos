@@ -379,7 +379,7 @@ function editarProduto(codigo) {
             <div class="mb-3">
               <label for="editarValor" class="form-label">Valor</label>
               <input type="number" step="0.01" class="form-control" id="editarValor" name="provl" value="${
-                produto[0].provl || ""
+                Number(produto[0].provl).toFixed(2) || ""
               }" required>
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -408,15 +408,42 @@ function editarProduto(codigo) {
         })
           .then((res) => res.json())
           .then(() => {
-            alert("Produto atualizado com sucesso!");
+            // Mostra mensagem de sucesso como popup temporário
+            const msg = document.createElement("div");
+            msg.textContent = "Produto atualizado com sucesso!";
+            msg.style.position = "fixed";
+            msg.style.top = "20px";
+            msg.style.left = "50%";
+            msg.style.transform = "translateX(-50%)";
+            msg.style.background = "#28a745";
+            msg.style.color = "#fff";
+            msg.style.padding = "12px 24px";
+            msg.style.borderRadius = "6px";
+            msg.style.zIndex = "10000";
+            msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+            document.body.appendChild(msg);
+            setTimeout(() => {
+              msg.remove();
+            }, 2000);
             document.body.removeChild(popup);
-            location.reload();
+            carregarProPesquisa(); // Atualiza a tabela de pesquisa
           })
           .catch((erro) => {
             alert("Erro ao atualizar o produto.");
             console.error(erro);
           });
       };
+
+      const inputValor = document.getElementById("editarValor");
+
+      inputValor.addEventListener("input", function (e) {
+        let value = e.target.value.replace(/\D/g, "");
+        value = (parseInt(value, 10) / 100).toFixed(2);
+        e.target.value = value.toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      });
     })
     .catch((erro) => {
       alert("Erro ao buscar os dados do produto.");
@@ -1171,7 +1198,7 @@ function carregarPecas() {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${t.prodes}</td>
-          <td>${t.provl}</td>
+          <td>${formatarMoeda(t.provl)}</td>
           <td>
             <div style="display: flex; gap: 6px;">
               <button class="btn btn-sm btn-primary btn-editar-peca" data-id="${
@@ -1237,8 +1264,8 @@ function editarPecas(id, nome, valor) {
         </div>
         <div class="mb-3">
           <label for="editarPecaValor" class="form-label">Valor</label>
-          <input type="number" step="0.01" class="form-control" id="editarPecaValor" name="provl" value="${
-            valor || ""
+          <input type="text" step="0.01" class="form-control" id="editarPecaValor" name="provl" value="${
+            Number(valor).toFixed(2) || ""
           }" required>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -1288,6 +1315,17 @@ function editarPecas(id, nome, valor) {
       })
       .catch(() => alert("Erro ao atualizar peça"));
   };
+
+  const inputValor = document.getElementById("editarPecaValor");
+
+  inputValor.addEventListener("input", function (e) {
+    let value = e.target.value.replace(/\D/g, "");
+    value = (parseInt(value, 10) / 100).toFixed(2);
+    e.target.value = value.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  });
 }
 
 async function excluirPro(id) {
