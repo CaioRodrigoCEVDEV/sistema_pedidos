@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const modeloController = require('../controllers/modeloController');
-//const autenticarToken = require('../src/middleware/authMiddleware');  // desatvado por enquanto 
+const autenticarToken = require('../middlewares/middlewares');
 
 router.get('/modelo/:id', modeloController.listarModelo);
 router.get('/modelos', modeloController.listarTodosModelos);
-router.post('/modelo', modeloController.inserirModelo);
-router.put('/modelo/:id', modeloController.atualizarModelo);
-router.delete('/modelo/:id', modeloController.deletarModelo);
+router.post('/modelo', autenticarToken,modeloController.inserirModelo);
+router.put('/modelo/:id', autenticarToken,modeloController.atualizarModelo);
+router.delete('/modelo/:id',autenticarToken, modeloController.deletarModelo);
 
 module.exports = router;

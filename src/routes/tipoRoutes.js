@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const tipoController = require("../controllers/tipoController");
-//const autenticarToken = require('../src/middleware/authMiddleware');  // desatvado por enquanto
+const autenticarToken = require('../middlewares/middlewares');
 
 router.get("/tipo/:id", tipoController.listarTipo);
 router.get("/tipos", tipoController.listarTodosTipos);
-router.post("/tipo", tipoController.inserirTipo);
-router.put("/tipo/:id", tipoController.atualizarTipo);
-router.delete("/tipo/:id", tipoController.deleteTipo);
+router.post("/tipo", autenticarToken,tipoController.inserirTipo);
+router.put("/tipo/:id", autenticarToken,tipoController.atualizarTipo);
+router.delete("/tipo/:id", autenticarToken,tipoController.deleteTipo);
 
 module.exports = router;
