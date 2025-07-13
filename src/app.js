@@ -8,7 +8,7 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const cors = require('cors');
-app.use(cors());
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +25,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+app.use(cors());
 // Rotas
 const mainRoutes = require("./routes");
 app.use("/", mainRoutes);
