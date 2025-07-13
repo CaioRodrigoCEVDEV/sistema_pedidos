@@ -242,3 +242,16 @@ body {
     font-weight: 600;
     color: var(--success-color);
 }
+
+/* Centraliza elementos da tela na página inicial */
+#tutorialAlert {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#pesquisa {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
