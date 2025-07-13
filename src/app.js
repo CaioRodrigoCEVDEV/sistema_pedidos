@@ -26,6 +26,16 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.use(cors());
+
+
+const corsOptions = {
+  origin: ['http://jppecashop.com.br', 'http://www.jppecashop.com.br'],
+  credentials: true,
+};
+
+// Configuração do CORS
+app.use(cors(corsOptions));
+
 // Rotas
 const mainRoutes = require("./routes");
 app.use("/", mainRoutes);
