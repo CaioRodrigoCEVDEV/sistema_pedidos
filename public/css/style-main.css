@@ -45,3 +45,11 @@ main {
 .slide-down {
     animation: slideDown 0.5s ease-out forwards;
 }
+
+#inicioCentral {
+    min-height: 100vh;
+}
+
+#pesquisa {
+    width: 100%;
+}
