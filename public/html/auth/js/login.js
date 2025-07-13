@@ -74,6 +74,7 @@ document.getElementById('formLogin').addEventListener('submit', async (e) => {
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include', // Permite o envio de cookies
       body: JSON.stringify({ usuemail, ususenha }),
       credentials: 'include' 
     });
