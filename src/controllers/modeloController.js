@@ -49,7 +49,7 @@ exports.deletarModelo =async (req, res) => {
 
     try {
         const result = await pool.query(
-            `delete from modelo where modcod = $1 returning *`,[id]
+            `delete from modelo where modcod = $1  order by moddes   asc returning *`,[id]
         );
         res.status(200).json(result.rows);
     } catch {
@@ -60,7 +60,7 @@ exports.deletarModelo =async (req, res) => {
 
 exports.listarTodosModelos = async (req, res) => {
     try {
-        const result = await pool.query('select * from modelo');
+        const result = await pool.query('select * from modelo  order by moddes   asc');
         res.status(200).json(result.rows);
     } catch (error) {
         console.error(error);
