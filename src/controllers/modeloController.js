@@ -8,8 +8,8 @@ exports.listarModelo = async (req, res) => {
                         
             `select * from modelo where modmarcascod = $1 
                         ORDER BY 
-                        substring(moddes from '^\D*'),  
-                        CAST(substring(moddes from '\d+') AS INT); `,[id]
+                        CAST(substring(moddes from '^\d+') AS INT), 
+                        moddes;   `,[id]
         );
         res.status(200).json(result.rows);
     } catch (error) {
@@ -63,9 +63,10 @@ exports.deletarModelo =async (req, res) => {
 
 exports.listarTodosModelos = async (req, res) => {
     try {
-        const result = await pool.query(`select * from modelo ORDER BY 
-                    substring(moddes from '^\D*'),  
-                    CAST(substring(moddes from '\d+') AS INT); `);
+        const result = await pool.query(`select * from modelo 
+                                            ORDER BY 
+                                            CAST(substring(moddes from '^\d+') AS INT), 
+                                            moddes;    `);
         res.status(200).json(result.rows);
     } catch (error) {
         console.error(error);
