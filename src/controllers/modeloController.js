@@ -8,7 +8,7 @@ exports.listarModelo = async (req, res) => {
                         
             `select * from modelo where modmarcascod = $1 
                         ORDER BY 
-                        COALESCE(CAST(substring(moddes from '^\d+') AS INT), 0),
+                        COALESCE(CAST(NULLIF(substring(moddes from '^\d+'), '') AS INT), 999999),
                         moddes;  `,[id]
         );
         res.status(200).json(result.rows);
