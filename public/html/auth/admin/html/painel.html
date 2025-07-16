@@ -135,54 +135,207 @@
       </div>
       <div class="container mt-4">
         <h4 class="text-primary font-weight-bold mb-4"><i class="fa fa-cogs"></i> Gerenciamento de Produtos</h4>
-        <div class="row row-cols-1 row-cols-md-2 g-3">
+        <div class="row row-cols-1 row-cols-md-2 g-3" id="cardsArea">
+          <!-- Marca -->
           <div class="col">
             <div class="card border-primary h-100">
-              <div class="card-body text-center">
+              <div class="card-body text-center dropdown position-static">
                 <h5 class="card-title">Marca</h5>
-                <button class="btn btn-outline-primary btn-sm mb-2 w-100"><i class="fa fa-plus"></i> Cadastrar</button>
-                <button class="btn btn-secondary btn-sm w-100"><i class="fa fa-edit"></i> Gerenciar</button>
+                <button class="btn btn-outline-primary btn-sm mb-2 w-100 dropdown-toggle" type="button" id="dropdownMarca" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <i class="fa fa-plus"></i> Cadastrar
+                </button>
+                <div class="dropdown-menu p-3 w-100 mt-2" aria-labelledby="dropdownMarca" style="min-width: 220px" onclick="event.stopPropagation();">
+                  <form id="cadastrarPainelMarca" class="form">
+                    <div class="form-group mb-2">
+                      <input type="text" name="marcasdes" id="marcaDescricao" placeholder="Descrição da Marca" class="form-control" required />
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">Cadastrar</button>
+                  </form>
+                </div>
+                <button class="btn btn-secondary btn-sm w-100 mt-2" type="button" onclick="toggleMarcas()"><i class="fa fa-edit"></i> Gerenciar</button>
               </div>
             </div>
           </div>
+          <!-- Modelo -->
           <div class="col">
             <div class="card border-primary h-100">
-              <div class="card-body text-center">
+              <div class="card-body text-center dropdown position-static">
                 <h5 class="card-title">Modelo</h5>
-                <button class="btn btn-outline-primary btn-sm mb-2 w-100"><i class="fa fa-plus"></i> Cadastrar</button>
-                <button class="btn btn-secondary btn-sm w-100"><i class="fa fa-edit"></i> Gerenciar</button>
+                <button class="btn btn-outline-primary btn-sm mb-2 w-100 dropdown-toggle" type="button" id="dropdownModelo" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <i class="fa fa-plus"></i> Cadastrar
+                </button>
+                <div class="dropdown-menu p-3 w-100 mt-2" aria-labelledby="dropdownModelo" style="min-width: 220px" onclick="event.stopPropagation();">
+                  <form id="cadastrarPainelModelo" class="form">
+                    <div class="form-group mb-2">
+                      <input type="text" name="moddes" placeholder="Descrição do Modelo" class="form-control" required />
+                    </div>
+                    <div class="form-group mb-2">
+                      <div class="custom-select-wrapper">
+                        <select name="" id="painelMarca" class="form-control custom-select" required onclick="event.stopPropagation();">
+                          <option value="">Selecione a Marca</option>
+                        </select>
+                      </div>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">Cadastrar</button>
+                  </form>
+                </div>
+                <button class="btn btn-secondary btn-sm w-100 mt-2" type="button" onclick="toggleModelos()"><i class="fa fa-edit"></i> Gerenciar</button>
               </div>
             </div>
           </div>
+          <!-- Tipo de Peça -->
           <div class="col">
             <div class="card border-primary h-100">
-              <div class="card-body text-center">
+              <div class="card-body text-center dropdown position-static">
                 <h5 class="card-title">Tipo de Peça</h5>
-                <button class="btn btn-outline-primary btn-sm mb-2 w-100"><i class="fa fa-plus"></i> Cadastrar</button>
-                <button class="btn btn-secondary btn-sm w-100"><i class="fa fa-edit"></i> Gerenciar</button>
+                <button class="btn btn-outline-primary btn-sm mb-2 w-100 dropdown-toggle" type="button" id="dropdownTipo" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <i class="fa fa-plus"></i> Cadastrar
+                </button>
+                <div class="dropdown-menu p-3 w-100 mt-2" aria-labelledby="dropdownTipo" style="min-width: 220px" onclick="event.stopPropagation();">
+                  <form id="cadastrarPainelTipo" class="form">
+                    <div class="form-group mb-2">
+                      <input type="text" name="tipodes" placeholder="Descrição do Tipo" class="form-control" required />
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">Cadastrar</button>
+                  </form>
+                </div>
+                <button class="btn btn-secondary btn-sm w-100 mt-2" type="button" onclick="toggleTipos()"><i class="fa fa-edit"></i> Gerenciar</button>
               </div>
             </div>
           </div>
+          <!-- Cor -->
           <div class="col">
             <div class="card border-primary h-100">
-              <div class="card-body text-center">
+              <div class="card-body text-center dropdown position-static">
                 <h5 class="card-title">Cor</h5>
-                <button class="btn btn-outline-primary btn-sm mb-2 w-100"><i class="fa fa-plus"></i> Cadastrar</button>
-                <button class="btn btn-secondary btn-sm w-100"><i class="fa fa-edit"></i> Gerenciar</button>
+                <button class="btn btn-outline-primary btn-sm mb-2 w-100 dropdown-toggle" type="button" id="dropdownCor" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <i class="fa fa-plus"></i> Cadastrar
+                </button>
+                <div class="dropdown-menu p-3 w-100 mt-2" aria-labelledby="dropdownCor" style="min-width: 220px" onclick="event.stopPropagation();">
+                  <form id="cadastrarPainelCor" class="form">
+                    <div class="form-group mb-2">
+                      <input type="text" name="cornome" placeholder="Descrição da Cor" class="form-control" required />
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">Cadastrar</button>
+                  </form>
+                </div>
+                <button class="btn btn-secondary btn-sm w-100 mt-2" type="button" onclick="toggleCores()"><i class="fa fa-edit"></i> Gerenciar</button>
               </div>
             </div>
           </div>
+          <!-- Peça -->
           <div class="col">
             <div class="card border-primary h-100">
-              <div class="card-body text-center">
+              <div class="card-body text-center dropdown position-static">
                 <h5 class="card-title">Peça</h5>
-                <button class="btn btn-outline-primary btn-sm mb-2 w-100"><i class="fa fa-plus"></i> Cadastrar</button>
-                <button class="btn btn-secondary btn-sm w-100"><i class="fa fa-edit"></i> Gerenciar</button>
+                <button class="btn btn-outline-primary btn-sm mb-2 w-100 dropdown-toggle" type="button" id="dropdownPeca" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <i class="fa fa-plus"></i> Cadastrar
+                </button>
+                <div class="dropdown-menu p-3 w-100 mt-2" aria-labelledby="dropdownPeca" style="min-width: 220px" onclick="event.stopPropagation();">
+                  <form id="cadastrarPainelPeca" class="form">
+                    <div class="form-group mb-2">
+                      <input type="text" name="prodes" placeholder="Descrição da Peça" class="form-control" required />
+                    </div>
+                    <div class="form-group mb-2">
+                      <input type="number" name="provl" placeholder="Valor R$" class="form-control" min="0" step="0.01" required />
+                    </div>
+                    <div class="form-group mb-2">
+                      <div class="custom-select-wrapper">
+                        <select name="" id="selectPainelMarca" class="form-control custom-select" required onclick="event.stopPropagation();">
+                          <option value="">Selecione a Marca</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-group mb-2">
+                      <div class="custom-select-wrapper">
+                        <select name="" id="selectPainelModelo" class="form-control custom-select" required onclick="event.stopPropagation();">
+                          <option value="">Selecione o Modelo</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-group mb-2">
+                      <div class="custom-select-wrapper">
+                        <select name="" id="selectPainelTipo" class="form-control custom-select" required onclick="event.stopPropagation();">
+                          <option value="">Selecione o Tipo</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-group mb-2">
+                      <div class="custom-select-wrapper" id="selectPainelCor">
+                        <!-- As opções de cor serão inseridas aqui via JS -->
+                      </div>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">Cadastrar</button>
+                  </form>
+                </div>
+                <button class="btn btn-secondary btn-sm w-100 mt-2" type="button" onclick="togglePecas()"><i class="fa fa-edit"></i> Gerenciar</button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+
+        <!-- Conteúdo dinâmico -->
+        <div id="areaMarcas" class="mt-3 management-area" style="display: none">
+          <h5>Marcas cadastradas</h5>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Marca</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="listaMarcas"></tbody>
+          </table>
+        </div>
+        <div id="areaModelos" class="mt-3 management-area" style="display: none">
+          <h5>Modelos cadastrados</h5>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Modelo</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="listaModelos"></tbody>
+          </table>
+        </div>
+        <div id="areaTipos" class="mt-3 management-area" style="display: none">
+          <h5>Tipos cadastrados</h5>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="listaTipos"></tbody>
+          </table>
+        </div>
+        <div id="areaCores" class="mt-3 management-area" style="display: none">
+          <h5>Cores cadastradas</h5>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Cor</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="listaCores"></tbody>
+          </table>
+        </div>
+        <div class="mt-3 management-area" id="tabelaArea" style="display: none">
+          <h5>Peças cadastrados</h5>
+          <table class="table table-sm" id="tabelaProdutos">
+            <thead>
+              <tr>
+                <th scope="col">Peça</th>
+                <th scope="col">Valor</th>
+                <th scope="col">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="corpoTabela"></tbody>
+          </table>
+        </div>
       </div>
     </main>
 
