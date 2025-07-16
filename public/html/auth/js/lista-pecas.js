@@ -98,3 +98,40 @@ fetch(`${BASE_URL}/marcas/${marcascod}`)
   .catch(() => {
     document.getElementById("marcaTitulo").textContent = "";
   });
+
+// Ordenação das colunas ao clicar no cabeçalho da tabela
+document.addEventListener("DOMContentLoaded", function () {
+  const headers = document.querySelectorAll("table th");
+  headers.forEach((header, index) => {
+    header.style.cursor = "pointer";
+    header.addEventListener("click", () => sortTable(index));
+  });
+});
+
+function sortTable(colIndex) {
+  const tbody = document.getElementById("corpoTabela");
+  const rows = Array.from(tbody.querySelectorAll("tr"));
+
+  const asc =
+    tbody.dataset.sortColumn == colIndex && tbody.dataset.sortOrder === "asc"
+      ? false
+      : true;
+
+  rows.sort((a, b) => {
+    const aCell = a.children[colIndex].textContent.trim();
+    const bCell = b.children[colIndex].textContent.trim();
+
+    if (colIndex === 1) {
+      // Coluna de valor numérico (formato de moeda)
+      const aVal = parseFloat(aCell.replace(/[^0-9,-]+/g, "").replace(",", ".")) || 0;
+      const bVal = parseFloat(bCell.replace(/[^0-9,-]+/g, "").replace(",", ".")) || 0;
+      return asc ? aVal - bVal : bVal - aVal;
+    } else {
+      return asc ? aCell.localeCompare(bCell) : bCell.localeCompare(aCell);
+    }
+  });
+
+  rows.forEach((row) => tbody.appendChild(row));
+  tbody.dataset.sortOrder = asc ? "asc" : "desc";
+  tbody.dataset.sortColumn = colIndex;
+}
