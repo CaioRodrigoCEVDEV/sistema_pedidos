@@ -357,3 +357,19 @@ GRANT ALL ON TABLE public.vw_marcas TO postgres;
 ```
 
 ---
+
+
+# View modelos
+
+```sql
+CREATE OR REPLACE VIEW public.vw_modelos
+AS SELECT modcod,
+    moddes,
+    modsit,
+    modmarcascod
+   FROM modelo
+  ORDER BY ("substring"(moddes::text, '^\D*'::text)), ("substring"(moddes::text, '\d+'::text)::integer);
+
+```
+
+---
