@@ -52,7 +52,9 @@ HTTPS=false
 
 ### 4. Aplicativo Flutter (opcional)
 
-Um exemplo simples de cliente mobile está disponível no diretório `flutter_app`.
+Um cliente Flutter está disponível no diretório `flutter_app`.
+Ele possui uma tela de login e, após autenticar, exibe a lista de produtos
+fornecida pelo backend.
 
 ```bash
 cd flutter_app

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'login.dart';
+
 void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
@@ -12,7 +14,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pedidos App',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const ProductList(),
+      routes: {
+        '/': (_) => const LoginScreen(),
+        '/produtos': (_) => const ProductList(),
+      },
+      initialRoute: '/',
     );
   }
 }
@@ -36,7 +42,7 @@ class _ProductListState extends State<ProductList> {
 
   Future<void> fetchProducts() async {
     try {
-      final response = await http.get(Uri.parse('http://localhost:3000/pro'));
+      final response = await http.get(Uri.parse('http://localhost:3000/pros'));
       if (response.statusCode == 200) {
         setState(() {
           products = json.decode(response.body);
@@ -47,7 +53,7 @@ class _ProductListState extends State<ProductList> {
           loading = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       setState(() {
         loading = false;
       });
@@ -64,9 +70,11 @@ class _ProductListState extends State<ProductList> {
               itemCount: products.length,
               itemBuilder: (context, index) {
                 final p = products[index];
+                final name = p['prodes'] ?? '';
+                final price = p['provl'] ?? 0;
                 return ListTile(
-                  title: Text(p['name'] ?? ''),
-                  subtitle: Text('R\$ ${p['price']}'),
+                  title: Text(name),
+                  subtitle: Text('R\$ $price'),
                 );
               },
             ),
