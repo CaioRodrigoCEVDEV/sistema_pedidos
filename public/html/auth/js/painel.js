@@ -221,6 +221,33 @@ document
       })
       .catch((erro) => {
         alert("Erro ao salvar os dados.");
+      console.error(erro);
+    });
+  });
+
+//função para criar cor
+document
+  .getElementById("cadastrarPainelCor")
+  .addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    fetch(`${BASE_URL}/cores`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+      .then((res) => res.json())
+      .then((resposta) => {
+        alert("Dados salvos com sucesso!");
+        console.log(resposta);
+        location.reload();
+      })
+      .catch((erro) => {
+        alert("Erro ao salvar os dados.");
         console.error(erro);
       });
   });
@@ -577,7 +604,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-const AREAS_GESTAO = ["areaMarcas", "areaModelos", "areaTipos", "tabelaArea"];
+const AREAS_GESTAO = [
+  "areaMarcas",
+  "areaModelos",
+  "areaTipos",
+  "areaCores",
+  "tabelaArea",
+];
 
 function mostrarArea(id, loadFn) {
   AREAS_GESTAO.forEach((areaId) => {
@@ -1168,6 +1201,166 @@ async function excluirTipo(id) {
       carregarTipos();
     } catch (e) {
       alert("Erro ao excluir tipo");
+      document.body.removeChild(popup);
+    }
+  };
+}
+
+// ------- GESTÃO CORES ---------
+function toggleCores() {
+  mostrarArea("areaCores", () => {
+    carregarCores();
+
+    setTimeout(() => {
+      const area = document.getElementById("areaCores");
+      if (area) {
+        area.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 50);
+  });
+}
+
+function carregarCores() {
+  fetch(`${BASE_URL}/cores`)
+    .then((r) => r.json())
+    .then((dados) => {
+      const tbody = document.getElementById("listaCores");
+      tbody.innerHTML = "";
+      dados.forEach((c) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${c.cornome}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="editarCor(${c.corcod}, '${c.cornome.replace(/'/g, "\\'")}')"><i class='fa fa-edit'></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirCor(${c.corcod})"><i class='fa fa-trash'></i></button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(console.error);
+}
+
+function editarCor(id, nome) {
+  let popup = document.createElement("div");
+  popup.id = "popupEditarCor";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Editar Cor</h5>
+      <form id="formEditarCor">
+        <div class="mb-3">
+          <label for="editarCorDescricao" class="form-label">Descrição</label>
+          <input type="text" class="form-control" id="editarCorDescricao" name="cornome" value="${nome || ""}" required>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button type="button" class="btn btn-secondary" id="cancelarEditarCor">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>`;
+
+  document.body.appendChild(popup);
+
+  document.getElementById("cancelarEditarCor").onclick = function () {
+    document.body.removeChild(popup);
+  };
+
+  document.getElementById("formEditarCor").onsubmit = function (e) {
+    e.preventDefault();
+    const cornome = document.getElementById("editarCorDescricao").value.trim();
+    fetch(`${BASE_URL}/cores/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cornome }),
+    })
+      .then((r) => r.json())
+      .then(() => {
+        const msg = document.createElement("div");
+        msg.textContent = "Cor atualizada com sucesso!";
+        msg.style.position = "fixed";
+        msg.style.top = "20px";
+        msg.style.left = "50%";
+        msg.style.transform = "translateX(-50%)";
+        msg.style.background = "#28a745";
+        msg.style.color = "#fff";
+        msg.style.padding = "12px 24px";
+        msg.style.borderRadius = "6px";
+        msg.style.zIndex = "10000";
+        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+        document.body.appendChild(msg);
+        setTimeout(() => {
+          msg.remove();
+        }, 2000);
+        document.body.removeChild(popup);
+        carregarCores();
+      })
+      .catch(() => alert("Erro ao atualizar cor"));
+  };
+}
+
+async function excluirCor(id) {
+  let popup = document.createElement("div");
+  popup.id = "popupExcluirCor";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Excluir Cor</h5>
+      <p>Tem certeza que deseja excluir esta cor?</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" id="cancelarExcluirCor">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmarExcluirCor">Excluir</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(popup);
+
+  document.getElementById("cancelarExcluirCor").onclick = function () {
+    document.body.removeChild(popup);
+  };
+
+  document.getElementById("confirmarExcluirCor").onclick = async function () {
+    try {
+      await fetch(`${BASE_URL}/cores/${id}`, { method: "DELETE" });
+      const msg = document.createElement("div");
+      msg.textContent = "Cor excluída com sucesso!";
+      msg.style.position = "fixed";
+      msg.style.top = "20px";
+      msg.style.left = "50%";
+      msg.style.transform = "translateX(-50%)";
+      msg.style.background = "#dc3545";
+      msg.style.color = "#fff";
+      msg.style.padding = "12px 24px";
+      msg.style.borderRadius = "6px";
+      msg.style.zIndex = "10000";
+      msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+      document.body.appendChild(msg);
+      setTimeout(() => {
+        msg.remove();
+      }, 2000);
+      document.body.removeChild(popup);
+      carregarCores();
+    } catch (e) {
+      alert("Erro ao excluir cor");
       document.body.removeChild(popup);
     }
   };
