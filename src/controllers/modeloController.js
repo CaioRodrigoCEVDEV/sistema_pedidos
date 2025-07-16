@@ -65,8 +65,8 @@ exports.listarTodosModelos = async (req, res) => {
     try {
         const result = await pool.query(`select * from modelo 
                                             ORDER BY 
-                                            CAST(substring(moddes from '^\d+') AS INT), 
-                                            moddes;    `);
+                        COALESCE(CAST(NULLIF(substring(moddes from '^\d+'), '') AS INT), 999999),
+                        moddes;    `);
         res.status(200).json(result.rows);
     } catch (error) {
         console.error(error);
