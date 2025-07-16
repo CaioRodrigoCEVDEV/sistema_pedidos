@@ -264,11 +264,11 @@ function enviarWhatsApp() {
     .then((response) => response.json())
     .then((data) => {
       // Use o número
-      const whatsappNumber1 = data.empwhatsapp1 || "5561991494321"; // Use a default number if not found
+      const whatsappNumber1 = data.empwhatsapp || "5561991494321"; // Use a default number if not found
       const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
         mensagem
       )}`;
-      window.open(whatsappUrl, "_blank");
+      window.location.href = whatsappUrl;
 
       /// Limpa o carrinho no localStorage e na tela
       localStorage.setItem("cart", JSON.stringify([]));
@@ -291,11 +291,11 @@ function enviarWhatsApp() {
     })
     .catch((error) => {
       console.error("Erro ao buscar número do WhatsApp:", error);
-      const whatsappNumber1 = "5561991494321"; // Fallback caso a API falhe
+      const whatsappNumber1 = data.empwhatsapp || "5561991494321"; // Fallback caso a API falhe
       const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
         mensagem
       )}`;
-      window.open(whatsappUrl, "_blank");
+      window.location.href = whatsappUrl;
 
       /// Limpa o carrinho no localStorage e na tela
       localStorage.setItem("cart", JSON.stringify([]));
@@ -358,6 +358,7 @@ function enviarWhatsAppEntrega() {
   mensagem += `${indent}${caminhaoEmoji} Entrega\n\n`;
   mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
+  console.log(mensagem);
   fetch(`${BASE_URL}/emp`)
     .then((response) => response.json())
     .then((data) => {
@@ -366,7 +367,8 @@ function enviarWhatsAppEntrega() {
       const whatsappUrl2 = `https://api.whatsapp.com/send?phone=${whatsappNumber2}&text=${encodeURIComponent(
         mensagem
       )}`;
-      window.open(whatsappUrl2, "_blank");
+
+      window.location.href = whatsappUrl2;
 
       /// Limpa o carrinho no localStorage e na tela
       localStorage.setItem("cart", JSON.stringify([]));
@@ -393,7 +395,7 @@ function enviarWhatsAppEntrega() {
       const whatsappUrl2 = `https://api.whatsapp.com/send?phone=${whatsappNumber2}&text=${encodeURIComponent(
         mensagem
       )}`;
-      window.open(whatsappUrl2, "_blank");
+      window.location.href = whatsappUrl2;
 
       /// Limpa o carrinho no localStorage e na tela
       localStorage.setItem("cart", JSON.stringify([]));
