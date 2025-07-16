@@ -270,6 +270,8 @@ function enviarWhatsApp() {
       )}`;
       window.location.href = whatsappUrl;
 
+      // testes;
+
       /// Limpa o carrinho no localStorage e na tela
       localStorage.setItem("cart", JSON.stringify([]));
       renderCart(); // Isso vai limpar a tabela e zerar o total
