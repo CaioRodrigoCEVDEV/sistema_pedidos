@@ -6,7 +6,10 @@ exports.listarModelo = async (req, res) => {
     try {
         const result = await pool.query(
                         
-            'select * from modelo where modmarcascod = $1 order by moddes   asc',[id]
+            `select * from modelo where modmarcascod = $1 
+                        ORDER BY 
+                        substring(moddes from '^\D*'),  
+                        CAST(substring(moddes from '\d+') AS INT); `,[id]
         );
         res.status(200).json(result.rows);
     } catch (error) {
@@ -60,7 +63,9 @@ exports.deletarModelo =async (req, res) => {
 
 exports.listarTodosModelos = async (req, res) => {
     try {
-        const result = await pool.query('select * from modelo order by moddes   asc');
+        const result = await pool.query(`select * from modelo ORDER BY 
+                    substring(moddes from '^\D*'),  
+                    CAST(substring(moddes from '\d+') AS INT); `);
         res.status(200).json(result.rows);
     } catch (error) {
         console.error(error);
