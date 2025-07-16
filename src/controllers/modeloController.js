@@ -8,8 +8,8 @@ exports.listarModelo = async (req, res) => {
                         
             `select * from modelo where modmarcascod = $1 
                         ORDER BY 
-                        CAST(substring(moddes from '^\d+') AS INT), 
-                        moddes;   `,[id]
+                        COALESCE(CAST(substring(moddes from '^\d+') AS INT), 0),
+                        moddes;  `,[id]
         );
         res.status(200).json(result.rows);
     } catch (error) {
