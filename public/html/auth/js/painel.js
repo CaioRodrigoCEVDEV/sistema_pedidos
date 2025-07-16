@@ -4,6 +4,8 @@ let marcascod = null;
 let marcacodModelo = null;
 let tipo = null;
 let modelo = null;
+let listaCores = [];
+let produtoCores = null;
 
 function formatarMoeda(valor) {
   return Number(valor).toLocaleString("pt-BR", {
@@ -577,7 +579,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-const AREAS_GESTAO = ["areaMarcas", "areaModelos", "areaTipos", "tabelaArea"];
+const AREAS_GESTAO = [
+  "areaMarcas",
+  "areaModelos",
+  "areaTipos",
+  "areaCores",
+  "tabelaArea",
+];
 
 function mostrarArea(id, loadFn) {
   AREAS_GESTAO.forEach((areaId) => {
@@ -1387,4 +1395,158 @@ async function excluirPro(id) {
       document.body.removeChild(popup);
     }
   };
+}
+
+// ------- GESTÃO CORES ---------
+function toggleCores() {
+  mostrarArea("areaCores", () => {
+    carregarSelectsCor();
+  });
+}
+
+function carregarSelectsCor() {
+  Promise.all([
+    fetch(`${BASE_URL}/pros/`).then((r) => r.json()),
+    fetch(`${BASE_URL}/procores/`).then((r) => r.json()),
+  ]).then(([produtos, cores]) => {
+    listaCores = cores;
+    const prodSelect = document.getElementById("corProduto");
+    const prodGerSelect = document.getElementById("selectProdutoGerenciarCor");
+    const corSelect = document.getElementById("corCor");
+
+    if (prodSelect) {
+      prodSelect.innerHTML = '<option value="">Selecione o Produto</option>';
+      produtos.forEach((p) => {
+        prodSelect.innerHTML += `<option value="${p.procod}">${p.prodes}</option>`;
+      });
+    }
+
+    if (prodGerSelect) {
+      prodGerSelect.innerHTML = '<option value="">Selecione o Produto</option>';
+      produtos.forEach((p) => {
+        prodGerSelect.innerHTML += `<option value="${p.procod}">${p.prodes}</option>`;
+      });
+    }
+
+    if (corSelect) {
+      corSelect.innerHTML = '<option value="">Selecione a Cor</option>';
+      cores.forEach((c) => {
+        corSelect.innerHTML += `<option value="${c.corcod}">${c.cornome}</option>`;
+      });
+    }
+  });
+}
+
+document
+  .getElementById("selectProdutoGerenciarCor")
+  .addEventListener("change", function () {
+    produtoCores = this.value;
+    if (produtoCores) carregarCores(produtoCores);
+    else document.getElementById("listaCores").innerHTML = "";
+  });
+
+function carregarCores(prodId) {
+  fetch(`${BASE_URL}/proCoresDisponiveis/${prodId}`)
+    .then((r) => r.json())
+    .then((dados) => {
+      const tbody = document.getElementById("listaCores");
+      tbody.innerHTML = "";
+      dados.forEach((c) => {
+        if (!c.cornome) return;
+        const corObj = listaCores.find((x) => x.cornome === c.cornome);
+        const corcod = corObj ? corObj.corcod : 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${c.cornome}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="editarProdutoCor(${prodId}, ${corcod})"><i class='fa fa-edit'></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirProdutoCor(${prodId}, ${corcod})"><i class='fa fa-trash'></i></button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+document
+  .getElementById("cadastrarPainelCor")
+  .addEventListener("submit", function (e) {
+    e.preventDefault();
+    const prodId = document.getElementById("corProduto").value;
+    const corId = document.getElementById("corCor").value;
+    fetch(`${BASE_URL}/proCoresDisponiveis/${prodId}?corescod=${corId}`, {
+      method: "POST",
+    })
+      .then((r) => r.json())
+      .then(() => {
+        alert("Dados salvos com sucesso!");
+        if (produtoCores == prodId) carregarCores(prodId);
+      })
+      .catch(() => alert("Erro ao salvar os dados."));
+  });
+
+function editarProdutoCor(prodId, corId) {
+  let popup = document.createElement("div");
+  popup.id = "popupEditarCor";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  let options = '<option value="">Selecione a Cor</option>';
+  listaCores.forEach((c) => {
+    options += `<option value="${c.corcod}"${c.corcod == corId ? " selected" : ""}>${c.cornome}</option>`;
+  });
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Editar Cor</h5>
+      <form id="formEditarCor">
+        <div class="mb-3">
+          <select id="novaCor" class="form-control" required>
+            ${options}
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button type="button" class="btn btn-secondary" id="cancelarEditarCor">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>`;
+
+  document.body.appendChild(popup);
+
+  document.getElementById("cancelarEditarCor").onclick = function () {
+    document.body.removeChild(popup);
+  };
+
+  document.getElementById("formEditarCor").onsubmit = function (e) {
+    e.preventDefault();
+    const nova = document.getElementById("novaCor").value;
+    fetch(
+      `${BASE_URL}/proCoresDisponiveis/${prodId}?corescod=${corId}&corescodnovo=${nova}`,
+      { method: "PUT" }
+    )
+      .then((r) => r.json())
+      .then(() => {
+        document.body.removeChild(popup);
+        carregarCores(prodId);
+      })
+      .catch(() => alert("Erro ao atualizar cor"));
+  };
+}
+
+function excluirProdutoCor(prodId, corId) {
+  if (!confirm("Excluir esta cor?")) return;
+  fetch(`${BASE_URL}/proCoresDisponiveis/${prodId}?corescod=${corId}`, {
+    method: "DELETE",
+  })
+    .then((r) => r.json())
+    .then(() => carregarCores(prodId))
+    .catch(() => alert("Erro ao excluir cor"));
 }
