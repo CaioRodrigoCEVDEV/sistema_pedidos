@@ -85,6 +85,9 @@ app.get("/perfil", autenticarToken, (req, res) => {
 app.get("/configuracoes", autenticarToken, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/configuracoes.html"));
 });
+app.get("/gerenciamento-produtos", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/html/gerenciamento-produtos.html"));
+});
 app.get("/painel", autenticarToken,(req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel.html"));
 });
