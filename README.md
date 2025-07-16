@@ -49,6 +49,17 @@ HTTPS=false
 
 ```
 ---
+
+### 4. Aplicativo Flutter (opcional)
+
+Um exemplo simples de cliente mobile está disponível no diretório `flutter_app`.
+
+```bash
+cd flutter_app
+flutter pub get
+flutter run
+```
+
 # 📦 Estrutura do Banco de Dados
 
 Este repositório contém a definição de um banco de dados PostgreSQL com três tabelas principais: `usu`, `pro` , `modelo`, `tipo` e `marcas`.
