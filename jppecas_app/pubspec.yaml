@@ -1,0 +1,16 @@
+name: jppecas_app
+description: Aplicativo da JP Peças com base no sistema_pedidos
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^0.13.5
+  url_launcher: ^6.2.5
+  shared_preferences: ^2.2.1
+
+flutter:
+  uses-material-design: true
