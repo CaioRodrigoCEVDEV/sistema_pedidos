@@ -264,7 +264,7 @@ function enviarWhatsApp() {
     .then((response) => response.json())
     .then((data) => {
       // Use o número
-      const whatsappNumber1 = "5561991494321"; // Use a default number if not found
+      const whatsappNumber1 = data.empwhatsapp || "5561991494321"; // Use a default number if not found
       const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
         mensagem
       )}`;
@@ -291,7 +291,7 @@ function enviarWhatsApp() {
     })
     .catch((error) => {
       console.error("Erro ao buscar número do WhatsApp:", error);
-      const whatsappNumber1 = "5561991494321"; // Fallback caso a API falhe
+      const whatsappNumber1 = data.empwhatsapp || "5561991494321"; // Fallback caso a API falhe
       const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
         mensagem
       )}`;
