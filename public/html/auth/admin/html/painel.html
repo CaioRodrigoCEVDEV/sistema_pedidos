@@ -151,23 +151,24 @@
           <div class="col-12 col-md-10 col-lg-8">
             <div class="card shadow-sm mb-4">
               <div class="card-body">
-                <h4 class="card-title mb-4 text-primary font-weight-bold">
-                  Gerenciamento
-                </h4>
-                <div class="row">
+              <h4 class="card-title mb-4 text-primary font-weight-bold">
+                Gerenciamento de Produtos
+              </h4>
+              <div class="row">
                   <!-- Marca -->
                   <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
+                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
                   >
+                    <h5 class="font-weight-bold text-center">Marca</h5>
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg "
                       type="button"
                       id="dropdownMarca"
                       data-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
-                      Cadastrar Marca <i class="bi bi-plus-square"></i>
+                      Cadastrar Marca
                     </button>
                     <div
                       class="dropdown-menu p-3 w-100 mt-2"
@@ -192,7 +193,7 @@
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
                       type="button"
                       onclick="toggleMarcas()"
                     >
@@ -201,17 +202,18 @@
                   </div>
                   <!-- Modelo -->
                   <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
+                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
                   >
+                    <h5 class="font-weight-bold text-center">Modelo</h5>
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg "
                       type="button"
                       id="dropdownModelo"
                       data-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
-                      Cadastrar Modelo <i class="bi bi-plus-square"></i>
+                      Cadastrar Modelo
                     </button>
                     <div
                       class="dropdown-menu p-3 w-100 mt-2"
@@ -248,7 +250,7 @@
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
                       type="button"
                       onclick="toggleModelos()"
                     >
@@ -257,17 +259,18 @@
                   </div>
                   <!-- Tipo de Peça -->
                   <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
+                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
                   >
+                    <h5 class="font-weight-bold text-center">Tipo de Peça</h5>
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
                       type="button"
                       id="dropdownTipo"
                       data-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
-                      Cadastrar Tipo de Peça <i class="bi bi-plus-square"></i>
+                      Cadastrar Tipo de Peça
                     </button>
                     <div
                       class="dropdown-menu p-3 w-100 mt-2"
@@ -291,7 +294,7 @@
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
                       type="button"
                       onclick="toggleTipos()"
                     >
@@ -300,17 +303,18 @@
                 </div>
                 <!-- Cor -->
                 <div
-                  class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
+                  class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
                 >
+                  <h5 class="font-weight-bold text-center">Cor</h5>
                   <button
-                    class="btn btn-outline-primary btn-block dropdown-toggle"
+                    class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
                     type="button"
                     id="dropdownCor"
                     data-toggle="dropdown"
                     aria-haspopup="true"
                     aria-expanded="false"
                   >
-                    Cadastrar Cor <i class="bi bi-plus-square"></i>
+                    Cadastrar Cor
                   </button>
                   <div
                     class="dropdown-menu p-3 w-100 mt-2"
@@ -334,7 +338,7 @@
                     </form>
                   </div>
                   <button
-                    class="btn btn-outline-secondary btn-block mt-2"
+                    class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
                     type="button"
                     onclick="toggleCores()"
                   >
@@ -343,17 +347,18 @@
                 </div>
                 <!-- Peça -->
                 <div
-                  class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
+                  class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
                 >
+                    <h5 class="font-weight-bold text-center">Peça</h5>
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
                       type="button"
                       id="dropdownPeca"
                       data-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
-                      Cadastrar Peça <i class="bi bi-plus-square"></i>
+                      Cadastrar Peça
                     </button>
                     <div
                       class="dropdown-menu p-3 w-100 mt-2"
@@ -432,7 +437,7 @@
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
                       type="button"
                       onclick="togglePecas()"
                     >
