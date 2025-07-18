@@ -12,26 +12,17 @@ function formatarMoeda(valor) {
   });
 }
 
-//criar a rota de usuario logado para ver se esta logado
-fetch("/api/usuario-logado", {
-  method: "GET",
-  credentials: "include", // envia cookies HttpOnly
-})
-  .then((res) => {
-    if (res.ok) {
-      return res.json();
-    } else {
-      throw new Error("Usuário não autenticado");
-    }
-  })
-  .then((usuario) => {
-    console.log("Usuário logado:", usuario);
-    document.getElementById("botao-orcamento").style.display = "block";
-  })
-  .catch((err) => {
-    console.warn(err.message);
-    document.getElementById("botao-orcamento").style.display = "none";
-  });
+//função para verificar se esta logado e mostrar o botão orçamento
+document.addEventListener("DOMContentLoaded", function () {
+  const usuarioLogado = localStorage.getItem("usuarioLogado");
+  const botaoOrcamento = document.getElementById("botao-orcamento");
+
+  if (usuarioLogado) {
+    botaoOrcamento.style.display = "inline";
+  } else {
+    botaoOrcamento.style.display = "none";
+  }
+});
 
 function renderCart() {
   const corpoTabela = document.getElementById("carrinhoCorpo");
@@ -249,7 +240,7 @@ function enviarWhatsApp() {
     return;
   }
 
-  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de Itens:\n\n`;
+  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n`;
   let totalValue = 0;
 
   cart.forEach((item) => {
@@ -260,26 +251,15 @@ function enviarWhatsApp() {
     const tipo = item.tipo || "";
     totalValue += valor * qtde;
 
-    mensagem += `${descricaoEmoji} Descrição: ${nome}\n`;
-    mensagem += `${indent}${marcaEmoji} Marca: ${marca}\n`;
-    mensagem += `${indent}${tipoEmoji} Tipo: ${tipo}\n`;
-    //mensagem += `Cor: Cor aqui\n`;  preguiça de adicionar cor
-    mensagem += `${indent}${quantidadeEmoji} Quantidade: ${qtde}\n`;
-    mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(
-      2
-    )}\n`;
+    mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
   });
 
   if (observacoes) {
-    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
+    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n`;
   }
-
-  mensagem += `${listaEmoji} Resumo do Pedido:\n`;
-  mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(
-    2
-  )}\n`;
-  mensagem += `${indent}${lojaEmoji} Retirada: No balcão\n\n`;
-  mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
+  mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
+  mensagem += `${lojaEmoji} Retirada: No balcão\n`;
+  // mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
   fetch(`${BASE_URL}/emp`)
     .then((response) => response.json())
@@ -350,7 +330,7 @@ function enviarWhatsAppEntrega() {
     return;
   }
 
-  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de Itens:\n\n`;
+  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n`;
   let totalValue = 0;
 
   cart.forEach((item) => {
@@ -361,25 +341,15 @@ function enviarWhatsAppEntrega() {
     const tipo = item.tipo || "";
     totalValue += valor * qtde;
 
-    mensagem += `${descricaoEmoji} Descrição: ${nome}\n`;
-    mensagem += `${indent}${marcaEmoji} Marca: ${marca}\n`;
-    mensagem += `${indent}${tipoEmoji} Tipo: ${tipo}\n`;
-    mensagem += `${indent}${quantidadeEmoji} Quantidade: ${qtde}\n`;
-    mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(
-      2
-    )}\n`;
+    mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
   });
 
   if (observacoes) {
-    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
+    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n`;
   }
 
-  mensagem += `${listaEmoji} Resumo do Pedido:\n`;
-  mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(
-    2
-  )}\n`;
-  mensagem += `${indent}${caminhaoEmoji} Entrega\n\n`;
-  mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
+  mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
+  mensagem += `${caminhaoEmoji} Entrega\n`;
 
   console.log(mensagem);
   fetch(`${BASE_URL}/emp`)
@@ -450,7 +420,7 @@ function enviarWhatsAppOrcamento() {
     return;
   }
 
-  let mensagem = `${caixaEmoji} Orçamento de Peças:\n\n${listaEmoji} Lista de Itens:\n\n`;
+  let mensagem = `${caixaEmoji} Orçamento de Peças:\n\n`;
   let totalValue = 0;
 
   cart.forEach((item) => {
@@ -458,14 +428,14 @@ function enviarWhatsAppOrcamento() {
     const qtde = item.qt || 0;
     const marca = item.marca || "";
     const tipo = item.tipo || "";
+    const valor = parseFloat(item.preco) || 0;
+    totalValue += valor * qtde;
 
-    mensagem += `Marca: ${marca}+' '+${descricaoEmoji} Descrição: ${nome}\n`;
+    mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
   });
 
   // mensagem += `${listaEmoji} Resumo do Orçamento:\n`;
-  // mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(
-  //   2
-  // )}\n`; // Total ainda é zero, pois não estamos incluindo valores no orçamento
+  mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
 
   fetch(`${BASE_URL}/emp`)
     .then((response) => response.json())
