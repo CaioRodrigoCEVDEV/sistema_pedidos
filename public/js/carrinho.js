@@ -12,6 +12,27 @@ function formatarMoeda(valor) {
   });
 }
 
+//criar a rota de usuario logado para ver se esta logado
+fetch("/api/usuario-logado", {
+  method: "GET",
+  credentials: "include", // envia cookies HttpOnly
+})
+  .then((res) => {
+    if (res.ok) {
+      return res.json();
+    } else {
+      throw new Error("Usuário não autenticado");
+    }
+  })
+  .then((usuario) => {
+    console.log("Usuário logado:", usuario);
+    document.getElementById("botao-orcamento").style.display = "block";
+  })
+  .catch((err) => {
+    console.warn(err.message);
+    document.getElementById("botao-orcamento").style.display = "none";
+  });
+
 function renderCart() {
   const corpoTabela = document.getElementById("carrinhoCorpo");
   const totalCarrinhoElement = document.getElementById("totalCarrinho");
@@ -398,6 +419,89 @@ function enviarWhatsAppEntrega() {
         mensagem
       )}`;
       window.location.href = whatsappUrl2;
+
+      /// Limpa o carrinho no localStorage e na tela
+      localStorage.setItem("cart", JSON.stringify([]));
+      renderCart(); // Isso vai limpar a tabela e zerar o total
+
+      // Remove o parâmetro cart da URL
+      const url = new URL(window.location);
+      url.searchParams.delete("cart");
+      window.history.replaceState(
+        {},
+        document.title,
+        url.pathname + url.search
+      );
+
+      // Redireciona para o index após um pequeno delay
+      setTimeout(() => {
+        window.location.href = "index";
+      }, 500);
+      // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
+    });
+}
+
+// função botão orçamento será enviado apenas a lista de itens sem valor
+function enviarWhatsAppOrcamento() {
+  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  const observacoes = document.getElementById("observacoes").value.trim();
+  if (cart.length === 0) {
+    alert("Seu carrinho está vazio!");
+    return;
+  }
+
+  let mensagem = `${caixaEmoji} Orçamento de Peças:\n\n${listaEmoji} Lista de Itens:\n\n`;
+  let totalValue = 0;
+
+  cart.forEach((item) => {
+    const nome = item.nome || "---";
+    const qtde = item.qt || 0;
+    const marca = item.marca || "";
+    const tipo = item.tipo || "";
+
+    mensagem += `Marca: ${marca}+' '+${descricaoEmoji} Descrição: ${nome}\n`;
+  });
+
+  // mensagem += `${listaEmoji} Resumo do Orçamento:\n`;
+  // mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(
+  //   2
+  // )}\n`; // Total ainda é zero, pois não estamos incluindo valores no orçamento
+
+  fetch(`${BASE_URL}/emp`)
+    .then((response) => response.json())
+    .then((data) => {
+      // Use o número
+      const whatsappNumber3 = data.empwhatsapp3 || "5561991494321"; // Use a default number if not found
+      const whatsappUrl3 = `https://api.whatsapp.com/send?phone=${whatsappNumber3}&text=${encodeURIComponent(
+        mensagem
+      )}`;
+      window.location.href = whatsappUrl3;
+
+      /// Limpa o carrinho no localStorage e na tela
+      localStorage.setItem("cart", JSON.stringify([]));
+      renderCart(); // Isso vai limpar a tabela e zerar o total
+
+      // Remove o parâmetro cart da URL
+      const url = new URL(window.location);
+      url.searchParams.delete("cart");
+      window.history.replaceState(
+        {},
+        document.title,
+        url.pathname + url.search
+      );
+      // Redireciona para o index após um pequeno delay
+      setTimeout(() => {
+        window.location.href = "index";
+      }, 500);
+      // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
+    })
+    .catch((error) => {
+      console.error("Erro ao buscar número do WhatsApp:", error);
+      const whatsappNumber3 = "5561991494321"; // Fallback caso a API falhe
+      const whatsappUrl3 = `https://api.whatsapp.com/send?phone=${whatsappNumber3}&text=${encodeURIComponent(
+        mensagem
+      )}`;
+      window.location.href = whatsappUrl3;
 
       /// Limpa o carrinho no localStorage e na tela
       localStorage.setItem("cart", JSON.stringify([]));
