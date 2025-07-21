@@ -61,6 +61,11 @@ const coresRoutes = require("./routes/coresRoutes");
 app.use(coresRoutes);
 
 // Rotas de páginas
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/html/index.html"));
+});
+
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/login.html"));
 });
