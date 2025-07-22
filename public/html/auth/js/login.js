@@ -97,8 +97,9 @@ document.getElementById("formLogin").addEventListener("submit", async (e) => {
         localStorage.removeItem("rememberLogin");
         localStorage.removeItem("savedEmail");
         localStorage.removeItem("savedPassword");
-        localStorage.setItem("usuarioLogado", usuemail);
       }
+      localStorage.setItem("usuarioLogado", usuemail);
+      console.log(usuemail);
       window.location.href = `${BASE_URL}/painel`;
     } else {
       alertPersonalizado(data.mensagem || "Email ou senha incorretos!", 2000);
