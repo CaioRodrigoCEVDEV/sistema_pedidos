@@ -17,6 +17,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const usuarioLogado = localStorage.getItem("usuarioLogado");
   const botaoOrcamento = document.getElementById("botao-orcamento");
 
+  console.log(usuarioLogado);
+
   if (usuarioLogado) {
     botaoOrcamento.style.display = "inline";
   } else {
