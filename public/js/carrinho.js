@@ -443,7 +443,7 @@ function enviarWhatsAppOrcamento() {
     .then((response) => response.json())
     .then((data) => {
       // Use o número
-      const whatsappNumber3 = data.empwhatsapp3 || "5561991494321"; // Use a default number if not found
+      const whatsappNumber3 = data.empwhatsapp1 || "5561991494321"; // Use a default number if not found
       const whatsappUrl3 = `https://api.whatsapp.com/send?phone=${whatsappNumber3}&text=${encodeURIComponent(
         mensagem
       )}`;
