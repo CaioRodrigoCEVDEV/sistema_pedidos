@@ -375,9 +375,12 @@ inputPesquisa.addEventListener("input", function () {
 });
 
 function editarProduto(codigo) {
-  fetch(`${BASE_URL}/pro/painel/${codigo}`)
-    .then((res) => res.json())
-    .then((produto) => {
+  Promise.all([
+    fetch(`${BASE_URL}/pro/painel/${codigo}`).then((r) => r.json()),
+    fetch(`${BASE_URL}/procores`).then((r) => r.json()),
+    fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) => r.json()),
+  ])
+    .then(([produto, coresDisponiveis, coresProduto]) => {
       // Cria o popup
       let popup = document.createElement("div");
       popup.id = "popupEditarProduto";
@@ -409,6 +412,20 @@ function editarProduto(codigo) {
                 Number(produto[0].provl).toFixed(2) || ""
               }" required>
             </div>
+            <div class="mb-3" id="editarProdutoCores">
+              <label>Selecione a(s) cor(es):</label><br>
+              ${coresDisponiveis
+                .map(
+                  (c) => `
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="procor" value="${c.corcod}" id="editar_cor_${c.corcod}" ${
+                  coresProduto.some((cp) => cp.corcod == c.corcod) ? "checked" : ""
+                }>
+                <label class="form-check-label" for="editar_cor_${c.corcod}">${c.cornome}</label>
+              </div>`
+                )
+                .join("")}
+            </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;">
               <button type="button" class="btn btn-secondary" id="cancelarEditarProduto">Cancelar</button>
               <button type="submit" class="btn btn-primary">Salvar</button>
@@ -423,42 +440,58 @@ function editarProduto(codigo) {
         document.body.removeChild(popup);
       };
 
-      document.getElementById("formEditarProduto").onsubmit = function (e) {
+      document.getElementById("formEditarProduto").onsubmit = async function (e) {
         e.preventDefault();
         const prodes = document.getElementById("editarDescricao").value.trim();
         const provl = document.getElementById("editarValor").value;
+        const corCheckboxes = popup.querySelectorAll('#editarProdutoCores input[type="checkbox"]');
+        const selecionadas = Array.from(corCheckboxes)
+          .filter((cb) => cb.checked)
+          .map((cb) => cb.value);
+        const anteriores = coresProduto.map((c) => String(c.corcod)).filter(Boolean);
 
-        fetch(`${BASE_URL}/pro/${codigo}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prodes, provl }),
-        })
-          .then((res) => res.json())
-          .then(() => {
-            // Mostra mensagem de sucesso como popup temporário
-            const msg = document.createElement("div");
-            msg.textContent = "Produto atualizado com sucesso!";
-            msg.style.position = "fixed";
-            msg.style.top = "20px";
-            msg.style.left = "50%";
-            msg.style.transform = "translateX(-50%)";
-            msg.style.background = "#28a745";
-            msg.style.color = "#fff";
-            msg.style.padding = "12px 24px";
-            msg.style.borderRadius = "6px";
-            msg.style.zIndex = "10000";
-            msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-            document.body.appendChild(msg);
-            setTimeout(() => {
-              msg.remove();
-            }, 2000);
-            document.body.removeChild(popup);
-            carregarProPesquisa(); // Atualiza a tabela de pesquisa
-          })
-          .catch((erro) => {
-            alert("Erro ao atualizar o produto.");
-            console.error(erro);
+        try {
+          await fetch(`${BASE_URL}/pro/${codigo}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prodes, provl }),
           });
+
+          // adiciona novas cores
+          for (const cor of selecionadas) {
+            if (!anteriores.includes(cor)) {
+              await fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+            }
+          }
+          // remove cores desmarcadas
+          for (const cor of anteriores) {
+            if (!selecionadas.includes(cor)) {
+              await fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`, { method: 'DELETE' });
+            }
+          }
+
+          const msg = document.createElement("div");
+          msg.textContent = "Produto atualizado com sucesso!";
+          msg.style.position = "fixed";
+          msg.style.top = "20px";
+          msg.style.left = "50%";
+          msg.style.transform = "translateX(-50%)";
+          msg.style.background = "#28a745";
+          msg.style.color = "#fff";
+          msg.style.padding = "12px 24px";
+          msg.style.borderRadius = "6px";
+          msg.style.zIndex = "10000";
+          msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+          document.body.appendChild(msg);
+          setTimeout(() => {
+            msg.remove();
+          }, 2000);
+          document.body.removeChild(popup);
+          carregarProPesquisa();
+        } catch (erro) {
+          alert("Erro ao atualizar o produto.");
+          console.error(erro);
+        }
       };
 
       const inputValor = document.getElementById("editarValor");
@@ -1418,11 +1451,8 @@ function carregarPecas() {
 document.getElementById("corpoTabela").addEventListener("click", function (e) {
   if (e.target.closest(".btn-editar-peca")) {
     const btn = e.target.closest(".btn-editar-peca");
-    editarPecas(
-      btn.getAttribute("data-id"),
-      btn.getAttribute("data-nome"),
-      btn.getAttribute("data-valor")
-    );
+    // Usa a mesma lógica de edição de produto com suporte a cores
+    editarProduto(btn.getAttribute("data-id"));
   }
   if (e.target.closest(".btn-excluir-peca")) {
     const btn = e.target.closest(".btn-excluir-peca");
@@ -1430,96 +1460,6 @@ document.getElementById("corpoTabela").addEventListener("click", function (e) {
   }
 });
 
-function editarPecas(id, nome, valor) {
-  // Cria o popup
-  let popup = document.createElement("div");
-  popup.id = "popupEditarPeca";
-  popup.style.position = "fixed";
-  popup.style.top = "0";
-  popup.style.left = "0";
-  popup.style.width = "100vw";
-  popup.style.height = "100vh";
-  popup.style.background = "rgba(0,0,0,0.5)";
-  popup.style.display = "flex";
-  popup.style.alignItems = "center";
-  popup.style.justifyContent = "center";
-  popup.style.zIndex = "9999";
-
-  popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
-      <h5>Editar Peça</h5>
-      <form id="formEditarPeca">
-        <div class="mb-3">
-          <label for="editarPecaDescricao" class="form-label">Descrição</label>
-          <input type="text" class="form-control" id="editarPecaDescricao" name="prodes" value="${
-            nome || ""
-          }" required>
-        </div>
-        <div class="mb-3">
-          <label for="editarPecaValor" class="form-label">Valor</label>
-          <input type="text" step="0.01" class="form-control" id="editarPecaValor" name="provl" value="${
-            Number(valor).toFixed(2) || ""
-          }" required>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <button type="button" class="btn btn-secondary" id="cancelarEditarPeca">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar</button>
-        </div>
-      </form>
-    </div>
-  `;
-
-  document.body.appendChild(popup);
-
-  document.getElementById("cancelarEditarPeca").onclick = function () {
-    document.body.removeChild(popup);
-  };
-
-  document.getElementById("formEditarPeca").onsubmit = function (e) {
-    e.preventDefault();
-    const prodes = document.getElementById("editarPecaDescricao").value.trim();
-    const provl = document.getElementById("editarPecaValor").value;
-    fetch(`${BASE_URL}/pro/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prodes, provl }),
-    })
-      .then((r) => r.json())
-      .then(() => {
-        // Mostra mensagem de sucesso como popup temporário
-        const msg = document.createElement("div");
-        msg.textContent = "Peça atualizada com sucesso!";
-        msg.style.position = "fixed";
-        msg.style.top = "20px";
-        msg.style.left = "50%";
-        msg.style.transform = "translateX(-50%)";
-        msg.style.background = "#28a745";
-        msg.style.color = "#fff";
-        msg.style.padding = "12px 24px";
-        msg.style.borderRadius = "6px";
-        msg.style.zIndex = "10000";
-        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-        document.body.appendChild(msg);
-        setTimeout(() => {
-          msg.remove();
-        }, 2000);
-        document.body.removeChild(popup);
-        carregarPecas();
-      })
-      .catch(() => alert("Erro ao atualizar peça"));
-  };
-
-  const inputValor = document.getElementById("editarPecaValor");
-
-  inputValor.addEventListener("input", function (e) {
-    let value = e.target.value.replace(/\D/g, "");
-    value = (parseInt(value, 10) / 100).toFixed(2);
-    e.target.value = value.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  });
-}
 
 async function excluirPro(id) {
   // Cria o popup de confirmação customizado

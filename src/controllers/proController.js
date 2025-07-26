@@ -133,8 +133,8 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `select procod, prodes, provl,tipodes, case when cornome is null then '' else cornome end as cornome from pro 
-        join tipo on tipocod = protipocod 
+      `select procod, prodes, provl, tipodes, corcod, case when cornome is null then '' else cornome end as cornome from pro
+        join tipo on tipocod = protipocod
         left join procor on procorprocod = procod
         left join cores on corcod = procorcorescod where procod  = $1`,
       [id]
