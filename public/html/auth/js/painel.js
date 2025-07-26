@@ -448,7 +448,9 @@ function editarProduto(codigo) {
         const selecionadas = Array.from(corCheckboxes)
           .filter((cb) => cb.checked)
           .map((cb) => cb.value);
-        const anteriores = coresProduto.map((c) => String(c.corcod)).filter(Boolean);
+        const anteriores = coresProduto
+          .filter((c) => c.corcod != null)
+          .map((c) => String(c.corcod));
 
         try {
           await fetch(`${BASE_URL}/pro/${codigo}`, {
