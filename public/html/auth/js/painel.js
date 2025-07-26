@@ -1451,11 +1451,8 @@ function carregarPecas() {
 document.getElementById("corpoTabela").addEventListener("click", function (e) {
   if (e.target.closest(".btn-editar-peca")) {
     const btn = e.target.closest(".btn-editar-peca");
-    editarPecas(
-      btn.getAttribute("data-id"),
-      btn.getAttribute("data-nome"),
-      btn.getAttribute("data-valor")
-    );
+    // Usa a mesma lógica de edição de produto com suporte a cores
+    editarProduto(btn.getAttribute("data-id"));
   }
   if (e.target.closest(".btn-excluir-peca")) {
     const btn = e.target.closest(".btn-excluir-peca");
@@ -1463,96 +1460,6 @@ document.getElementById("corpoTabela").addEventListener("click", function (e) {
   }
 });
 
-function editarPecas(id, nome, valor) {
-  // Cria o popup
-  let popup = document.createElement("div");
-  popup.id = "popupEditarPeca";
-  popup.style.position = "fixed";
-  popup.style.top = "0";
-  popup.style.left = "0";
-  popup.style.width = "100vw";
-  popup.style.height = "100vh";
-  popup.style.background = "rgba(0,0,0,0.5)";
-  popup.style.display = "flex";
-  popup.style.alignItems = "center";
-  popup.style.justifyContent = "center";
-  popup.style.zIndex = "9999";
-
-  popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
-      <h5>Editar Peça</h5>
-      <form id="formEditarPeca">
-        <div class="mb-3">
-          <label for="editarPecaDescricao" class="form-label">Descrição</label>
-          <input type="text" class="form-control" id="editarPecaDescricao" name="prodes" value="${
-            nome || ""
-          }" required>
-        </div>
-        <div class="mb-3">
-          <label for="editarPecaValor" class="form-label">Valor</label>
-          <input type="text" step="0.01" class="form-control" id="editarPecaValor" name="provl" value="${
-            Number(valor).toFixed(2) || ""
-          }" required>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <button type="button" class="btn btn-secondary" id="cancelarEditarPeca">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar</button>
-        </div>
-      </form>
-    </div>
-  `;
-
-  document.body.appendChild(popup);
-
-  document.getElementById("cancelarEditarPeca").onclick = function () {
-    document.body.removeChild(popup);
-  };
-
-  document.getElementById("formEditarPeca").onsubmit = function (e) {
-    e.preventDefault();
-    const prodes = document.getElementById("editarPecaDescricao").value.trim();
-    const provl = document.getElementById("editarPecaValor").value;
-    fetch(`${BASE_URL}/pro/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prodes, provl }),
-    })
-      .then((r) => r.json())
-      .then(() => {
-        // Mostra mensagem de sucesso como popup temporário
-        const msg = document.createElement("div");
-        msg.textContent = "Peça atualizada com sucesso!";
-        msg.style.position = "fixed";
-        msg.style.top = "20px";
-        msg.style.left = "50%";
-        msg.style.transform = "translateX(-50%)";
-        msg.style.background = "#28a745";
-        msg.style.color = "#fff";
-        msg.style.padding = "12px 24px";
-        msg.style.borderRadius = "6px";
-        msg.style.zIndex = "10000";
-        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-        document.body.appendChild(msg);
-        setTimeout(() => {
-          msg.remove();
-        }, 2000);
-        document.body.removeChild(popup);
-        carregarPecas();
-      })
-      .catch(() => alert("Erro ao atualizar peça"));
-  };
-
-  const inputValor = document.getElementById("editarPecaValor");
-
-  inputValor.addEventListener("input", function (e) {
-    let value = e.target.value.replace(/\D/g, "");
-    value = (parseInt(value, 10) / 100).toFixed(2);
-    e.target.value = value.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  });
-}
 
 async function excluirPro(id) {
   // Cria o popup de confirmação customizado
