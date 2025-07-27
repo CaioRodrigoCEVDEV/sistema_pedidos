@@ -8,13 +8,13 @@ function autenticarToken(req, res, next) {
     }
 
     try {
-        const decoded = jwt.verify(token, 'chave-secreta');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
      // gera de novo um novo token com 10 minutos
         const novoToken = jwt.sign({ 
             usuemail: decoded.usuemail,
             usucod: decoded.usucod,
             usunome: decoded.usunome 
-        }, 'chave-secreta', { expiresIn: '60m' });
+        }, process.env.JWT_SECRET, { expiresIn: '60m' });
 
     // gauda o novo token com mais 10m em cookies
         res.cookie('token', novoToken, {

@@ -39,7 +39,7 @@ npm install express pg bcryptjs jsonwebtoken body-parser dotenv cookie-parser mo
 npm install -g nodemon
 
 ```
-### 3. Crie um arquivo .env na raiz com o seguinte conteúdo:
+### 3. Copie o arquivo `.env.example` para `.env` e ajuste as variaveis:
 
 ```bash
 DB_HOST=SEU_IP
@@ -49,8 +49,21 @@ DB_PASSWORD=SENHA
 DB_NAME=BASE_DADOS
 BASE_URL=http://localhost:3000
 HTTPS=false
+JWT_SECRET=UMA_CHAVE_SEGURA
 
 ```
+## Executando como SaaS com Docker
+
+Este projeto inclui um `Dockerfile` e um `docker-compose.yml` para ambientes escalaveis.
+Execute:
+
+```bash
+docker-compose up --build
+```
+
+O compose provisiona um container Node rodando com Cluster e um PostgreSQL persistente.
+A aplicacao estara disponivel em `http://localhost:3000`.
+
 ---
 # 📦 Estrutura do Banco de Dados
 

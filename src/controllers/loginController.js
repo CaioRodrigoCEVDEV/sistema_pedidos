@@ -26,7 +26,7 @@ exports.validarLogin = async (req, res) => {
         const token = jwt.sign({ 
             usuemail: usuario.usuemail,
             usucod: usuario.usucod,
-            usunome: usuario.usunome}, 'chave-secreta', { expiresIn: '60m' });
+            usunome: usuario.usunome}, process.env.JWT_SECRET, { expiresIn: '60m' });
 
         res.cookie('token',token,{
             httpOnly: true,
@@ -55,7 +55,7 @@ exports.atualizarCadastro = async (req, res) => {
         const token = jwt.sign({ 
             usuemail: usuemail,
             usucod: id,
-            usunome: usunome }, 'chave-secreta', { expiresIn: '60m' });
+            usunome: usunome }, process.env.JWT_SECRET, { expiresIn: '60m' });
 
         res.cookie('token',token,{
             httpOnly: true,
