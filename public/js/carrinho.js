@@ -414,84 +414,53 @@ function enviarWhatsAppEntrega() {
 }
 
 // função botão orçamento será enviado apenas a lista de itens sem valor
-function enviarWhatsAppOrcamento() {
+function copiarOrcamentoParaClipboard() {
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
   const observacoes = document.getElementById("observacoes").value.trim();
+  const caixaEmoji = "📦";
+  const observacaoEmoji = "📝";
+
   if (cart.length === 0) {
     alert("Seu carrinho está vazio!");
     return;
   }
 
   let mensagem = `${caixaEmoji} Orçamento de Peças:\n\n`;
-  let totalValue = 0;
 
   cart.forEach((item) => {
     const nome = item.nome || "---";
     const qtde = item.qt || 0;
-    const marca = item.marca || "";
-    const tipo = item.tipo || "";
-    const valor = parseFloat(item.preco) || 0;
-    totalValue += valor * qtde;
-
-    mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
+    mensagem += `(${qtde}) ${nome}\n`;
   });
 
-  // mensagem += `${listaEmoji} Resumo do Orçamento:\n`;
-  mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
+  if (observacoes) {
+    mensagem += `\n${observacaoEmoji} Observações: ${observacoes}\n`;
+  }
 
-  fetch(`${BASE_URL}/emp`)
-    .then((response) => response.json())
-    .then((data) => {
-      // Use o número
-      const whatsappNumber3 = ""; // Use a default number if not found
-      const whatsappUrl3 = `https://api.whatsapp.com/send?phone=${whatsappNumber3}&text=${encodeURIComponent(
-        mensagem
-      )}`;
-      window.location.href = whatsappUrl3;
-
-      /// Limpa o carrinho no localStorage e na tela
-      localStorage.setItem("cart", JSON.stringify([]));
-      renderCart(); // Isso vai limpar a tabela e zerar o total
-
-      // Remove o parâmetro cart da URL
-      const url = new URL(window.location);
-      url.searchParams.delete("cart");
-      window.history.replaceState(
-        {},
-        document.title,
-        url.pathname + url.search
-      );
-      // Redireciona para o index após um pequeno delay
-      setTimeout(() => {
-        window.location.href = "index";
-      }, 500);
-      // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
-    })
-    .catch((error) => {
-      console.error("Erro ao buscar número do WhatsApp:", error);
-      const whatsappNumber3 = "5561991494321"; // Fallback caso a API falhe
-      const whatsappUrl3 = `https://api.whatsapp.com/send?phone=${whatsappNumber3}&text=${encodeURIComponent(
-        mensagem
-      )}`;
-      window.location.href = whatsappUrl3;
-
-      /// Limpa o carrinho no localStorage e na tela
-      localStorage.setItem("cart", JSON.stringify([]));
-      renderCart(); // Isso vai limpar a tabela e zerar o total
-
-      // Remove o parâmetro cart da URL
-      const url = new URL(window.location);
-      url.searchParams.delete("cart");
-      window.history.replaceState(
-        {},
-        document.title,
-        url.pathname + url.search
-      );
-
-      // Redireciona para o index após um pequeno delay
-      setTimeout(() => {
-        window.location.href = "index";
-      }, 500);
-      // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
-    });
+  if (
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === "function"
+  ) {
+    navigator.clipboard
+      .writeText(mensagem)
+      .then(() => {
+        alert("Copiado para a área de transferência!");
+      })
+      .catch((err) => {
+        alert("Erro ao copiar: " + err);
+      });
+  } else {
+    // Fallback usando textarea e execCommand
+    const textarea = document.createElement("textarea");
+    textarea.value = mensagem;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand("copy");
+      alert("Copiado para a área de transferência!");
+    } catch (err) {
+      alert("Falha ao copiar o texto. Copie manualmente:\n\n" + mensagem);
+    }
+    document.body.removeChild(textarea);
+  }
 }
