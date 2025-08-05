@@ -443,9 +443,7 @@ function copiarOrcamentoParaClipboard() {
   ) {
     navigator.clipboard
       .writeText(mensagem)
-      .then(() => {
-        alert("Copiado para a área de transferência!");
-      })
+      .then(() => {})
       .catch((err) => {
         alert("Erro ao copiar: " + err);
       });
@@ -457,7 +455,6 @@ function copiarOrcamentoParaClipboard() {
     textarea.select();
     try {
       document.execCommand("copy");
-      alert("Copiado para a área de transferência!");
     } catch (err) {
       alert("Falha ao copiar o texto. Copie manualmente:\n\n" + mensagem);
     }
