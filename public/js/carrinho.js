@@ -430,7 +430,8 @@ function copiarOrcamentoParaClipboard() {
   cart.forEach((item) => {
     const nome = item.nome || "---";
     const qtde = item.qt || 0;
-    mensagem += `(${qtde}) ${nome}\n`;
+    const valor = parseFloat(item.preco) || 0;
+    mensagem += `(${qtde}) ${nome} - R$${valor.toFixed(2)}\n`;
   });
 
   if (observacoes) {
