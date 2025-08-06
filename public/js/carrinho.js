@@ -12,6 +12,12 @@ function formatarMoeda(valor) {
   });
 }
 
+function limparCarrinho() {
+  localStorage.removeItem("cart");
+  renderCart(); // Atualiza a tabela para refletir o carrinho limpo
+  atualizarIconeCarrinho(); // Atualiza o ícone do carrinho, se necessário
+}
+
 //função para verificar se esta logado e mostrar o botão orçamento
 document.addEventListener("DOMContentLoaded", function () {
   const usuarioLogado = localStorage.getItem("usuarioLogado");
@@ -67,6 +73,8 @@ function renderCart() {
     // Usar item.id se disponível e único, caso contrário, index é uma fallback.
     // Assumindo que item.id existe e é o procod.
     const itemId = item.id;
+
+    // botão para limpar todos os i
 
     tr.innerHTML = `
             <div class="item-name">${nome}</div>
