@@ -46,6 +46,11 @@
                     <i class="bi bi-box-arrow-in-left"></i> Voltar
                 </button>
             </div>
+            <!-- adicionar um botão para remover todos os itens do carrinho alinhado a direita que não -->
+            <div class="text-right mt-3">
+                <button class="btn btn-sm btn-gray" onclick="limparCarrinho()">
+                    <i class="bi bi-trash"></i> Limpar Carrinho
+                </button>
 
             <div class="bg-light w-auto p-3  mb-5">
                 <h1 class="text-center">Itens
@@ -58,10 +63,6 @@
                 <h3> Valor Total: <span id="totalCarrinho">0.00</span></h3>
             </div>
             <div class="text-left">
-
-
-
-                
                 <h3>Observações:</h3>
                 <textarea id="observacoes" class="form-control" rows="3" placeholder="Digite suas observações aqui..."></textarea>
             </div>
