@@ -2,8 +2,16 @@ main {
     margin: 0.5em;
 }
 
+body {
+    padding-top: 70px;
+}
+
 .navbar {
-    margin-top: 5px;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    margin-top: 0;
 }
 
 .teste {
