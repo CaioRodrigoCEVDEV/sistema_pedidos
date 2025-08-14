@@ -10,9 +10,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const corpoTabela = document.getElementById("corpoTabela");
       corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
 
-      dados.forEach((dado) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
+        dados.sort((a, b) =>
+          a.moddes.localeCompare(b.moddes, undefined, { numeric: true })
+        );
+
+        dados.forEach((dado) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
                       <td class="text-center">${dado.moddes}</td>
                       <td class="text-center">
                         <a href="pecas?id=${dado.modcod}&marcascod=${dado.modmarcascod}"><button class="btn btn-outline-success btn-sm">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>
