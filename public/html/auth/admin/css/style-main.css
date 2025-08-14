@@ -2,6 +2,12 @@ main {
     margin: 0.5em;
 }
 
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
 .teste {
     background-color: aqua;
 }

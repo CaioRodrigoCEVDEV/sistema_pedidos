@@ -3,7 +3,9 @@ main {
 }
 
 .navbar {
-    margin-top: 5px;
+    position: sticky;
+    top: 0;
+    z-index: 1020;
 }
 
 .teste {
