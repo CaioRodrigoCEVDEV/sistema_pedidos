@@ -64,6 +64,9 @@ inputPesquisa.addEventListener("input", function () {
       }
 
       corpoTabela.innerHTML = "";
+      filtrados.sort((a, b) =>
+        a.moddes.localeCompare(b.moddes, undefined, { numeric: true })
+      );
       filtrados.forEach((modelo) => {
         const item = document.createElement("div");
         item.className = "cart-item";
