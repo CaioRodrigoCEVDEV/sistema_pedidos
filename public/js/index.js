@@ -64,9 +64,11 @@ inputPesquisa.addEventListener("input", function () {
       }
 
       corpoTabela.innerHTML = "";
-      filtrados.sort((a, b) =>
-        a.moddes.localeCompare(b.moddes, undefined, { numeric: true })
-      );
+      filtrados.sort((a, b) => {
+        const nomeA = a.moddes.replace(/\s/g, "");
+        const nomeB = b.moddes.replace(/\s/g, "");
+        return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
+      });
       filtrados.forEach((modelo) => {
         const item = document.createElement("div");
         item.className = "cart-item";
