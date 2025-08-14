@@ -48,12 +48,12 @@ inputPesquisa.addEventListener("input", function () {
     return;
   }
 
-  fetch(`${BASE_URL}/pros/`)
+  fetch(`${BASE_URL}/modelos`)
     .then((res) => res.json())
-    .then((produtos) => {
-      const filtrados = produtos.filter(
-        (produto) =>
-          produto.prodes && produto.prodes.toLowerCase().includes(pesquisa)
+    .then((modelos) => {
+      const filtrados = modelos.filter(
+        (modelo) =>
+          modelo.moddes && modelo.moddes.toLowerCase().includes(pesquisa)
       );
 
       if (filtrados.length === 0) {
@@ -64,23 +64,15 @@ inputPesquisa.addEventListener("input", function () {
       }
 
       corpoTabela.innerHTML = "";
-      filtrados.forEach((produto) => {
+      filtrados.forEach((modelo) => {
         const item = document.createElement("div");
         item.className = "cart-item";
-        item.dataset.preco = produto.provl;
         item.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; flex-direction: column;">
-              <div class="item-name">${produto.prodes}</div>
-              <div class="item-marca">${produto.marcasdes}</div>
-              <div class="item-tipo">${produto.tipodes}</div>
-            </div>
-            <div class="item-price">
-              ${formatarMoeda(produto.provl)}
-              <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
-                produto.procod
-              }')">Adicionar</button>
-            </div>
+            <div class="item-name">${modelo.moddes}</div>
+            <a href="pecas?id=${modelo.modcod}&marcascod=${modelo.modmarcascod}">
+              <button class="btn btn-success btn-sm btn-add">Selecionar</button>
+            </a>
           </div>
         `;
         corpoTabela.appendChild(item);
