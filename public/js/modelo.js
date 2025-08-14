@@ -10,9 +10,11 @@ document.addEventListener("DOMContentLoaded", function () {
       const corpoTabela = document.getElementById("corpoTabela");
       corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
 
-        dados.sort((a, b) =>
-          a.moddes.localeCompare(b.moddes, undefined, { numeric: true })
-        );
+        dados.sort((a, b) => {
+          const nomeA = a.moddes.replace(/\s/g, "");
+          const nomeB = b.moddes.replace(/\s/g, "");
+          return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
+        });
 
         dados.forEach((dado) => {
           const tr = document.createElement("tr");
