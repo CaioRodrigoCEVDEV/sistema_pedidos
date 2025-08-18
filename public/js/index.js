@@ -8,8 +8,8 @@ function formatarMoeda(valor) {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  verificarLogin();
+document.addEventListener("DOMContentLoaded", async () => {
+  await verificarLogin();
   fetch(`${BASE_URL}/marcas/`)
     .then((res) => res.json())
     .then((dados) => {
@@ -46,7 +46,9 @@ async function verificarLogin() {
     const resp = await fetch(`${BASE_URL}/auth/listarlogin`, {
       credentials: "include",
     });
-    usuarioLogado = resp.ok;
+    if (!resp.ok) throw new Error("Nao logado");
+    const dados = await resp.json();
+    usuarioLogado = !!(dados && dados.usucod);
   } catch (err) {
     usuarioLogado = false;
   }
