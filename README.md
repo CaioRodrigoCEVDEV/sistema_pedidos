@@ -21,6 +21,7 @@ Sistema web para pedidos simples com login e senha para administrador, onde o us
 |              |                | • dotenv                                  |
 |              |                | • morgan *(logger)*                       |
 |              |                | • nodemon                                 |
+|              |                | • sharp                                   |
 
 ---
 
