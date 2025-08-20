@@ -221,8 +221,8 @@ document
       })
       .catch((erro) => {
         alert("Erro ao salvar os dados.");
-      console.error(erro);
-    });
+        console.error(erro);
+      });
   });
 
 //função para criar cor
@@ -418,10 +418,16 @@ function editarProduto(codigo) {
                 .map(
                   (c) => `
               <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="procor" value="${c.corcod}" id="editar_cor_${c.corcod}" ${
-                  coresProduto.some((cp) => cp.corcod == c.corcod) ? "checked" : ""
-                }>
-                <label class="form-check-label" for="editar_cor_${c.corcod}">${c.cornome}</label>
+                <input class="form-check-input" type="checkbox" name="procor" value="${
+                  c.corcod
+                }" id="editar_cor_${c.corcod}" ${
+                    coresProduto.some((cp) => cp.corcod == c.corcod)
+                      ? "checked"
+                      : ""
+                  }>
+                <label class="form-check-label" for="editar_cor_${c.corcod}">${
+                    c.cornome
+                  }</label>
               </div>`
                 )
                 .join("")}
@@ -440,11 +446,15 @@ function editarProduto(codigo) {
         document.body.removeChild(popup);
       };
 
-      document.getElementById("formEditarProduto").onsubmit = async function (e) {
+      document.getElementById("formEditarProduto").onsubmit = async function (
+        e
+      ) {
         e.preventDefault();
         const prodes = document.getElementById("editarDescricao").value.trim();
         const provl = document.getElementById("editarValor").value;
-        const corCheckboxes = popup.querySelectorAll('#editarProdutoCores input[type="checkbox"]');
+        const corCheckboxes = popup.querySelectorAll(
+          '#editarProdutoCores input[type="checkbox"]'
+        );
         const selecionadas = Array.from(corCheckboxes)
           .filter((cb) => cb.checked)
           .map((cb) => cb.value);
@@ -462,13 +472,22 @@ function editarProduto(codigo) {
           // adiciona novas cores
           for (const cor of selecionadas) {
             if (!anteriores.includes(cor)) {
-              await fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+              await fetch(
+                `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                }
+              );
             }
           }
           // remove cores desmarcadas
           for (const cor of anteriores) {
             if (!selecionadas.includes(cor)) {
-              await fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`, { method: 'DELETE' });
+              await fetch(
+                `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`,
+                { method: "DELETE" }
+              );
             }
           }
 
@@ -1266,8 +1285,13 @@ function carregarCores() {
         tr.innerHTML = `
           <td>${c.cornome}</td>
           <td>
-            <button class="btn btn-sm btn-primary" onclick="editarCor(${c.corcod}, '${c.cornome.replace(/'/g, "\\'")}')"><i class='fa fa-edit'></i></button>
-            <button class="btn btn-sm btn-danger" onclick="excluirCor(${c.corcod})"><i class='fa fa-trash'></i></button>
+            <button class="btn btn-sm btn-primary" 
+            data-cod="${c.corcod}" 
+            data-nome="${c.cornome.replace(/"/g, "&quot;")}" 
+            onclick="editarCor(this.dataset.cod, this.dataset.nome)"><i class='fa fa-edit'></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirCor(${
+              c.corcod
+            })"><i class='fa fa-trash'></i></button>
           </td>`;
         tbody.appendChild(tr);
       });
@@ -1295,7 +1319,10 @@ function editarCor(id, nome) {
       <form id="formEditarCor">
         <div class="mb-3">
           <label for="editarCorDescricao" class="form-label">Descrição</label>
-          <input type="text" class="form-control" id="editarCorDescricao" name="cornome" value="${nome || ""}" required>
+          <input type="text" class="form-control" id="editarCorDescricao" name="cornome" value="${(
+            nome || ""
+          ).replace(/"/g, "&quot;")}"
+          }" required>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
           <button type="button" class="btn btn-secondary" id="cancelarEditarCor">Cancelar</button>
@@ -1461,7 +1488,6 @@ document.getElementById("corpoTabela").addEventListener("click", function (e) {
     excluirPro(btn.getAttribute("data-id"));
   }
 });
-
 
 async function excluirPro(id) {
   // Cria o popup de confirmação customizado

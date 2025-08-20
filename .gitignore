@@ -1,3 +1,11 @@
 .env
 src/uploads/logo.jpg
 src/uploads/apple-touch-icon.png
+node_modules/.package-lock.json
+node_modules/@img/sharp-win32-x64/LICENSE
+node_modules/@img/sharp-win32-x64/package.json
+node_modules/@img/sharp-win32-x64/README.md
+node_modules/@img/sharp-win32-x64/versions.json
+node_modules/@img/sharp-win32-x64/lib/libvips-42.dll
+node_modules/@img/sharp-win32-x64/lib/libvips-cpp-8.17.1.dll
+node_modules/@img/sharp-win32-x64/lib/sharp-win32-x64.node
