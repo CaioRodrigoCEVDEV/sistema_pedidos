@@ -38,8 +38,8 @@
         class="navbar navbar-expand-lg navbar-light bg-light shadow-sm bg-white rounded"
       >
         <a class="navbar-brand" href="index" id="nomeEmpresa"
-          ><img src="/uploads/logo.jpg" width="30" height="30" alt="" /></a
-        >
+          ><img src="/uploads/logo.jpg" width="30" height="30" alt=""
+        /></a>
         <button
           class="navbar-toggler"
           type="button"
@@ -129,6 +129,11 @@
                   <i class="bi bi-gear-fill mr-1"></i>Peças
                 </h5>
                 <p class="card-text" id="totalPecas">0</p>
+                <a href="index">
+                  <button class="btn btn-warning btn-sm mt-2" id="inicio">
+                    Orçamento
+                  </button>
+                </a>
               </div>
             </div>
           </div>
@@ -152,22 +157,23 @@
             <div class="card shadow-sm mb-4">
               <div class="card-body">
                 <h4 class="card-title mb-4 text-primary font-weight-bold">
-                  Gerenciamento
+                  <i class="fa fa-cogs"></i> Gerenciamento
                 </h4>
                 <div class="row">
                   <!-- Marca -->
                   <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
+                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
                   >
+                    <h5 class="font-weight-bold text-center">Marca</h5>
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
                       type="button"
                       id="dropdownMarca"
                       data-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
-                      Cadastrar Marca <i class="bi bi-plus-square"></i>
+                      Cadastrar Marca
                     </button>
                     <div
                       class="dropdown-menu p-3 w-100 mt-2"
@@ -192,7 +198,7 @@
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
                       type="button"
                       onclick="toggleMarcas()"
                     >
@@ -201,17 +207,18 @@
                   </div>
                   <!-- Modelo -->
                   <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
+                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
                   >
+                    <h5 class="font-weight-bold text-center">Modelo</h5>
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
                       type="button"
                       id="dropdownModelo"
                       data-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
-                      Cadastrar Modelo <i class="bi bi-plus-square"></i>
+                      Cadastrar Modelo
                     </button>
                     <div
                       class="dropdown-menu p-3 w-100 mt-2"
@@ -248,7 +255,7 @@
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
                       type="button"
                       onclick="toggleModelos()"
                     >
@@ -257,17 +264,18 @@
                   </div>
                   <!-- Tipo de Peça -->
                   <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
+                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
                   >
+                    <h5 class="font-weight-bold text-center">Tipo de Peça</h5>
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
                       type="button"
                       id="dropdownTipo"
                       data-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
-                      Cadastrar Tipo de Peça <i class="bi bi-plus-square"></i>
+                      Cadastrar Tipo de Peça
                     </button>
                     <div
                       class="dropdown-menu p-3 w-100 mt-2"
@@ -291,26 +299,71 @@
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
                       type="button"
                       onclick="toggleTipos()"
                     >
                       Gerenciar
                     </button>
                   </div>
+                  <!-- Cor -->
+                  <div
+                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
+                  >
+                    <h5 class="font-weight-bold text-center">Cor</h5>
+                    <button
+                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
+                      type="button"
+                      id="dropdownCor"
+                      data-toggle="dropdown"
+                      aria-haspopup="true"
+                      aria-expanded="false"
+                    >
+                      Cadastrar Cor
+                    </button>
+                    <div
+                      class="dropdown-menu p-3 w-100 mt-2"
+                      aria-labelledby="dropdownCor"
+                      style="min-width: 220px"
+                      onclick="event.stopPropagation();"
+                    >
+                      <form id="cadastrarPainelCor" class="form">
+                        <div class="form-group mb-2">
+                          <input
+                            type="text"
+                            name="cornome"
+                            placeholder="Descrição da Cor"
+                            class="form-control"
+                            required
+                          />
+                        </div>
+                        <button type="submit" class="btn btn-success btn-block">
+                          Cadastrar
+                        </button>
+                      </form>
+                    </div>
+                    <button
+                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
+                      type="button"
+                      onclick="toggleCores()"
+                    >
+                      Gerenciar
+                    </button>
+                  </div>
                   <!-- Peça -->
                   <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static"
+                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
                   >
+                    <h5 class="font-weight-bold text-center">Peça</h5>
                     <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle"
+                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
                       type="button"
                       id="dropdownPeca"
                       data-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
-                      Cadastrar Peça <i class="bi bi-plus-square"></i>
+                      Cadastrar Peça
                     </button>
                     <div
                       class="dropdown-menu p-3 w-100 mt-2"
@@ -379,8 +432,11 @@
                           </div>
                         </div>
                         <div class="form-group mb-2">
-                          <div class="custom-select-wrapper" id="selectPainelCor">
-                          <!-- As opções de cor serão inseridas aqui via JS -->
+                          <div
+                            class="custom-select-wrapper"
+                            id="selectPainelCor"
+                          >
+                            <!-- As opções de cor serão inseridas aqui via JS -->
                           </div>
                         </div>
                         <button type="submit" class="btn btn-success btn-block">
@@ -389,7 +445,7 @@
                       </form>
                     </div>
                     <button
-                      class="btn btn-outline-secondary btn-block mt-2"
+                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
                       type="button"
                       onclick="togglePecas()"
                     >
@@ -444,6 +500,22 @@
                       </tr>
                     </thead>
                     <tbody id="listaTipos"></tbody>
+                  </table>
+                </div>
+                <div
+                  id="areaCores"
+                  class="mt-3 management-area"
+                  style="display: none"
+                >
+                  <h5>Cores cadastradas</h5>
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Cor</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="listaCores"></tbody>
                   </table>
                 </div>
               </div>

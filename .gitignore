@@ -1,3 +1,4 @@
 .env
 src/uploads/logo.jpg
-
+src/uploads/apple-touch-icon.png
+node_modules/

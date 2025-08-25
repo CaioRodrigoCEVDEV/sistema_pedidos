@@ -125,3 +125,12 @@ body {
   font-size: 0.9em;
   color: #555;
 }
+
+/* Agrupamento de botoes de gerenciamento */
+.management-group {
+  text-align: center;
+}
+
+.management-group h5 {
+  margin-bottom: 0.5rem;
+}

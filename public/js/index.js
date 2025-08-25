@@ -8,7 +8,8 @@ function formatarMoeda(valor) {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await verificarLogin();
   fetch(`${BASE_URL}/marcas/`)
     .then((res) => res.json())
     .then((dados) => {
@@ -19,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
       let html = '<div class="row">';
       dados.forEach((dado, i) => {
         html += `
-        
+
           <div class="col-6 col-sm-6 col-md-4 mb-3 d-flex justify-content-center">
             <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-100">
               <button class="btn btn-md btn-outline-dark w-100">${dado.marcasdes}</button>
@@ -38,6 +39,21 @@ const tabelaArea = document.getElementById("tabelaArea");
 const cardsArea = document.getElementById("cardsArea");
 const corpoTabela = document.getElementById("corpoTabela");
 
+let usuarioLogado = false;
+
+async function verificarLogin() {
+  try {
+    const resp = await fetch(`${BASE_URL}/auth/listarlogin`, {
+      credentials: "include",
+    });
+    if (!resp.ok) throw new Error("Nao logado");
+    const dados = await resp.json();
+    usuarioLogado = !!(dados && dados.usucod);
+  } catch (err) {
+    usuarioLogado = false;
+  }
+}
+
 inputPesquisa.addEventListener("input", function () {
   const pesquisa = this.value.trim().toLowerCase();
 
@@ -48,53 +64,90 @@ inputPesquisa.addEventListener("input", function () {
     return;
   }
 
-  fetch(`${BASE_URL}/pros/`)
-    .then((res) => res.json())
-    .then((produtos) => {
-      const filtrados = produtos.filter(
-        (produto) =>
-          produto.prodes && produto.prodes.toLowerCase().includes(pesquisa)
-      );
+  if (usuarioLogado) {
+    fetch(`${BASE_URL}/pros`)
+      .then((res) => res.json())
+      .then((pecas) => {
+        const filtrados = pecas.filter(
+          (peca) => peca.prodes && peca.prodes.toLowerCase().includes(pesquisa)
+        );
 
-      if (filtrados.length === 0) {
-        tabelaArea.style.display = "none"; // esconde tabela se nada encontrado
-        cardsArea.style.display = "block"; // mostra cards
+        if (filtrados.length === 0) {
+          tabelaArea.style.display = "none"; // esconde tabela se nada encontrado
+          cardsArea.style.display = "block"; // mostra cards
+          corpoTabela.innerHTML = "";
+          return;
+        }
+
         corpoTabela.innerHTML = "";
-        return;
-      }
+        filtrados.forEach((peca) => {
+          const item = document.createElement("div");
+          item.className = "cart-item";
+          item.dataset.preco = peca.provl;
+          item.innerHTML = `
+            <div class="item-name">${peca.prodes}</div>
+            <div class="item-tipo">${peca.tipodes}</div>
+            <div class="item-marca">${peca.marcasdes}</div>
+            <div class="item-price">${formatarMoeda(peca.provl)} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${peca.procod}')">Adicionar</button></div>
+          `;
+          corpoTabela.appendChild(item);
+        });
 
-      corpoTabela.innerHTML = "";
-      filtrados.forEach((produto) => {
-        const item = document.createElement("div");
-        item.className = "cart-item";
-        item.dataset.preco = produto.provl;
-        item.innerHTML = `
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; flex-direction: column;">
-              <div class="item-name">${produto.prodes}</div>
-              <div class="item-marca">${produto.marcasdes}</div>
-              <div class="item-tipo">${produto.tipodes}</div>
-            </div>
-            <div class="item-price">
-              ${formatarMoeda(produto.provl)}
-              <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
-                produto.procod
-              }')">Adicionar</button>
-            </div>
-          </div>
-        `;
-        corpoTabela.appendChild(item);
+        tabelaArea.style.display = "block"; // mostra tabela
+        cardsArea.style.display = "none"; // esconde cards
+      })
+      .catch((error) => {
+        console.error("Erro no fetch:", error);
+        tabelaArea.style.display = "none";
+        cardsArea.style.display = "block";
+        corpoTabela.innerHTML = "";
       });
+  } else {
+    fetch(`${BASE_URL}/modelos`)
+      .then((res) => res.json())
+      .then((modelos) => {
+        const filtrados = modelos.filter(
+          (modelo) =>
+            modelo.moddes && modelo.moddes.toLowerCase().includes(pesquisa)
+        );
 
-      tabelaArea.style.display = "block"; // mostra tabela
-      cardsArea.style.display = "none"; // esconde cards
-    })
-    .catch((error) => {
-      console.error("Erro no fetch:", error);
-      tabelaArea.style.display = "none";
-      cardsArea.style.display = "block";
-      corpoTabela.innerHTML = "";
-    });
+        if (filtrados.length === 0) {
+          tabelaArea.style.display = "none"; // esconde tabela se nada encontrado
+          cardsArea.style.display = "block"; // mostra cards
+          corpoTabela.innerHTML = "";
+          return;
+        }
+
+        corpoTabela.innerHTML = "";
+        filtrados.sort((a, b) => {
+          const nomeA = a.moddes.replace(/\s/g, "");
+          const nomeB = b.moddes.replace(/\s/g, "");
+          return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
+        });
+        filtrados.forEach((modelo) => {
+          const item = document.createElement("div");
+          item.className = "cart-item";
+          item.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div class="item-name">${modelo.moddes}</div>
+              <a href="pecas?id=${modelo.modcod}&marcascod=${modelo.modmarcascod}">
+                <button class="btn btn-success btn-sm btn-add">Selecionar</button>
+              </a>
+            </div>
+          `;
+          corpoTabela.appendChild(item);
+        });
+
+        tabelaArea.style.display = "block"; // mostra tabela
+        cardsArea.style.display = "none"; // esconde cards
+      })
+      .catch((error) => {
+        console.error("Erro no fetch:", error);
+        tabelaArea.style.display = "none";
+        cardsArea.style.display = "block";
+        corpoTabela.innerHTML = "";
+      });
+  }
 });
 
 // Função para atualizar o ícone do carrinho (exibe badge com quantidade de itens)

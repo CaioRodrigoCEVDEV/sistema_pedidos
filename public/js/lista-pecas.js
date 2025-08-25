@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
         item.className = "cart-item";
         item.dataset.preco = dado.provl;
         item.innerHTML = `
-            <div class="item-name">${dado.prodes} </div>
+            <div class="item-name">${dado.prodes}</div>
             <div class="item-tipo">${dado.tipodes}</div>
             <div class="item-price">${formatarMoeda(
               dado.provl

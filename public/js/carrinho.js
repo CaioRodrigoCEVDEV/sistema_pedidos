@@ -12,6 +12,26 @@ function formatarMoeda(valor) {
   });
 }
 
+function limparCarrinho() {
+  localStorage.removeItem("cart");
+  renderCart(); // Atualiza a tabela para refletir o carrinho limpo
+  atualizarIconeCarrinho(); // Atualiza o ícone do carrinho, se necessário
+}
+
+//função para verificar se esta logado e mostrar o botão orçamento
+document.addEventListener("DOMContentLoaded", function () {
+  const usuarioLogado = localStorage.getItem("usuarioLogado");
+  const botaoOrcamento = document.getElementById("botao-orcamento");
+
+  console.log(usuarioLogado);
+
+  if (usuarioLogado) {
+    botaoOrcamento.style.display = "inline";
+  } else {
+    botaoOrcamento.style.display = "none";
+  }
+});
+
 function renderCart() {
   const corpoTabela = document.getElementById("carrinhoCorpo");
   const totalCarrinhoElement = document.getElementById("totalCarrinho");
@@ -53,6 +73,8 @@ function renderCart() {
     // Usar item.id se disponível e único, caso contrário, index é uma fallback.
     // Assumindo que item.id existe e é o procod.
     const itemId = item.id;
+
+    // botão para limpar todos os i
 
     tr.innerHTML = `
             <div class="item-name">${nome}</div>
@@ -228,7 +250,7 @@ function enviarWhatsApp() {
     return;
   }
 
-  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de Itens:\n\n`;
+  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n`;
   let totalValue = 0;
 
   cart.forEach((item) => {
@@ -239,26 +261,15 @@ function enviarWhatsApp() {
     const tipo = item.tipo || "";
     totalValue += valor * qtde;
 
-    mensagem += `${descricaoEmoji} Descrição: ${nome}\n`;
-    mensagem += `${indent}${marcaEmoji} Marca: ${marca}\n`;
-    mensagem += `${indent}${tipoEmoji} Tipo: ${tipo}\n`;
-    //mensagem += `Cor: Cor aqui\n`;  preguiça de adicionar cor
-    mensagem += `${indent}${quantidadeEmoji} Quantidade: ${qtde}\n`;
-    mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(
-      2
-    )}\n`;
+    mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
   });
 
   if (observacoes) {
-    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
+    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n`;
   }
-
-  mensagem += `${listaEmoji} Resumo do Pedido:\n`;
-  mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(
-    2
-  )}\n`;
-  mensagem += `${indent}${lojaEmoji} Retirada: No balcão\n\n`;
-  mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
+  mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
+  mensagem += `${lojaEmoji} Retirada: No balcão\n`;
+  // mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
   fetch(`${BASE_URL}/emp`)
     .then((response) => response.json())
@@ -268,7 +279,9 @@ function enviarWhatsApp() {
       const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
         mensagem
       )}`;
-      window.open(whatsappUrl, "_blank");
+      window.location.href = whatsappUrl;
+
+      // testes;
 
       /// Limpa o carrinho no localStorage e na tela
       localStorage.setItem("cart", JSON.stringify([]));
@@ -291,11 +304,11 @@ function enviarWhatsApp() {
     })
     .catch((error) => {
       console.error("Erro ao buscar número do WhatsApp:", error);
-      const whatsappNumber1 = "5561991494321"; // Fallback caso a API falhe
+      const whatsappNumber1 = data.empwhatsapp1 || "5561991494321"; // Fallback caso a API falhe
       const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
         mensagem
       )}`;
-      window.open(whatsappUrl, "_blank");
+      window.location.href = whatsappUrl;
 
       /// Limpa o carrinho no localStorage e na tela
       localStorage.setItem("cart", JSON.stringify([]));
@@ -327,7 +340,7 @@ function enviarWhatsAppEntrega() {
     return;
   }
 
-  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n${listaEmoji} Lista de Itens:\n\n`;
+  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n`;
   let totalValue = 0;
 
   cart.forEach((item) => {
@@ -338,26 +351,17 @@ function enviarWhatsAppEntrega() {
     const tipo = item.tipo || "";
     totalValue += valor * qtde;
 
-    mensagem += `${descricaoEmoji} Descrição: ${nome}\n`;
-    mensagem += `${indent}${marcaEmoji} Marca: ${marca}\n`;
-    mensagem += `${indent}${tipoEmoji} Tipo: ${tipo}\n`;
-    mensagem += `${indent}${quantidadeEmoji} Quantidade: ${qtde}\n`;
-    mensagem += `${indent}${dinheiroEmoji} Valor Unitário: R$ ${valor.toFixed(
-      2
-    )}\n`;
+    mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
   });
 
   if (observacoes) {
-    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n\n`;
+    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n`;
   }
 
-  mensagem += `${listaEmoji} Resumo do Pedido:\n`;
-  mensagem += `${indent}${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(
-    2
-  )}\n`;
-  mensagem += `${indent}${caminhaoEmoji} Entrega\n\n`;
-  mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
+  mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
+  mensagem += `${caminhaoEmoji} Entrega\n`;
 
+  console.log(mensagem);
   fetch(`${BASE_URL}/emp`)
     .then((response) => response.json())
     .then((data) => {
@@ -366,7 +370,8 @@ function enviarWhatsAppEntrega() {
       const whatsappUrl2 = `https://api.whatsapp.com/send?phone=${whatsappNumber2}&text=${encodeURIComponent(
         mensagem
       )}`;
-      window.open(whatsappUrl2, "_blank");
+
+      window.location.href = whatsappUrl2;
 
       /// Limpa o carrinho no localStorage e na tela
       localStorage.setItem("cart", JSON.stringify([]));
@@ -393,7 +398,7 @@ function enviarWhatsAppEntrega() {
       const whatsappUrl2 = `https://api.whatsapp.com/send?phone=${whatsappNumber2}&text=${encodeURIComponent(
         mensagem
       )}`;
-      window.open(whatsappUrl2, "_blank");
+      window.location.href = whatsappUrl2;
 
       /// Limpa o carrinho no localStorage e na tela
       localStorage.setItem("cart", JSON.stringify([]));
@@ -414,4 +419,54 @@ function enviarWhatsAppEntrega() {
       }, 500);
       // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
     });
+}
+
+// função botão orçamento será enviado apenas a lista de itens sem valor
+function copiarOrcamentoParaClipboard() {
+  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  const observacoes = document.getElementById("observacoes").value.trim();
+  const caixaEmoji = "📦";
+  const observacaoEmoji = "📝";
+
+  if (cart.length === 0) {
+    alert("Seu carrinho está vazio!");
+    return;
+  }
+
+  let mensagem = `${caixaEmoji} Orçamento de Peças:\n\n`;
+
+  cart.forEach((item) => {
+    const nome = item.nome || "---";
+    const qtde = item.qt || 0;
+    const valor = parseFloat(item.preco) || 0;
+    mensagem += `(${qtde}) ${nome} - R$${valor.toFixed(2)}\n`;
+  });
+
+  if (observacoes) {
+    mensagem += `\n${observacaoEmoji} Observações: ${observacoes}\n`;
+  }
+
+  if (
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === "function"
+  ) {
+    navigator.clipboard
+      .writeText(mensagem)
+      .then(() => {})
+      .catch((err) => {
+        alert("Erro ao copiar: " + err);
+      });
+  } else {
+    // Fallback usando textarea e execCommand
+    const textarea = document.createElement("textarea");
+    textarea.value = mensagem;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand("copy");
+    } catch (err) {
+      alert("Falha ao copiar o texto. Copie manualmente:\n\n" + mensagem);
+    }
+    document.body.removeChild(textarea);
+  }
 }

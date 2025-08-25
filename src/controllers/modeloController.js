@@ -6,9 +6,8 @@ exports.listarModelo = async (req, res) => {
     try {
         const result = await pool.query(
                         
-            `select * from vw_teste where modmarcascod = $1 `,[id]
+            `select * from vw_modelos where modmarcascod = $1 `,[id]
         );
-        console.log(result.rows);
         res.status(200).json(result.rows);
     } catch (error) {
         console.error(error);
@@ -61,10 +60,7 @@ exports.deletarModelo =async (req, res) => {
 
 exports.listarTodosModelos = async (req, res) => {
     try {
-        const result = await pool.query(`select * from modelo 
-                                            ORDER BY 
-                        COALESCE(CAST(NULLIF(substring(moddes from '^\d+'), '') AS INT), 999999),
-                        moddes;    `);
+        const result = await pool.query(`select * from vw_modelos `);
         res.status(200).json(result.rows);
     } catch (error) {
         console.error(error);

@@ -7,19 +7,21 @@ Sistema web para pedidos simples com login e senha para administrador, onde o us
 
 | 🖥️ Frontend  | ⚙️ Backend     | 📦 Pacotes Node.js                        |
 |--------------|----------------|-------------------------------------------|
-| HTML5        | Node.js        | **Servidor & Roteamento:**               |
+| HTML5        | Node.js        | **Servidor & Roteamento:**                |
 | CSS3         | Express        | • express                                 |
-| JavaScript   | PostgreSQL     | • multer                                |
-|              |                | **Banco de Dados:**                      |
+| JavaScript   | PostgreSQL     | • multer                                  |
+|              |                | **Banco de Dados:**                       |
 |              |                | • pg                                      |
-|              |                | **Autenticação & Sessões:**             |
+|              |                | **Autenticação & Sessões:**               |
 |              |                | • bcryptjs                                |
 |              |                | • jsonwebtoken                            |
-|              |                | **Middlewares & Utilitários:**          |
+|              |                | **Middlewares & Utilitários:**            |
 |              |                | • body-parser                             |
 |              |                | • cookie-parser                           |
 |              |                | • dotenv                                  |
 |              |                | • morgan *(logger)*                       |
+|              |                | • nodemon                                 |
+|              |                | • sharp                                   |
 
 ---
 
@@ -35,6 +37,8 @@ git clone https://github.com/CaioRodrigoCEVDEV/sistema_pedidos.git
 ```bash
 npm init -y
 npm install express pg bcryptjs jsonwebtoken body-parser dotenv cookie-parser morgan multer
+npm install -g nodemon
+
 ```
 ### 3. Crie um arquivo .env na raiz com o seguinte conteúdo:
 
@@ -354,6 +358,22 @@ AS SELECT marcas.marcascod,
 
 ALTER TABLE public.vw_marcas OWNER TO postgres;
 GRANT ALL ON TABLE public.vw_marcas TO postgres;
+```
+
+---
+
+
+# View modelos
+
+```sql
+CREATE OR REPLACE VIEW public.vw_modelos
+AS SELECT modcod,
+    moddes,
+    modsit,
+    modmarcascod
+   FROM modelo
+  ORDER BY ("substring"(moddes::text, '^\D*'::text)), ("substring"(moddes::text, '\d+'::text)::integer);
+
 ```
 
 ---

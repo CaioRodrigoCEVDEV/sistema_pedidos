@@ -8,6 +8,7 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const cors = require('cors');
+const sharp = require("sharp");
 
 
 const app = express();
@@ -57,7 +58,15 @@ app.use(tipoRoutes);
 const empRoutes = require("./routes/empRoutes");
 app.use(empRoutes);
 
+const coresRoutes = require("./routes/coresRoutes");
+app.use(coresRoutes);
+
 // Rotas de páginas
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/html/index.html"));
+});
+
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/login.html"));
 });
@@ -126,8 +135,21 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-app.post("/upload-logo", autenticarToken, upload.single("logo"), (req, res) => {
-  res.redirect("/configuracoes"); 
+app.post("/upload-logo", autenticarToken, upload.single("logo"),async (req, res) => {
+
+  try {
+    const jpegPath = path.join(uploadsDir, "logo.jpg");
+    const pngPath = path.join(uploadsDir, "apple-touch-icon.png");
+
+    // Converte logo.jpg em logo.png
+    await sharp(jpegPath).png().toFile(pngPath);
+
+    res.redirect("/configuracoes");
+  } catch (err) {
+    console.error("Erro ao salvar logo:", err);
+    res.status(500).send("Erro ao processar logo");
+  }
+  
 });
 
 // Inicia o servidor
