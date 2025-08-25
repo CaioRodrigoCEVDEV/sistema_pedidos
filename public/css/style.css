@@ -18,6 +18,7 @@ body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
     background-color: rgb(255, 255, 255);
+    margin-top: 8rem !important;
 }
 
 .container-float {
