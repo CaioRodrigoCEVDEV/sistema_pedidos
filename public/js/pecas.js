@@ -14,11 +14,15 @@ document.addEventListener("DOMContentLoaded", function () {
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-                      <td class="text-center">${dado.tipodes}</td>
+                      <td style="white-space: pre-line;">${dado.tipodes}</td>
                       <td class="text-center">
-                        <a href="lista-pecas?id=${dado.tipocod}&marcascod=${dado.promarcascod}&modelo=${dado.promodcod}"><button class="btn btn-success btn-sm btn-add">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>
+                        <a href="lista-pecas?id=${dado.tipocod}&marcascod=${dado.promarcascod}&modelo=${dado.promodcod}">
+                          <button class="btn btn-success btn-sm btn-add">
+                      Selecionar <i class="bi bi-caret-right-fill"></i>
+                          </button>
+                        </a>
                       </td>
-                        `;
+        `;
         corpoTabela.appendChild(tr);
       });
     })

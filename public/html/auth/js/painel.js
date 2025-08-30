@@ -397,20 +397,26 @@ function editarProduto(codigo) {
 
       // Preenche os campos com os dados carregados do produto
       popup.innerHTML = `
-        <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+        <div style="
+            background:#fff;
+            padding:24px;
+            border-radius:8px;
+            min-width:300px;
+            max-width:90vw;
+            max-height:90vh;   /* limite de altura */
+            overflow-y:auto;   /* cria scroll se passar do limite */
+        ">
           <h5>Editar Produto</h5>
           <form id="formEditarProduto">
             <div class="mb-3">
               <label for="editarDescricao" class="form-label">Descrição</label>
-              <input type="text" class="form-control" id="editarDescricao" name="prodes" value="${
-                produto[0].prodes || ""
-              }" required>
+              <input type="text" class="form-control" id="editarDescricao" name="prodes" 
+                value="${produto[0].prodes || ""}" required>
             </div>
             <div class="mb-3">
               <label for="editarValor" class="form-label">Valor</label>
-              <input type="number" step="0.01" class="form-control" id="editarValor" name="provl" value="${
-                Number(produto[0].provl).toFixed(2) || ""
-              }" required>
+              <input type="number" step="0.01" class="form-control" id="editarValor" name="provl" 
+                value="${Number(produto[0].provl).toFixed(2) || ""}" required>
             </div>
             <div class="mb-3" id="editarProdutoCores">
               <label>Selecione a(s) cor(es):</label><br>
@@ -420,7 +426,9 @@ function editarProduto(codigo) {
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="procor" value="${
                   c.corcod
-                }" id="editar_cor_${c.corcod}" ${
+                }"
+                  id="editar_cor_${c.corcod}" 
+                  ${
                     coresProduto.some((cp) => cp.corcod == c.corcod)
                       ? "checked"
                       : ""
