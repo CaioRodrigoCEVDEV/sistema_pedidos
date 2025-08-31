@@ -159,9 +159,23 @@ document
     })
       .then((res) => res.json())
       .then((resposta) => {
-        alert("Dados salvos com sucesso!");
-        console.log(resposta);
-        location.reload(); // Atualiza a página após gravar
+        const msg = document.createElement("div");
+        msg.textContent = "Marca cadastrada com sucesso!";
+        msg.style.position = "fixed";
+        msg.style.top = "20px";
+        msg.style.left = "50%";
+        msg.style.transform = "translateX(-50%)";
+        msg.style.background = "#28a745";
+        msg.style.color = "#fff";
+        msg.style.padding = "12px 24px";
+        msg.style.borderRadius = "6px";
+        msg.style.zIndex = "10000";
+        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+        document.body.appendChild(msg);
+        setTimeout(() => {
+          msg.remove();
+        }, 2000);
+        form.reset();
       })
       .catch((erro) => {
         alert("Erro ao salvar os dados.");
@@ -188,9 +202,23 @@ document
     })
       .then((res) => res.json())
       .then((resposta) => {
-        alert("Dados salvos com sucesso!");
-        console.log(resposta);
-        location.reload(); // Atualiza a página após gravar
+        const msg = document.createElement("div");
+        msg.textContent = "Modelo cadastrado com sucesso!";
+        msg.style.position = "fixed";
+        msg.style.top = "20px";
+        msg.style.left = "50%";
+        msg.style.transform = "translateX(-50%)";
+        msg.style.background = "#28a745";
+        msg.style.color = "#fff";
+        msg.style.padding = "12px 24px";
+        msg.style.borderRadius = "6px";
+        msg.style.zIndex = "10000";
+        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+        document.body.appendChild(msg);
+        setTimeout(() => {
+          msg.remove();
+        }, 2000);
+        form.reset();
       })
       .catch((erro) => {
         alert("Erro ao salvar os dados.");
@@ -215,9 +243,23 @@ document
     })
       .then((res) => res.json())
       .then((resposta) => {
-        alert("Dados salvos com sucesso!");
-        console.log(resposta);
-        location.reload(); // Atualiza a página após gravar
+        const msg = document.createElement("div");
+        msg.textContent = "Tipo cadastrado com sucesso!";
+        msg.style.position = "fixed";
+        msg.style.top = "20px";
+        msg.style.left = "50%";
+        msg.style.transform = "translateX(-50%)";
+        msg.style.background = "#28a745";
+        msg.style.color = "#fff";
+        msg.style.padding = "12px 24px";
+        msg.style.borderRadius = "6px";
+        msg.style.zIndex = "10000";
+        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+        document.body.appendChild(msg);
+        setTimeout(() => {
+          msg.remove();
+        }, 2000);
+        form.reset();
       })
       .catch((erro) => {
         alert("Erro ao salvar os dados.");
@@ -242,9 +284,23 @@ document
     })
       .then((res) => res.json())
       .then((resposta) => {
-        alert("Dados salvos com sucesso!");
-        console.log(resposta);
-        location.reload();
+        const msg = document.createElement("div");
+        msg.textContent = "cor cadastrado com sucesso!";
+        msg.style.position = "fixed";
+        msg.style.top = "20px";
+        msg.style.left = "50%";
+        msg.style.transform = "translateX(-50%)";
+        msg.style.background = "#28a745";
+        msg.style.color = "#fff";
+        msg.style.padding = "12px 24px";
+        msg.style.borderRadius = "6px";
+        msg.style.zIndex = "10000";
+        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+        document.body.appendChild(msg);
+        setTimeout(() => {
+          msg.remove();
+        }, 2000);
+        form.reset();
       })
       .catch((erro) => {
         alert("Erro ao salvar os dados.");
@@ -282,11 +338,25 @@ document
       let procod =
         resposta.procod || (Array.isArray(resposta) && resposta[0]?.procod);
       if (!procod) {
-        console.log("Resposta inesperada ao criar produto:", resposta);
+        throw new Error("Resposta inválida ao criar produto");
       } else {
-        console.log("Produto criado:", procod);
+        const msg = document.createElement("div");
+        msg.textContent = "Produto cadastrado com sucesso!";
+        msg.style.position = "fixed";
+        msg.style.top = "20px";
+        msg.style.left = "50%";
+        msg.style.transform = "translateX(-50%)";
+        msg.style.background = "#28a745";
+        msg.style.color = "#fff";
+        msg.style.padding = "12px 24px";
+        msg.style.borderRadius = "6px";
+        msg.style.zIndex = "10000";
+        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+        document.body.appendChild(msg);
+        setTimeout(() => {
+          msg.remove();
+        }, 2000);
       }
-      console.log("Cores selecionadas:", corIds);
 
       // Grava as cores disponíveis se houver cores marcadas e procod válido
       if (procod && corIds.length > 0) {
@@ -302,7 +372,7 @@ document
         }
       }
       //console.log(resposta);
-      location.reload();
+      form.reset();
     } catch (erro) {
       alert("Erro ao salvar os dados.");
       console.error(erro);
