@@ -94,6 +94,13 @@ app.get("/configuracoes", autenticarToken, (req, res) => {
 app.get("/painel", autenticarToken,(req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel.html"));
 });
+
+
+app.get("/teste-painel", autenticarToken,(req, res) => {
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/teste.html"));
+});
+
+
 app.get("/dashboard",autenticarToken, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/index.html"));
 });
