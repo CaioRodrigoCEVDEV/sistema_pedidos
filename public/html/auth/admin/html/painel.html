@@ -1,561 +1,357 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JP Peças</title>
-    <!--Link proprios projeto-->
-    <link rel="stylesheet" href="../css/style.css" />
-    <link
-      rel="shortcut icon"
-      href="../images/logo/engrenagem-jp-pequeno.png"
-      type="image/x-icon"
-    />
-    <!--links bootstrap-->
 
-    <link rel="stylesheet" href="css/style-main.css" />
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
-      integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-      integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD"
-      crossorigin="anonymous"
-    />
-  </head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Gestão</title>
+  <link rel="shortcut icon" href="../images/logo/engrenagem-jp-pequeno.png" type="image/x-icon" />
+  <!--links bootstrap-->
+  <link rel="stylesheet" href="../css/style-painel.css">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+    integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+</head>
 
-  <body>
-    <header>
-      <nav
-        class="navbar navbar-expand-lg navbar-light bg-light shadow-sm bg-white rounded"
-      >
-        <a class="navbar-brand" href="index" id="nomeEmpresa"
-          ><img src="/uploads/logo.jpg" width="30" height="30" alt=""
-        /></a>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-toggle="collapse"
-          data-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-expanded="false"
-          aria-label="Alterna navegação"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav">
-            <li class="nav-item active">
-              <a class="nav-link" href="index"
-                >Inicio <span class="sr-only">(Página atual)</span></a
-              >
-            </li>
+<body>
+  <header>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow  bg-white rounded fixed-top">
+      <a class="navbar-brand" href="index" id="nomeEmpresa"><img src="/uploads/logo.jpg" width="30" height="30"
+          alt=""></a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item active">
+            <a class="nav-link" href="index">Inicio <span class="sr-only">(Página atual)</span></a>
+          </li>
 
-            <li class="nav-item">
-              <a class="nav-link" href="painel">Acesso</a>
-            </li>
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="navbarDropdown"
-                role="button"
-                data-toggle="dropdown"
-                aria-haspopup="true"
-                aria-expanded="false"
-              >
-                Conta
-              </a>
-              <div
-                class="dropdown-menu dropdown-menu-right"
-                aria-labelledby="navbarDropdown"
-              >
-                <a class="dropdown-item" href="perfil">Perfil</a>
-                <a class="dropdown-item" href="configuracoes">Configurações</a>
-                <div class="dropdown-divider"></div>
-                <button class="dropdown-item" id="buttonSair">Sair</button>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </nav>
-    </header>
-
-    <main>
-      <div class="container mt-4">
-        <div class="row text-center" id="statsCards">
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">
-                  <i class="bi bi-tags-fill mr-1"></i>Marcas
-                </h5>
-                <p class="card-text" id="totalMarcas">0</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">
-                  <i class="bi bi-car-front-fill mr-1"></i>Modelos
-                </h5>
-                <p class="card-text" id="totalModelos">0</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">
-                  <i class="bi bi-card-checklist mr-1"></i>Tipos
-                </h5>
-                <p class="card-text" id="totalTipos">0</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 mb-3">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">
-                  <i class="bi bi-gear-fill mr-1"></i>Peças
-                </h5>
-                <p class="card-text" id="totalPecas">0</p>
-                <a href="index">
-                  <button class="btn btn-warning btn-sm mt-2" id="inicio">
-                    Orçamento
-                  </button>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
+          <li class="nav-item">
+            <a class="nav-link " href="painel">Acesso</a>
+          </li>
+        </ul>
       </div>
-      <div class="row justify-content-center">
-        <form class="form-inline m-5 my-lg-0 mb-2 text-center">
-          <label for="">Pesquisa Geral</label>
-          <input
-            class="form-control m-2 mr-sm-2"
-            type="search"
-            placeholder="Pesquisar"
-            aria-label="Pesquisar"
-            id="pesquisa"
-          />
+    </nav>
+  </header>
+  <main>
+
+    <h1 class="m-5"><i class="fa fa-cogs text-info"></i> Painel de Gestão</h1>
+    <div class="container text-center">
+      <div class="row justify-content-between">
+        <form class="form-inline m-2">
+          <label class="font-weight-bold">Pesquisa Geral</label>
+          <input class="form-control m-2 mr-sm-2" type="search" placeholder="Pesquisar" aria-label="Pesquisar"
+            id="pesquisa" />
+
         </form>
+        <a href="index">
+          <button class="btn-info btn m-2" id="inicio">
+            Novo orçamento <i class="bi bi-clipboard2-plus-fill"></i>
+          </button>
+        </a>
       </div>
-      <div class="container py-4">
-        <div class="row justify-content-center" id="cardsArea">
-          <div class="col-12 col-md-10 col-lg-8">
-            <div class="card shadow-sm mb-4">
-              <div class="card-body">
-                <h4 class="card-title mb-4 text-primary font-weight-bold">
-                  <i class="fa fa-cogs"></i> Gerenciamento
-                </h4>
-                <div class="row">
-                  <!-- Marca -->
-                  <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
-                  >
-                    <h5 class="font-weight-bold text-center">Marca</h5>
-                    <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
-                      type="button"
-                      id="dropdownMarca"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Cadastrar Marca
-                    </button>
-                    <div
-                      class="dropdown-menu p-3 w-100 mt-2"
-                      aria-labelledby="dropdownMarca"
-                      style="min-width: 220px"
-                      onclick="event.stopPropagation();"
-                    >
-                      <form id="cadastrarPainelMarca" class="form">
-                        <div class="form-group mb-2">
-                          <input
-                            type="text"
-                            name="marcasdes"
-                            id="marcaDescricao"
-                            placeholder="Descrição da Marca"
-                            class="form-control"
-                            required
-                          />
-                        </div>
-                        <button type="submit" class="btn btn-success btn-block">
-                          Cadastrar
-                        </button>
-                      </form>
-                    </div>
-                    <button
-                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
-                      type="button"
-                      onclick="toggleMarcas()"
-                    >
-                      Gerenciar
-                    </button>
-                  </div>
-                  <!-- Modelo -->
-                  <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
-                  >
-                    <h5 class="font-weight-bold text-center">Modelo</h5>
-                    <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
-                      type="button"
-                      id="dropdownModelo"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Cadastrar Modelo
-                    </button>
-                    <div
-                      class="dropdown-menu p-3 w-100 mt-2"
-                      aria-labelledby="dropdownModelo"
-                      style="min-width: 220px"
-                      onclick="event.stopPropagation();"
-                    >
-                      <form id="cadastrarPainelModelo" class="form">
-                        <div class="form-group mb-2">
-                          <input
-                            type="text"
-                            name="moddes"
-                            placeholder="Descrição do Modelo"
-                            class="form-control"
-                            required
-                          />
-                        </div>
-                        <div class="form-group mb-2">
-                          <div class="custom-select-wrapper">
-                            <select
-                              name=""
-                              id="painelMarca"
-                              class="form-control custom-select"
-                              required
-                              onclick="event.stopPropagation();"
-                            >
-                              <option value="">Selecione a Marca</option>
-                            </select>
-                          </div>
-                        </div>
-                        <button type="submit" class="btn btn-success btn-block">
-                          Cadastrar
-                        </button>
-                      </form>
-                    </div>
-                    <button
-                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
-                      type="button"
-                      onclick="toggleModelos()"
-                    >
-                      Gerenciar
-                    </button>
-                  </div>
-                  <!-- Tipo de Peça -->
-                  <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
-                  >
-                    <h5 class="font-weight-bold text-center">Tipo de Peça</h5>
-                    <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
-                      type="button"
-                      id="dropdownTipo"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Cadastrar Tipo de Peça
-                    </button>
-                    <div
-                      class="dropdown-menu p-3 w-100 mt-2"
-                      aria-labelledby="dropdownTipo"
-                      style="min-width: 220px"
-                      onclick="event.stopPropagation();"
-                    >
-                      <form id="cadastrarPainelTipo" class="form">
-                        <div class="form-group mb-2">
-                          <input
-                            type="text"
-                            name="tipodes"
-                            placeholder="Descrição do Tipo"
-                            class="form-control"
-                            required
-                          />
-                        </div>
-                        <button type="submit" class="btn btn-success btn-block">
-                          Cadastrar
-                        </button>
-                      </form>
-                    </div>
-                    <button
-                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
-                      type="button"
-                      onclick="toggleTipos()"
-                    >
-                      Gerenciar
-                    </button>
-                  </div>
-                  <!-- Cor -->
-                  <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
-                  >
-                    <h5 class="font-weight-bold text-center">Cor</h5>
-                    <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
-                      type="button"
-                      id="dropdownCor"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Cadastrar Cor
-                    </button>
-                    <div
-                      class="dropdown-menu p-3 w-100 mt-2"
-                      aria-labelledby="dropdownCor"
-                      style="min-width: 220px"
-                      onclick="event.stopPropagation();"
-                    >
-                      <form id="cadastrarPainelCor" class="form">
-                        <div class="form-group mb-2">
-                          <input
-                            type="text"
-                            name="cornome"
-                            placeholder="Descrição da Cor"
-                            class="form-control"
-                            required
-                          />
-                        </div>
-                        <button type="submit" class="btn btn-success btn-block">
-                          Cadastrar
-                        </button>
-                      </form>
-                    </div>
-                    <button
-                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
-                      type="button"
-                      onclick="toggleCores()"
-                    >
-                      Gerenciar
-                    </button>
-                  </div>
-                  <!-- Peça -->
-                  <div
-                    class="col-12 col-sm-6 col-md-3 mb-3 dropdown position-static management-group"
-                  >
-                    <h5 class="font-weight-bold text-center">Peça</h5>
-                    <button
-                      class="btn btn-outline-primary btn-block dropdown-toggle bi-plus-lg"
-                      type="button"
-                      id="dropdownPeca"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Cadastrar Peça
-                    </button>
-                    <div
-                      class="dropdown-menu p-3 w-100 mt-2"
-                      aria-labelledby="dropdownPeca"
-                      style="min-width: 220px"
-                      onclick="event.stopPropagation();"
-                    >
-                      <form id="cadastrarPainelPeca" class="form">
-                        <div class="form-group mb-2">
-                          <input
-                            type="text"
-                            name="prodes"
-                            placeholder="Descrição da Peça"
-                            class="form-control"
-                            required
-                          />
-                        </div>
-                        <div class="form-group mb-2">
-                          <input
-                            type="number"
-                            name="provl"
-                            placeholder="Valor R$"
-                            class="form-control"
-                            min="0"
-                            step="0.01"
-                            required
-                          />
-                        </div>
-                        <div class="form-group mb-2">
-                          <div class="custom-select-wrapper">
-                            <select
-                              name=""
-                              id="selectPainelMarca"
-                              class="form-control custom-select"
-                              required
-                              onclick="event.stopPropagation();"
-                            >
-                              <option value="">Selecione a Marca</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div class="form-group mb-2">
-                          <div class="custom-select-wrapper">
-                            <select
-                              name=""
-                              id="selectPainelModelo"
-                              class="form-control custom-select"
-                              required
-                              onclick="event.stopPropagation();"
-                            >
-                              <option value="">Selecione o Modelo</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div class="form-group mb-2">
-                          <div class="custom-select-wrapper">
-                            <select
-                              name=""
-                              id="selectPainelTipo"
-                              class="form-control custom-select"
-                              required
-                              onclick="event.stopPropagation();"
-                            >
-                              <option value="">Selecione o Tipo</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div class="form-group mb-2">
-                          <div
-                            class="custom-select-wrapper"
-                            id="selectPainelCor"
-                          >
-                            <!-- As opções de cor serão inseridas aqui via JS -->
-                          </div>
-                        </div>
-                        <button type="submit" class="btn btn-success btn-block">
-                          Cadastrar
-                        </button>
-                      </form>
-                    </div>
-                    <button
-                      class="btn btn-outline-secondary btn-block mt-2 bi-pencil"
-                      type="button"
-                      onclick="togglePecas()"
-                    >
-                      Gerenciar
-                    </button>
-                  </div>
-                </div>
-                <!-- Conteúdo dinâmico pode ser inserido aqui -->
-                <div
-                  id="areaMarcas"
-                  class="mt-3 management-area"
-                  style="display: none"
-                >
-                  <h5>Marcas cadastradas</h5>
-                  <table class="table table-sm">
-                    <thead>
-                      <tr>
-                        <th>Marca</th>
-                        <th>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody id="listaMarcas"></tbody>
-                  </table>
-                </div>
-                <div
-                  id="areaModelos"
-                  class="mt-3 management-area"
-                  style="display: none"
-                >
-                  <h5>Modelos cadastrados</h5>
-                  <table class="table table-sm">
-                    <thead>
-                      <tr>
-                        <th>Modelo</th>
-                        <th>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody id="listaModelos"></tbody>
-                  </table>
-                </div>
-                <div
-                  id="areaTipos"
-                  class="mt-3 management-area"
-                  style="display: none"
-                >
-                  <h5>Tipos cadastrados</h5>
-                  <table class="table table-sm">
-                    <thead>
-                      <tr>
-                        <th>Tipo</th>
-                        <th>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody id="listaTipos"></tbody>
-                  </table>
-                </div>
-                <div
-                  id="areaCores"
-                  class="mt-3 management-area"
-                  style="display: none"
-                >
-                  <h5>Cores cadastradas</h5>
-                  <table class="table table-sm">
-                    <thead>
-                      <tr>
-                        <th>Cor</th>
-                        <th>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody id="listaCores"></tbody>
-                  </table>
-                </div>
-              </div>
+
+      <div class="row">
+        <div class="col-sm">
+          <div class="card shadow-sm m-2">
+            <div class="card-body">
+              <h5 class="card-title">
+                <i class="bi bi-tags-fill mr-1"></i>Marcas
+              </h5>
+              <p class="card-text" id="totalMarcas">0</p>
             </div>
           </div>
         </div>
-        <div class="mt-3 management-area" id="tabelaArea" style="display: none">
-          <h5>Peças cadastrados</h5>
-          <table class="table table-sm" id="tabelaProdutos">
-            <thead>
-              <tr>
-                <th scope="col">Peça</th>
-                <th scope="col">Valor</th>
-                <th scope="col">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="corpoTabela"></tbody>
-          </table>
+        <div class="col-sm">
+          <div class="card shadow-sm m-2">
+            <div class="card-body">
+              <h5 class="card-title">
+                <i class="bi bi-collection"></i> Modelos
+              </h5>
+              <p class="card-text" id="totalModelos">0</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm">
+          <div class="card shadow-sm m-2">
+            <div class="card-body">
+              <h5 class="card-title">
+                <i class="bi bi-card-checklist mr-1"></i>Tipos
+              </h5>
+              <p class="card-text" id="totalTipos">0</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm">
+          <div class="card shadow-sm m-2">
+            <div class="card-body">
+              <h5 class="card-title">
+                <i class="bi bi-gear-fill mr-1"></i>Peças
+              </h5>
+              <p class="card-text" id="totalPecas">0</p>
+            </div>
+          </div>
         </div>
       </div>
-    </main>
+    </div>
 
-    <script src="/config.js"></script>
-    <script src="../js/nomeEmpresa.js"></script>
-    <script src="html/auth/js/painel.js"></script>
-    <script src="html/auth/js/logout.js"></script>
-    <script
-      src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
-      integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
-      integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
-      crossorigin="anonymous"
-    ></script>
-  </body>
+    <div class="container p-5 m-auto" id="cardsArea">
+      <div class="row">
+        <div class="col-sm">
+          <div class="m-2">
+            <h5 class="font-weight-bold text-center">Marca</h5>
+            <button class="btn btn-outline-info btn-block bi-plus-lg" type="button" id="dropdownMarca"
+              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Cadastrar Marca
+            </button>
+            <div class="dropdown-menu p-3 w-100 mt-2" aria-labelledby="dropdownMarca" style="min-width: 220px"
+              onclick="event.stopPropagation();">
+              <form id="cadastrarPainelMarca" class="form">
+                <div class="form-group mb-2">
+                  <input type="text" name="marcasdes" id="marcaDescricao" placeholder="Descrição da Marca"
+                    class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-success btn-block">
+                  Cadastrar
+                </button>
+              </form>
+            </div>
+            <button class="btn btn-outline-secondary btn-block mt-2 bi-pencil" type="button" onclick="toggleMarcas()">
+              Gerenciar
+            </button>
+          </div>
+        </div>
+        <div class="col-sm">
+          <div class="m-2">
+            <h5 class="font-weight-bold text-center">Modelo</h5>
+            <button class="btn btn-outline-info btn-block bi-plus-lg" type="button" id="dropdownModelo"
+              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Cadastrar Modelo
+            </button>
+            <div class="dropdown-menu p-3 w-100 mt-2" aria-labelledby="dropdownModelo" style="min-width: 220px"
+              onclick="event.stopPropagation();">
+              <form id="cadastrarPainelModelo" class="form">
+                <div class="form-group mb-2">
+                  <input type="text" name="moddes" placeholder="Descrição do Modelo" class="form-control" required />
+                </div>
+                <div class="form-group mb-2">
+                  <div class="custom-select-wrapper">
+                    <select name="" id="painelMarca" class="form-control custom-select" required
+                      onclick="event.stopPropagation();">
+                      <option value="">Selecione a Marca</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-success btn-block">
+                  Cadastrar
+                </button>
+              </form>
+            </div>
+            <button class="btn btn-outline-secondary btn-block mt-2 bi-pencil" type="button" onclick="toggleModelos()">
+              Gerenciar
+            </button>
+          </div>
+        </div>
+        <div class="col-sm">
+          <div class="m-2">
+            <h5 class="font-weight-bold text-center">Tipo de Peça</h5>
+            <button class="btn btn-outline-info btn-block bi-plus-lg" type="button" id="dropdownTipo"
+              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Cadastrar Tipo de Peça
+            </button>
+            <div class="dropdown-menu p-3 w-100 mt-5" aria-labelledby="dropdownTipo" style="min-width: 220px"
+              onclick="event.stopPropagation();">
+              <form id="cadastrarPainelTipo" class="form">
+                <div class="form-group mb-2">
+                  <input type="text" name="tipodes" placeholder="Descrição do Tipo" class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-success btn-block">
+                  Cadastrar
+                </button>
+              </form>
+            </div>
+            <button class="btn btn-outline-secondary btn-block mt-2 bi-pencil" type="button" onclick="toggleTipos()">
+              Gerenciar
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <div class="row">
+        <div class="col-sm">
+          <div class="m-2">
+            <h5 class="font-weight-bold text-center">Cor</h5>
+            <button class="btn btn-outline-info btn-block bi-plus-lg" type="button" id="dropdownCor"
+              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Cadastrar Cor
+            </button>
+            <div class="dropdown-menu p-3 w-100 mt-2" aria-labelledby="dropdownCor" style="min-width: 220px"
+              onclick="event.stopPropagation();">
+              <form id="cadastrarPainelCor" class="form">
+                <div class="form-group mb-2">
+                  <input type="text" name="cornome" placeholder="Descrição da Cor" class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-success btn-block">
+                  Cadastrar
+                </button>
+              </form>
+            </div>
+            <button class="btn btn-outline-secondary btn-block mt-2 bi-pencil" type="button" onclick="toggleCores()">
+              Gerenciar
+            </button>
+          </div>
+        </div>
+        <div class="col-sm">
+          <div class="m-2">
+            <h5 class="font-weight-bold text-center">Peça</h5>
+            <div class="dropdown">
+              <button class="btn btn-outline-info btn-block bi-plus-lg dropdown-toggle" type="button" id="dropdownPeca"
+                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Cadastrar Peça
+              </button>
+            
+            <div class="dropdown-menu p-3 w-100 mt-2" aria-labelledby="dropdownPeca" style="min-width: 220px"
+              onclick="event.stopPropagation();">
+              <form id="cadastrarPainelPeca" class="form">
+                <div class="form-group mb-2 mt-5">
+                  <input type="text" name="prodes" placeholder="Descrição da Peça" class="form-control" required />
+                </div>
+                <div class="form-group mb-2">
+                  <input type="number" name="provl" placeholder="Valor R$" class="form-control" min="0" step="0.01"
+                    required />
+                </div>
+                <div class="form-group mb-2">
+                  <div class="custom-select-wrapper">
+                    <select name="" id="selectPainelMarca" class="form-control custom-select" required
+                      onclick="event.stopPropagation();">
+                      <option value="">Selecione a Marca</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group mb-2">
+                  <div class="custom-select-wrapper">
+                    <select name="" id="selectPainelModelo" class="form-control custom-select" required
+                      onclick="event.stopPropagation();">
+                      <option value="">Selecione o Modelo</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group mb-2">
+                  <div class="custom-select-wrapper">
+                    <select name="" id="selectPainelTipo" class="form-control custom-select" required
+                      onclick="event.stopPropagation();">
+                      <option value="">Selecione o Tipo</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group mb-2">
+                  <div class="custom-select-wrapper" id="selectPainelCor">
+                    <!-- As opções de cor serão inseridas aqui via JS -->
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-success btn-block">
+                  Cadastrar
+                </button>
+              </form>
+            </div>
+            </div>
+            <button class="btn btn-outline-secondary btn-block mt-2 bi-pencil" type="button"
+              onclick="togglePecas()">Gerenciar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div id="areaMarcas" class="mt-3 management-area" style="display: none">
+        <h5>Marcas cadastradas</h5>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Marca</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="listaMarcas"></tbody>
+        </table>
+      </div>
+      <div id="areaModelos" class="mt-3 management-area" style="display: none">
+        <h5>Modelos cadastrados</h5>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Modelo</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="listaModelos"></tbody>
+        </table>
+      </div>
+      <div id="areaTipos" class="mt-3 management-area" style="display: none">
+        <h5>Tipos cadastrados</h5>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="listaTipos"></tbody>
+        </table>
+      </div>
+      <div id="areaCores" class="mt-3 management-area" style="display: none">
+        <h5>Cores cadastradas</h5>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Cor</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="listaCores"></tbody>
+        </table>
+      </div>
+      <div class="mt-3 management-area" id="tabelaArea" style="display: none">
+      <h5>Peças cadastrados</h5>
+      <table class="table table-sm" id="tabelaProdutos">
+        <thead>
+          <tr>
+            <th scope="col">Peça</th>
+            <th scope="col">Valor</th>
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpoTabela"></tbody>
+      </table>
+    </div>
+    </div>
+    
+    </div>
+    
+    </div>
+    </div>
+   
+    </div>
+  </main>
+
+  <script src="/config.js"></script>
+  <script src="../js/nomeEmpresa.js"></script>
+  <script src="html/auth/js/painel.js"></script>
+  <script src="html/auth/js/logout.js"></script>
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+    integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+    crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
+    integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+    crossorigin="anonymous"></script>
+</body>
+
 </html>
