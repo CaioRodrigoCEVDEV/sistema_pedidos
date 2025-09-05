@@ -148,6 +148,7 @@ CREATE TABLE public.modelo (
 	CONSTRAINT fk_modelo_marcas FOREIGN KEY (modmarcascod) REFERENCES public.marcas(marcascod)
 );
 
+
 -- Permissions
 
 ALTER TABLE public.modelo OWNER TO postgres;
