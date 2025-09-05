@@ -144,6 +144,7 @@ CREATE TABLE public.modelo (
 	moddes varchar(40) NULL,
 	modsit bpchar(1) DEFAULT 'A'::bpchar NULL,
 	modmarcascod int4 NULL,
+	ordem int4 NULL,
 	CONSTRAINT pk_modelo PRIMARY KEY (modcod),
 	CONSTRAINT fk_modelo_marcas FOREIGN KEY (modmarcascod) REFERENCES public.marcas(marcascod)
 );
