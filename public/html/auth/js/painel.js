@@ -1627,3 +1627,200 @@ async function excluirPro(id) {
     }
   };
 }
+
+// (Removido o let duplicado, mantendo apenas a atribuição e uso de marcasCache)
+document.addEventListener("DOMContentLoaded", () => {
+  fetch(`${BASE_URL}/marcas/`)
+    .then((res) => res.json())
+    .then((dados) => {
+      marcasCache = dados; // guarda em cache
+
+      // Preenche o select do cadastro
+      const selectCadastro = document.getElementById("painelMarca");
+      if (selectCadastro) {
+        selectCadastro.innerHTML =
+          '<option value="">Selecione a Marca</option>';
+        dados.forEach((m) => {
+          const opt = document.createElement("option");
+          opt.value = m.marcascod;
+          opt.textContent = m.marcasdes;
+          selectCadastro.appendChild(opt);
+        });
+      }
+    })
+    .catch(console.error);
+});
+
+// ==========================
+// 1️⃣ Helpers: Overlay e Popup
+// ==========================
+function criarOverlay() {
+  const overlay = document.createElement("div");
+  overlay.classList.add("overlay");
+  overlay.style.position = "fixed";
+  overlay.style.top = 0;
+  overlay.style.left = 0;
+  overlay.style.width = "100%";
+  overlay.style.height = "100%";
+  overlay.style.background = "rgba(0,0,0,0.5)";
+  overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.zIndex = 9999;
+  return overlay;
+}
+
+function criarPopup(titulo) {
+  const popup = document.createElement("div");
+  popup.classList.add("popup");
+  popup.style.background = "#fff";
+  popup.style.padding = "20px";
+  popup.style.borderRadius = "8px";
+  popup.style.maxHeight = "80vh";
+  popup.style.overflowY = "auto";
+  popup.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
+  popup.style.margin = "1rem";
+
+  popup.innerHTML = `
+    <h4>${titulo}</h4>
+  `;
+
+  popup.fecharHTML = `
+    <div style="text-align:right; margin-top:10px;">
+      <button class="btn btn-secondary" onclick="fecharPopup(this)">Fechar</button>
+    </div>
+  `;
+  return popup;
+}
+
+function fecharPopup(btn) {
+  // remove o popup
+  const popup = btn.closest(".popup");
+  if (popup) popup.remove();
+
+  // remove o overlay
+  const overlay = document.querySelector(".overlay");
+  if (overlay) overlay.remove();
+}
+
+let marcasCache = [];
+document.addEventListener("DOMContentLoaded", () => {
+  fetch(`${BASE_URL}/marcas/`)
+    .then((res) => res.json())
+    .then((dados) => {
+      marcasCache = dados;
+
+      // Preenche select do cadastro
+      const selectCadastro = document.getElementById("painelMarca");
+      if (selectCadastro) {
+        selectCadastro.innerHTML =
+          '<option value="">Selecione a Marca</option>';
+        dados.forEach((m) => {
+          const opt = document.createElement("option");
+          opt.value = m.marcascod;
+          opt.textContent = m.marcasdes;
+          selectCadastro.appendChild(opt);
+        });
+      }
+    })
+    .catch(console.error);
+});
+
+// ==========================
+// 4️⃣ Toggle Ordem: Popup completo
+// ==========================
+function toggleOrdem() {
+  if (!marcasCache.length) return alert("Nenhuma marca carregada ainda!");
+
+  const overlay = criarOverlay();
+  const popup = criarPopup("Gerenciar Ordem dos Modelos");
+
+  // Select de marcas + botão buscar
+  let selectHtml = `<select id="marcaSelectOrdem" class="form-control">
+                      <option value="">Selecione a marca</option>`;
+  marcasCache.forEach((m) => {
+    selectHtml += `<option value="${m.marcascod}">${m.marcasdes}</option>`;
+  });
+  selectHtml += `</select>
+                 <button id="btnBuscarModelosOrdem" class="btn btn-primary btn-block mt-2">Buscar</button>
+                 <div id="listaOrdemHolder" class="mt-3"></div>`;
+
+  popup.innerHTML = popup.innerHTML + selectHtml + popup.fecharHTML;
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+
+  // Evento buscar modelos
+  popup
+    .querySelector("#btnBuscarModelosOrdem")
+    .addEventListener("click", () => {
+      const marcaId = popup.querySelector("#marcaSelectOrdem").value;
+      if (!marcaId) return alert("Selecione uma marca!");
+
+      fetch(`${BASE_URL}/modelo/${marcaId}`)
+        .then((r) => r.json())
+        .then((modelos) => {
+          const modelosFiltrados = modelos.filter(
+            (m) => m.modmarcascod == marcaId
+          );
+
+          const holder = popup.querySelector("#listaOrdemHolder");
+          holder.innerHTML = `
+            <ul id="sortable" class="list-group">
+              ${modelosFiltrados
+                .map(
+                  (m) =>
+                    `<li class="list-group-item" data-id="${m.modcod}"><span class="handle">☰ </span>${m.moddes}
+                    </li>`
+                )
+                .join("")}
+            </ul>
+            <button id="salvarOrdem" class="btn btn-success btn-block mt-3">Salvar Ordem</button>
+          `;
+
+          // Ativa drag & drop com SortableJS (funciona no celular)
+          Sortable.create(holder.querySelector("#sortable"), {
+            handle: ".handle",
+            animation: 150,
+            fallbackOnBody: true, // usa fallback que permite scroll no mobile
+            swapThreshold: 0.65, // melhora a troca entre itens
+            scroll: true, // ativa auto-scroll
+            scrollSensitivity: 60, // velocidade do scroll quando chega perto da borda
+            scrollSpeed: 10, // intensidade do scroll
+          });
+
+          // Salvar ordem
+          popup.querySelector("#salvarOrdem").addEventListener("click", () => {
+            const ordem = [...holder.querySelectorAll("li")].map((li) => ({
+              id: li.dataset.id,
+              descricao: li.textContent,
+            }));
+
+            fetch(`${BASE_URL}/modelo/ordem`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ordem }),
+            })
+              .then((r) => r.json())
+              .then(() => {
+                const msg = document.createElement("div");
+                msg.textContent = "Ordem Atualizada com sucesso!";
+                msg.style.position = "fixed";
+                msg.style.top = "20px";
+                msg.style.left = "50%";
+                msg.style.transform = "translateX(-50%)";
+                msg.style.background = "#28a745";
+                msg.style.color = "#fff";
+                msg.style.padding = "12px 24px";
+                msg.style.borderRadius = "6px";
+                msg.style.zIndex = "10000";
+                msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+                document.body.appendChild(msg);
+                setTimeout(() => {
+                  msg.remove();
+                }, 2000);
+              })
+              .catch(console.error);
+          });
+        });
+    });
+}

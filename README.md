@@ -3,35 +3,37 @@
 Sistema web para pedidos simples com login e senha para administrador, onde o usuário comum pode selecionar os produtos, inserir no carrinho e finalizar enviando o pedido ao whatsapp e o administrador pode acessar o painal registrar os produtos e visualizar o dashboard.
 
 ---
+
 ## 🛠️ Tecnologias Utilizadas
 
-| 🖥️ Frontend  | ⚙️ Backend     | 📦 Pacotes Node.js                        |
-|--------------|----------------|-------------------------------------------|
-| HTML5        | Node.js        | **Servidor & Roteamento:**                |
-| CSS3         | Express        | • express                                 |
-| JavaScript   | PostgreSQL     | • multer                                  |
-|              |                | **Banco de Dados:**                       |
-|              |                | • pg                                      |
-|              |                | **Autenticação & Sessões:**               |
-|              |                | • bcryptjs                                |
-|              |                | • jsonwebtoken                            |
-|              |                | **Middlewares & Utilitários:**            |
-|              |                | • body-parser                             |
-|              |                | • cookie-parser                           |
-|              |                | • dotenv                                  |
-|              |                | • morgan *(logger)*                       |
-|              |                | • nodemon                                 |
-|              |                | • sharp                                   |
+| 🖥️ Frontend | ⚙️ Backend | 📦 Pacotes Node.js             |
+| ----------- | ---------- | ------------------------------ |
+| HTML5       | Node.js    | **Servidor & Roteamento:**     |
+| CSS3        | Express    | • express                      |
+| JavaScript  | PostgreSQL | • multer                       |
+|             |            | **Banco de Dados:**            |
+|             |            | • pg                           |
+|             |            | **Autenticação & Sessões:**    |
+|             |            | • bcryptjs                     |
+|             |            | • jsonwebtoken                 |
+|             |            | **Middlewares & Utilitários:** |
+|             |            | • body-parser                  |
+|             |            | • cookie-parser                |
+|             |            | • dotenv                       |
+|             |            | • morgan _(logger)_            |
+|             |            | • nodemon                      |
+|             |            | • sharp                        |
 
 ---
-
 
 # 📥 Instalação:
 
 ### 1. Clone o repositório:
+
 ```bash
 git clone https://github.com/CaioRodrigoCEVDEV/sistema_pedidos.git
 ```
+
 ### 2. Instalação dos pacotes Node.js
 
 ```bash
@@ -40,6 +42,7 @@ npm install express pg bcryptjs jsonwebtoken body-parser dotenv cookie-parser mo
 npm install -g nodemon
 
 ```
+
 ### 3. Crie um arquivo .env na raiz com o seguinte conteúdo:
 
 ```bash
@@ -52,7 +55,9 @@ BASE_URL=http://localhost:3000
 HTTPS=false
 
 ```
+
 ---
+
 # 📦 Estrutura do Banco de Dados
 
 Este repositório contém a definição de um banco de dados PostgreSQL com três tabelas principais: `usu`, `pro` , `modelo`, `tipo` e `marcas`.
@@ -78,20 +83,20 @@ CREATE TABLE public.usu (
 ALTER TABLE public.usu OWNER TO postgres;
 GRANT ALL ON TABLE public.usu TO postgres;
 ```
-- **usucod**  : Código do usuario.
-- **usunome**  : Nome do usuario.
+
+- **usucod** : Código do usuario.
+- **usunome** : Nome do usuario.
 - **usuemail**: E-mail do usuário (chave primária).
 - **ususenha**: Senha do usuário (armazenada como hash MD5, por exemplo).
-- **usuadm**  : S ou N para administrador.
+- **usuadm** : S ou N para administrador.
 
 ### 👤 Inserção de exemplo:
+
 ```sql
 INSERT INTO usu (usunome,usuemail,ususenha)VALUES ('usuario','email@email.com', md5('123'));
 ```
 
 ---
-
-
 
 ## 💳 Tabela `marcas` (marcas dos produtos)
 
@@ -117,17 +122,16 @@ GRANT ALL ON TABLE public.marcas TO postgres;
 - **marcasit**: Situação (ex: "A","I","X").
 
 ### ➕ Inserção de exemplo:
+
 ```sql
 INSERT INTO marcas (marcascod, marcasdes, marcasit) VALUES (1, 'Samsung', 'A');
 ```
 
 ### 🔐 Permissões:
+
 - Permissões completas: `postgres`
 
 ---
-
-
-
 
 ## 💳 Tabela `modelo` (modelo do produto)
 
@@ -150,18 +154,20 @@ ALTER TABLE public.modelo OWNER TO postgres;
 GRANT ALL ON TABLE public.modelo TO postgres;
 
 ```
+
 - **modcod**: Código do modelo (chave primária).
 - **moddes**: Descrição (ex: "S25 ultra").
 - **modsit**: Situação (ex: "A","I","X").
 - **modmarcascod**: Código do modelo (chave estrangeira MARCAS).
 
-
 ### ➕ Inserção de exemplo:
+
 ```sql
 INSERT INTO modelo (modcod, moddes, modsit) VALUES (1, 'A10', 'A');
 ```
 
 ### 🔐 Permissões:
+
 - Dono: `postgres`
 - Permissões completas: `postgres`
 
@@ -185,16 +191,19 @@ CREATE TABLE public.tipo (
 ALTER TABLE public.tipo OWNER TO postgres;
 GRANT ALL ON TABLE public.tipo TO postgres;
 ```
+
 - **tipocod**: Código do tipo (chave primária).
 - **tipodes**: Descrição (ex: "Tela","Bateria").
 - **tiposit**: Situação (ex: "A","I","X").
 
 ### ➕ Inserção de exemplo:
+
 ```sql
 INSERT INTO tipo (tipocod, tipodes, tiposit) VALUES (1, 'Tela', 'A');
 ```
 
 ### 🔐 Permissões:
+
 - Dono: `postgres`
 - Permissões completas: `postgres`
 
@@ -212,11 +221,12 @@ CREATE TABLE cores (
 );
 
 ```
+
 - **corcod**: Código da cor (chave primária).
 - **cornome**: Descrição (ex: "Branco","Azul").
 
-
 ### ➕ Inserção de exemplo:
+
 ```sql
 
 INSERT INTO cores (cornome) VALUES
@@ -238,6 +248,7 @@ INSERT INTO cores (cornome) VALUES
 ```
 
 ### 🔐 Permissões:
+
 - Dono: `postgres`
 - Permissões completas: `postgres`
 
@@ -273,18 +284,21 @@ CREATE TABLE public.pro (
 ALTER TABLE public.pro OWNER TO postgres;
 GRANT ALL ON TABLE public.pro TO postgres;
 ```
+
 - **procod**: Código do tipo (chave primária).
 - **prodes**: Descrição (ex: "Tela","Bateria").
 
-
 ### ➕ Inserção de exemplo:
+
 ```sql
 INSERT INTO pro (procod, prodes, promarcascod, protipocod, promodcod, proqualicod, prosit, provl) VALUES (1, 'Numquam in iste.', 1, 5, 3, 1, 'A', 320.96);
 ```
 
 ### 🔐 Permissões:
+
 - Dono: `postgres`
 - Permissões completas: `postgres`
+
 ---
 
 ## 📄 Tabela `procor` (produto)
@@ -304,6 +318,7 @@ CREATE TABLE public.procor (
 ALTER TABLE public.procor OWNER TO postgres;
 GRANT ALL ON TABLE public.procor TO postgres;
 ```
+
 ---
 
 ## 📄 Tabela `emp` (Empresa)
@@ -315,12 +330,15 @@ CREATE TABLE public.emp (
 	empwhatsapp2 varchar(13) NULL
 );
 ```
+
 ### ➕ Inserção de exemplo:
+
 ```
 INSERT INTO public.emp
 (emprazao, empwhatsapp1, empwhatsapp2)
 VALUES('Razao Social ou Fantasia', '5561983216765', '5561991494321');
 ```
+
 ---
 
 # 💰 View Tipo de Peças
@@ -343,7 +361,6 @@ GRANT ALL ON TABLE public.vw_tipo_pecas TO postgres;
 
 ---
 
-
 # 💰 View Marcas
 
 ```sql
@@ -362,17 +379,17 @@ GRANT ALL ON TABLE public.vw_marcas TO postgres;
 
 ---
 
-
 # View modelos
 
 ```sql
 CREATE OR REPLACE VIEW public.vw_modelos
-AS SELECT modcod,
-    moddes,
-    modsit,
-    modmarcascod
+AS SELECT modelo.modcod,
+    modelo.moddes,
+    modelo.modsit,
+    modelo.modmarcascod,
+    modelo.ordem
    FROM modelo
-  ORDER BY ("substring"(moddes::text, '^\D*'::text)), ("substring"(moddes::text, '\d+'::text)::integer);
+  ORDER BY ("substring"(modelo.moddes::text, '^\D*'::text)), ("substring"(modelo.moddes::text, '\d+'::text)::integer);
 
 ```
 
