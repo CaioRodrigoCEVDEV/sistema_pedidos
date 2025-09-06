@@ -11,135 +11,147 @@ function formatarMoeda(valor) {
     currency: "BRL",
   });
 }
-
 document.addEventListener("DOMContentLoaded", () => {
-  fetch(`${BASE_URL}/marcas/`)
-    .then((res) => res.json())
-    .then((dados) => {
-      const holder = document.getElementById("painelMarca");
-      if (!holder) return;
-      holder.innerHTML = ""; // zera antes
+  const holder = document.getElementById("painelMarca");
+  if (!holder) return;
 
-      let html = '<option value="">Selecione uma marca</option>';
-      dados.forEach((marca) => {
-        html += `<option value="${marca.marcascod}"${
-          id == marca.marcascod ? " selected" : ""
-        }>${marca.marcasdes}</option>`;
-      });
-      const select = document.getElementById("painelMarca");
-      if (select) {
-        select.innerHTML = html;
-      }
-
-      holder.innerHTML = html;
-
-      holder.addEventListener("change", (e) => {
-        marcacodModelo = e.target.value;
-      });
-    })
-    .catch(console.error);
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  fetch(`${BASE_URL}/marcas/`)
-    .then((res) => res.json())
-    .then((dados) => {
-      const holder = document.getElementById("selectPainelMarca");
-      if (!holder) return;
-      holder.innerHTML = ""; // zera antes
-
-      let html = '<option value="">Selecione uma marca</option>';
-      dados.forEach((marca) => {
-        html += `<option value="${marca.marcascod}"${
-          id == marca.marcascod ? " selected" : ""
-        }>${marca.marcasdes}</option>`;
-      });
-      const select = document.getElementById("paineselectPainelMarcalMarca");
-      if (select) {
-        select.innerHTML = html;
-      }
-
-      holder.innerHTML = html;
-
-      const tipoHolder = document.getElementById("selectPainelTipo");
-      if (tipoHolder) {
-        tipoHolder.addEventListener("change", (e) => {
-          tipo = e.target.value; // Atualiza o código do tipo selecionado
-          // console.log("Tipo selecionado:", tipo);
+  // Função para carregar marcas
+  function carregarMarcasPainel() {
+    fetch(`${BASE_URL}/marcas/`)
+      .then((res) => res.json())
+      .then((dados) => {
+        holder.innerHTML = ""; // zera antes
+        let html = '<option value="">Selecione uma marca</option>';
+        dados.forEach((marca) => {
+          html += `<option value="${marca.marcascod}"${
+            id == marca.marcascod ? " selected" : ""
+          }>${marca.marcasdes}</option>`;
         });
-      }
+        holder.innerHTML = html;
+      })
+      .catch(console.error);
+  }
 
-      holder.addEventListener("change", (e) => {
-        marcascod = e.target.value; // Atualiza o código da marca selecionada
-        // Atualiza os modelos com base na marca selecionada
-        fetch(`${BASE_URL}/modelo/${marcascod}`)
-          .then((res) => res.json())
-          .then((dados) => {
-            const modeloHolder = document.getElementById("selectPainelModelo");
-            if (!modeloHolder) return;
-            modeloHolder.innerHTML =
-              '<option value="">Selecione o Modelo</option>';
-            dados.forEach((modelo) => {
-              modeloHolder.innerHTML += `<option value="${modelo.modcod}">${modelo.moddes}</option>`;
-            });
-            // console.log("Marca selecionada:", marcascod);
+  // Carrega inicialmente
+  carregarMarcasPainel();
 
-            modeloHolder.addEventListener("change", (e) => {
-              modelo = e.target.value; // Atualiza o código do modelo selecionado
-              // console.log("Modelo selecionado:", modelo);
-            });
-          })
-          .catch(console.error);
+  // Carrega novamente ao focar (atualiza dados)
+  holder.addEventListener("focus", (e) => {
+    carregarMarcasPainel();
+  });
+
+  holder.addEventListener("change", (e) => {
+    marcacodModelo = e.target.value;
+  });
+});
+document.addEventListener("DOMContentLoaded", () => {
+  const holder = document.getElementById("selectPainelMarca");
+  if (!holder) return;
+
+  // Carrega marcas apenas uma vez ao carregar a página
+  fetch(`${BASE_URL}/marcas/`)
+    .then((res) => res.json())
+    .then((dados) => {
+      holder.innerHTML = '<option value="">Selecione a Marca</option>';
+      dados.forEach((marca) => {
+        holder.innerHTML += `<option value="${marca.marcascod}">${marca.marcasdes}</option>`;
       });
     })
     .catch(console.error);
+    holder.addEventListener("focus", () => {
+      fetch(`${BASE_URL}/marcas/`)
+        .then((res) => res.json())
+        .then((dados) => {
+          holder.innerHTML = '<option value="">Selecione a Marca</option>';
+          dados.forEach((marca) => {
+            holder.innerHTML += `<option value="${marca.marcascod}">${marca.marcasdes}</option>`;
+          });
+        })
+        .catch(console.error);
+    });
+  holder.addEventListener("change", (e) => {
+    marcascod = e.target.value;
+    // Só faz o fetch dos modelos ao selecionar uma marca
+    fetch(`${BASE_URL}/modelo/${marcascod}`)
+      .then((res) => res.json())
+      .then((modelos) => {
+        const modeloHolder = document.getElementById("selectPainelModelo");
+        if (!modeloHolder) return;
+        modeloHolder.innerHTML = '<option value="">Selecione o Modelo</option>';
+        modelos.forEach((modeloItem) => {
+          modeloHolder.innerHTML += `<option value="${modeloItem.modcod}">${modeloItem.moddes}</option>`;
+        });
+
+        modeloHolder.addEventListener("change", (e) => {
+          modelo = e.target.value;
+        });
+      })
+      .catch(console.error);
+  });
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  fetch(`${BASE_URL}/tipos/`)
-    .then((res) => res.json())
-    .then((dados) => {
-      const holder = document.getElementById("selectPainelTipo");
-      if (!holder) return;
-      holder.innerHTML = ""; // zera antes
+  function carregarTiposPainel() {
+    fetch(`${BASE_URL}/tipos/`)
+      .then((res) => res.json())
+      .then((dados) => {
+        const holder = document.getElementById("selectPainelTipo");
+        if (!holder) return;
+        let html = '<option value="">Selecione o tipo</option>';
+        dados.forEach((tipo) => {
+          html += `<option value="${tipo.tipocod}"${
+            id == tipo.tipocod ? " selected" : ""
+          }>${tipo.tipodes}</option>`;
+        });
+        holder.innerHTML = html;
+      })
+      .catch(console.error);
+  }
 
-      let html = '<option value="">Selecione o tipo</option>';
-      dados.forEach((tipo) => {
-        html += `<option value="${tipo.tipocod}"${
-          id == tipo.tipocod ? " selected" : ""
-        }>${tipo.tipodes}</option>`;
-      });
-      const select = document.getElementById("selectPainelTipo");
-      if (select) {
-        select.innerHTML = html;
-      }
+  carregarTiposPainel();
 
-      holder.innerHTML = html;
-    })
-    .catch(console.error);
+  const holder = document.getElementById("selectPainelTipo");
+  if (holder) {
+    holder.addEventListener("focus", () => {
+      carregarTiposPainel();
+    });
+    holder.addEventListener("change", (e) => {
+      tipo = e.target.value;
+    });
+  }
 });
-
 // listar cor no painel/criar produto
 document.addEventListener("DOMContentLoaded", () => {
-  fetch(`${BASE_URL}/procores/`)
-    .then((res) => res.json())
-    .then((dados) => {
-      const holder = document.getElementById("selectPainelCor");
-      if (!holder) return;
-      holder.innerHTML = ""; // zera antes
+  function carregarCoresPainel() {
+    fetch(`${BASE_URL}/procores/`)
+      .then((res) => res.json())
+      .then((dados) => {
+        const holder = document.getElementById("selectPainelCor");
+        if (!holder) return;
+        holder.innerHTML = ""; // zera antes
 
-      let html = "<label>Selecione a(s) cor(es):</label><br>";
-      dados.forEach((cor) => {
-        html += `
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="procor" value="${cor.corcod}" id="cor_${cor.corcod}">
-            <label class="form-check-label" for="cor_${cor.corcod}">${cor.cornome}</label>
-          </div>
-        `;
-      });
-      holder.innerHTML = html;
-    })
-    .catch(console.error);
+        let html = "<label>Selecione a(s) cor(es):</label><br>";
+        dados.forEach((cor) => {
+          html += `
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="procor" value="${cor.corcod}" id="cor_${cor.corcod}">
+              <label class="form-check-label" for="cor_${cor.corcod}">${cor.cornome}</label>
+            </div>
+          `;
+        });
+        holder.innerHTML = html;
+      })
+      .catch(console.error);
+  }
+
+  // Carrega inicialmente
+  carregarCoresPainel();
+
+  // Carrega novamente ao abrir o dropdown
+  const dropdownBtn = document.getElementById("dropdownPeca");
+  if (dropdownBtn) {
+    dropdownBtn.addEventListener("click", carregarCoresPainel);
+  }
 });
 
 //Função para criar marca
