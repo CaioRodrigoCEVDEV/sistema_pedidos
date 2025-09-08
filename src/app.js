@@ -152,7 +152,7 @@ app.get('/manifest.json', async (req, res) => {
   }
 
   const manifest = {
-    name: `${empresa} - Sistema de Pedidos`,
+    name: `${empresa} - App`,
     short_name: empresa.slice(0, 12) || 'Pedidos',
     start_url: "/index",
     scope: "/",
