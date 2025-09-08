@@ -1716,21 +1716,82 @@ function fecharPopup(btn) {
 }
 
 let marcasCache = [];
+let modelosCache = [];
+let tiposCache = [];
 document.addEventListener("DOMContentLoaded", () => {
+  const holder = document.getElementById("selectPainelMarca");
+
+  if (!holder) return;
+
   fetch(`${BASE_URL}/marcas/`)
     .then((res) => res.json())
     .then((dados) => {
       marcasCache = dados;
 
       // Preenche select do cadastro
-      const selectCadastro = document.getElementById("painelMarca");
+      if (holder) {
+        holder.innerHTML = '<option value="">Selecione a Marca</option>';
+        dados.forEach((marca) => {
+          holder.innerHTML += `<option value="${marca.marcascod}">${marca.marcasdes}</option>`;
+        });
+      }
+    })
+    .catch(console.error);
+
+  holder.addEventListener("focus", () => {
+    fetch(`${BASE_URL}/marcas/`)
+      .then((res) => res.json())
+      .then((dados) => {
+        holder.innerHTML = '<option value="">Selecione a Marca</option>';
+        dados.forEach((marca) => {
+          holder.innerHTML += `<option value="${marca.marcascod}">${marca.marcasdes}</option>`;
+        });
+      })
+      .catch(console.error);
+  });
+
+  holder.addEventListener("change", (e) => {
+    marcascod = e.target.value;
+    // Só faz o fetch dos modelos ao selecionar uma marca
+    fetch(`${BASE_URL}/modelo/${marcascod}`)
+      .then((res) => res.json())
+      .then((dados) => {
+        modelosCache = dados;
+
+        const selectCadastro = document.getElementById("selectPainelModelo");
+        if (selectCadastro) {
+          selectCadastro.innerHTML =
+            '<option value="">Selecione o Modelo</option>';
+          dados.forEach((m) => {
+            const opt = document.createElement("option");
+            opt.value = m.modcod;
+            opt.textContent = m.moddes;
+            selectCadastro.appendChild(opt);
+          });
+        }
+        selectCadastro.addEventListener("change", (e) => {
+          modelo = e.target.value;
+        });
+      })
+      .catch(console.error);
+  });
+});
+
+//tipo peça
+document.addEventListener("DOMContentLoaded", () => {
+  fetch(`${BASE_URL}/tipos/`)
+    .then((res) => res.json())
+    .then((dados) => {
+      tiposCache = dados;
+
+      // Preenche select do cadastro
+      const selectCadastro = document.getElementById("painelTipo");
       if (selectCadastro) {
-        selectCadastro.innerHTML =
-          '<option value="">Selecione a Marca</option>';
+        selectCadastro.innerHTML = '<option value="">Selecione o Tipo</option>';
         dados.forEach((m) => {
           const opt = document.createElement("option");
-          opt.value = m.marcascod;
-          opt.textContent = m.marcasdes;
+          opt.value = m.tipocod;
+          opt.textContent = m.tipodes;
           selectCadastro.appendChild(opt);
         });
       }
@@ -1741,7 +1802,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ==========================
 // 4️⃣ Toggle Ordem: Popup completo
 // ==========================
-function toggleOrdem() {
+function toggleOrdemModelo() {
   if (!marcasCache.length) return alert("Nenhuma marca carregada ainda!");
 
   const overlay = criarOverlay();
@@ -1836,6 +1897,193 @@ function toggleOrdem() {
         });
     });
 }
+
+//********************************************* */
+function criarPopupPeca(titulo) {
+  const popup = document.createElement("div");
+  popup.classList.add("popup");
+  popup.style.background = "#fff";
+  popup.style.padding = "20px";
+  popup.style.borderRadius = "8px";
+  popup.style.maxHeight = "80vh";
+  popup.style.overflowY = "auto";
+  popup.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
+  popup.style.margin = "1rem";
+
+  popup.innerHTML = `
+    <h4>${titulo}</h4>
+  `;
+
+  popup.fecharHTML = `
+    <div style="text-align:right; margin-top:10px;">
+      <button class="btn btn-secondary" onclick="fecharPopup(this)">Fechar</button>
+    </div>
+  `;
+  return popup;
+}
+
+// ==========================
+// 4️⃣ Toggle Ordem: Popup completo
+// ==========================
+function toggleOrdemPeca() {
+  if (!marcasCache.length) return alert("Nenhuma marca carregada ainda!");
+  //if (!modelosCache.length) return alert("Nenhum modelo carregado ainda!");
+  if (!tiposCache.length) return alert("Nenhum tipo carregado ainda!");
+
+  const overlay = criarOverlay();
+  const popup = criarPopup("Gerenciar Ordem das Peças");
+
+  // Select de marcas + botão buscar
+  let selectHtml = `<select id="marcaSelectOrdem" class="form-control mb-2">
+                      <option value="">Selecione a marca</option>`;
+  marcasCache.forEach((m) => {
+    selectHtml += `<option value="${m.marcascod}">${m.marcasdes}</option>`;
+  });
+  selectHtml += `</select>`;
+
+  selectHtml += `<select id="modelosSelectOrdem" class="form-control mb-2">
+                      <option value="">Selecione o modelo</option>`;
+  selectHtml += `</select>`;
+
+  selectHtml += `<select id="tiposSelectOrdem" class="form-control mb-2">
+                      <option value="">Selecione o Tipo</option>`;
+  tiposCache.forEach((m) => {
+    selectHtml += `<option value="${m.tipocod}">${m.tipodes}</option>`;
+  });
+
+  selectHtml += `</select>
+                 <button id="btnBuscarPecasOrdem" class="btn btn-primary btn-block mt-2">Buscar</button>
+                 <div id="listaOrdemHolder" class="mt-3"></div>`;
+
+  popup.innerHTML = popup.innerHTML + selectHtml + popup.fecharHTML;
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+
+  const marcaSelect = popup.querySelector("#marcaSelectOrdem");
+  const modelosSelect = popup.querySelector("#modelosSelectOrdem");
+  const tiposSelect = popup.querySelector("#tiposSelectOrdem");
+
+  if (!marcaSelect || !modelosSelect || !tiposSelect) return;
+
+  marcaSelect.addEventListener("change", (e) => {
+    const marcaId = e.target.value;
+    if (!marcaId) {
+      modelosSelect.innerHTML = '<option value="">Selecione o modelo</option>';
+      return;
+    }
+
+    fetch(`${BASE_URL}/modelo/${marcaId}`)
+      .then((res) => res.json())
+      .then((dados) => {
+        modelosCache = dados;
+        modelosSelect.innerHTML =
+          '<option value="">Selecione o modelo</option>';
+        dados.forEach((m) => {
+          const opt = document.createElement("option");
+          opt.value = m.modcod;
+          opt.textContent = m.moddes;
+          modelosSelect.appendChild(opt);
+        });
+      })
+      .catch(console.error);
+  });
+
+  // Ao mudar o modelo, carrega os tipos correspondentes
+  modelosSelect.addEventListener("change", async (e) => {
+    const modeloId = e.target.value;
+    if (!modeloId) {
+      tiposSelect.innerHTML = '<option value="">Selecione o Tipo</option>';
+      return;
+    }
+
+    try {
+      const resTipos = await fetch(`${BASE_URL}/tipo/${modeloId}`);
+      tiposCache = await resTipos.json();
+      tiposSelect.innerHTML = '<option value="">Selecione o Tipo</option>';
+      tiposCache.forEach((t) => {
+        tiposSelect.innerHTML += `<option value="${t.tipocod}">${t.tipodes}</option>`;
+      });
+    } catch (err) {
+      console.error("Erro ao buscar tipos:", err);
+    }
+  });
+
+  // Evento buscar modelos
+  popup.querySelector("#btnBuscarPecasOrdem").addEventListener("click", () => {
+    const marcaId = popup.querySelector("#marcaSelectOrdem").value;
+    const modeloId = popup.querySelector("#modelosSelectOrdem").value;
+    const tipoId = popup.querySelector("#tiposSelectOrdem").value;
+    if (!marcaId) return alert("Selecione uma marca!");
+    if (!modeloId) return alert("Selecione um modelo!");
+    if (!tipoId) return alert("Selecione um tipo!");
+
+    fetch(`${BASE_URL}/pro/${tipoId}?marca=${marcaId}&modelo=${modeloId}`)
+      .then((r) => r.json())
+      .then((produtos) => {
+        const holder = popup.querySelector("#listaOrdemHolder");
+        holder.innerHTML = `
+            <ul id="sortable" class="list-group">
+            ${produtos
+              .map(
+                (p) =>
+                  `<li class="list-group-item" data-id="${p.procod}">
+                     <span class="handle">☰ </span>${p.prodes}
+                   </li>`
+              )
+              .join("")}
+            </ul>
+            <button id="salvarOrdem" class="btn btn-success btn-block mt-3">Salvar Ordem</button>
+          `;
+
+        // Ativa drag & drop com SortableJS (funciona no celular)
+        Sortable.create(holder.querySelector("#sortable"), {
+          handle: ".handle",
+          animation: 150,
+          fallbackOnBody: true, // usa fallback que permite scroll no mobile
+          swapThreshold: 0.65, // melhora a troca entre itens
+          scroll: true, // ativa auto-scroll
+          scrollSensitivity: 60, // velocidade do scroll quando chega perto da borda
+          scrollSpeed: 10, // intensidade do scroll
+        });
+
+        // Salvar ordem
+        popup.querySelector("#salvarOrdem").addEventListener("click", () => {
+          const ordem = [...holder.querySelectorAll("li")].map((li) => ({
+            id: li.dataset.id,
+            descricao: li.textContent,
+          }));
+
+          fetch(`${BASE_URL}/pro/ordem`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ordem }),
+          })
+            .then((r) => r.json())
+            .then(() => {
+              const msg = document.createElement("div");
+              msg.textContent = "Ordem Atualizada com sucesso!";
+              msg.style.position = "fixed";
+              msg.style.top = "20px";
+              msg.style.left = "50%";
+              msg.style.transform = "translateX(-50%)";
+              msg.style.background = "#28a745";
+              msg.style.color = "#fff";
+              msg.style.padding = "12px 24px";
+              msg.style.borderRadius = "6px";
+              msg.style.zIndex = "10000";
+              msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+              document.body.appendChild(msg);
+              setTimeout(() => {
+                msg.remove();
+              }, 2000);
+            })
+            .catch(console.error);
+        });
+      });
+  });
+}
+
+//********************************************* */
 
 //função para gerar mensagem de cobrança
 async function dadosPagamento() {
