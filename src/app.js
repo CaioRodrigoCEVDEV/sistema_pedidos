@@ -130,6 +130,62 @@ app.get('/auth/sair', (req, res) => {
   }
 });
 
+
+
+
+
+app.get('/manifest.json', async (req, res) => {
+  try {
+    // Busca dados da empresa — use http(s) da própria request:
+    const baseURL = `${req.protocol}://${req.get('host')}`;
+    const empResp = await fetch(`${baseURL}/emp`, { headers: { 'Accept': 'application/json' } });
+    const empData = empResp.ok ? await empResp.json() : {};
+
+    const empresa = empData.emprazao || 'Sistema Pedidos';
+
+    // Monte seu manifest dinâmico:
+    const manifest = {
+      name: `${empresa} - App`,
+      short_name: shortify(empresa),
+      start_url: "/index",
+      scope: "/",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#008000",
+      icons: [
+        { src: "/uploads/logo.jpg", sizes: "192x192", type: "image/jpg", purpose: "any maskable" },
+        { src: "/uploads/logo.jpg", sizes: "512x512", type: "image/jpg", purpose: "any maskable" }
+      ]
+    };
+
+    res.setHeader('Content-Type', 'application/manifest+json');
+    // Cache curto porque o conteúdo é dinâmico por domínio/tenant
+    res.setHeader('Cache-Control', 'public, max-age=300'); // 5 min
+    res.send(JSON.stringify(manifest));
+  } catch (err) {
+    console.error('manifest.json error:', err);
+    // Fallback estático
+    res.setHeader('Content-Type', 'application/manifest+json');
+    res.status(200).send(JSON.stringify({
+      name: "Sistema Pedidos",
+      short_name: "Pedidos",
+      start_url: "/index",
+      scope: "/",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#008000",
+      icons: [
+        { src: "/uploads/logo.jpg", sizes: "192x192", type: "image/jpg", purpose: "any maskable" },
+        { src: "/uploads/logo.jpg", sizes: "512x512", type: "image/jpg", purpose: "any maskable" }
+      ]
+    }));
+  }
+});
+
+
+
+
+
 //  Rota para upload de logo
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
