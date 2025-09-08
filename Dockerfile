@@ -18,4 +18,4 @@ RUN mkdir -p /app/uploads && chown -R node:node /app
 USER node
 
 EXPOSE 3000
-CMD ["node", "src/index.js"]
+CMD ["node", "src/app.js"]
