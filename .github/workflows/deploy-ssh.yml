@@ -24,5 +24,7 @@ jobs:
           ssh -p "${{ secrets.SSH_PORT }}" "root@${{ secrets.SSH_HOST }}" '
             set -e
             chmod +x /root/deployJpPecas.sh
+            chmod +x /root/deployUTIdosCelulares.sh
             /root/deployJpPecas.sh
+            /root/deployUTIdosCelulares.sh
           '
