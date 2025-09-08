@@ -132,7 +132,7 @@ app.get('/auth/sair', (req, res) => {
 
 
 
-
+// Rota para servir o manifest.json dinamicamente com nome da empresa PARA PWA BANNER INSTALL APP
 app.get('/manifest.json', async (req, res) => {
   console.log('[manifest] HIT', new Date().toISOString());
 
@@ -160,8 +160,8 @@ app.get('/manifest.json', async (req, res) => {
     background_color: "#ffffff",
     theme_color: "#008000",
     icons: [
-      { src: "/uploads/logo-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
-      { src: "/uploads/logo-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+      { src: "/uploads/logo.jpg", sizes: "192x192", type: "image/jpg", purpose: "any maskable" },
+      { src: "/uploads/logo.jpg", sizes: "512x512", type: "image/jpg", purpose: "any maskable" }
     ]
   };
 
