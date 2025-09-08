@@ -58,17 +58,17 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     })
     .catch(console.error);
-    holder.addEventListener("focus", () => {
-      fetch(`${BASE_URL}/marcas/`)
-        .then((res) => res.json())
-        .then((dados) => {
-          holder.innerHTML = '<option value="">Selecione a Marca</option>';
-          dados.forEach((marca) => {
-            holder.innerHTML += `<option value="${marca.marcascod}">${marca.marcasdes}</option>`;
-          });
-        })
-        .catch(console.error);
-    });
+  holder.addEventListener("focus", () => {
+    fetch(`${BASE_URL}/marcas/`)
+      .then((res) => res.json())
+      .then((dados) => {
+        holder.innerHTML = '<option value="">Selecione a Marca</option>';
+        dados.forEach((marca) => {
+          holder.innerHTML += `<option value="${marca.marcascod}">${marca.marcasdes}</option>`;
+        });
+      })
+      .catch(console.error);
+  });
   holder.addEventListener("change", (e) => {
     marcascod = e.target.value;
     // Só faz o fetch dos modelos ao selecionar uma marca
@@ -1836,3 +1836,59 @@ function toggleOrdem() {
         });
     });
 }
+
+//função para gerar mensagem de cobrança
+async function dadosPagamento() {
+  try {
+    const response = await fetch(`${BASE_URL}/emp/pagamento`); // sua rota no backend
+    if (!response.ok) throw new Error("Erro ao buscar dados de pagamento");
+    const data = await response.json();
+    return data; // true ou false
+  } catch (err) {
+    console.error(err);
+    return false; // assume não pago se der erro
+  }
+}
+
+async function processCharges() {
+  try {
+    const hoje = new Date();
+    const dados = await dadosPagamento();
+
+    if (dados.empdtpag || !dados.empdtvenc) return;
+
+    const vencimento = new Date(dados.empdtvenc);
+
+    const diffDias = Math.ceil((vencimento - hoje) / (1000 * 60 * 60 * 24));
+
+    // mostra aviso se estiver até 5 dias antes do vencimento
+    if (diffDias >= 0 && diffDias <= 5) {
+      const div = document.createElement("div");
+      div.textContent =
+        diffDias === 0
+          ? "Sua mensalidade vence HOJE! Realize o pagamento."
+          : `Sua mensalidade vence em ${diffDias} dias, não esqueça de pagar.`;
+
+      div.style.position = "fixed";
+      div.style.top = "20px";
+      div.style.left = "50%";
+      div.style.transform = "translateX(-50%)";
+      div.style.background = diffDias === 0 ? "#f32206ff" : "#ffbb27ff";
+      div.style.color = "#fff";
+      div.style.padding = "12px 24px";
+      div.style.borderRadius = "6px";
+      div.style.zIndex = "10000";
+      div.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+      document.body.appendChild(div);
+
+      setTimeout(() => div.remove(), 6000);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+processCharges();
+// checa 1x por dia
+setInterval(() => {
+  processCharges();
+}, 24 * 60 * 60 * 1000);
