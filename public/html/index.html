@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title id="title"></title>
     <!--Link proprios projeto-->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#008000">
+
     <link rel="stylesheet" href="../css/style.css">
     <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png">
@@ -102,6 +105,44 @@
     </div>
 
     </div>
+
+<!-- Botão oculto que só aparece quando o Chrome liberar o install prompt -->
+<button id="btnInstall" class="btn btn-success" style="display:none; position:fixed; bottom:20px; right:20px; z-index:9999;">
+  📲 Instalar App
+</button>
+
+<script>
+  let deferredPrompt;
+  const btnInstall = document.getElementById("btnInstall");
+
+  // Captura o evento antes do Chrome exibir o banner nativo
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); // impede o banner automático
+    deferredPrompt = e;
+    btnInstall.style.display = "block"; // mostra botão manual
+  });
+
+  // Quando o usuário clicar no botão
+  btnInstall.addEventListener("click", () => {
+    btnInstall.style.display = "none"; // esconde o botão
+    deferredPrompt.prompt(); // dispara o banner nativo
+    deferredPrompt.userChoice.then((choiceResult) => {
+      console.log("Usuário escolheu:", choiceResult.outcome);
+      deferredPrompt = null;
+    });
+  });
+</script>
+
+
+
+    <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").then(() => {
+      console.log("Service Worker registrado");
+    });
+  }
+</script>
+
     <script src="../js/nomeEmpresa.js"></script>
     <script src="/config.js"></script>
     <script src="../js/index.js"></script>
