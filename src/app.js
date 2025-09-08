@@ -29,7 +29,7 @@ app.use(cookieParser());
 
 
 const corsOptions = {
-  origin: ['http://jppecashop.com.br', 'http://www.jppecashop.com.br'],
+  origin: ['http://jppecashop.com.br', 'http://www.jppecashop.com.br','http://utidoscelulares.com.br','http://www.utidoscelulares.com.br'],
   credentials: true,
 };
 
