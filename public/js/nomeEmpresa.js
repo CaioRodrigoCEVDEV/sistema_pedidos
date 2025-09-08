@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const companyName = data.emprazao || '';
             const formattedName = formatCompanyName(companyName);
             const companyNameElem = document.getElementById('nomeEmpresa');
+            const titleElem = document.getElementById('title');
             if (companyNameElem) {
-                // Check if the company name span already exists
                 let nameSpan = companyNameElem.querySelector('.company-name');
                 if (!nameSpan) {
                     nameSpan = document.createElement('span');
@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     companyNameElem.appendChild(nameSpan);
                 }
                 nameSpan.textContent = formattedName;
+            }
+            if (titleElem) {
+                titleElem.textContent = formattedName;
             }
         })
         .catch((error) => {
