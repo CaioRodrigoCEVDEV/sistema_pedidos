@@ -17,13 +17,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!holder) return;
       holder.innerHTML = ""; // zera antes
 
-      let html = '<div class="row">';
-      dados.forEach((dado, i) => {
+      let html = '<div class="row g-4">'; // gap entre os itens
+      dados.forEach((dado) => {
         html += `
-
-          <div class="col-6 col-sm-6 col-md-4 mb-3 d-flex justify-content-center">
-            <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-100">
-              <button class="btn btn-md btn-outline-dark w-100">${dado.marcasdes}</button>
+          <div class="col-6 col-md-4 col-lg-3 d-flex">
+            <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-100 text-decoration-none">
+              <button class="btn btn-light w-100 shadow-sm py-3 fw-semibold brand-btn">
+                ${dado.marcasdes}
+              </button>
             </a>
           </div>`;
       });
@@ -33,6 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     })
     .catch(console.error);
 });
+
 
 const inputPesquisa = document.getElementById("pesquisa");
 const tabelaArea = document.getElementById("tabelaArea");
