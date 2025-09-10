@@ -162,7 +162,7 @@ inputPesquisa.addEventListener("input", function () {
         filtrados.forEach((modelo) => {
           const item = document.createElement("div");
           item.className = "cart-item";
-          item.style.maxWidth = "50%";
+          //item.style.maxWidth = "50%"; removido feature do alan
           item.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <div class="item-name">${modelo.moddes}</div>
