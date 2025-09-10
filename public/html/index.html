@@ -10,6 +10,7 @@
     <meta name="theme-color" content="#008000">
 
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/style-index.css">
     <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png">
     <!--links bootstrap-->
@@ -19,14 +20,15 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
         integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 </head>
 
 <body>
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm  bg-white rounded fixed-top">
-            <a class="navbar-brand" href="index" id="nomeEmpresa" ><img src="/uploads/logo.jpg" width="30" height="30" alt=""></a>
+            <a class="navbar-brand" href="index" id="nomeEmpresa"><img src="/uploads/logo.jpg" width="30" height="30"
+                    alt=""></a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
                 <span class="navbar-toggler-icon"></span>
@@ -46,50 +48,64 @@
     </header>
 
     <main>
+
         <!--Alert de Tutorial-->
         <div class="container m-auto">
             <div class="alert alert-dismissible fade show shadow p-3 m-auto bg-white rounded" id="tutorialAlert"
-                    style="max-width: 800px; margin: auto; display: none;" role="alert">
-                    <strong>Primeira vez utilizando nosso sitema de pedidos?</strong> Assista o tutorial caso tenha alguma
-                    dificuldade.
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close" id="tutorialAlertClose">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    <hr>
-                    <p class="mb-0"><button type="button" class="btn btn-danger"> <i class="bi bi-youtube"> </i>Tutorial em
-                            video </i></button></p>
+                style="max-width: 800px; margin: auto; display: none;" role="alert">
+                <strong>Primeira vez utilizando nosso sitema de pedidos?</strong> Assista o tutorial caso tenha alguma
+                dificuldade.
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close" id="tutorialAlertClose">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <hr>
+                <p class="mb-0"><button type="button" class="btn btn-danger"> <i class="bi bi-youtube"> </i>Tutorial em
+                        video </i></button></p>
             </div>
-        </div>  
-        <div class="container">
-            <form class="form-inline">
+        </div>
+        <!--Pesquisa-->
+        <div class="row justify-content-center mb-5">
+            <div class="col-md-6">
                 <label for="pesquisa" class="m-2">Pesquisa Geral</label>
-                <input class="form-control" type="search" placeholder="Pesquisar"aria-label="Pesquisar" id="pesquisa">
-            </form>
-        </div>
-        <div id="cardsArea">
-            <div class="container-float">
-                <div class="style-title-card">
-                    <h3> Selecione a marca <i class="bi bi-caret-down-fill"></i></h3>
-                </div>
+                <div class="input-group">
 
-                <div class="container mt-3" id="marcaTitulo">
-
-                    <!--Conteudo inserido via js-->
+                    <span class="input-group-text bg-white" for="pesquisa">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input class="form-control" type="search" placeholder="Pesquisar" aria-label="Pesquisar"
+                        id="pesquisa">
                 </div>
             </div>
         </div>
-        <div class="bg-light p-3  mb-5" id="tabelaArea" style="display: none;">
-            <div id="corpoTabela"></div>
+
+        <div id="cardsArea">
+            <div class="container">
+                <h2 class="text-center fw-bold mb-5">Selecione a Marca do Aparelho</h2>
+            </div>
+            <div class="container">
+                <div id="marcaTitulo">
+                    <!--Conteudo inserido via js marcas cadastradas-->
+                </div>
+            </div>
+        </div>
+        <div class="container" id="tabelaArea">
+            <h3 id="titulo-peca" class="mb-5"></h3>
+            <div id="corpoTabela" class="container">
+                <!--Conteudo inserido via js Modelos ou Peças-->
+
+            </div>
         </div>
     </main>
     <footer class="border-top py-4 mt-5">
-    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
-      <div class="small text-muted">© <span id="y"></span> Sistema Pedidos via Whatsapp — <a href="#">MTTR Tecnologia que transforma seu negócio.</a></div>
-      <div class="d-flex gap-3 footer small">
-        <a href="https://wa.me/5561981697924?text=Ol%C3%A1!%20Tenho%20interesse%20para%20marcar%20uma%20reuni%C3%A3o%20para%20entender%20mais%20sobre%20as%20solu%C3%A7%C3%B5es%20que%20voc%C3%AAs%20oferecem!%20" target="_blank" class="badge badge-secondary m-1">Contato</a>
-      </div>
-    </div>
-  </footer>
+        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="small text-muted">© <span id="y"></span> Sistema Pedidos via Whatsapp — <a href="#">MTTR
+                    Tecnologia que transforma seu negócio.</a></div>
+            <div class="d-flex gap-3 footer small">
+                <a href="https://wa.me/5561981697924?text=Ol%C3%A1!%20Tenho%20interesse%20para%20marcar%20uma%20reuni%C3%A3o%20para%20entender%20mais%20sobre%20as%20solu%C3%A7%C3%B5es%20que%20voc%C3%AAs%20oferecem!%20"
+                    target="_blank" class="badge badge-secondary m-1">Contato</a>
+            </div>
+        </div>
+    </footer>
     <a href="javascript:void(0);" class="button-cart" id="openCartModal">
         <i class="bi bi-cart2"></i>
     </a>
@@ -117,47 +133,46 @@
 
     </div>
 
-<!-- Botão oculto que só aparece quando o Chrome liberar o install prompt -->
-<button id="btnInstall" class="btn btn-success" 
- style="display:none; 
+    <!-- Botão oculto que só aparece quando o Chrome liberar o install prompt -->
+    <button id="btnInstall" class="btn btn-success" style="display:none; 
          position:fixed; 
          bottom:20px; 
          left:50%; 
          transform:translateX(-50%); 
          z-index:9999;">
-  📲 Instalar App
-</button>
+        📲 Instalar App
+    </button>
 
 
 
-<script>
-  let deferredPrompt;
-  const btnInstall = document.getElementById("btnInstall");
-
-  // Captura o evento antes do Chrome exibir o banner nativo
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault(); // impede o banner automático
-    deferredPrompt = e;
-    btnInstall.style.display = "block"; // mostra botão manual
-  });
-
-  // Quando o usuário clicar no botão
-  btnInstall.addEventListener("click", () => {
-    btnInstall.style.display = "none"; // esconde o botão
-    deferredPrompt.prompt(); // dispara o banner nativo
-    deferredPrompt.userChoice.then((choiceResult) => {
-      console.log("Usuário escolheu:", choiceResult.outcome);
-      deferredPrompt = null;
-    });
-  });
-</script>
     <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js").then(() => {
-      console.log("Service Worker registrado");
-    });
-  }
-</script>
+        let deferredPrompt;
+        const btnInstall = document.getElementById("btnInstall");
+
+        // Captura o evento antes do Chrome exibir o banner nativo
+        window.addEventListener("beforeinstallprompt", (e) => {
+            e.preventDefault(); // impede o banner automático
+            deferredPrompt = e;
+            btnInstall.style.display = "block"; // mostra botão manual
+        });
+
+        // Quando o usuário clicar no botão
+        btnInstall.addEventListener("click", () => {
+            btnInstall.style.display = "none"; // esconde o botão
+            deferredPrompt.prompt(); // dispara o banner nativo
+            deferredPrompt.userChoice.then((choiceResult) => {
+                console.log("Usuário escolheu:", choiceResult.outcome);
+                deferredPrompt = null;
+            });
+        });
+    </script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/sw.js").then(() => {
+                console.log("Service Worker registrado");
+            });
+        }
+    </script>
 
     <script src="../js/nomeEmpresa.js"></script>
     <script src="/config.js"></script>
