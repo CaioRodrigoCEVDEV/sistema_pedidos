@@ -20,7 +20,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       let html = '<div class="row g-4">'; // gap entre os itens
       dados.forEach((dado) => {
         html += `
-          <div class="col-6 col-md-4 col-lg-3 d-flex">
+        <style> .brand-btn {
+    border-radius: 12px;
+    transition: all 0.2s ease-in-out;
+  }
+  .brand-btn:hover {
+    background-color: #0d6efd;
+    color: white;
+    transform: translateY(-2px);
+  }
+  </style>
+          <div class="col-6 col-md-4 col-lg-3 px-2 mb-3">
             <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-100 text-decoration-none">
               <button class="btn btn-light w-100 shadow-sm py-3 fw-semibold brand-btn">
                 ${dado.marcasdes}
@@ -234,9 +244,8 @@ document.getElementById("openCartModal").addEventListener("click", function () {
         .map(
           (item, idx) => `
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>${item.nome} <small class="text-muted">(R$ ${
-            item.preco ? Number(item.preco).toFixed(2) : "0.00"
-          })</small></span>
+          <span>${item.nome} <small class="text-muted">(R$ ${item.preco ? Number(item.preco).toFixed(2) : "0.00"
+            })</small></span>
           <span>
             <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
             <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
@@ -398,8 +407,8 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
     <p>Escolha a cor do produto:</p>
     <select id="select-cor">
       ${cores
-        .map((cor) => `<option value="${cor.procod}">${cor.cornome}</option>`)
-        .join("")}
+      .map((cor) => `<option value="${cor.procod}">${cor.cornome}</option>`)
+      .join("")}
     </select>
     <div id="modal-cor-botoes">
       <button id="btn-cancelar-cor">Cancelar</button>
