@@ -21,6 +21,13 @@ body {
     margin-top: 8rem !important;
 }
 
+.navbar {
+  background-color: rgba(255, 255, 255, 0.7); /* Fundo branco semitransparente */
+  backdrop-filter: blur(10px); /* Efeito de desfoque */
+  -webkit-backdrop-filter: blur(10px); /* Para Safari */
+}
+
+
 .container-float {
     font-size: 1.0rem;
     max-width: 1400px;
