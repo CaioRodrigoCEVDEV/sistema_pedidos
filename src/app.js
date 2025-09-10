@@ -71,7 +71,8 @@ app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/login.html"));
 });
 app.get("/index", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/html/index.html"));
+  //res.sendFile(path.join(__dirname, "../public/html/index.html"));
+  res.redirect("/");
 });
 app.get("/modelo", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/modelo.html"));
