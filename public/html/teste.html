@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+        integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <style>
+        .brand-btn {
+            border-radius: 12px;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .brand-btn:hover {
+            background-color: #0d6efd;
+            color: white;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <div class="container my-5">
+        <h2 class="text-center fw-bold mb-4">Selecione a Marca do Aparelho</h2>
+
+        <!-- Pesquisa -->
+        <div class="row justify-content-center mb-5">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-white">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control" placeholder="Pesquisar...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid de Cards -->
+        <div class="row g-4">
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card shadow-sm brand-card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Samsung</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card shadow-sm brand-card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Motorola</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card shadow-sm brand-card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Xiaomi</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card shadow-sm brand-card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">iPhone</h5>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Repete o mesmo modelo para as outras marcas -->
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+        integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
+        integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

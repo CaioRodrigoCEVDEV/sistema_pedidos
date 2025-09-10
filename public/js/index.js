@@ -17,13 +17,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!holder) return;
       holder.innerHTML = ""; // zera antes
 
-      let html = '<div class="row">';
-      dados.forEach((dado, i) => {
+      let html = '<div class="row g-4">'; // gap entre os itens
+      dados.forEach((dado) => {
         html += `
-
-          <div class="col-6 col-sm-6 col-md-4 mb-3 d-flex justify-content-center">
-            <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-100">
-              <button class="btn btn-md btn-outline-dark w-100">${dado.marcasdes}</button>
+        <style> .brand-btn {
+    border-radius: 12px;
+    transition: all 0.2s ease-in-out;
+  }
+  .brand-btn:hover {
+    background-color: #0d6efd;
+    color: white;
+    transform: translateY(-2px);
+  }
+  </style>
+          <div class="col-6 col-md-4 col-lg-3 px-2 mb-3">
+            <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-100 text-decoration-none">
+              <button class="btn btn-light w-100 shadow-sm py-3 fw-semibold brand-btn">
+                ${dado.marcasdes}
+              </button>
             </a>
           </div>`;
       });
@@ -80,6 +91,13 @@ inputPesquisa.addEventListener("input", function () {
         }
 
         corpoTabela.innerHTML = "";
+        //adiciona o titulo apenas uma vez
+        if (filtrados.length > 0) {
+          const titulo = document.getElementById("titulo-peca");
+          titulo.innerHTML = " Selecione a peça";
+          titulo.style.textAlign = "center";
+        }
+        // Ordena as peças
         filtrados.forEach((peca) => {
           const item = document.createElement("div");
           item.className = "cart-item";
@@ -88,7 +106,12 @@ inputPesquisa.addEventListener("input", function () {
             <div class="item-name">${peca.prodes}</div>
             <div class="item-tipo">${peca.tipodes}</div>
             <div class="item-marca">${peca.marcasdes}</div>
-            <div class="item-price">${formatarMoeda(peca.provl)} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${peca.procod}')">Adicionar</button></div>
+            <div class="item-price">${formatarMoeda(
+              peca.provl
+            )} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
+            peca.procod
+          }')">Adicionar</button></div>
+
           `;
           corpoTabela.appendChild(item);
         });
@@ -119,14 +142,27 @@ inputPesquisa.addEventListener("input", function () {
         }
 
         corpoTabela.innerHTML = "";
+
+        // Ordena os modelos
         filtrados.sort((a, b) => {
           const nomeA = a.moddes.replace(/\s/g, "");
           const nomeB = b.moddes.replace(/\s/g, "");
           return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
         });
+
+        // Adiciona o título apenas uma vez
+        if (filtrados.length > 0) {
+          const titulo = document.createElement("h3");
+          titulo.textContent = " Selecione o Modelo";
+          titulo.style.textAlign = "center";
+          corpoTabela.appendChild(titulo);
+        }
+
+        // Loop para inserir os modelos
         filtrados.forEach((modelo) => {
           const item = document.createElement("div");
           item.className = "cart-item";
+          item.style.maxWidth = "50%";
           item.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <div class="item-name">${modelo.moddes}</div>
