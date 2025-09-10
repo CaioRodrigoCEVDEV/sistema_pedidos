@@ -45,7 +45,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     .catch(console.error);
 });
 
-
 const inputPesquisa = document.getElementById("pesquisa");
 const tabelaArea = document.getElementById("tabelaArea");
 const cardsArea = document.getElementById("cardsArea");
@@ -92,6 +91,13 @@ inputPesquisa.addEventListener("input", function () {
         }
 
         corpoTabela.innerHTML = "";
+        //adiciona o titulo apenas uma vez
+        if (filtrados.length > 0) {
+          const titulo = document.getElementById("titulo-peca");
+          titulo.innerHTML = " Selecione a peça";
+          titulo.style.textAlign = "center";
+        }
+        // Ordena as peças
         filtrados.forEach((peca) => {
           const item = document.createElement("div");
           item.className = "cart-item";
@@ -100,7 +106,12 @@ inputPesquisa.addEventListener("input", function () {
             <div class="item-name">${peca.prodes}</div>
             <div class="item-tipo">${peca.tipodes}</div>
             <div class="item-marca">${peca.marcasdes}</div>
-            <div class="item-price">${formatarMoeda(peca.provl)} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${peca.procod}')">Adicionar</button></div>
+            <div class="item-price">${formatarMoeda(
+              peca.provl
+            )} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
+            peca.procod
+          }')">Adicionar</button></div>
+
           `;
           corpoTabela.appendChild(item);
         });
@@ -131,14 +142,27 @@ inputPesquisa.addEventListener("input", function () {
         }
 
         corpoTabela.innerHTML = "";
+
+        // Ordena os modelos
         filtrados.sort((a, b) => {
           const nomeA = a.moddes.replace(/\s/g, "");
           const nomeB = b.moddes.replace(/\s/g, "");
           return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
         });
+
+        // Adiciona o título apenas uma vez
+        if (filtrados.length > 0) {
+          const titulo = document.createElement("h3");
+          titulo.textContent = " Selecione o Modelo";
+          titulo.style.textAlign = "center";
+          corpoTabela.appendChild(titulo);
+        }
+
+        // Loop para inserir os modelos
         filtrados.forEach((modelo) => {
           const item = document.createElement("div");
           item.className = "cart-item";
+          item.style.maxWidth = "50%";
           item.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <div class="item-name">${modelo.moddes}</div>
@@ -244,8 +268,9 @@ document.getElementById("openCartModal").addEventListener("click", function () {
         .map(
           (item, idx) => `
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>${item.nome} <small class="text-muted">(R$ ${item.preco ? Number(item.preco).toFixed(2) : "0.00"
-            })</small></span>
+          <span>${item.nome} <small class="text-muted">(R$ ${
+            item.preco ? Number(item.preco).toFixed(2) : "0.00"
+          })</small></span>
           <span>
             <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
             <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
@@ -407,8 +432,8 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
     <p>Escolha a cor do produto:</p>
     <select id="select-cor">
       ${cores
-      .map((cor) => `<option value="${cor.procod}">${cor.cornome}</option>`)
-      .join("")}
+        .map((cor) => `<option value="${cor.procod}">${cor.cornome}</option>`)
+        .join("")}
     </select>
     <div id="modal-cor-botoes">
       <button id="btn-cancelar-cor">Cancelar</button>

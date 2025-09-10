@@ -48,7 +48,7 @@
     </header>
 
     <main>
-        
+
         <!--Alert de Tutorial-->
         <div class="container m-auto">
             <div class="alert alert-dismissible fade show shadow p-3 m-auto bg-white rounded" id="tutorialAlert"
@@ -68,28 +68,32 @@
             <div class="col-md-6">
                 <label for="pesquisa" class="m-2">Pesquisa Geral</label>
                 <div class="input-group">
-                    
+
                     <span class="input-group-text bg-white" for="pesquisa">
                         <i class="bi bi-search"></i>
                     </span>
-                    <input class="form-control" type="search" placeholder="Pesquisar" aria-label="Pesquisar" id="pesquisa">
+                    <input class="form-control" type="search" placeholder="Pesquisar" aria-label="Pesquisar"
+                        id="pesquisa">
                 </div>
             </div>
         </div>
 
-        <h2 class="text-center fw-bold mb-4">Selecione a Marca do Aparelho</h2>
         <div id="cardsArea">
             <div class="container">
-                
-
-                <div class="container mt-3" id="marcaTitulo">
-
-                    <!--Conteudo inserido via js-->
+                <h2 class="text-center fw-bold mb-5">Selecione a Marca do Aparelho</h2>
+            </div>
+            <div class="container">
+                <div id="marcaTitulo">
+                    <!--Conteudo inserido via js marcas cadastradas-->
                 </div>
             </div>
         </div>
-        <div class="bg-light p-3  mb-5" id="tabelaArea" style="display: none;">
-            <div id="corpoTabela"></div>
+        <div class="container" id="tabelaArea">
+            <h3 id="titulo-peca" class="mb-5"></h3>
+            <div id="corpoTabela" class="container">
+                <!--Conteudo inserido via js Modelos ou Peças-->
+
+            </div>
         </div>
     </main>
     <footer class="border-top py-4 mt-5">
