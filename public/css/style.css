@@ -140,6 +140,9 @@ body {
         min-width: 220px;
     }
 }
+/*teste aqui*/
+
+/*Fim teste aqui*/
 
 /* Estilos para o carrinho em layout responsivo */
 .cart-item {
@@ -161,6 +164,28 @@ body {
 .cart-item .item-total {
     text-align: right;
 }
+.cart-item {
+  background: #fff;
+  border: 1px solid #ddd;      /* borda leve */
+  border-radius: 8px;          /* cantos arredondados */
+  padding: 10px 15px;
+  margin: 10px auto;           /* espaço entre os itens */
+  max-width: 600px;            /* largura máxima centralizada */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* sombra sutil */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cart-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.cart-item .item-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
 
 @media (max-width: 819px) {
     .cart-item {
