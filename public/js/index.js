@@ -161,7 +161,7 @@ inputPesquisa.addEventListener("input", function () {
         // Loop para inserir os modelos
         filtrados.forEach((modelo) => {
           const item = document.createElement("div");
-          item.className = "cart-item";
+          item.className = "cart-item bg-dark text-white";
           //item.style.maxWidth = "50%"; removido feature do alan
           item.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between;">
