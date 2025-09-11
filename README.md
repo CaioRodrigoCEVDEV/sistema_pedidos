@@ -93,7 +93,7 @@ GRANT ALL ON TABLE public.usu TO postgres;
 ### 👤 Inserção de exemplo:
 
 ```sql
-INSERT INTO usu (usunome,usuemail,ususenha)VALUES ('usuario','email@email.com', md5('123'));
+INSERT INTO usu (usunome,usuemail,ususenha)VALUES ('usuario','admin@ordeup.com.br', md5('orderup@'));
 ```
 
 ---
@@ -328,6 +328,7 @@ GRANT ALL ON TABLE public.procor TO postgres;
 
 ```sql
 CREATE TABLE public.emp (
+	empcod serial4 NOT NULL,
 	emprazao varchar(254) NULL,
 	empwhatsapp1 varchar(13) NULL,
 	empwhatsapp2 varchar(13) NULL,
@@ -341,7 +342,7 @@ CREATE TABLE public.emp (
 ```
 INSERT INTO public.emp
 (emprazao, empwhatsapp1, empwhatsapp2)
-VALUES('Razao Social ou Fantasia', '5561983216765', '5561991494321');
+VALUES('Razao Social ou Fantasia', '', '');
 ```
 
 ---
