@@ -42,7 +42,7 @@ async function atualizarDB() {
     // USU default (usucod = 1, usunome = 'orderup')
     await pool.query(`
       INSERT INTO public.usu (usunome, usuemail, ususenha)
-      VALUES ('orderup', 'admin@ordeup.com.br', md5('orderup@'))
+      VALUES ('orderup', 'admin@orderup.com.br', md5('orderup@'))
       ON CONFLICT (usuemail) DO NOTHING;
     `);
     // FIM INSERTS CONDICIONAIS

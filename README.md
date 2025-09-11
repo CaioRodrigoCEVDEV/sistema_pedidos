@@ -93,7 +93,7 @@ GRANT ALL ON TABLE public.usu TO postgres;
 ### 👤 Inserção de exemplo:
 
 ```sql
-INSERT INTO usu (usunome,usuemail,ususenha)VALUES ('usuario','admin@ordeup.com.br', md5('orderup@'));
+INSERT INTO usu (usunome,usuemail,ususenha)VALUES ('usuario','admin@orderup.com.br', md5('orderup@'));
 ```
 
 ---
