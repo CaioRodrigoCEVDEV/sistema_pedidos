@@ -9,6 +9,8 @@ const fs = require("fs");
 const path = require("path");
 const cors = require('cors');
 const sharp = require("sharp");
+const { atualizarDB } = require("./config/atualizardb");
+
 
 
 const app = express();
@@ -206,6 +208,7 @@ app.post("/upload-logo", autenticarToken, upload.single("logo"),async (req, res)
 });
 
 // Inicia o servidor
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${process.env.BASE_URL}/index`);
-});
+(async () => {
+  await atualizarDB();
+  app.listen(PORT, () => {console.log(`Servidor rodando na porta ${process.env.BASE_URL}/index`)});
+})();
