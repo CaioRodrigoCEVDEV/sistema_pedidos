@@ -75,7 +75,7 @@ CREATE TABLE public.usu (
 	usuemail varchar(120) NOT NULL,
 	ususenha varchar(32) NULL,
   usuadm bpchar(1) default 'N',
-	CONSTRAINT pk_usu PRIMARY KEY (usucod, usuemail)
+	CONSTRAINT pk_usu PRIMARY KEY (usuemail)
 );
 
 -- Permissions
