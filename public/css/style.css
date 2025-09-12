@@ -15,9 +15,7 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    background-color: rgb(255, 255, 255);
+    margin-top: 0;
     margin-top: 8rem !important;
 }
 
@@ -27,6 +25,9 @@ body {
   -webkit-backdrop-filter: blur(10px); /* Para Safari */
 }
 
+.footer{
+    background-color: rgba(194, 194, 194, 0.7);
+}
 
 .container-float {
     font-size: 1.0rem;

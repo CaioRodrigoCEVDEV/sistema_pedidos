@@ -14,8 +14,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const tr = document.createElement("tr");
         tr.innerHTML = `
                       <td class="text-center">${dado.moddes}</td>
-                      <td class="text-center">
-                        <a href="pecas?id=${dado.modcod}&marcascod=${dado.modmarcascod}"><button class="btn btn-outline-success btn-sm">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>
+                      <td class="text-right">
+                        <a href="pecas?id=${dado.modcod}&marcascod=${dado.modmarcascod}"><button type="button" class="btn btn-info"> Selecionar <i class="bi bi-arrow-right-short"></i></button></a>
                       </td>
                         `;
         corpoTabela.appendChild(tr);

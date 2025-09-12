@@ -7,6 +7,7 @@
   <title id="title"></title>
   <!--Link proprios projeto-->
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/style-modelo.css">
   <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon">
   <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png">
   <!--links bootstrap-->
@@ -19,7 +20,7 @@
     integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous" />
 </head>
 
-<body>
+<body class="bg-light">
   <header>
     <nav class="navbar navbar-expand-lg navbar-light shadow-sm rounded fixed-top">
       <a class="navbar-brand" href="index" id="nomeEmpresa"><img src="/uploads/logo.jpg" width="30" height="30"
@@ -41,52 +42,83 @@
     </nav>
   </header>
   <main>
-    <div class="container-float bg-light">
-      <div class="style-title-card d-flex justify-content-between align-items-center">
-        <h3>Modelos</h3>
-        <button class="btn btn-sm btn-outline-light" onclick="window.history.back();">
-          <i class="bi bi-box-arrow-in-left"></i> Voltar
-        </button>
-      </div>
-
-      <div class="bg-light w-auto p-3 shadow-sm mb-5">
-        <div id="sticky-header" class="bg-light" style="position: sticky; top: 3.8rem; z-index: 1020">
-          <h1 class="text-left" id="marcaTitulo"></h1>
-          <h3 class="text-center" style="font-size: 1.3rem">
-            Selecione o Modelo
-          </h3>
-          <form class="form-inline my-2 my-lg-0 mb-2">
-            <input class="form-control m-2 mr-sm-2" type="search" placeholder="Pesquisar"
-              aria-label="Pesquisar modelo.." id="pesquisa" />
-          </form>
+    <!--Teste-->
+    <div class="bg-white quadro">
+      <div class="navegacao">
+        <div class="row">
+          <div class="col-auto mr-auto">
+            <h2>Modelos</h2>
+          </div>
+          <div class="col-auto"><button type="button" class="btn btn-outline-dark m-2" onclick="window.history.back();"><i
+                class="bi bi-box-arrow-in-left"></i> Voltar</button></div>
         </div>
+        <div class="row">
+          <div class="col">
+            <h5 id="marcaTitulo"></h5>
+          </div>
+        </div>
+        <div class="row p-3">
+          <div class="input-group input-pesquisa">
+            <span class="input-group-text bg-white border-info" for="pesquisa">
+              <i class="bi bi-search text-info"></i>
+            </span>
+            <input class="form-control border-info " type="search" placeholder="Pesquisar" aria-label="Pesquisar"
+              id="pesquisa">
+          </div>
+        </div>
+      </div>
+      <div class="text-center"><span class="text-center w-100">Selecione o modelo</span></div>
+      <div class="row">
+        <div class="container">
 
-        <table class="table">
-          <thead>
-            <tr>
-              <th scope="col" class="text-center">Modelo</th>
-              <th scope="col" class="text-center">Ações</th>
-            </tr>
-          </thead>
-          <tbody id="corpoTabela"></tbody>
-        </table>
+          <table class="table tabela mx-auto">
+            <thead class="thead-light">
+              <tr>
+
+                <th scope="col" class="col-auto text-center">Modelo</th>
+                <th scope="col" class="col-auto text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="corpoTabela">
+              <tr>
+
+                <td>A01</td>
+                <td class="text-right"><button type="button" class="btn btn-info"><i class="bi bi-arrow-up-short"></i>
+                    Selecionar</button></td>
+              </tr>
+              <tr>
+
+                <td>S24</td>
+                <td class="text-right"><button type="button" class="btn btn-info"><i class="bi bi-arrow-up-short"></i>
+                    Selecionar</button></td>
+
+              </tr>
+              <tr>
+
+                <td>S25</td>
+                <td class="text-right"><button type="button" class="btn btn-info"><i class="bi bi-arrow-up-short"></i>
+                    Selecionar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
+    <!--Fim Teste-->
+
   </main>
-  <footer class="border-top py-4 mt-5 bg-light">
+  <footer class="border-top py-4 mt-5">
     <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
-      <div class="small text-muted">© <span id="y"></span> Sistema Pedidos via Whatsapp — <a href="#">MTTR
+      <div class="small text-black">© <span id="y"></span> Sistema Pedidos via Whatsapp — <a href="#"
+          class="text-black link-dark">MTTR
           Tecnologia que transforma seu negócio.</a></div>
-      <div class="d-flex gap-3 footer small">
-        <a href="https://wa.me/5561981697924?text=Ol%C3%A1!%20Tenho%20interesse%20para%20marcar%20uma%20reuni%C3%A3o%20para%20entender%20mais%20sobre%20as%20solu%C3%A7%C3%B5es%20que%20voc%C3%AAs%20oferecem!%20"
-          target="_blank" class="badge badge-secondary m-1">Contato</a>
-      </div>
+
     </div>
   </footer>
 
   <!-- Modal do Carrinho -->
   <a href="javascript:void(0);" class="button-cart" id="openCartModal">
-    <i class="bi bi-cart2"></i>
+    <i class="bi bi-cart4"></i>
   </a>
   <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel"
     aria-hidden="true">
