@@ -48,7 +48,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${dado.prodes}</td>
-          <td class="text-center">${dado.tipodes}</td>
           <td class="text-center">
             ${formatarMoeda(dado.provl)} 
           </td>
