@@ -25,6 +25,7 @@ body {
   background-color: rgba(255, 255, 255, 0.7); /* Fundo branco semitransparente */
   backdrop-filter: blur(10px); /* Efeito de desfoque */
   -webkit-backdrop-filter: blur(10px); /* Para Safari */
+  padding: 0.75rem 1rem; /* top/bottom, left/right */
 }
 
 
