@@ -4,6 +4,9 @@ const id = params.get("id");
 const modelo = params.get("modelo");
 const marcascod = params.get("marcascod");
 
+const cartModalEl = document.getElementById("cartModal");
+const cartModal = cartModalEl ? new bootstrap.Modal(cartModalEl) : null;
+
 //Busca o nome do modelo pelo id usando fetch e exibe no elemento com id 'modeloTitulo'
 fetch(`${BASE_URL}/mod/${modelo}`)
   .then((res) => res.json())
@@ -101,7 +104,7 @@ function atualizarIconeCarrinho() {
   if (!badge) {
     badge = document.createElement("span");
     badge.id = "cartBadge";
-    badge.className = "badge badge-danger";
+    badge.className = "badge bg-danger";
     badge.style.position = "absolute";
     badge.style.left = "0";
     badge.style.bottom = "0";
@@ -154,7 +157,7 @@ function mostrarPopupAdicionado() {
 }
 
 document.getElementById("openCartModal").addEventListener("click", function () {
-  $("#cartModal").modal("show");
+  if (cartModal) cartModal.show();
   // Exemplo: carregar itens do carrinho (ajuste conforme sua lógica)
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
   const cartItemsDiv = document.getElementById("cartItems");
@@ -171,7 +174,7 @@ document.getElementById("openCartModal").addEventListener("click", function () {
             item.preco ? Number(item.preco).toFixed(2) : "0.00"
           })</small></span>
           <span>
-            <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
+            <span class="badge bg-primary rounded-pill mr-2">${item.qt}</span>
             <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
           </span>
         </li>
@@ -207,7 +210,8 @@ document.getElementById("openCartModal").addEventListener("click", function () {
         return; // Don't proceed if cart is empty
       }
       // Explicitly hide the modal before navigating
-      $("#cartModal").modal("hide");
+      const modalInstance = bootstrap.Modal.getInstance(cartModalEl);
+      modalInstance && modalInstance.hide();
       // Allow default navigation by not calling e.preventDefault() when cart is not empty
     };
 
