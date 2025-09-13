@@ -48,65 +48,60 @@
         </nav>
     </header>
 
-    <main>
-
-        <!--Alert de Tutorial-->
-        <div class="container m-auto" >
-            <div class="alert alert-dismissible fade show shadow p-3 m-auto bg-white rounded" id="tutorialAlert"
-                style="max-width: 800px; margin: auto; display: none;" role="alert">
-                <strong>Primeira vez utilizando nosso sistema de pedidos?</strong> Assista o tutorial caso tenha alguma
-                dificuldade.
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close" id="tutorialAlertClose">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-                <hr>
-                <p class="mb-0"><button type="button" class="btn btn-danger"> <i class="bi bi-youtube"> </i>Tutorial em
-                        video </i></button></p>
-            </div>
-        </div>
-        <!--Pesquisa-->
-        <div class="row justify-content-center mb-5">
-            <div class="col-md-6">
-                <label for="pesquisa" class="m-2">Pesquisa Geral</label>
-                <div class="input-group">
-
-                    <span class="input-group-text bg-white" for="pesquisa">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input class="form-control" type="search" placeholder="Pesquisar" aria-label="Pesquisar"
-                        id="pesquisa">
+    <div class="page-wrapper">
+        <main>
+            <!--Alert de Tutorial-->
+            <div class="container m-auto" >
+                <div class="alert alert-dismissible fade show shadow p-3 m-auto bg-white rounded" id="tutorialAlert"
+                    style="max-width: 800px; margin: auto; display: none;" role="alert">
+                    <strong>Primeira vez utilizando nosso sistema de pedidos?</strong> Assista o tutorial caso tenha alguma
+                    dificuldade.
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close" id="tutorialAlertClose">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <hr>
+                    <p class="mb-0"><button type="button" class="btn btn-danger"> <i class="bi bi-youtube"> </i>Tutorial em
+                            video </i></button></p>
                 </div>
             </div>
-        </div>
-
-        <div id="cardsArea">
-            <div class="container">
-                <h2 class="text-center fw-bold mb-5">Selecione a Marca do Aparelho</h2>
-            </div>
-            <div class="container">
-                <div id="marcaTitulo">
-                    <!--Conteudo inserido via js marcas cadastradas-->
+            <!--Pesquisa-->
+            <div class="row justify-content-center mb-5">
+                <div class="col-md-6">
+                    <label for="pesquisa" class="m-2">Pesquisa Geral</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white" for="pesquisa">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input class="form-control" type="search" placeholder="Pesquisar" aria-label="Pesquisar"
+                            id="pesquisa">
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="container" id="tabelaArea">
-            <h3 id="titulo-peca" class="mb-5"></h3>
-            <div id="corpoTabela" class="container">
-                <!--Conteudo inserido via js Modelos ou Peças-->
-
+            <div id="cardsArea">
+                <div class="container">
+                    <h2 class="text-center fw-bold mb-5">Selecione a Marca do Aparelho</h2>
+                </div>
+                <div class="container">
+                    <div id="marcaTitulo">
+                        <!--Conteudo inserido via js marcas cadastradas-->
+                    </div>
+                </div>
             </div>
-        </div>
-    </main>
-    <footer class="border-top py-4 mt-5">
-        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <div class="small text-muted">© <span id="y"></span> Sistema Pedidos via Whatsapp — <a href="#">MTTR
-                    Tecnologia que transforma seu negócio.</a></div>
-            <div class="d-flex gap-3 footer small">
-                <a href="https://wa.me/5561981697924?text=Ol%C3%A1!%20Tenho%20interesse%20para%20marcar%20uma%20reuni%C3%A3o%20para%20entender%20mais%20sobre%20as%20solu%C3%A7%C3%B5es%20que%20voc%C3%AAs%20oferecem!%20"
-                    target="_blank" class="badge badge-secondary m-1">Contato</a>
+            <div class="container" id="tabelaArea">
+                <h3 id="titulo-peca" class="mb-5"></h3>
+                <div id="corpoTabela" class="container">
+                    <!--Conteudo inserido via js Modelos ou Peças-->
+                </div>
             </div>
-        </div>
+        </main>
+        <footer class="border-top py-4 mt-5">
+      <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="small text-black">© <span id="y"></span> Sistema Pedidos via Whatsapp — <a href="#"
+            class="text-black link-dark">MTTR
+            Tecnologia que transforma seu negócio.</a></div>
+      </div>
     </footer>
+    </div>
     <a href="javascript:void(0);" class="button-cart" id="openCartModal">
         <i class="bi bi-cart2"></i>
     </a>

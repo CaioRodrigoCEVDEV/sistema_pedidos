@@ -1,0 +1,37 @@
+.quadro {
+  padding: 10px;
+  box-shadow: 0px 0px 3px 3px rgba(0, 0, 0, 0.09);
+  -webkit-box-shadow: 0px 0px 3px 3px rgba(0, 0, 0, 0.09);
+  -moz-box-shadow: 0px 0px 3px 3px rgba(0, 0, 0, 0.09);
+
+  border-radius: 8px 8px 8px 8px;
+  -webkit-border-radius: 8px 8px 8px 8px;
+  -moz-border-radius: 8px 8px 8px 8px;
+
+  max-width: 900px;
+  margin: auto;
+}
+.tabela {
+  max-width: 700px;
+}
+.input-pesquisa {
+  max-width: 700px;
+  margin: auto;
+}
+.navegacao {
+  position: sticky;
+  top: 4rem;
+  z-index: 1020;
+  background-color: rgba(
+    255,
+    255,
+    255,
+    0.7
+  ); /* Fundo branco semitransparente */
+  backdrop-filter: blur(10px); /* Efeito de desfoque */
+  -webkit-backdrop-filter: blur(10px); /* Para Safari */
+}
+.marcaMod {
+  margin-left: 4em;
+  font-weight: bold;
+}
