@@ -53,8 +53,16 @@
                     class="bi bi-box-arrow-in-left"></i> Voltar</button></div>
             </div>
             <div class="row">
-              <div class="marcaMod">
-                <h5></h5><span id="marcaTitulo"></span> / <span id="modeloTitulo"></span>
+              <div class="p-3">
+                <ul class="nav nav-tabs">
+                                <li class="nav-item">
+                                    <a class="nav-link active" onclick="window.history.go(-2);" ><span id="marcaTitulo">Marca</span><i class="bi bi-chevron-compact-right"></i></a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" onclick="window.history.back();"><span id="modeloTitulo" >Modelo</span><i class="bi bi-chevron-compact-right"></i></a>
+                                </li>
+                            </ul>
+                <span id="marcaTitulo"></span><span id="modeloTitulo"></span>
               </div>
             </div>
           </div>

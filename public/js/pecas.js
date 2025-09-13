@@ -4,9 +4,6 @@ const id = params.get("id");
 const marcascod = params.get("marcascod");
 const modeloscod = params.get("modeloscod");
 
-
-console.log("Buscando modelo em:", `${BASE_URL}/mod/${id}`);
-
 //Busca o nome do modelo pelo id usando fetch e exibe no elemento com id 'modeloTitulo'
   fetch(`${BASE_URL}/mod/${id}`)
   .then((res) => res.json())

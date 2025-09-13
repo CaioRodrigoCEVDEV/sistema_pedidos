@@ -53,6 +53,7 @@ main{
 
 footer {
     flex-shrink: 0;
+    background-color: #ffffff;;
 }
 .container-float {
     font-size: 1.0rem;

@@ -15,6 +15,22 @@ exports.listarTipo = async (req, res) => {
   }
 };
 
+exports.buscarTipo = async (req, res) => {
+  const { id } = req.params;
+  const { modelo } = req.query;
+
+  try {
+    const result = await pool.query(
+      "select  tipocod,tipodes, promarcascod,promodcod from vw_tipo_pecas  where promodcod = $1 AND tipocod = $2",
+      [modelo, id]
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao buscar tipo" });
+  }
+};
+
 exports.listarTodosTipos = async (req, res) => {
   try {
     const result = await pool.query("select  tipocod,tipodes from tipo");
