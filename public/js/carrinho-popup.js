@@ -14,7 +14,7 @@ function atualizarIconeCarrinho() {
   if (!badge) {
     badge = document.createElement("span");
     badge.id = "cartBadge";
-    badge.className = "badge badge-danger";
+    badge.className = "badge bg-danger";
     badge.style.position = "absolute";
     badge.style.left = "0";
     badge.style.bottom = "0";
@@ -67,7 +67,8 @@ function mostrarPopupAdicionado() {
 }
 
 document.getElementById("openCartModal").addEventListener("click", function () {
-  $("#cartModal").modal("show");
+  const cartModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("cartModal"));
+  cartModal.show();
   // Exemplo: carregar itens do carrinho (ajuste conforme sua lógica)
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
   const cartItemsDiv = document.getElementById("cartItems");
@@ -82,7 +83,7 @@ document.getElementById("openCartModal").addEventListener("click", function () {
         <li class="list-group-item d-flex justify-content-between align-items-center">
           <span>${item.nome}</span>
           <span>
-            <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
+            <span class="badge bg-primary rounded-pill me-2">${item.qt}</span>
             <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
           </span>
         </li>

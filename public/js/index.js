@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     .then((dados) => {
       const holder = document.getElementById("marcaTitulo");
       if (!holder) return;
+      const placeholder = document.getElementById("marcaPlaceholder");
+      if (placeholder) placeholder.remove();
       holder.innerHTML = ""; // zera antes
 
       let html = '<div class="row g-4">'; // gap entre os itens
@@ -202,7 +204,7 @@ function atualizarIconeCarrinho() {
   if (!badge) {
     badge = document.createElement("span");
     badge.id = "cartBadge";
-    badge.className = "badge badge-danger";
+    badge.className = "badge bg-danger";
     badge.style.position = "absolute";
     badge.style.left = "0";
     badge.style.bottom = "0";
@@ -255,7 +257,8 @@ function mostrarPopupAdicionado() {
 }
 
 document.getElementById("openCartModal").addEventListener("click", function () {
-  $("#cartModal").modal("show");
+  const cartModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("cartModal"));
+  cartModal.show();
   // Exemplo: carregar itens do carrinho (ajuste conforme sua lógica)
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
   const cartItemsDiv = document.getElementById("cartItems");
@@ -272,7 +275,7 @@ document.getElementById("openCartModal").addEventListener("click", function () {
             item.preco ? Number(item.preco).toFixed(2) : "0.00"
           })</small></span>
           <span>
-            <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
+            <span class="badge bg-primary rounded-pill me-2">${item.qt}</span>
             <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
           </span>
         </li>
@@ -292,7 +295,7 @@ document.getElementById("openCartModal").addEventListener("click", function () {
     // Cria botão
     const goToCartBtn = document.createElement("a");
     goToCartBtn.id = "goToCartBtn";
-    goToCartBtn.className = "btn btn-primary ml-2";
+    goToCartBtn.className = "btn btn-primary ms-2";
 
     // Passa o carrinho como JSON na URL (codificado em base64 para evitar problemas de caracteres)
     const cartJson = encodeURIComponent(
@@ -308,7 +311,8 @@ document.getElementById("openCartModal").addEventListener("click", function () {
         return; // Don't proceed if cart is empty
       }
       // Explicitly hide the modal before navigating
-      $("#cartModal").modal("hide");
+      const cartModal = bootstrap.Modal.getInstance(document.getElementById("cartModal"));
+      if (cartModal) cartModal.hide();
       // Allow default navigation by not calling e.preventDefault() when cart is not empty
     };
 
