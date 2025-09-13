@@ -41,80 +41,58 @@
       </div>
     </nav>
   </header>
-  <main>
-    <!--Teste-->
-    <div class="bg-white quadro">
-      <div class="navegacao">
-        <div class="row">
-          <div class="col-auto mr-auto">
-            <h2 class="inter">Modelos</h2>
+  <div class="page-wrapper">
+    <main>
+      <div class="bg-white quadro">
+        <div class="navegacao">
+          <div class="row">
+            <div class="col-auto mr-auto">
+              <h2 class="inter">Modelos</h2>
+            </div>
+            <div class="col-auto"><button type="button" class="btn btn-outline-dark m-2" onclick="window.history.back();"><i
+                  class="bi bi-box-arrow-in-left"></i> Voltar</button></div>
           </div>
-          <div class="col-auto"><button type="button" class="btn btn-outline-dark m-2" onclick="window.history.back();"><i
-                class="bi bi-box-arrow-in-left"></i> Voltar</button></div>
-        </div>
-        <div class="row">
-          <div class="col">
-            <h5 id="marcaTitulo"></h5>
+          <div class="row">
+            <div class="marcaMod">
+              <span id="marcaTitulo"></span>
+            </div>
+          </div>
+          <div class="row p-3">
+            <div class="input-group input-pesquisa">
+              <span class="input-group-text bg-white border-info" for="pesquisa">
+                <i class="bi bi-search text-info"></i>
+              </span>
+              <input class="form-control border-info " type="search" placeholder="Pesquisar" aria-label="Pesquisar"
+                id="pesquisa">
+            </div>
           </div>
         </div>
-        <div class="row p-3">
-          <div class="input-group input-pesquisa">
-            <span class="input-group-text bg-white border-info" for="pesquisa">
-              <i class="bi bi-search text-info"></i>
-            </span>
-            <input class="form-control border-info " type="search" placeholder="Pesquisar" aria-label="Pesquisar"
-              id="pesquisa">
+        <div class="text-center m-2"><span class="text-center w-100 font-weight-bold">Selecione o modelo</span></div>
+        <div class="row">
+          <div class="container">
+            <table class="table tabela mx-auto">
+              <thead class="thead-light">
+                <tr>
+                  <th scope="col" class="col-auto text-center">Modelo</th>
+                  <th scope="col" class="col-auto text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="corpoTabela">
+                <!--conteudo inserido via js-->
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-      <div class="text-center m-2"><span class="text-center w-100 font-weight-bold">Selecione o modelo</span></div>
-      <div class="row">
-        <div class="container">
-
-          <table class="table tabela mx-auto">
-            <thead class="thead-light">
-              <tr>
-
-                <th scope="col" class="col-auto text-center">Modelo</th>
-                <th scope="col" class="col-auto text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="corpoTabela">
-              <tr>
-
-                <td>A01</td>
-                <td class="text-right"><button type="button" class="btn btn-info"><i class="bi bi-arrow-up-short"></i>
-                    Selecionar</button></td>
-              </tr>
-              <tr>
-
-                <td>S24</td>
-                <td class="text-right"><button type="button" class="btn btn-info"><i class="bi bi-arrow-up-short"></i>
-                    Selecionar</button></td>
-
-              </tr>
-              <tr>
-
-                <td>S25</td>
-                <td class="text-right"><button type="button" class="btn btn-info"><i class="bi bi-arrow-up-short"></i>
-                    Selecionar</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    </main>
+    <footer class="border-top py-4 mt-5">
+      <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="small text-black">© <span id="y"></span> Sistema Pedidos via Whatsapp — <a href="#"
+            class="text-black link-dark">MTTR
+            Tecnologia que transforma seu negócio.</a></div>
       </div>
-    </div>
-    <!--Fim Teste-->
-
-  </main>
-  <footer class="border-top py-4 mt-5">
-    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
-      <div class="small text-black">© <span id="y"></span> Sistema Pedidos via Whatsapp — <a href="#"
-          class="text-black link-dark">MTTR
-          Tecnologia que transforma seu negócio.</a></div>
-
-    </div>
-  </footer>
+    </footer>
+  </div>
 
   <!-- Modal do Carrinho -->
   <a href="javascript:void(0);" class="button-cart" id="openCartModal">

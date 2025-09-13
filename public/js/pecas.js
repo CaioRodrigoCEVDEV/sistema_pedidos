@@ -2,6 +2,22 @@ const params = new URLSearchParams(window.location.search);
 
 const id = params.get("id");
 const marcascod = params.get("marcascod");
+const modeloscod = params.get("modeloscod");
+
+
+console.log("Buscando modelo em:", `${BASE_URL}/mod/${id}`);
+
+//Busca o nome do modelo pelo id usando fetch e exibe no elemento com id 'modeloTitulo'
+  fetch(`${BASE_URL}/mod/${id}`)
+  .then((res) => res.json())
+  .then((modelo) => {
+  const nome = Array.isArray(modelo) ? modelo[0]?.moddes : modelo?.moddes;
+  document.getElementById("modeloTitulo").textContent = nome || "Modelo não encontrado";
+})
+
+  .catch(() => {
+    document.getElementById("modeloTitulo").textContent = "";
+  });
 
 //popular table com os dados do modelo
 document.addEventListener("DOMContentLoaded", function () {
@@ -15,10 +31,10 @@ document.addEventListener("DOMContentLoaded", function () {
         const tr = document.createElement("tr");
         tr.innerHTML = `
                       <td style="white-space: pre-line;">${dado.tipodes}</td>
-                      <td class="text-center">
+                      <td class="text-right">
                         <a href="lista-pecas?id=${dado.tipocod}&marcascod=${dado.promarcascod}&modelo=${dado.promodcod}">
-                          <button class="btn btn-success btn-sm btn-add">
-                      Selecionar <i class="bi bi-caret-right-fill"></i>
+                          <button class="btn btn-info btn-sm btn-add">
+                      Selecionar <i class="bi bi-arrow-right-short"></i>
                           </button>
                         </a>
                       </td>
@@ -39,6 +55,7 @@ fetch(`${BASE_URL}/marcas/${marcascod}`)
   .catch(() => {
     document.getElementById("marcaTitulo").textContent = "";
   });
+  
 
 // Função para atualizar o ícone do carrinho (exibe badge com quantidade de itens)
 function atualizarIconeCarrinho() {
