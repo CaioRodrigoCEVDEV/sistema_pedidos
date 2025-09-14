@@ -43,30 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
   holder.addEventListener("change", (e) => {
     marcacodModelo = e.target.value;
   });
-
-// Carrega nome do usuário logado
-  fetch(`${BASE_URL}/auth/listarlogin`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${document.cookie
-        .split("; ").find((row) => row.startsWith("token="))  
-        ?.split("=")[1]}`,
-    },
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      const nomeUsuario = document.getElementById("nomeUsuario");
-      if (nomeUsuario && data.usunome) {
-        nomeUsuario.textContent = `Olá, ${data.usunome}!`;
-      }
-    })
-    .catch((error) => {
-      console.error("Erro ao carregar nome do usuário:", error);
-    });
-
-
-
 });
 document.addEventListener("DOMContentLoaded", () => {
   const holder = document.getElementById("selectPainelMarca");
