@@ -273,6 +273,8 @@ document.getElementById("openCartModal").addEventListener("click", function () {
           })</small></span>
           <span>
             <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
+          </span>
+          <span>
             <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
           </span>
         </li>
