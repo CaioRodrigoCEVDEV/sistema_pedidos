@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="item-tipo">${dado.tipodes}</div>
             <div class="item-price">${formatarMoeda(
               dado.provl
-            )} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
+            )} <button class="btn btn-info btn-sm btn-add" onclick="adicionarAoCarrinho('${
           dado.procod
         }')">Adicionar</button></div>
           `;
@@ -177,6 +177,8 @@ document.getElementById("openCartModal").addEventListener("click", function () {
           })</small></span>
           <span>
             <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
+          </span>
+          <span>
             <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
           </span>
         </li>
