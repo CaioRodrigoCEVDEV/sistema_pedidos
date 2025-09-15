@@ -13,8 +13,8 @@ document.addEventListener("DOMContentLoaded", function () {
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-                      <td class="text-center">${dado.moddes}</td>
-                      <td class="text-right">
+                      <td class="text-left">${dado.moddes}</td>
+                      <td class="text-center">
                         <a href="pecas?id=${dado.modcod}&marcascod=${dado.modmarcascod}"><button type="button" class="btn btn-info"> Selecionar <i class="bi bi-arrow-right-short"></i></button></a>
                       </td>
                         `;
