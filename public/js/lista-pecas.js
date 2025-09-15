@@ -11,6 +11,34 @@ function formatarMoeda(valor) {
   });
 }
 
+//Busca o nome do modelo pelo id usando fetch e exibe no elemento com id 'modeloTitulo'
+fetch(`${BASE_URL}/mod/${modelo}`)
+  .then((res) => res.json())
+  .then((modelo) => {
+    const nome = Array.isArray(modelo) ? modelo[0]?.moddes : modelo?.moddes;
+    document.getElementById("modeloTitulo").textContent =
+      nome || "Modelo não encontrado";
+  })
+
+  .catch(() => {
+    document.getElementById("modeloTitulo").textContent = "";
+  });
+
+//popular o tipo da peça
+fetch(`${BASE_URL}/modtipo/${id}?modelo=${modelo}`)
+  .then((res) => res.json())
+  .then((modtipo) => {
+    const nome = Array.isArray(modtipo)
+      ? modtipo[0]?.tipodes
+      : modtipo?.tipodes;
+    document.getElementById("tipoPeca").textContent =
+      nome || "Modelo não encontrado";
+  })
+
+  .catch(() => {
+    document.getElementById("modeloTitulo").textContent = "";
+  });
+
 document.addEventListener("DOMContentLoaded", function () {
   fetch(`${BASE_URL}/pro/${id}?marca=${marcascod}&modelo=${modelo}`)
     .then((res) => res.json())

@@ -10,16 +10,16 @@ document.addEventListener("DOMContentLoaded", function () {
       const corpoTabela = document.getElementById("corpoTabela");
       corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
 
-        dados.sort((a, b) => {
-          const nomeA = a.moddes.replace(/\s/g, "");
-          const nomeB = b.moddes.replace(/\s/g, "");
-          return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
-        });
+      dados.sort((a, b) => {
+        const nomeA = a.moddes.replace(/\s/g, "");
+        const nomeB = b.moddes.replace(/\s/g, "");
+        return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
+      });
 
-        dados.forEach((dado) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-                      <td class="text-center">${dado.moddes}</td> 
+      dados.forEach((dado) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+                      <td class="text-left">${dado.moddes}</td> 
                       <td class="text-center">
                         <a href="modelo/pecas?id=${dado.modcod}&marcascod=${dado.modmarcascod}"><button class="btn btn-outline-success btn-sm">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>
                       </td>

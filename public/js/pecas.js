@@ -5,12 +5,13 @@ const marcascod = params.get("marcascod");
 const modeloscod = params.get("modeloscod");
 
 //Busca o nome do modelo pelo id usando fetch e exibe no elemento com id 'modeloTitulo'
-  fetch(`${BASE_URL}/mod/${id}`)
+fetch(`${BASE_URL}/mod/${id}`)
   .then((res) => res.json())
   .then((modelo) => {
-  const nome = Array.isArray(modelo) ? modelo[0]?.moddes : modelo?.moddes;
-  document.getElementById("modeloTitulo").textContent = nome || "Modelo não encontrado";
-})
+    const nome = Array.isArray(modelo) ? modelo[0]?.moddes : modelo?.moddes;
+    document.getElementById("modeloTitulo").textContent =
+      nome || "Modelo não encontrado";
+  })
 
   .catch(() => {
     document.getElementById("modeloTitulo").textContent = "";
@@ -28,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const tr = document.createElement("tr");
         tr.innerHTML = `
                       <td style="white-space: pre-line;">${dado.tipodes}</td>
-                      <td class="text-right">
+                      <td class="text-center">
                         <a href="lista-pecas?id=${dado.tipocod}&marcascod=${dado.promarcascod}&modelo=${dado.promodcod}">
                           <button class="btn btn-info btn-sm btn-add">
                       Selecionar <i class="bi bi-arrow-right-short"></i>
@@ -52,7 +53,6 @@ fetch(`${BASE_URL}/marcas/${marcascod}`)
   .catch(() => {
     document.getElementById("marcaTitulo").textContent = "";
   });
-  
 
 // Função para atualizar o ícone do carrinho (exibe badge com quantidade de itens)
 function atualizarIconeCarrinho() {
