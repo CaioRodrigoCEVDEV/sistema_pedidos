@@ -4,32 +4,6 @@ const id = params.get("id");
 const modelo = params.get("modelo");
 const marcascod = params.get("marcascod");
 
-//Busca o nome do modelo pelo id usando fetch e exibe no elemento com id 'modeloTitulo'
-fetch(`${BASE_URL}/mod/${modelo}`)
-  .then((res) => res.json())
-  .then((modelo) => {
-    const nome = Array.isArray(modelo) ? modelo[0]?.moddes : modelo?.moddes;
-    document.getElementById("modeloTitulo").textContent =
-      nome || "Modelo não encontrado";
-  })
-
-  .catch(() => {
-    document.getElementById("modeloTitulo").textContent = "";
-  });
-
-//popular o tipo da peça
-fetch(`${BASE_URL}/modtipo/${id}?modelo=${modelo}`)
-  .then((res) => res.json())
-  .then((modtipo) => {
-    const nome = Array.isArray(modtipo) ? modtipo[0]?.tipodes : modtipo?.tipodes;
-    document.getElementById("tipoPeca").textContent =
-      nome || "Modelo não encontrado";
-  })
-
-  .catch(() => {
-    document.getElementById("modeloTitulo").textContent = "";
-  });
-
 function formatarMoeda(valor) {
   return Number(valor).toLocaleString("pt-BR", {
     style: "currency",
@@ -45,18 +19,20 @@ document.addEventListener("DOMContentLoaded", function () {
       corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
 
       dados.forEach((dado) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${dado.prodes}</td>
-          <td class="text-center">${dado.tipodes}</td>
-          <td class="text-center">${formatarMoeda(dado.provl)}</td>
-          <td class="text-right"><button 
-              class="btn btn-info btn-sm btn-add" 
-              onclick="adicionarAoCarrinho('${dado.procod}', event)">
-              + <i class="bi bi-cart-plus"></i>
-            </button></td>
-        `;
-        corpoTabela.appendChild(tr);
+        const item = document.createElement("div");
+        item.className = "cart-item";
+        item.dataset.preco = dado.provl;
+        item.innerHTML = `
+            <div class="item-name">${dado.prodes}</div>
+            <div class="item-tipo">${dado.tipodes}</div>
+            <div class="item-price">${formatarMoeda(
+              dado.provl
+            )} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
+          dado.procod
+        }')">Adicionar</button></div>
+          `;
+
+        corpoTabela.appendChild(item);
       });
     })
     .catch((erro) => console.error(erro));
@@ -64,11 +40,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
 document.getElementById("pesquisa").addEventListener("input", function () {
   const pesquisa = this.value.toLowerCase();
-  const linhas = document.querySelectorAll("#corpoTabela tr");
+  const linhas = document.querySelectorAll("#corpoTabela .cart-item");
 
   linhas.forEach((linha) => {
-    const textoLinha = linha.textContent.toLowerCase();
-    linha.style.display = textoLinha.includes(pesquisa) ? "" : "none";
+    const celula = linha.querySelector(".item-name");
+    if (celula) {
+      const conteudoCelula = celula.textContent.toLowerCase();
+      linha.style.display = conteudoCelula.includes(pesquisa) ? "" : "none";
+    }
   });
 });
 
@@ -213,25 +192,26 @@ document.getElementById("openCartModal").addEventListener("click", function () {
   }
 });
 
-window.adicionarAoCarrinho = async function (procod, event) {
+window.adicionarAoCarrinho = async function (procod) {
   const qtde = 1;
   const button = event.target;
-  const linha = button.closest("tr"); // agora pega a linha da tabela
+  const itemDiv = button.closest(".cart-item");
 
-  if (!linha) {
-    console.error("Linha da tabela não encontrada.");
+  if (!itemDiv) {
+    console.error("Elemento '.cart-item' não encontrado.");
     return;
   }
 
-  const nome = linha.cells[0]?.textContent || "Produto"; // primeira coluna
-  const tipo = linha.cells[1]?.textContent || "";       // segunda coluna
-  const precoText = linha.cells[2]?.textContent || "0";
-  const preco = parseFloat(precoText.replace(/[^\d,.-]/g, "").replace(",", ".")); // converte moeda
+  const nome = itemDiv.querySelector(".item-name")?.textContent || "Produto";
+  const preco = parseFloat(itemDiv.dataset.preco || "0");
+  const tipo = itemDiv.querySelector(".item-tipo")?.textContent || "";
   const marca = document.getElementById("marcaTitulo")?.textContent || "";
 
   try {
     const response = await fetch(`/proCoresDisponiveis/${procod}`);
     const cores = await response.json();
+
+    // console.log("Cores disponíveis:", cores);
 
     if (cores && cores.length > 0 && cores[0].cornome !== "") {
       exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde);
@@ -243,7 +223,6 @@ window.adicionarAoCarrinho = async function (procod, event) {
     alert("Erro ao verificar cores do produto.");
   }
 };
-
 
 function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
   const backdrop = document.createElement("div");
