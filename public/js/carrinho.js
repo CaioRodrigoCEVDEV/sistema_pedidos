@@ -115,48 +115,12 @@ function renderCart() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  const urlParams = new URLSearchParams(window.location.search);
-  const cartParam = urlParams.get("cart");
-  let cartFromUrl = [];
+  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
 
-  if (cartParam) {
-    try {
-      const jsonStr = decodeURIComponent(atob(decodeURIComponent(cartParam)));
-      cartFromUrl = JSON.parse(jsonStr);
-    } catch (erro) {
-      console.error("Erro ao processar carrinho da URL:", erro);
-      // Se houver erro ao ler da URL, priorizar o localStorage ou começar vazio.
-    }
-  }
+  // Se quiser forçar limpar quando não houver nada:
+  if (!Array.isArray(cart)) cart = [];
 
-  // Sincronizar localStorage com dados da URL se vierem da URL e o localStorage estiver vazio ou diferente
-  // Normalmente, o localStorage deve ser a fonte de verdade se já populado.
-  // Se o carrinho da URL existir, ele populará o localStorage.
-  let localCart = JSON.parse(localStorage.getItem("cart") || "[]");
-  if (cartFromUrl.length > 0) {
-    // Aqui você pode adicionar uma lógica de mesclagem se necessário,
-    // por agora, vamos sobrescrever o localStorage se a URL tiver um carrinho.
-    // Isso é útil se o link do carrinho foi compartilhado.
-    localStorage.setItem("cart", JSON.stringify(cartFromUrl));
-  } else if (localCart.length > 0 && !cartParam) {
-    // Se não há cartParam mas há localCart, atualiza a URL com o localCart
-    try {
-      const cartJson = encodeURIComponent(
-        btoa(unescape(encodeURIComponent(JSON.stringify(localCart))))
-      );
-      const url = new URL(window.location);
-      url.searchParams.set("cart", cartJson);
-      window.history.replaceState(
-        {},
-        document.title,
-        url.pathname + url.search
-      );
-    } catch (e) {
-      console.error("Error setting URL from localStorage:", e);
-    }
-  }
-
-  renderCart();
+  renderCart(cart);
 });
 
 window.incrementQuantity = function (itemId) {
