@@ -44,8 +44,9 @@ jobs:
           chmod 600 ~/.ssh/release_orderUp
       - name: Run remote deploy scripts
         run: |
-          ssh -p "${{ secrets.SSH_PORT_RELEASE }}" "root@${{ secrets.SSH_HOST_RELEASE }}" '
+          ssh -i ~/.ssh/release_orderUp -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT_RELEASE }}" "root@${{ secrets.SSH_HOST_RELEASE }}" '
             set -e
             chmod +x /root/releaseOrderUp.sh
             /root/releaseOrderUp.sh
           '
+
