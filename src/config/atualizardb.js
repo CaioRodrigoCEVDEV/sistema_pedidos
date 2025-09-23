@@ -5,33 +5,39 @@ async function atualizarDB() {
 
   await pool.query("SELECT pg_advisory_lock($1)", [LOCK_KEY]);
   try {
-
-
     await pool.query("BEGIN");
 
-
-
-
-     // ================================================================================================================================== 
+    // ==================================================================================================================================
     // NOVOS CAMPOS QUE FOMOS ADICIONANDO ADD AQUI: pleaSE
 
     // Exemplo: LEMBRAR SEMPRE DE COLOCAR O "IF NOT EXISTS"
     //  await pool.query(`ALTER TABLE public.emp ADD IF NOT exists empcod serial4 NOT NULL;`);
 
-  
-      await pool.query(`ALTER TABLE public.emp ADD IF NOT exists empcod serial4 NOT NULL;`);
+    await pool.query(
+      `ALTER TABLE public.emp ADD IF NOT exists empcod serial4 NOT NULL;`
+    );
 
-      await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS emp_empcod_key ON public.emp (empcod);`);
+    await pool.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS emp_empcod_key ON public.emp (empcod);`
+    );
 
-      await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS usu_usucod_key ON public.usu (usucod);`);
+    await pool.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS usu_usucod_key ON public.usu (usucod);`
+    );
 
+    await pool.query(
+      `ALTER TABLE public.marcas ADD IF NOT exists marcasordem int;`
+    );
+
+    await pool.query(
+      `ALTER TABLE public.tipo ADD IF NOT exists tipoordem int;`
+    );
 
     // FIM NOVOS CAMPOS
     // ==================================================================================================================================
 
-
     //   INSERTS CONDICIONAIS
-    
+
     // EMP default (empcod = 1)
     await pool.query(`
       INSERT INTO public.emp (empcod, emprazao, empwhatsapp1, empwhatsapp2)
@@ -45,8 +51,25 @@ async function atualizarDB() {
       VALUES ('orderup', 'admin@orderup.com.br', md5('orderup@'))
       ON CONFLICT (usuemail) DO NOTHING;
     `);
-    // FIM INSERTS CONDICIONAIS
 
+    // View Tipo peças
+    await pool.query(`
+      CREATE OR REPLACE VIEW public.vw_tipo_pecas
+      AS SELECT tipo.tipocod,
+          tipo.tipodes,
+          pro.promarcascod,
+          pro.promodcod,
+          tipo.tipoordem
+        FROM pro
+          JOIN tipo ON tipo.tipocod = pro.protipocod
+        GROUP BY tipo.tipocod, tipo.tipodes, pro.promarcascod, pro.promodcod;
+
+      -- Permissions
+
+      ALTER TABLE public.vw_tipo_pecas OWNER TO postgres;
+      GRANT ALL ON TABLE public.vw_tipo_pecas TO postgres;
+    `);
+    // FIM INSERTS CONDICIONAIS
 
     await pool.query("COMMIT");
     console.log("✅ atualizardb: tabelas e registros padrão garantidos.");
