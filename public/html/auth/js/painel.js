@@ -1799,6 +1799,84 @@ document.addEventListener("DOMContentLoaded", () => {
     .catch(console.error);
 });
 
+function toggleOrdemMarca() {
+  const overlay = criarOverlay();
+  const popup = criarPopup("Gerenciar Ordem das Marcas");
+
+  // Select de marcas + botão buscar
+  let selectHtml = `<button id="btnBuscarMarcaOrdem" class="btn btn-primary btn-block mt-2">Buscar</button>
+                 <div id="listaOrdemHolder" class="mt-3"></div>`;
+
+  popup.innerHTML = popup.innerHTML + selectHtml + popup.fecharHTML;
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+
+  // Evento buscar modelos
+  popup.querySelector("#btnBuscarMarcaOrdem").addEventListener("click", () => {
+    fetch(`${BASE_URL}/marcas`)
+      .then((r) => r.json())
+      .then((marcas) => {
+        const holder = popup.querySelector("#listaOrdemHolder");
+        holder.innerHTML = `
+            <ul id="sortable" class="list-group">
+              ${marcas
+                .map(
+                  (m) =>
+                    `<li class="list-group-item" data-id="${m.marcascod}"><span class="handle">☰ </span>${m.marcasdes}
+                    </li>`
+                )
+                .join("")}
+            </ul>
+            <button id="salvarOrdem" class="btn btn-success btn-block mt-3">Salvar Ordem</button>
+          `;
+
+        // Ativa drag & drop com SortableJS (funciona no celular)
+        Sortable.create(holder.querySelector("#sortable"), {
+          handle: ".handle",
+          animation: 150,
+          fallbackOnBody: true, // usa fallback que permite scroll no mobile
+          swapThreshold: 0.65, // melhora a troca entre itens
+          scroll: true, // ativa auto-scroll
+          scrollSensitivity: 60, // velocidade do scroll quando chega perto da borda
+          scrollSpeed: 10, // intensidade do scroll
+        });
+
+        // Salvar ordem
+        popup.querySelector("#salvarOrdem").addEventListener("click", () => {
+          const ordem = [...holder.querySelectorAll("li")].map((li) => ({
+            id: li.dataset.id,
+            descricao: li.textContent,
+          }));
+
+          fetch(`${BASE_URL}/marcas/ordem`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ordem }),
+          })
+            .then((r) => r.json())
+            .then(() => {
+              const msg = document.createElement("div");
+              msg.textContent = "Ordem Atualizada com sucesso!";
+              msg.style.position = "fixed";
+              msg.style.top = "20px";
+              msg.style.left = "50%";
+              msg.style.transform = "translateX(-50%)";
+              msg.style.background = "#28a745";
+              msg.style.color = "#fff";
+              msg.style.padding = "12px 24px";
+              msg.style.borderRadius = "6px";
+              msg.style.zIndex = "10000";
+              msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+              document.body.appendChild(msg);
+              setTimeout(() => {
+                msg.remove();
+              }, 2000);
+            })
+            .catch(console.error);
+        });
+      });
+  });
+}
 // ==========================
 // 4️⃣ Toggle Ordem: Popup completo
 // ==========================
@@ -1931,7 +2009,7 @@ function toggleOrdemPeca() {
   if (!tiposCache.length) return alert("Nenhum tipo carregado ainda!");
 
   const overlay = criarOverlay();
-  const popup = criarPopup("Gerenciar Ordem das Peças");
+  const popup = criarPopup("Gerenciar Ordem Tipos");
 
   // Select de marcas + botão buscar
   let selectHtml = `<select id="marcaSelectOrdem" class="form-control mb-2">
@@ -2081,6 +2159,133 @@ function toggleOrdemPeca() {
         });
       });
   });
+}
+
+function toggleOrdemTipoPeca() {
+  const overlay = criarOverlay();
+  const popup = criarPopup("Gerenciar Ordem dos Tipos");
+
+  // Select de marcas + botão buscar
+  let selectHtml = `<select id="marcaSelectOrdem" class="form-control mb-2">
+                      <option value="">Selecione a marca</option>`;
+  marcasCache.forEach((m) => {
+    selectHtml += `<option value="${m.marcascod}">${m.marcasdes}</option>`;
+  });
+  selectHtml += `</select>`;
+
+  selectHtml += `<select id="modelosSelectOrdem" class="form-control mb-2">
+                      <option value="">Selecione o modelo</option>`;
+  selectHtml += `</select>`;
+
+  selectHtml += `</select>
+                 <button id="btnBuscarTipoPecasOrdem" class="btn btn-primary btn-block mt-2">Buscar</button>
+                 <div id="listaOrdemHolder" class="mt-3"></div>`;
+
+  popup.innerHTML = popup.innerHTML + selectHtml + popup.fecharHTML;
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+
+  const marcaSelect = popup.querySelector("#marcaSelectOrdem");
+  const modelosSelect = popup.querySelector("#modelosSelectOrdem");
+
+  if (!marcaSelect || !modelosSelect) return;
+
+  marcaSelect.addEventListener("change", (e) => {
+    const marcaId = e.target.value;
+    if (!marcaId) {
+      modelosSelect.innerHTML = '<option value="">Selecione o modelo</option>';
+      return;
+    }
+
+    fetch(`${BASE_URL}/modelo/${marcaId}`)
+      .then((res) => res.json())
+      .then((dados) => {
+        modelosCache = dados;
+        modelosSelect.innerHTML =
+          '<option value="">Selecione o modelo</option>';
+        dados.forEach((m) => {
+          const opt = document.createElement("option");
+          opt.value = m.modcod;
+          opt.textContent = m.moddes;
+          modelosSelect.appendChild(opt);
+        });
+      })
+      .catch(console.error);
+  });
+
+  // Evento buscar modelos
+  popup
+    .querySelector("#btnBuscarTipoPecasOrdem")
+    .addEventListener("click", () => {
+      const marcaId = popup.querySelector("#marcaSelectOrdem").value;
+      const modeloId = popup.querySelector("#modelosSelectOrdem").value;
+      if (!marcaId) return alert("Selecione uma marca!");
+      if (!modeloId) return alert("Selecione um modelo!");
+
+      fetch(`${BASE_URL}/tipo/${modeloId}?marca=${marcaId}`)
+        .then((r) => r.json())
+        .then((tipos) => {
+          const holder = popup.querySelector("#listaOrdemHolder");
+          holder.innerHTML = `
+            <ul id="sortable" class="list-group">
+            ${tipos
+              .map(
+                (p) =>
+                  `<li class="list-group-item" data-id="${p.tipocod}">
+                     <span class="handle">☰ </span>${p.tipodes}
+                   </li>`
+              )
+              .join("")}
+            </ul>
+            <button id="salvarOrdem" class="btn btn-success btn-block mt-3">Salvar Ordem</button>
+          `;
+
+          // Ativa drag & drop com SortableJS (funciona no celular)
+          Sortable.create(holder.querySelector("#sortable"), {
+            handle: ".handle",
+            animation: 150,
+            fallbackOnBody: true, // usa fallback que permite scroll no mobile
+            swapThreshold: 0.65, // melhora a troca entre itens
+            scroll: true, // ativa auto-scroll
+            scrollSensitivity: 60, // velocidade do scroll quando chega perto da borda
+            scrollSpeed: 10, // intensidade do scroll
+          });
+
+          // Salvar ordem
+          popup.querySelector("#salvarOrdem").addEventListener("click", () => {
+            const ordem = [...holder.querySelectorAll("li")].map((li) => ({
+              id: li.dataset.id,
+              descricao: li.textContent,
+            }));
+
+            fetch(`${BASE_URL}/tipo/ordem`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ordem }),
+            })
+              .then((r) => r.json())
+              .then(() => {
+                const msg = document.createElement("div");
+                msg.textContent = "Ordem Atualizada com sucesso!";
+                msg.style.position = "fixed";
+                msg.style.top = "20px";
+                msg.style.left = "50%";
+                msg.style.transform = "translateX(-50%)";
+                msg.style.background = "#28a745";
+                msg.style.color = "#fff";
+                msg.style.padding = "12px 24px";
+                msg.style.borderRadius = "6px";
+                msg.style.zIndex = "10000";
+                msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+                document.body.appendChild(msg);
+                setTimeout(() => {
+                  msg.remove();
+                }, 2000);
+              })
+              .catch(console.error);
+          });
+        });
+    });
 }
 
 //********************************************* */
