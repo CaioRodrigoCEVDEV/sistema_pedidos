@@ -40,8 +40,8 @@ jobs:
           ssh-keyscan -p "${{ secrets.SSH_PORT_RELEASE }}" "${{ secrets.SSH_HOST_RELEASE }}" >> ~/.ssh/known_hosts
       - name: Setup SSH key
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY_RELEASE }}" > ~/.ssh/caio
-          chmod 600 ~/.ssh/caio
+          echo "${{ secrets.SSH_PRIVATE_KEY_RELEASE }}" > ~/.ssh/release_orderUp
+          chmod 600 ~/.ssh/release_orderUp
       - name: Run remote deploy scripts
         run: |
           ssh -p "${{ secrets.SSH_PORT_RELEASE }}" "root@${{ secrets.SSH_HOST_RELEASE }}" '
