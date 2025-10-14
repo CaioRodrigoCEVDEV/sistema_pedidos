@@ -119,9 +119,10 @@ function mostrarPopupAdicionado() {
 
 document.getElementById("openCartModal").addEventListener("click", function () {
   $("#cartModal").modal("show");
-  // Exemplo: carregar itens do carrinho (ajuste conforme sua lógica)
+
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
   const cartItemsDiv = document.getElementById("cartItems");
+
   if (cart.length === 0) {
     cartItemsDiv.innerHTML = "<p>Nenhum item no carrinho.</p>";
   } else {
@@ -136,6 +137,8 @@ document.getElementById("openCartModal").addEventListener("click", function () {
           })</small></span>
           <span>
             <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
+          </span>
+          <span>
             <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
           </span>
         </li>
@@ -145,34 +148,22 @@ document.getElementById("openCartModal").addEventListener("click", function () {
       "</ul>";
   }
 
-  // Adiciona botão "Ir para o carrinho" no footer do modal
   const cartModalFooter = document.querySelector("#cartModal .modal-footer");
   if (cartModalFooter) {
-    // Remove botão antigo se houver
     const oldBtn = document.getElementById("goToCartBtn");
     if (oldBtn) oldBtn.remove();
 
-    // Cria botão
     const goToCartBtn = document.createElement("a");
     goToCartBtn.id = "goToCartBtn";
     goToCartBtn.className = "btn btn-primary ml-2";
-
-    // Passa o carrinho como JSON na URL (codificado em base64 para evitar problemas de caracteres)
-    const cartJson = encodeURIComponent(
-      btoa(unescape(encodeURIComponent(JSON.stringify(cart))))
-    );
-    // console.log("Cart antes de serializar:", cart);
-    goToCartBtn.href = cart.length > 0 ? `carrinho?cart=${cartJson}` : "#";
+    goToCartBtn.href = "carrinho"; // não precisa de param
     goToCartBtn.textContent = "Ir para o carrinho";
     goToCartBtn.style.marginLeft = "8px";
-    goToCartBtn.onclick = function (e) {
-      if (cart.length === 0) {
-        e.preventDefault();
-        return;
-      }
-      // Explicitly hide the modal before navigating
+
+    // Esconde o modal antes de navegar
+    goToCartBtn.addEventListener("click", function (e) {
       $("#cartModal").modal("hide");
-    };
+    });
 
     cartModalFooter.appendChild(goToCartBtn);
   }
@@ -224,3 +215,16 @@ window.removerItemCarrinho = function (idx) {
 window.addEventListener("pageshow", function (event) {
   atualizarIconeCarrinho();
 });
+
+function toBase64Url(obj) {
+  return btoa(JSON.stringify(obj))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function fromBase64Url(str) {
+  let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+  while (base64.length % 4) base64 += "=";
+  return JSON.parse(atob(base64));
+}

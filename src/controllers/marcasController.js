@@ -3,7 +3,7 @@ const pool = require("../config/db");
 exports.listarMarcas = async (req, res) => {
   try {
     const result = await pool.query(
-      "select * from marcas where marcassit = 'A' order by marcascod asc"
+      "select * from marcas where marcassit = 'A' order by marcasordem"
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -81,5 +81,28 @@ exports.deletarMarcas = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao inserir marca" });
+  }
+};
+
+exports.atualizarOrdemMarcas = async (req, res) => {
+  try {
+    const { ordem } = req.body; // array: [{id, descricao}, ...]
+
+    if (!Array.isArray(ordem)) {
+      return res.status(400).json({ message: "Ordem inválida" });
+    }
+
+    for (let i = 0; i < ordem.length; i++) {
+      const item = ordem[i];
+      await pool.query(
+        `UPDATE marcas SET marcasordem = $1 WHERE marcascod = $2`,
+        [i + 1, item.id] // usa o índice + 1 como nova ordem
+      );
+    }
+
+    return res.status(200).json({ message: "Ordem atualizada com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao atualizar ordem:", error);
+    return res.status(500).json({ message: "Erro interno ao atualizar ordem" });
   }
 };

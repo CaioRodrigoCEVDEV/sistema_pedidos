@@ -108,6 +108,7 @@ CREATE TABLE public.marcas (
 	marcascod serial4 NOT NULL,
 	marcasdes varchar(40) NULL,
 	marcassit bpchar(1) DEFAULT 'A'::bpchar NULL,
+	marcasordem int4 NULL,
 	CONSTRAINT pk_marcas PRIMARY KEY (marcascod)
 );
 
@@ -185,6 +186,7 @@ CREATE TABLE public.tipo (
 	tipocod serial4 NOT NULL,
 	tipodes varchar(40) NULL,
 	tiposit bpchar(1) DEFAULT 'A'::bpchar NULL,
+	tipoordem int4 NULL,
 	CONSTRAINT pk_tipo PRIMARY KEY (tipocod)
 );
 
@@ -354,7 +356,8 @@ CREATE OR REPLACE VIEW public.vw_tipo_pecas
 AS SELECT tipo.tipocod,
     tipo.tipodes,
     pro.promarcascod,
-    pro.promodcod
+    pro.promodcod,
+	tipo.tipoordem
    FROM pro
      JOIN tipo ON tipo.tipocod = pro.protipocod
   GROUP BY tipo.tipocod, tipo.tipodes, pro.promarcascod, pro.promodcod;

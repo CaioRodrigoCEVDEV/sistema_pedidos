@@ -5,7 +5,7 @@ exports.listarTipo = async (req, res) => {
 
   try {
     const result = await pool.query(
-      "select  tipocod,tipodes, promarcascod,promodcod from vw_tipo_pecas  where promodcod = $1 ",
+      "select tipocod,tipodes, promarcascod,promodcod from vw_tipo_pecas where promodcod = $1 order by tipoordem ",
       [id]
     );
     res.status(200).json(result.rows);
@@ -77,12 +77,35 @@ exports.deleteTipo = async (req, res) => {
 
   try {
     const result = await pool.query(
-      "delete from tipo where tipocod = $1 returning *",
+      "update from tipo where tipocod = $1 returning *",
       [id]
     );
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao excluir tipo" });
+  }
+};
+
+exports.atualizarOrdemTipos = async (req, res) => {
+  try {
+    const { ordem } = req.body; // array: [{id, descricao}, ...]
+
+    if (!Array.isArray(ordem)) {
+      return res.status(400).json({ message: "Ordem inválida" });
+    }
+
+    for (let i = 0; i < ordem.length; i++) {
+      const item = ordem[i];
+      await pool.query(
+        "update tipo set tipoordem = $1 where tipocod = $2",
+        [i + 1, item.id] // usa o índice + 1 como nova ordem
+      );
+    }
+
+    return res.status(200).json({ message: "Ordem atualizada com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao atualizar ordem:", error);
+    return res.status(500).json({ message: "Erro interno ao atualizar ordem" });
   }
 };
