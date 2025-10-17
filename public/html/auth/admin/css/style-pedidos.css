@@ -1,0 +1,20 @@
+main{
+    min-height: 80vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+footer{
+    max-width: 10px;
+}
+.numcont{
+    color: aqua;
+    font-size: 40px !important;
+    font-weight: bold !important;
+}
+
+.tabela-scroll {
+  max-height: 250px; /* ajuste conforme o layout */
+  overflow-y: auto;
+  display: block;
+}
