@@ -52,16 +52,18 @@ document.addEventListener("DOMContentLoaded", function () {
           <td class="text-center">${dado.pvcod}</td>
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
-            <button type="button" class="btn btn-success mx-1" onclick="confirmarPedido(${
-              dado.pvcod
-            })">
-              <i class="bi bi-check-square"></i>
-            </button>
-            <button type="button" class="btn btn-danger" onclick="cancelarPedido(${
-              dado.pvcod
-            })">
-              <i class="bi bi-x-square"></i>
-            </button>
+            <div class="d-flex flex-column flex-sm-row align-items-center">
+              <button type="button" class="btn btn-success btn-sm mx-sm-1 mb-1 mb-sm-0" onclick="confirmarPedido(${
+                dado.pvcod
+              })">
+                <i class="bi bi-check-square"></i>
+              </button>
+              <button type="button" class="btn btn-danger btn-sm mx-sm-1" onclick="cancelarPedido(${
+                dado.pvcod
+              })">
+                <i class="bi bi-x-square"></i>
+              </button>
+            </div>          
           </td>
         `;
         corpoTabela.appendChild(tr);
@@ -92,16 +94,18 @@ async function confirmarPedido(pvcod) {
           <td class="text-center">${dado.pvcod}</td>
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
-            <button type="button" class="btn btn-success mx-1" onclick="confirmarPedido(${
-              dado.pvcod
-            })">
-              <i class="bi bi-check-square"></i>
-            </button>
-            <button type="button" class="btn btn-danger" onclick="cancelarPedido(${
-              dado.pvcod
-            })">
-              <i class="bi bi-x-square"></i>
-            </button>
+            <div class="d-flex flex-column flex-sm-row align-items-center">
+              <button type="button" class="btn btn-success btn-sm mx-sm-1 mb-1 mb-sm-0" onclick="confirmarPedido(${
+                dado.pvcod
+              })">
+                <i class="bi bi-check-square"></i>
+              </button>
+              <button type="button" class="btn btn-danger btn-sm mx-sm-1" onclick="cancelarPedido(${
+                dado.pvcod
+              })">
+                <i class="bi bi-x-square"></i>
+              </button>
+            </div>          
           </td>
         `;
         corpoTabela.appendChild(tr);
@@ -140,16 +144,18 @@ async function cancelarPedido(pvcod) {
           <td class="text-center">${dado.pvcod}</td>
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
-            <button type="button" class="btn btn-success mx-1" onclick="confirmarPedido(${
-              dado.pvcod
-            })">
-              <i class="bi bi-check-square"></i>
-            </button>
-            <button type="button" class="btn btn-danger" onclick="cancelarPedido(${
-              dado.pvcod
-            })">
-              <i class="bi bi-x-square"></i>
-            </button>
+            <div class="d-flex flex-column flex-sm-row align-items-center">
+              <button type="button" class="btn btn-success btn-sm mx-sm-1 mb-1 mb-sm-0" onclick="confirmarPedido(${
+                dado.pvcod
+              })">
+                <i class="bi bi-check-square"></i>
+              </button>
+              <button type="button" class="btn btn-danger btn-sm mx-sm-1" onclick="cancelarPedido(${
+                dado.pvcod
+              })">
+                <i class="bi bi-x-square"></i>
+              </button>
+            </div>          
           </td>
         `;
         corpoTabela.appendChild(tr);
@@ -172,24 +178,21 @@ document.addEventListener("DOMContentLoaded", function () {
   fetch(`${BASE_URL}/pedidos/confirmados`)
     .then((res) => res.json())
     .then((dados) => {
-      const confirmados = document.getElementById("pedConfirmados");
-      confirmados.innerHTML = ""; // limpa o conteúdo atual da tabela
+      const corpoTabelaConfirmados = document.getElementById(
+        "corpoTabelaConfirmados"
+      );
+      corpoTabelaConfirmados.innerHTML = ""; // limpa o conteúdo atual da tabela
 
       dados.forEach((dado) => {
-        const item = document.createElement("div");
-        item.className =
-          "d-flex align-items-center justify-content-between mb-2";
-        item.innerHTML = `
-          <div class="text-center" style="min-width:80px"> Pedido
-            <div class="text-center" style="min-width:80px">${dado.pvcod}</div>
-          </div>
-          <div class="text-center" style="min-width:80px"> Valor
-            <div class="text-center" style="min-width:140px">${formatarMoeda(
-              dado.pvvl
-            )}</div>
-          </div>
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="text-center" style="color: green;">${dado.pvcod}</td>
+          <td class="text-right" style="color: green;">${formatarMoeda(
+            dado.pvvl
+          )}</td>
         `;
-        confirmados.appendChild(item);
+        corpoTabelaConfirmados.appendChild(tr);
+        atualizarTotaisPedidos();
       });
     })
     .catch((erro) => console.error("Erro ao carregar pedidos:", erro));
@@ -204,20 +207,20 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       const res = await fetch(`${BASE_URL}/pedidos/confirmados`);
       const dados = await res.json();
-      const confirmados = document.getElementById("pedConfirmados");
-      if (!confirmados) return;
-      confirmados.innerHTML = "";
+      const corpoTabelaConfirmados = document.getElementById(
+        "corpoTabelaConfirmados"
+      );
+      if (!corpoTabelaConfirmados) return;
+      corpoTabelaConfirmados.innerHTML = "";
       dados.forEach((dado) => {
-        const item = document.createElement("div");
-        item.className =
-          "d-flex align-items-center justify-content-between mb-2";
-        item.innerHTML = `
-          <div class="text-center" style="min-width:80px">${dado.pvcod}</div>
-          <div class="text-center" style="min-width:140px">${formatarMoeda(
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="text-center" style="color: green;">${dado.pvcod}</td>
+          <td class="text-right" style="color: green;">${formatarMoeda(
             dado.pvvl
-          )}</div>
+          )}</td>
         `;
-        confirmados.appendChild(item);
+        corpoTabelaConfirmados.appendChild(tr);
       });
     } catch (err) {
       console.error("Erro ao atualizar pedidos confirmados:", err);
