@@ -205,7 +205,12 @@ let tipoEmoji = "\u{1F9E9}"; // 🧩
 let quantidadeEmoji = "\u{1F522}"; // 🔢
 
 // função para retirar balcão pegar o id do produto e a quantidade e valor total gerar um formulario e abrir conversa no whatsapp
-function enviarWhatsApp() {
+async function enviarWhatsApp() {
+  const respSeq = await fetch("/pedidos/sequencia");
+  const seqData = await respSeq.json();
+  const pvcod = seqData.nextval;
+  console.log(pvcod);
+
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
   const observacoes = document.getElementById("observacoes").value.trim();
 
@@ -234,6 +239,22 @@ function enviarWhatsApp() {
   mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
   mensagem += `${lojaEmoji} Retirada: No balcão\n`;
   // mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
+
+  const respPedido = await fetch(`${BASE_URL}/pedidos/enviar`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pvcod,
+      cart,
+      total: totalValue,
+      obs: observacoes,
+      canal: "BALCAO",
+      status: "A",
+      confirmado: "N",
+    }),
+  });
+  const data = await respPedido.json();
+  console.log("Pedido salvo com sucesso:", data);
 
   fetch(`${BASE_URL}/emp`)
     .then((response) => response.json())
@@ -296,7 +317,11 @@ function enviarWhatsApp() {
 }
 
 // quando clicar lá no botão de entrega, abrir um popup com nome completo e endereço
-function enviarWhatsAppEntrega() {
+async function enviarWhatsAppEntrega() {
+  const respSeq = await fetch("/pedidos/sequencia");
+  const seqData = await respSeq.json();
+  const pvcod = seqData.nextval;
+
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
   const observacoes = document.getElementById("observacoes").value.trim();
   if (cart.length === 0) {
@@ -324,6 +349,22 @@ function enviarWhatsAppEntrega() {
 
   mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
   mensagem += `${caminhaoEmoji} Entrega\n`;
+
+  const respPedido = await fetch(`${BASE_URL}/pedidos/enviar`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pvcod,
+      cart,
+      total: totalValue,
+      obs: observacoes,
+      canal: "ENTREGA",
+      status: "A",
+      confirmado: "N",
+    }),
+  });
+  const data = await respPedido.json();
+  console.log("Pedido salvo com sucesso:", data);
 
   console.log(mensagem);
   fetch(`${BASE_URL}/emp`)

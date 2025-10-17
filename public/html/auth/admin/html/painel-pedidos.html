@@ -18,6 +18,14 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
+<style>
+  .tabela-scroll {
+  max-height: 250px; /* altura aproximada p/ 5 linhas */
+  overflow-y: auto;
+  display: block;
+}
+</style>
+
 <body class="bg-light">
   
   <header>
@@ -65,88 +73,54 @@
           <div class="card-header">Pedidos Pendentes</div>
           <div class="card-body">
             <h5 class="card-title">Quantidade</h5>
-            <p class="display-4">0</p>
+            <p class="display-4" id="totalPedPendentes">0</p>
           </div>
         </div>
         <div class="card text-white bg-secondary col-sm-3 m-auto" style="max-width: 18rem;">
           <div class="card-header">Pedidos Balcão</div>
           <div class="card-body">
             <h5 class="card-title">Quantidade</h5>
-            <p class="display-4">23</p>
+            <p class="display-4" id="totalPedBalcao">0</p>
           </div>
         </div>
         <div class="card text-white bg-secondary col-sm-3 m-auto" style="max-width: 18rem;">
           <div class="card-header">Pedidos Entrega</div>
           <div class="card-body">
             <h5 class="card-title">Quantidade</h5>
-            <p class="display-4">65</p>
+            <p class="display-4" id="totalPedEntrega">0</p>
           </div>
         </div>
         <div class="card text-white bg-success col-sm-3 m-auto" style="max-width: 18rem;">
           <div class="card-header">Pedidos Finalizados (Mês)</div>
           <div class="card-body">
             <h5 class="card-title">Quantidade</h5>
-            <p class="display-4"> 1050</p>
+            <p class="display-4" id="totalPedConfirmados">0</p>
           </div>
         </div>
 
         <div class="row p-2 mb-2 mt-2 justify-content-around m-auto">
-          <div class="col-sm-6">
+          <div class="col-sm">
             <div class="card shadow-sm">
               <div class="card-body ">
                 <h2>Pedidos pendentes <i class="bi bi-card-list"></i></h2>
                 <div>
-                  <div class="rounded-2 p-3 ">
+                  <div class="tabela-scroll ">
                     <!--Colocar os pedidos pendentes para aparecer dentro dessa div-->
 
                     <table class="table text-center table-responsive-sm">
                       <thead>
                         <tr>
                           <th scope="col">N. Pedido</th>
-                          <th scope="col">Cliente</th>
+                          <th scope="col">Valor</th>
                           <th scope="col">Ações</th>
-
                         </tr>
                       </thead>
-                      <tbody>
-                        <tr>
-                          <th scope="row">0001</th>
-                          <td>Joãozinho</td>
-                          <td><button type="button" class="btn btn-success mx-1" data-toggle="modal"
-                              data-target="#ExemploModalCentralizado">
-                               <i class="bi bi-check-square"></i>
-                            </button><button type="button" class="btn btn-danger"><i class="bi bi-x-square"></i></button></td>
-
-                        </tr>
-                        <tr>
-                          <th scope="row">0002</th>
-                          <td>Pedrinho</td>
-                          <td><button type="button" class="btn btn-success mx-1" data-toggle="modal"
-                              data-target="#ExemploModalCentralizado">
-                               <i class="bi bi-check-square"></i>
-                            </button><button type="button" class="btn btn-danger"><i class="bi bi-x-square"></i></button></td>
-
-                        </tr>
-                        <tr >
-                          <th scope="row">0003</th>
-                          <td>Caiozinho</td>
-                          <td ><button type="button" class="btn btn-success mx-1" data-toggle="modal"
-                              data-target="#ExemploModalCentralizado">
-                               <i class="bi bi-check-square"></i>
-                            </button><button type="button" class="btn btn-danger"><i class="bi bi-x-square"></i></button></td>
-
-                        </tr>
+                      <tbody id="corpoTabela">
                       </tbody>
                     </table>
-
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          <div class="col-sm-6">
-            <div class="card shadow-sm">
-              <canvas id="chart-bar-2"></canvas>
             </div>
           </div>
         </div>
@@ -155,12 +129,11 @@
       <div class="container bg-white rounded-1 shadow-sm p-2">
         <h2>Pedidos confirmados <i class="bi bi-card-checklist"></i></h2>
         <div>
-          <div class="alert alert-success">
-            Um simples alerta success. Olha só!
+          <div class="alert alert-success" id="pedConfirmados">
+           
           </div>
         </div>
       </div>
-
   </main>
   <footer class="border-top py-4 bg-white shadow">
     <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -171,73 +144,11 @@
   </footer>
 
   <!--Script Chart-->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-
-    (function () {
-
-      const chartBar2 = document.getElementById('chart-bar-2').getContext('2d');
-
-      const DATA_COUNT = 7;
-      const NUMBER_CFG = { count: DATA_COUNT, min: -100, max: 100 };
-
-      const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      const data = {
-        labels: labels,
-        datasets: [{
-          label: 'Vendas Mensais ',
-          data: [65, 59, 80, 81, 56, 55, 40, 10, 25, 78, 90, 33],
-          backgroundColor: [
-            'rgba(255, 99, 132, 0.2)',
-            'rgba(255, 159, 64, 0.2)',
-            'rgba(255, 205, 86, 0.2)',
-            'rgba(75, 192, 192, 0.2)',
-            'rgba(54, 162, 235, 0.2)',
-            'rgba(153, 102, 255, 0.2)',
-            'rgba(201, 203, 207, 0.2)'
-          ],
-          borderColor: [
-            'rgb(255, 99, 132)',
-            'rgb(255, 159, 64)',
-            'rgb(255, 205, 86)',
-            'rgb(75, 192, 192)',
-            'rgb(54, 162, 235)',
-            'rgb(153, 102, 255)',
-            'rgb(201, 203, 207)'
-          ],
-          borderWidth: 1
-        }]
-      };
-
-
-
-      const config = {
-        type: 'bar',
-        data: data,
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              position: 'top',
-            },
-            title: {
-              display: true,
-              text: 'Vendas Mensais'
-            }
-          }
-        }
-      };
-      let chart = new Chart(chartBar2, config);
-
-    })();
-
-
-  </script>
-  <!--fim script-->
+  
 
   <script src="/config.js"></script>
   <script src="../js/nomeEmpresa.js"></script>
-  <script src="html/auth/js/painel.js"></script>
+  <script src="html/auth/js/painel-pedidos.js"></script>
   <script src="html/auth/js/logout.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
     crossorigin="anonymous"></script>
