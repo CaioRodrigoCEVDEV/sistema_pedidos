@@ -42,11 +42,12 @@ exports.inserirPvi = async (req, res) => {
 
     for (const item of cart) {
       const { id: procod, qt, preco } = item;
-      console.log("Inserindo item:", { pvcod, procod, qt, preco });
+      const codigoInteiro = parseInt(procod.split("-")[0]);
+      console.log("Inserindo item:", { pvcod, codigoInteiro, qt, preco });
 
       const result = await pool.query(
         "INSERT INTO pvi (pvipvcod, pviprocod, pviqtde, pvivl) VALUES ($1, $2, $3, $4) RETURNING *",
-        [pvcod, procod, qt, preco]
+        [pvcod, codigoInteiro, qt, preco]
       );
 
       results.push(result.rows[0]);
@@ -126,7 +127,7 @@ exports.listarTotalPvConfirmados = async (req, res) => {
 exports.listarPvConfirmados = async (req, res) => {
   try {
     const result = await pool.query(
-      "select * from pv where pvconfirmado = 'S' and pvsta = 'A' "
+      "select * from pv where pvconfirmado = 'S' and pvsta = 'A' order by pvcod desc"
     );
     res.status(200).json(result.rows);
   } catch (error) {
