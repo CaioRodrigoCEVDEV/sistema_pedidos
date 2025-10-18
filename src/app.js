@@ -109,6 +109,9 @@ app.get("/pedidos", autenticarToken, (req, res) => {
     path.join(__dirname, "../public/html/auth/admin/html/painel-pedidos.html")
   );
 });
+app.get("/estoque", autenticarToken,(req, res) => {
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-estoque.html"));
+});
 
 app.get("/dashboard", autenticarToken, (req, res) => {
   res.sendFile(
