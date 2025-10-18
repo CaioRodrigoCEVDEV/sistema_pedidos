@@ -67,6 +67,9 @@ app.use(coresRoutes);
 const pedidosRoutes = require("./routes/pedidosRoutes");
 app.use(pedidosRoutes);
 
+const estoqueRoutes = require("./routes/estoqueRoutes");
+app.use(estoqueRoutes);
+
 // Rotas de páginas
 
 app.get("/", (req, res) => {
