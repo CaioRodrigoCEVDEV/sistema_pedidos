@@ -4,7 +4,18 @@ exports.mostrarEstoqueItens = async (req, res) => {
 
   try {
     const result = await pool.query(
-      "select  procod,proqtde from pro "
+      `select  
+        procod,
+        marcasdes,
+        prodes,
+        tipodes,
+        case when cornome is null then 'Nenhuma' else cornome end as cornome,
+        proqtde 
+        from pro 
+        join marcas on marcascod = promarcascod  
+        join tipo on tipocod = protipocod 
+        left join cores on corcod =procor 
+        where prosit = 'A'`
     );
     res.status(200).json(result.rows);
   } catch (error) {
