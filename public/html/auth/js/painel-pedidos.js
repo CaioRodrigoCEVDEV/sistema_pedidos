@@ -52,16 +52,16 @@ document.addEventListener("DOMContentLoaded", function () {
           <td class="text-center">${dado.pvcod}</td>
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
-            <div class="d-flex flex-column flex-sm-row align-items-center">
-              <button type="button" class="btn btn-success btn-sm mx-sm-1 mb-1 mb-sm-0" onclick="confirmarPedido(${
+            <div class="d-flex justify-content-center align-items-center gap-2">
+              <button type="button" class="btn btn-success btn-sm" onclick="confirmarPedido(${
                 dado.pvcod
               })">
-                <i class="bi bi-check-square"></i>
+          <i class="bi bi-check-square"></i>
               </button>
-              <button type="button" class="btn btn-danger btn-sm mx-sm-1" onclick="cancelarPedido(${
+              <button type="button" class="btn btn-danger btn-sm" onclick="cancelarPedido(${
                 dado.pvcod
               })">
-                <i class="bi bi-x-square"></i>
+          <i class="bi bi-x-square"></i>
               </button>
             </div>          
           </td>
@@ -94,16 +94,16 @@ async function confirmarPedido(pvcod) {
           <td class="text-center">${dado.pvcod}</td>
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
-            <div class="d-flex flex-column flex-sm-row align-items-center">
-              <button type="button" class="btn btn-success btn-sm mx-sm-1 mb-1 mb-sm-0" onclick="confirmarPedido(${
+            <div class="d-flex justify-content-center align-items-center gap-2">
+              <button type="button" class="btn btn-success btn-sm" onclick="confirmarPedido(${
                 dado.pvcod
               })">
-                <i class="bi bi-check-square"></i>
+          <i class="bi bi-check-square"></i>
               </button>
-              <button type="button" class="btn btn-danger btn-sm mx-sm-1" onclick="cancelarPedido(${
+              <button type="button" class="btn btn-danger btn-sm" onclick="cancelarPedido(${
                 dado.pvcod
               })">
-                <i class="bi bi-x-square"></i>
+          <i class="bi bi-x-square"></i>
               </button>
             </div>          
           </td>
@@ -144,16 +144,16 @@ async function cancelarPedido(pvcod) {
           <td class="text-center">${dado.pvcod}</td>
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
-            <div class="d-flex flex-column flex-sm-row align-items-center">
-              <button type="button" class="btn btn-success btn-sm mx-sm-1 mb-1 mb-sm-0" onclick="confirmarPedido(${
+            <div class="d-flex justify-content-center align-items-center gap-2">
+              <button type="button" class="btn btn-success btn-sm" onclick="confirmarPedido(${
                 dado.pvcod
               })">
-                <i class="bi bi-check-square"></i>
+          <i class="bi bi-check-square"></i>
               </button>
-              <button type="button" class="btn btn-danger btn-sm mx-sm-1" onclick="cancelarPedido(${
+              <button type="button" class="btn btn-danger btn-sm" onclick="cancelarPedido(${
                 dado.pvcod
               })">
-                <i class="bi bi-x-square"></i>
+          <i class="bi bi-x-square"></i>
               </button>
             </div>          
           </td>

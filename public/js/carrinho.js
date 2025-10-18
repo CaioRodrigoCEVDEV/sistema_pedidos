@@ -209,7 +209,6 @@ async function enviarWhatsApp() {
   const respSeq = await fetch("/pedidos/sequencia");
   const seqData = await respSeq.json();
   const pvcod = seqData.nextval;
-  console.log(pvcod);
 
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
   const observacoes = document.getElementById("observacoes").value.trim();
@@ -233,13 +232,6 @@ async function enviarWhatsApp() {
     mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
   });
 
-  if (observacoes) {
-    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n`;
-  }
-  mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
-  mensagem += `${lojaEmoji} Retirada: No balcão\n`;
-  // mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
-
   const respPedido = await fetch(`${BASE_URL}/pedidos/enviar`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -255,6 +247,14 @@ async function enviarWhatsApp() {
   });
   const data = await respPedido.json();
   console.log("Pedido salvo com sucesso:", data);
+
+  if (observacoes) {
+    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n`;
+  }
+  mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
+  mensagem += `${lojaEmoji} Retirada: No balcão\n`;
+  mensagem += `Pedido N°: ${pvcod}\n`;
+  // mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
   fetch(`${BASE_URL}/emp`)
     .then((response) => response.json())
@@ -343,13 +343,6 @@ async function enviarWhatsAppEntrega() {
     mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
   });
 
-  if (observacoes) {
-    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n`;
-  }
-
-  mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
-  mensagem += `${caminhaoEmoji} Entrega\n`;
-
   const respPedido = await fetch(`${BASE_URL}/pedidos/enviar`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -366,7 +359,14 @@ async function enviarWhatsAppEntrega() {
   const data = await respPedido.json();
   console.log("Pedido salvo com sucesso:", data);
 
-  console.log(mensagem);
+  if (observacoes) {
+    mensagem += `${observacaoEmoji} Observações: ${observacoes}\n`;
+  }
+
+  mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
+  mensagem += `${caminhaoEmoji} Entrega\n`;
+  mensagem += `Pedido N°: ${pvcod}\n`;
+
   fetch(`${BASE_URL}/emp`)
     .then((response) => response.json())
     .then((data) => {
