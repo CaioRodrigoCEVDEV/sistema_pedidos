@@ -70,6 +70,9 @@ app.use(pedidosRoutes);
 const estoqueRoutes = require("./routes/estoqueRoutes");
 app.use(estoqueRoutes);
 
+const usuarioRoute = require("./routes/usuarioRoute");
+app.use(usuarioRoute);
+
 // Rotas de páginas
 
 app.get("/", (req, res) => {
