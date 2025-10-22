@@ -84,7 +84,7 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/users", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/usuarios.html"));
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-usuarios.html"));
 });
 
 app.get("/index", (req, res) => {
@@ -124,9 +124,7 @@ app.get("/estoque", autenticarToken,(req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-estoque.html"));
 });
 
-app.get("/users", autenticarToken,(req, res) => {
-  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/usuarioshtml"));
-});
+
 
 app.get("/dashboard", autenticarToken, (req, res) => {
   res.sendFile(
