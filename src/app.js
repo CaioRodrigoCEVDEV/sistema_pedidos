@@ -82,6 +82,11 @@ app.get("/", (req, res) => {
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/login.html"));
 });
+
+app.get("/users", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/usuarios.html"));
+});
+
 app.get("/index", (req, res) => {
   //res.sendFile(path.join(__dirname, "../public/html/index.html"));
   res.redirect("/");
