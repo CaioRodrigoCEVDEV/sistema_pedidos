@@ -6,7 +6,7 @@ exports.validarLogin = async (req, res) => {
     const { usucod,usunome,usuemail, ususenha } = req.body;
 
     try {
-        const result = await pool.query('SELECT usucod,usunome,usuemail, ususenha FROM usu WHERE usuemail = $1', [usuemail]);
+        const result = await pool.query('SELECT usucod,usunome,usuemail, ususenha,usuadm FROM usu WHERE usuemail = $1', [usuemail]);
 
         if (result.rows.length === 0) {
             return res.status(401).json({ mensagem: 'Usuário não encontrado' });
@@ -26,7 +26,8 @@ exports.validarLogin = async (req, res) => {
         const token = jwt.sign({ 
             usuemail: usuario.usuemail,
             usucod: usuario.usucod,
-            usunome: usuario.usunome}, 'chave-secreta', { expiresIn: '60m' });
+            usunome: usuario.usunome,
+            usuadm: usuario.usuadm    }, 'chave-secreta', { expiresIn: '60m' });
 
         res.cookie('token',token,{
             httpOnly: true,
@@ -34,7 +35,7 @@ exports.validarLogin = async (req, res) => {
             sameSite: 'Strict',
         });
 
-        res.status(200).json({ mensagem: 'Login bem-sucedido',token, usunome: usuario.usunome, usuemail: usuario.usuemail });
+        res.status(200).json({ mensagem: 'Login bem-sucedido',token, usunome: usuario.usunome, usuemail: usuario.usuemail, usuadm: usuario.usuadm });
 
     } catch (error) {
         console.error(error);
