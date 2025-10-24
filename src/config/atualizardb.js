@@ -32,7 +32,9 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.tipo ADD IF NOT exists tipoordem int;`
     );
-
+    await pool.query(
+      `ALTER TABLE public.usu ADD IF NOT exists ususta varchar(1) default 'A';`
+    );
     // FIM NOVOS CAMPOS
     // ==================================================================================================================================
 

@@ -70,11 +70,12 @@ Armazena os dados de login dos usuários do sistema.
 
 ```sql
 CREATE TABLE public.usu (
-	usucod serial4 NOT NULL,
+  usucod serial4 NOT NULL,
   usunome varchar NULL,
-	usuemail varchar(120) NOT NULL,
-	ususenha varchar(32) NULL,
+  usuemail varchar(120) NOT NULL,
+  ususenha varchar(32) NULL,
   usuadm bpchar(1) default 'N',
+  ususta varchar(1) DEFAULT 'A'::character varying NULL,
 	CONSTRAINT pk_usu PRIMARY KEY (usuemail)
 );
 
