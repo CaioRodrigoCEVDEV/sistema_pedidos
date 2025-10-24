@@ -4,11 +4,9 @@ const id = params.get("id");
 const marcascod = params.get("marcascod");
 
 
-
-// --- Dados de exemplo (substitua por fetch da sua API) ---
 const usersData = [
   //popular table com os dados do modelo
-  { id: 1, nome: 'Alice Silva'}
+  { id: 1, nome: ' ', email: ' ', senha: ' ', adm: 'N' }
   
 ];
 
@@ -62,10 +60,10 @@ function renderTable(list) {
       const tr = document.createElement('tr');
       tr.dataset.usucod = u.usucod;
       tr.innerHTML = `
-            <td>${u.usucod}</td>
+            
             <td>${escapeHtml(u.usunome)}</td>
             <td>${escapeHtml(u.usuemail)}</td>
-            <td>${u.usuadm ? '<span class="badge bg-success">Sim</span>' : '<span class="badge bg-secondary">Não</span>'}</td>
+            <td>${u.usuadm === 'S' ? '<span class="badge bg-success">Sim</span>' : '<span class="badge bg-secondary">Não</span>'}</td>
           `;
       tr.addEventListener('click', () => openUserModal(u.usucod));
       tbody.appendChild(tr);
@@ -98,43 +96,81 @@ function openUserModal(usucod) {
   usuEmail.value = u.usuemail;
   usuSenha.value = u.ususenha;
   usuSenha.type = 'password';
-  usuAdm.checked = !!u.usuadm;
+  usuAdm.checked = u.usuadm === 'S';
   userModal.show();
 }
-
-// Salvar (local) — substituir por chamada fetch PUT/POST para sua API
-userForm.addEventListener('submit', (ev) => {
+// salvar registro na api
+userForm.addEventListener('submit', async (ev) => {
   ev.preventDefault();
-  const id = usuId.value ? Number(usuId.value) : (new Date()).getTime();
+  const id = usuId.value;
   const payload = {
-    id,
-    nome: usuNome.value.trim(),
-    email: usuEmail.value.trim(),
-    senha: usuSenha.value,
-    adm: usuAdm.checked
+    usunome: usuNome.value.trim(),
+    usuemail: usuEmail.value.trim(),
+    ususenha: usuSenha.value,
+    usuadm: usuAdm.checked ? 'S' : 'N'
   };
+  
+  try {
+    // Define URL based on whether we're creating or updating
+    const url = id 
+      ? `${BASE_URL}/usuario/atualizar/${id}`
+      : `${BASE_URL}/usuario/novo/`;
 
-  const idx = users.findIndex(x => x.id == id);
-  if (idx >= 0) {
-    users[idx] = payload;
-  } else {
-    users.unshift(payload);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error('Erro ao salvar usuário na API');
+    }
+
+    // Update local data
+    if (id) {
+      const idx = users.findIndex(x => x.usucod == id);
+      if (idx >= 0) {
+        users[idx] = { ...users[idx], ...payload };
+      }
+    } else {
+      const data = await response.json();
+      users.unshift({ ...payload, usucod: data.usucod });
+    }
+
+    doSearch(searchInput.value);
+  } catch (error) {
+    console.error('Failed to save user to API:', error);
+  } finally {
+    userModal.hide();
   }
-
-  doSearch(searchInput.value);
-  userModal.hide();
-  // TODO: enviar payload para API (fetch)
 });
 
-// Excluir (local) — substituir por chamada DELETE para sua API
-btnDelete.addEventListener('click', () => {
-  const id = Number(usuId.value);
+
+// Excluir usuário via API
+btnDelete.addEventListener('click', async () => {
+  const id = usuId.value;
   if (!id) return;
   if (!confirm('Deseja realmente excluir este usuário?')) return;
-  users = users.filter(u => u.id !== id);
-  doSearch(searchInput.value);
-  userModal.hide();
-  // TODO: chamar DELETE na API
+
+  try {
+    const response = await fetch(`${BASE_URL}/usuario/excluir/${id}`, {
+      method: 'POST'
+    });
+
+    if (!response.ok) {
+      throw new Error('Erro ao excluir usuário');
+    }
+
+    // Remove from local array after successful API call
+    users = users.filter(u => u.usucod != id);
+    doSearch(searchInput.value);
+    userModal.hide();
+  } catch (error) {
+    console.error('Failed to delete user:', error);
+    alert('Erro ao excluir usuário');
+  }
 });
 
 // Novo usuário
@@ -147,6 +183,7 @@ btnNew.addEventListener('click', () => {
   usuAdm.checked = false;
   userModal.show();
 });
+
 
 // Toggle mostrar senha
 togglePwd.addEventListener('click', () => {
