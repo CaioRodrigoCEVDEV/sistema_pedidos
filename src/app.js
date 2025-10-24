@@ -242,6 +242,22 @@ app.post(
     }
   }
 );
+// Rota para verificar se o usuário é admin
+app.get("/auth/me", autenticarToken, async (req, res) => {
+  try {
+    const userInfo = {
+      usucod: req.token.usucod,
+      usunome: req.token.usunome,
+      usuemail: req.token.usuemail,
+      usuadm: req.token.usuadm,
+    };
+    res.status(200).json(userInfo);
+  } catch (error) {
+    console.error("Erro ao obter informações do usuário:", error);
+    res.status(500).json({ error: "Erro ao obter informações do usuário" });
+  }
+});
+//
 
 // Inicia o servidor
 (async () => {

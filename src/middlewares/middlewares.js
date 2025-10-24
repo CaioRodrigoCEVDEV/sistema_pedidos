@@ -13,7 +13,8 @@ function autenticarToken(req, res, next) {
         const novoToken = jwt.sign({ 
             usuemail: decoded.usuemail,
             usucod: decoded.usucod,
-            usunome: decoded.usunome 
+            usunome: decoded.usunome, 
+            usuadm: decoded.usuadm
         }, 'chave-secreta', { expiresIn: '60m' });
 
     // gauda o novo token com mais 10m em cookies
@@ -26,6 +27,7 @@ function autenticarToken(req, res, next) {
         res.clearCookie('usucod');
         res.clearCookie('usunome');
         res.clearCookie('usuemail');
+        res.clearCookie('usuadm');
 
         req.token = decoded; // Armazena dados decodificados para uso futuro
 

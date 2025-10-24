@@ -4,6 +4,12 @@ let marcascod = null;
 let marcacodModelo = null;
 let tipo = null;
 let modelo = null;
+(async () => {
+  const res = await fetch('/auth/me', { credentials: 'include' });
+  const data = await res.json();
+  console.log(data.usuadm);
+  if (data.usuadm === "N") { document.getElementById('users').remove(), document.getElementById('estoque').remove() , document.getElementById('configuracoes').remove(), document.getElementById('pedidos').remove(); }
+})();
 
 function formatarMoeda(valor) {
   return Number(valor).toLocaleString("pt-BR", {
@@ -2345,3 +2351,6 @@ processCharges();
 setInterval(() => {
   processCharges();
 }, 24 * 60 * 60 * 1000);
+
+
+
