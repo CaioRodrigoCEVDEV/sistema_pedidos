@@ -110,7 +110,7 @@ exports.listarlogin = async (req, res) => {
 // Trás todos os usuarios, utilizado apenos pelo adm
 exports.listarUsuarios = async (req, res) => {
     try {
-        const result = await pool.query(`SELECT * FROM usu WHERE ususta = 'A' ORDER BY usucod DESC`);
+        const result = await pool.query(`SELECT * FROM usu WHERE ususta = 'A' and usuemail <> 'admin@orderup.com.br' ORDER BY usucod DESC`);
         res.status(200).json(result.rows);
     } catch (error) {
         console.error(error);
