@@ -20,6 +20,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // <-- pas
 
 // Middlewares
 const autenticarToken = require("./middlewares/middlewares");
+const requireAdmin = require("./middlewares/adminMiddleware");
 app.set("views", path.join(__dirname, "views"));
 app.use(morgan("dev"));
 app.use(bodyParser.json());
@@ -83,7 +84,7 @@ app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/login.html"));
 });
 
-app.get("/users", (req, res) => {
+app.get("/users",requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-usuarios.html"));
 });
 
@@ -103,10 +104,10 @@ app.get("/lista-pecas", (req, res) => {
 app.get("/carrinho", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/carrinho.html"));
 });
-app.get("/perfil", autenticarToken, (req, res) => {
+app.get("/perfil", autenticarToken,(req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/perfil.html"));
 });
-app.get("/configuracoes", autenticarToken, (req, res) => {
+app.get("/configuracoes", requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/configuracoes.html"));
 });
 app.get("/painel", autenticarToken, (req, res) => {
@@ -115,12 +116,12 @@ app.get("/painel", autenticarToken, (req, res) => {
   );
 });
 
-app.get("/pedidos", autenticarToken, (req, res) => {
+app.get("/pedidos", requireAdmin, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-pedidos.html")
   );
 });
-app.get("/estoque", autenticarToken,(req, res) => {
+app.get("/estoque", requireAdmin,(req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-estoque.html"));
 });
 
@@ -223,11 +224,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-app.post(
-  "/upload-logo",
-  autenticarToken,
-  upload.single("logo"),
-  async (req, res) => {
+app.post(  "/upload-logo",  requireAdmin,  upload.single("logo"),  async (req, res) => {
     try {
       const jpegPath = path.join(uploadsDir, "logo.jpg");
       const pngPath = path.join(uploadsDir, "apple-touch-icon.png");
@@ -242,22 +239,6 @@ app.post(
     }
   }
 );
-// Rota para verificar se o usuário é admin
-app.get("/auth/me", autenticarToken, async (req, res) => {
-  try {
-    const userInfo = {
-      usucod: req.token.usucod,
-      usunome: req.token.usunome,
-      usuemail: req.token.usuemail,
-      usuadm: req.token.usuadm,
-    };
-    res.status(200).json(userInfo);
-  } catch (error) {
-    console.error("Erro ao obter informações do usuário:", error);
-    res.status(500).json({ error: "Erro ao obter informações do usuário" });
-  }
-});
-//
 
 // Inicia o servidor
 (async () => {
