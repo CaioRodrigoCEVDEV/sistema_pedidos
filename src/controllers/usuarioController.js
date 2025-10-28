@@ -44,25 +44,14 @@ exports.validarLogin = async (req, res) => {
 
 exports.atualizarCadastro = async (req, res) => {
     const { id } = req.params;
-    const { usunome, usuemail, ususenha,usuadm } = req.body;
+    const { usunome, usuemail, ususenha,usuadm,ususta } = req.body;
 
     try {
         // Gera o hash MD5 da nova senha
         const newSenhaHash = crypto.createHash('md5').update(ususenha).digest('hex');
 
-        await pool.query('UPDATE usu SET usunome = $1, ususenha = $2, usuadm = $3 WHERE usucod = $4', [usunome, newSenhaHash, usuadm,id]);
+        await pool.query('UPDATE usu SET usunome = $1, ususenha = $2, usuadm = $3, ususta = $4 WHERE usucod = $5', [usunome, newSenhaHash, usuadm,ususta,id]);
 
-        const token = jwt.sign({ 
-            usuemail: usuemail,
-            usucod: id,
-            usuadm: usuadm,
-            usunome: usunome }, 'chave-secreta', { expiresIn: '60m' });
-
-        res.cookie('token',token,{
-            httpOnly: true,
-            secure: process.env.HTTPS,
-            sameSite: 'Strict',
-        })
         res.status(200).json({ mensagem: 'Usuario atualizado com sucesso' });
     } catch (error) {
         console.error(error);
@@ -71,7 +60,7 @@ exports.atualizarCadastro = async (req, res) => {
 };
 
 exports.cadastrarlogin = async (req, res) => {
-  const { usunome, usuemail, ususenha,usuadm } = req.body;
+  const { usunome, usuemail, ususenha,usuadm,ususta } = req.body;
   const senhaHash = crypto.createHash('md5').update(ususenha).digest('hex');
 
   try {
@@ -83,8 +72,8 @@ exports.cadastrarlogin = async (req, res) => {
       return res.status(409).json({ error: 'Email já existe na base de dados, Faça o Login!' });
     }
     await pool.query(
-      'INSERT INTO usu (usunome, usuemail, ususenha,usuadm) VALUES ($1, $2, $3,$4)',
-      [usunome, usuemail, senhaHash,usuadm]
+      'INSERT INTO usu (usunome, usuemail, ususenha,usuadm,ususta) VALUES ($1, $2, $3,$4,$5)',
+      [usunome, usuemail, senhaHash,usuadm,ususta]
     );
     return res.status(201).json({ message: 'Usuário cadastrado com sucesso' });
 
@@ -110,7 +99,7 @@ exports.listarlogin = async (req, res) => {
 // Trás todos os usuarios, utilizado apenos pelo adm
 exports.listarUsuarios = async (req, res) => {
     try {
-        const result = await pool.query(`SELECT * FROM usu WHERE ususta = 'A' and usuemail <> 'admin@orderup.com.br' ORDER BY usucod DESC`);
+        const result = await pool.query(`SELECT * FROM usu WHERE ususta in ('A','I') and usuemail <> 'admin@orderup.com.br' ORDER BY ususta,usucod DESC`);
         res.status(200).json(result.rows);
     } catch (error) {
         console.error(error);
@@ -120,7 +109,7 @@ exports.listarUsuarios = async (req, res) => {
 
 exports.excluirCadastro = async (req, res) => {
     const { id } = req.params;
-    const  ususta  = "I";
+    const  ususta  = "X";
 
     try {
         
