@@ -44,13 +44,13 @@ exports.validarLogin = async (req, res) => {
 
 exports.atualizarCadastro = async (req, res) => {
     const { id } = req.params;
-    const { usunome, usuemail, ususenha,usuadm,ususta } = req.body;
+    const { usunome, ususenha,usuadm,ususta } = req.body;
 
     try {
 
         if (ususenha === undefined || ususenha.trim() === '') {
             // Atualiza sem alterar a senha
-            await pool.query('UPDATE usu SET usunome = $1, usuadm = $2, ususta = $3 WHERE usucod = $4', [usunome, usuadm,ususta,id]);
+            await pool.query('UPDATE usu SET usunome = $1, usuadm = $2, ususta = $3 WHERE usuemail = $4', [usunome, usuadm,ususta,id]);
             return res.status(200).json({ mensagem: 'Usuario atualizado com sucesso' });
         }
 

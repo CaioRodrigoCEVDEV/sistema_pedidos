@@ -14,21 +14,33 @@ const usersData = [
 let users = [...usersData]; // clone para manipulação local
 let filtered = [...users];
 // Carrega dados reais da API e atualiza users/usersData
-(async function loadUsers() {
+// --- Função central para recarregar usuários da API e atualizar UI ---
+async function refreshUsers({ keepSearch = true } = {}) {
   try {
     const res = await fetch(`${BASE_URL}/usuario/listar`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const dados = await res.json();
     const list = Array.isArray(dados) ? dados : [];
+
     // atualiza arrays usados pelo resto do script
     usersData.length = 0;
     usersData.push(...list);
     users = [...usersData];
-    filtered = [...users];
-    doSearch(searchInput ? searchInput.value : '');
+
+    // preserva termo de busca atual (ou limpa) e re-renderiza
+    const termo = keepSearch && searchInput ? searchInput.value : '';
+    doSearch(termo);
   } catch (err) {
-    console.error('Failed to load users:', err);
+    console.error('Failed to refresh users:', err);
+    alert('Erro ao recarregar usuários. Veja console para mais detalhes.');
   }
+}
+
+// Substitui seu IIFE loadUsers original — usa refreshUsers para inicializar
+(async function init() {
+  await refreshUsers();
 })();
+
 
 // Elementos
 const tbody = document.getElementById('usersTbody');
@@ -111,6 +123,7 @@ function openUserModal(usucod) {
 userForm.addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const id = usuId.value;
+  const email = usuEmail.value.trim();
   const payload = {
     usunome: usuNome.value.trim(),
     usuemail: usuEmail.value.trim(),
@@ -118,41 +131,36 @@ userForm.addEventListener('submit', async (ev) => {
     usuadm: usuAdm.checked ? 'S' : 'N',
     ususta: usuSta.checked ? 'A' : 'I'
   };
-  
+
   try {
     // Define URL based on whether we're creating or updating
-    const url = id 
-      ? `${BASE_URL}/usuario/atualizar/${id}`
+    const url = id
+      ? `${BASE_URL}/usuario/atualizar/${email}`
       : `${BASE_URL}/usuario/novo/`;
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
-      throw new Error('Erro ao salvar usuário na API');
+      // tenta extrair mensagem da API se houver
+      let msg = `Erro ao salvar usuário (HTTP ${response.status})`;
+      try {
+        const errObj = await response.json();
+        if (errObj && errObj.mensagem) msg = errObj.mensagem;
+      } catch (e) { /**/ }
+      throw new Error(msg);
     }
 
-    // Update local data
-    if (id) {
-      const idx = users.findIndex(x => x.usucod == id);
-      if (idx >= 0) {
-        users[idx] = { ...users[idx], ...payload };
-      }
-    } else {
-      const data = await response.json();
-      users.unshift({ ...payload, usucod: data.usucod });
-    }
-
-    doSearch(searchInput.value);
+    // Se a API retornar o objeto criado/atualizado, ok; mas para garantir consistência,
+    // recarregamos a lista inteira da API (mantendo o termo de busca atual).
+    await refreshUsers({ keepSearch: true });
+    userModal.hide();
   } catch (error) {
     console.error('Failed to save user to API:', error);
-  } finally {
-    userModal.hide();
+    alert(error.message || 'Erro ao salvar usuário. Veja console.');
   }
 });
 
@@ -164,21 +172,22 @@ btnDelete.addEventListener('click', async () => {
   if (!confirm('Deseja realmente excluir este usuário?')) return;
 
   try {
-    const response = await fetch(`${BASE_URL}/usuario/excluir/${id}`, {
-      method: 'POST'
-    });
-
+    const response = await fetch(`${BASE_URL}/usuario/excluir/${id}`, { method: 'POST' });
     if (!response.ok) {
-      throw new Error('Erro ao excluir usuário');
+      let msg = `Erro ao excluir usuário (HTTP ${response.status})`;
+      try {
+        const errObj = await response.json();
+        if (errObj && errObj.mensagem) msg = errObj.mensagem;
+      } catch (e) { /**/ }
+      throw new Error(msg);
     }
 
-    // Remove from local array after successful API call
-    users = users.filter(u => u.usucod != id);
-    doSearch(searchInput.value);
+    // Recarrega lista da API para garantir consistência
+    await refreshUsers({ keepSearch: true });
     userModal.hide();
   } catch (error) {
     console.error('Failed to delete user:', error);
-    alert('Erro ao excluir usuário');
+    alert(error.message || 'Erro ao excluir usuário');
   }
 });
 
