@@ -116,11 +116,12 @@ exports.listarUsuarios = async (req, res) => {
 
 exports.excluirCadastro = async (req, res) => {
     const { id } = req.params;
-    const  ususta  = "X";
+    //const  ususta  = "X";
 
     try {
         
-        await pool.query('UPDATE usu SET ususta = $1 WHERE usucod = $2', [ususta,id]);
+        //await pool.query(`UPDATE usu SET ususta = $1 , usuemail = usuemail || 'EX' WHERE usucod = $2`, [ususta,id]);
+        await pool.query(`delete from usu  WHERE usucod = $1`, [id]);
 
          res.status(200).json({ mensagem: 'Usuario Excluido com sucesso' });
     } catch (error) {

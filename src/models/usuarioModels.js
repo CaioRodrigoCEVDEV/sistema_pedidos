@@ -10,8 +10,9 @@ async function listarUsuarios() {
 }
 
 async function excluirCadastro (id) {
-    const  ususta  = "X";
-        await pool.query('UPDATE usu SET ususta = $1 WHERE usucod = $2', [ususta, id]);
+    //const  ususta  = "X";
+        //await pool.query('UPDATE usu SET ususta = $1 WHERE usucod = $2', [ususta, id]);
+        await pool.query(`delete from usu  WHERE usucod = $1`, [id]);        
         return { mensagem: 'Usuário inativado com sucesso' };
 }
 
