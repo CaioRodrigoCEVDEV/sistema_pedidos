@@ -6,7 +6,7 @@ const marcascod = params.get("marcascod");
 
 const usersData = [
   //popular table com os dados do modelo
-  { id: 1, nome: ' ', email: ' ', senha: ' ', adm: 'N' ,sta:'A' },
+  { id: 0, nome: ' ', email: ' ', senha: ' ', adm: 'S' ,sta:'A' },
   
 ];
 
@@ -96,7 +96,7 @@ function openUserModal(usucod) {
   usuId.value = u.usucod;
   usuNome.value = u.usunome;
   usuEmail.value = u.usuemail;
-  usuSenha.value = u.ususenha; 
+  usuSenha.value = ''; 
   usuSenha.type = 'password';
   usuAdm.checked = u.usuadm === 'S';
   usuSta.checked = u.ususta === 'A' ? true : (u.ususta === 'I' ? false : false);

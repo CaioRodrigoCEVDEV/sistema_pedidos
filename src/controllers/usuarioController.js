@@ -47,6 +47,13 @@ exports.atualizarCadastro = async (req, res) => {
     const { usunome, usuemail, ususenha,usuadm,ususta } = req.body;
 
     try {
+
+        if (ususenha === undefined || ususenha.trim() === '') {
+            // Atualiza sem alterar a senha
+            await pool.query('UPDATE usu SET usunome = $1, usuadm = $2, ususta = $3 WHERE usucod = $4', [usunome, usuadm,ususta,id]);
+            return res.status(200).json({ mensagem: 'Usuario atualizado com sucesso' });
+        }
+
         // Gera o hash MD5 da nova senha
         const newSenhaHash = crypto.createHash('md5').update(ususenha).digest('hex');
 
