@@ -6,7 +6,7 @@ const marcascod = params.get("marcascod");
 
 const usersData = [
   //popular table com os dados do modelo
-  { id: 1, nome: ' ', email: ' ', senha: ' ', adm: 'N' }
+  { id: 1, nome: ' ', email: ' ', senha: ' ', adm: 'N' ,sta:'A' },
   
 ];
 
@@ -44,6 +44,7 @@ const usuNome = document.getElementById('usuNome');
 const usuEmail = document.getElementById('usuEmail');
 const usuSenha = document.getElementById('usuSenha');
 const usuAdm = document.getElementById('usuAdm');
+const usuSta = document.getElementById('usuSta');
 const togglePwd = document.getElementById('togglePwd');
 const btnDelete = document.getElementById('btnDelete');
 const btnNew = document.getElementById('btnNew');
@@ -64,6 +65,7 @@ function renderTable(list) {
             <td>${escapeHtml(u.usunome)}</td>
             <td>${escapeHtml(u.usuemail)}</td>
             <td>${u.usuadm === 'S' ? '<span class="badge bg-success">Sim</span>' : '<span class="badge bg-secondary">Não</span>'}</td>
+            <td>${u.ususta === 'A' ? '<span class="badge bg-success">Ativo</span>' : u.ususta === 'I' ? '<span class="badge bg-warning text-dark">Inativo</span>' : '<span class="badge bg-danger">Excluído</span>'}</td>
           `;
       tr.addEventListener('click', () => openUserModal(u.usucod));
       tbody.appendChild(tr);
@@ -94,9 +96,10 @@ function openUserModal(usucod) {
   usuId.value = u.usucod;
   usuNome.value = u.usunome;
   usuEmail.value = u.usuemail;
-  usuSenha.value = u.ususenha;
+  usuSenha.value = u.ususenha; 
   usuSenha.type = 'password';
   usuAdm.checked = u.usuadm === 'S';
+  usuSta.checked = u.ususta === 'A' ? true : (u.ususta === 'I' ? false : false);
   userModal.show();
 }
 // salvar registro na api
@@ -107,7 +110,8 @@ userForm.addEventListener('submit', async (ev) => {
     usunome: usuNome.value.trim(),
     usuemail: usuEmail.value.trim(),
     ususenha: usuSenha.value,
-    usuadm: usuAdm.checked ? 'S' : 'N'
+    usuadm: usuAdm.checked ? 'S' : 'N',
+    ususta: usuSta.checked ? 'A' : 'I'
   };
   
   try {
@@ -181,6 +185,7 @@ btnNew.addEventListener('click', () => {
   usuSenha.value = '';
   usuSenha.type = 'password';
   usuAdm.checked = false;
+  usuSta.checked = true;
   userModal.show();
 });
 
@@ -191,11 +196,7 @@ togglePwd.addEventListener('click', () => {
   togglePwd.textContent = usuSenha.type === 'password' ? '👁' : '🙈';
 });
 
-// Refresh exemplo (apenas recarrega o array local)
-btnRefresh.addEventListener('click', () => {
-  users = [...usersData]; // reset para dados originais (exemplo)
-  doSearch(searchInput.value);
-});
+
 
 // Escape para evitar XSS em campos renderizados
 function escapeHtml(txt = '') {
