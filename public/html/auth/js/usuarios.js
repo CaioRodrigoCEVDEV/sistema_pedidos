@@ -93,15 +93,20 @@ function doSearch(term) {
 function openUserModal(usucod) {
   const u = users.find(x => x.usucod == usucod);
   if (!u) return;
+  console.log(u.usuemail.length)
+  if (u.usuemail.length >= 3) {
   usuId.value = u.usucod;
   usuNome.value = u.usunome;
   usuEmail.value = u.usuemail;
+  usuEmail.disabled = true; 
   usuSenha.value = ''; 
   usuSenha.type = 'password';
   usuAdm.checked = u.usuadm === 'S';
   usuSta.checked = u.ususta === 'A' ? true : (u.ususta === 'I' ? false : false);
   userModal.show();
+  } 
 }
+
 // salvar registro na api
 userForm.addEventListener('submit', async (ev) => {
   ev.preventDefault();
@@ -179,6 +184,7 @@ btnDelete.addEventListener('click', async () => {
 
 // Novo usuário
 btnNew.addEventListener('click', () => {
+  usuEmail.disabled = false;
   usuId.value = '';
   usuNome.value = '';
   usuEmail.value = '';
