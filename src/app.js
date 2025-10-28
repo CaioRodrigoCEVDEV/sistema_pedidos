@@ -74,6 +74,10 @@ app.use(estoqueRoutes);
 const usuarioRoute = require("./routes/usuarioRoute");
 app.use(usuarioRoute);
 
+// Adicionando a nova rota usuarioRoute2 para testar MODELS
+const usuarioRoute2 = require("./routes/usuarioRoute2");
+app.use(usuarioRoute2);
+
 // Rotas de páginas
 
 app.get("/", (req, res) => {
