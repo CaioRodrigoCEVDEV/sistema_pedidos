@@ -383,6 +383,9 @@ document
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      if (res.status === 403) {
+        throw new Error("403");
+      }
       const resposta = await res.json();
       let procod =
         resposta.procod || (Array.isArray(resposta) && resposta[0]?.procod);
@@ -423,8 +426,12 @@ document
       //console.log(resposta);
       form.reset();
     } catch (erro) {
-      alert("Erro ao salvar os dados.");
-      console.error(erro);
+      if (erro.message === "403") {
+          alert("Sem permissão para criar produtos.");
+        } else {
+          alert("Erro ao criar produto.");
+        }
+        console.error(erro);
     }
   });
 
