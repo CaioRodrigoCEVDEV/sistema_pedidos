@@ -57,6 +57,8 @@ const usuEmail = document.getElementById('usuEmail');
 const usuSenha = document.getElementById('usuSenha');
 const usuAdm = document.getElementById('usuAdm');
 const usuSta = document.getElementById('usuSta');
+const usuPv = document.getElementById('usuPv');
+const usuEst = document.getElementById('usuEst');
 const togglePwd = document.getElementById('togglePwd');
 const btnDelete = document.getElementById('btnDelete');
 const btnNew = document.getElementById('btnNew');
@@ -114,6 +116,8 @@ function openUserModal(usucod) {
   usuSenha.value = ''; 
   usuSenha.type = 'password';
   usuAdm.checked = u.usuadm === 'S';
+  usuPv.checked = u.usupv === 'S';
+  usuEst.checked = u.usuest === 'S';
   usuSta.checked = u.ususta === 'A' ? true : (u.ususta === 'I' ? false : false);
   userModal.show();
   } 
@@ -129,6 +133,8 @@ userForm.addEventListener('submit', async (ev) => {
     usuemail: usuEmail.value.trim(),
     ususenha: usuSenha.value,
     usuadm: usuAdm.checked ? 'S' : 'N',
+    usupv: usuPv.checked ? 'S' : 'N',
+    usuest: usuEst.checked ? 'S' : 'N',
     ususta: usuSta.checked ? 'A' : 'I'
   };
 
@@ -200,6 +206,8 @@ btnNew.addEventListener('click', () => {
   usuSenha.value = '';
   usuSenha.type = 'password';
   usuAdm.checked = false;
+  usuPv.checked = false;
+  usuEst.checked = false;
   usuSta.checked = true;
   userModal.show();
 });

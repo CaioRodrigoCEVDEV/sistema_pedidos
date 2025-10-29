@@ -30,6 +30,8 @@ function requireAdmin(req, res, next) {
         res.clearCookie('usunome');
         res.clearCookie('usuemail');
         res.clearCookie('usuadm');
+        res.clearCookie('usupv');
+        res.clearCookie('usuest');
 
         req.token = decoded; // Armazena dados decodificados para uso futuro
 
