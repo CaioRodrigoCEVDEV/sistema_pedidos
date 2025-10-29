@@ -4,7 +4,7 @@ const usuarioController2 = require('../controllers/usuarioController2');
 const autenticarToken = require('../middlewares/middlewares');
 const requireAdmin = require("../middlewares/adminMiddleware");
 
-router.get('/usuario/listar2/',autenticarToken, usuarioController2.listarUsuarios);
-router.post('/usuario/excluir2/:id',requireAdmin, usuarioController2.excluirCadastro);
+router.get('/api/v2/usuario/listar/',autenticarToken, usuarioController2.listarUsuarios);
+router.post('api/v2/usuario/excluir/:id',requireAdmin, usuarioController2.excluirCadastro);
 
 module.exports = router;
