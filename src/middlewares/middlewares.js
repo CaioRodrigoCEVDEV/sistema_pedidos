@@ -14,7 +14,9 @@ function autenticarToken(req, res, next) {
             usuemail: decoded.usuemail,
             usucod: decoded.usucod,
             usunome: decoded.usunome, 
-            usuadm: decoded.usuadm
+            usuadm: decoded.usuadm,
+            usuest: decoded.usuest,
+            usupv: decoded.usupv
         }, 'chave-secreta', { expiresIn: '60m' });
 
     // gauda o novo token com mais 10m em cookies
