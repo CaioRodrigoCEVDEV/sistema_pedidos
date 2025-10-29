@@ -74,7 +74,7 @@ function renderTable(list) {
       tr.dataset.usucod = u.usucod;
       tr.innerHTML = `
             
-            <td>${escapeHtml(u.usunome)}</td>
+            <!--<td>${escapeHtml(u.usunome)}</td>-->
             <td>${escapeHtml(u.usuemail)}</td>
             <td>${u.usuadm === 'S' ? '<span class="badge bg-success">Sim</span>' : '<span class="badge bg-secondary">Não</span>'}</td>
             <td>${u.ususta === 'A' ? '<span class="badge bg-success">Ativo</span>' : u.ususta === 'I' ? '<span class="badge bg-warning text-dark">Inativo</span>' : '<span class="badge bg-danger">Excluído</span>'}</td>
