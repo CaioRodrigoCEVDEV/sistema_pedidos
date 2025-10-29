@@ -21,6 +21,8 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // <-- pas
 // Middlewares
 const autenticarToken = require("./middlewares/middlewares");
 const requireAdmin = require("./middlewares/adminMiddleware");
+const requireAdminPv= require("./middlewares/adminPvMiddleware");
+const requireAdminEst= require("./middlewares/adminEstMiddleware");
 app.set("views", path.join(__dirname, "views"));
 app.use(morgan("dev"));
 app.use(bodyParser.json());
@@ -120,12 +122,12 @@ app.get("/painel", autenticarToken, (req, res) => {
   );
 });
 
-app.get("/pedidos", requireAdmin, (req, res) => {
+app.get("/pedidos", requireAdminPv, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-pedidos.html")
   );
 });
-app.get("/estoque", requireAdmin,(req, res) => {
+app.get("/estoque", requireAdminEst,(req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-estoque.html"));
 });
 
