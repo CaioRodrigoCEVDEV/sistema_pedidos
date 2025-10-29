@@ -6,7 +6,7 @@ exports.validarLogin = async (req, res) => {
     const { usucod,usunome,usuemail, ususenha } = req.body;
 
     try {
-        const result = await pool.query('SELECT usucod,usunome,usuemail, ususenha,usuadm ,ususta FROM usu WHERE usuemail = $1', [usuemail]);
+        const result = await pool.query('SELECT usucod,usunome,usuemail, ususenha,usuadm ,ususta, usuest, usupv FROM usu WHERE usuemail = $1', [usuemail]);
 
         if (result.rowCount === 1 && result.rows[0].ususta === 'I') {
             return res.status(403).json({ mensagem: 'Usuário inativo. Contate o administrador.' });
@@ -32,20 +32,20 @@ exports.validarLogin = async (req, res) => {
         // Se tudo ok, retorna sucesso
 
         const token = jwt.sign({ 
-            usuemail: usuario.usuemail,
-            usucod: usuario.usucod,
+            usuemail:usuario.usuemail,
+            usucod:  usuario.usucod,
             usunome: usuario.usunome,
-            usuadm: usuario.usuadm,
-            ususta: usuario.ususta    }, 'chave-secreta', { expiresIn: '60m' });
-
+            usuadm:  usuario.usuadm,
+            ususta:  usuario.ususta,
+            usuest:  usuario.usuest,
+            usupv:   usuario.usupv    }, 'chave-secreta', { expiresIn: '60m' });
         res.cookie('token',token,{
             httpOnly: true,
             secure: process.env.HTTPS,
             sameSite: 'Strict',
         });
 
-        res.status(200).json({ mensagem: 'Login bem-sucedido',token, usunome: usuario.usunome, usuemail: usuario.usuemail, usuadm: usuario.usuadm, ususta: usuario.ususta  });
-
+        res.status(200).json({ mensagem: 'Login bem-sucedido',token, usunome: usuario.usunome, usuemail: usuario.usuemail, usuadm: usuario.usuadm, ususta: usuario.ususta, usuest: usuario.usuest, usupv: usuario.usupv });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao validar login' });
