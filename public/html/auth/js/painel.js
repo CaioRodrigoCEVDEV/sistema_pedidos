@@ -194,7 +194,7 @@ document
       })
       .catch((erro) => {
         if (erro.message === "403") {
-          alert("Sem permissão para criar marcas.");
+          alertPersonalizado("Sem permissão para criar marcas.",2000);
         } else {
           alert("Erro ao salvar os dados.");
         }
@@ -247,7 +247,7 @@ document
       })
       .catch((erro) => {
         if (erro.message === "403") {
-          alert("Sem permissão para criar Modelo.");
+          alertPersonalizado("Sem permissão para criar Modelo.",2000);
         } else {
           alert("Erro ao salvar os dados.");
         }
@@ -298,7 +298,7 @@ document
       })
       .catch((erro) => {
         if (erro.message === "403") {
-          alert("Sem permissão para criar Tipo de Peças.");
+          alertPersonalizado("Sem permissão para criar Tipo de Peças.",2000);
         } else {
           alert("Erro ao salvar os dados.");
         }
@@ -349,7 +349,7 @@ document
       })
       .catch((erro) => {
         if (erro.message === "403") {
-          alert("Sem permissão para criar Cor.");
+          alertPersonalizado("Sem permissão para criar Cor.",2000);
         } else {
           alert("Erro ao salvar os dados.");
         }
@@ -427,7 +427,7 @@ document
       form.reset();
     } catch (erro) {
       if (erro.message === "403") {
-          alert("Sem permissão para criar produtos.");
+          alertPersonalizado("Sem permissão para criar produtos.",2000);
         } else {
           alert("Erro ao criar produto.");
         }
@@ -643,9 +643,11 @@ function editarProduto(codigo) {
           carregarProPesquisa();
         } catch (erro) {
           if (erro.message === "403") {
-            alert("Sem permissão para editar produtos.");
+            document.body.removeChild(popup);
+            alertPersonalizado("Sem permissão para editar produtos.",2000);
           } else {
-            alert("Erro ao atualizar o produto.");
+            document.body.removeChild(popup);
+            alertPersonalizado("Erro ao atualizar o produto.",2000);
           }
         }
       };
@@ -937,7 +939,7 @@ function editarMarca(id, nome) {
       })
       .catch((erro) => {
         if (erro.message === "403") {
-          alert("Sem permissão para editar marcas. Contate o administrador.");
+          alertPersonalizado("Sem permissão para editar marcas. Contate o administrador.",2000);
         } else {
           alert("Erro ao atualizar a marca.");
         }
@@ -1028,7 +1030,7 @@ async function excluirMarca(id) {
       carregarMarcas();
     } catch (error) {
       if (error.message === "403") {
-        alert("Sem permissão para excluir marcas. Contate o administrador.");
+        alertPersonalizado("Sem permissão para excluir marcas. Contate o administrador.",2000);
       } else {
         alert("Erro ao excluir a marca.");
       } console.error("Erro ao excluir marca:", error);
@@ -1171,7 +1173,7 @@ function editarModelo(id, nome, marca) {
       })
       .catch((error) => {
         if (error.message === "403") {
-          alert("Sem permissão para editar modelos. Contate o administrador.");
+          alertPersonalizado("Sem permissão para editar modelos. Contate o administrador.",2000);
         } else {
           alert("Erro ao atualizar modelo");
         }
@@ -1240,7 +1242,7 @@ async function excluirModelo(id) {
         carregarModelos();
       } catch (e) {
         if (e.message === "403") {
-          alert("Sem permissão para excluir modelos. Contate o administrador.");
+          alertPersonalizado("Sem permissão para excluir modelos. Contate o administrador.",2000);
         } else {
           alert("Erro ao excluir modelo");
         }
@@ -1365,7 +1367,7 @@ function editarTipo(id, nome) {
       })
       .catch((error) => {
         if (error.message === "403") {
-          alert("Sem permissão para editar tipos.");
+          alertPersonalizado("Sem permissão para editar tipos.",2000);
         } else {
           alert("Erro ao atualizar tipo");
         }
@@ -1432,7 +1434,7 @@ async function excluirTipo(id) {
       carregarTipos();
     } catch (error) {
       if (error.message === "403") {
-        alert("Sem permissão para excluir este tipo. Contate o administrador.");
+        alertPersonalizado("Sem permissão para excluir este tipo. Contate o administrador.",2000);
       } else {
         alert("Erro ao excluir tipo");
       }
@@ -1554,9 +1556,7 @@ function editarCor(id, nome) {
       })
       .catch((error) => {
         if (error.message === "403") {
-          alert(
-            "Sem permissão para editar esta cor. Contate o administrador."
-          );
+          alertPersonalizado("Sem permissão para editar esta cor. Contate o administrador.",2000);
         } else {
           alert("Erro ao atualizar cor");
         }
@@ -1620,7 +1620,7 @@ async function excluirCor(id) {
       carregarCores();
     } catch (error) {
       if (error.message === "403") {
-        alert("Sem permissão para excluir esta cor. Contate o administrador.");
+        alertPersonalizado("Sem permissão para excluir esta cor. Contate o administrador.",2000);
       } else {
         alert("Erro ao excluir cor");
       } document.body.removeChild(popup);
@@ -1749,7 +1749,7 @@ async function excluirPro(id) {
       }
     } catch (erro) {
       if (erro.message === "403") {
-          alert("Sem permissão para excluir produtos.");
+          alertPersonalizado("Sem permissão para excluir produtos.",2000);
         } else {
           alert("Erro ao criar produto.");
         }
@@ -2466,3 +2466,36 @@ setInterval(() => {
 
 
 
+// alertPersonalizado personalizado Tom FORMAL
+
+function alertPersonalizado(message, time) {
+  let alertPersonalizado = document.getElementById("alertPersonalizado");
+
+  if (!alertPersonalizado) {
+    alertPersonalizado = document.createElement("div");
+    alertPersonalizado.id = "alertPersonalizado";
+    alertPersonalizado.style = `
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: #fff;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s;
+      `;
+    document.body.appendChild(alertPersonalizado);
+  }
+
+  alertPersonalizado.textContent = message;
+  alertPersonalizado.style.opacity = "1";
+
+  setTimeout(() => {
+    alertPersonalizado.style.opacity = "0";
+    alertPersonalizado.remove();
+  }, time);
+}
