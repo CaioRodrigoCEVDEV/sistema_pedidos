@@ -16,7 +16,9 @@ function requireAdmin(req, res, next) {
             usunome: decoded.usunome,
             usuadm: decoded.usuadm,
             usupv: decoded.usupv,
-            usuest: decoded.usuest
+            usuest: decoded.usuest,
+            empusapv: decoded.empusapv,
+            empusaest: decoded.empusaest
         }, 'chave-secreta', { expiresIn: '60m' });
 
         // gauda o novo token com mais 10m em cookies
