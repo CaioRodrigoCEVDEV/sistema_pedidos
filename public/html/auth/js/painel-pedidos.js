@@ -53,15 +53,10 @@ document.addEventListener("DOMContentLoaded", function () {
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="btn btn-success btn-sm" onclick="confirmarPedido(${
+              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${
                 dado.pvcod
               })">
-          <i class="bi bi-check-square"></i>
-              </button>
-              <button type="button" class="btn btn-danger btn-sm" onclick="cancelarPedido(${
-                dado.pvcod
-              })">
-          <i class="bi bi-x-square"></i>
+                <i class="bi bi-search"></i>
               </button>
             </div>          
           </td>
@@ -72,8 +67,226 @@ document.addEventListener("DOMContentLoaded", function () {
     .catch((erro) => console.error("Erro ao carregar pedidos:", erro));
 });
 
+async function abriDetalhePedido(pvcod, status = "pendentes") {
+  try {
+    // tenta buscar detalhes do pedido (ajuste endpoint se necessário)
+    const res = await fetch(`${BASE_URL}/pedido/detalhe/${pvcod}`);
+    const data = await res.json();
+    const pedido = data.pedido || data || {};
+
+    // cria modal se não existir
+    let modalEl = document.getElementById("pedidoDetalheModal");
+
+    if (!modalEl) {
+      modalEl = document.createElement("div");
+      modalEl.id = "pedidoDetalheModal";
+      modalEl.className = "modal fade";
+      modalEl.tabIndex = -1;
+      document.body.appendChild(modalEl);
+    }
+
+    // Atualiza o conteúdo do modal dinamicamente
+    modalEl.innerHTML = `
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Detalhes do Pedido</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <div id="pedidoDetalheConteudo">Carregando...</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="btnCancelarPedidoModal" class="btn btn-danger">Cancelar Pedido</button>
+            ${
+              status !== "confirmados"
+                ? '<button type="button" id="btnConfirmarPedidoModal" class="btn btn-success">Confirmar Pedido</button>'
+                : ""
+            }
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Aqui você pode inicializar o Bootstrap Modal
+    const bootstrapModal = new bootstrap.Modal(modalEl);
+    bootstrapModal.show();
+
+    const linhasItens = pedido.length
+      ? pedido
+          .map((it, i) => {
+            const descricao = it.prodes || "";
+            const qtd = it.pviqtde ?? 0;
+            const preco = it.pvivl ?? 0;
+            const subtotal = it.pvivl * it.pviqtde ?? 0;
+            const procod = it.pviprocod || 0;
+            const pv = it.pvcod || pvcod;
+            return `<tr>
+              <td class="text-center" id=${procod}>${i + 1}</td>
+              <td>${descricao}</td>
+              <td style="padding: 0.2rem;">
+                <input type="number" class="form-control form-control-sm text-end qtd-input" 
+                      value="${Math.floor(qtd)}" 
+                      min="0"
+                      style="width: 100%; height: auto; border-radius: 0.25rem; padding: 0.25rem;">
+              </td>
+              <td class="text-end">${formatarMoeda(preco)}</td>
+              <td class="text-end">${formatarMoeda(subtotal)}</td>
+              <td class="text-center">
+                <button type="button" class="btn btn-danger btn-sm" onclick="cancelarItem
+                  (${procod}, ${pv})">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>`;
+          })
+          .join("")
+      : `<tr><td colspan="6" class="text-center">Nenhum item encontrado</td></tr>`;
+
+    const totalPedido = pedido.reduce(
+      (acc, item) => acc + (item.pvivl * item.pviqtde ?? 0),
+      0
+    );
+
+    const conteudoHtml = `
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th class="text-center">#</th>
+              <th>Item</th>
+              <th class="text-end">Qtd</th>
+              <th class="text-end">Unit.</th>
+              <th class="text-end">Subtotal</th>
+              <th class="text-center"></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${linhasItens}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="4" class="text-end">Total</th>
+              <th class="text-end">${formatarMoeda(totalPedido)}</th>
+            </tr>
+            ${
+              pedido.pvobs
+                ? `<tr><td colspan="5"><strong>Obs:</strong> ${pedido.pvobs}</td></tr>`
+                : ""
+            }
+          </tfoot>
+        </table>
+      </div>
+    `;
+
+    const conteudoEl = modalEl.querySelector("#pedidoDetalheConteudo");
+    if (conteudoEl) conteudoEl.innerHTML = conteudoHtml;
+
+    // configura botões (remove listeners antigos)
+    const btnConfirm = modalEl.querySelector("#btnConfirmarPedidoModal");
+    const btnCancel = modalEl.querySelector("#btnCancelarPedidoModal");
+
+    // remove handlers anteriores para evitar múltiplas chamadas
+    if (btnConfirm) {
+      btnConfirm.replaceWith(btnConfirm.cloneNode(true));
+    }
+    if (btnCancel) {
+      btnCancel.replaceWith(btnCancel.cloneNode(true));
+    }
+
+    const newBtnConfirm = modalEl.querySelector("#btnConfirmarPedidoModal");
+    const newBtnCancel = modalEl.querySelector("#btnCancelarPedidoModal");
+
+    if (newBtnConfirm) {
+      newBtnConfirm.addEventListener("click", async () => {
+        try {
+          const inputsQtde = document.querySelectorAll(".qtd-input");
+          const quantidades = Array.from(inputsQtde).map((inp) =>
+            Number(inp.value)
+          );
+
+          const procodCell = document.getElementById(procod);
+          const valorProcod = Number(procodCell.id);
+
+          const pviqtde = quantidades[0];
+          const procod = valorProcod;
+
+          console.log({ pvcod, pviqtde, procod });
+
+          await confirmarPedido(pvcod, pviqtde, procod);
+          // fechar modal
+          const m =
+            bootstrap?.Modal?.getInstance(modalEl) ||
+            new bootstrap.Modal(modalEl);
+          m.hide();
+        } catch (err) {
+          console.error("Erro ao confirmar via modal:", err);
+          alert("Erro ao confirmar pedido.");
+        }
+      });
+    }
+
+    if (newBtnCancel) {
+      newBtnCancel.addEventListener("click", async () => {
+        if (!confirm("Tem certeza que deseja cancelar este pedido?")) return;
+        try {
+          await cancelarItem(pvcod);
+          const m =
+            bootstrap?.Modal?.getInstance(modalEl) ||
+            new bootstrap.Modal(modalEl);
+          m.hide();
+        } catch (err) {
+          console.error("Erro ao cancelar via modal:", err);
+          alert("Erro ao cancelar pedido.");
+        }
+      });
+    }
+
+    // mostra o modal (requer Bootstrap 5)
+    if (window.bootstrap && window.bootstrap.Modal) {
+      const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modalInstance.show();
+    } else {
+      // fallback simples se Bootstrap não estiver disponível
+      modalEl.classList.add("show");
+      modalEl.style.display = "block";
+      modalEl.removeAttribute("aria-hidden");
+    }
+  } catch (err) {
+    console.error("Erro ao abrir detalhe do pedido:", err);
+    alert("Não foi possível carregar os detalhes do pedido.");
+  }
+}
+
+// cancelar item
+async function cancelarItem(procod, pvcod) {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/pedidos/itens/cancelar/${pvcod}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ procod: procod }),
+      }
+    );
+    if (response.ok) {
+      alert("Item cancelado com sucesso!");
+      location.reload();
+      // Atualize a interface do usuário conforme necessário
+    } else {
+      alert("Erro ao cancelar o item.");
+    }
+  } catch (error) {
+    console.error("Erro ao cancelar o item:", error);
+    alert("Erro ao cancelar o item.");
+  }
+}
+
 // confirmação de pedidos
-async function confirmarPedido(pvcod) {
+async function confirmarPedido(pvcod, pviqtde, procod) {
   try {
     const response = await fetch(`${BASE_URL}/pedidos/confirmar/${pvcod}`, {
       method: "PUT",
@@ -82,6 +295,7 @@ async function confirmarPedido(pvcod) {
       },
     });
     if (response.ok) {
+      confirmarItensPedido(pvcod, pviqtde, procod);
       // Recarrega a tabela de pedidos sem recarregar a página
       const res = await fetch(`${BASE_URL}/pedidos/listar`);
       const dados = await res.json();
@@ -95,15 +309,10 @@ async function confirmarPedido(pvcod) {
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="btn btn-success btn-sm" onclick="confirmarPedido(${
+              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${
                 dado.pvcod
               })">
-          <i class="bi bi-check-square"></i>
-              </button>
-              <button type="button" class="btn btn-danger btn-sm" onclick="cancelarPedido(${
-                dado.pvcod
-              })">
-          <i class="bi bi-x-square"></i>
+          <i class="bi bi-search"></i>
               </button>
             </div>          
           </td>
@@ -112,6 +321,32 @@ async function confirmarPedido(pvcod) {
         atualizarTotaisPedidos();
       });
 
+      // alert("Pedido confirmado com sucesso!");
+      // Atualize a interface do usuário conforme necessário
+    } else {
+      // alert("Erro ao confirmar o pedido.");
+    }
+  } catch (error) {
+    console.error("Erro ao confirmar o pedido:", error);
+    alert("Erro ao confirmar o pedido.");
+  }
+}
+
+async function confirmarItensPedido(pvcod, pviqtde, procod) {
+  console.log("Confirmando item:", { pvcod, pviqtde, procod });
+  try {
+    const response = await fetch(
+      `${BASE_URL}/pedidos/itens/confirmar/${pvcod}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pviqtde: pviqtde, procod: procod }),
+      }
+    );
+    if (response.ok) {
+      alert("Pedido confirmado com sucesso!");
       // alert("Pedido confirmado com sucesso!");
       // Atualize a interface do usuário conforme necessário
     } else {
@@ -145,15 +380,10 @@ async function cancelarPedido(pvcod) {
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="btn btn-success btn-sm" onclick="confirmarPedido(${
+              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${
                 dado.pvcod
-              })">
-          <i class="bi bi-check-square"></i>
-              </button>
-              <button type="button" class="btn btn-danger btn-sm" onclick="cancelarPedido(${
-                dado.pvcod
-              })">
-          <i class="bi bi-x-square"></i>
+              }, 'confirmados')">
+                <i class="bi bi-search"></i>
               </button>
             </div>          
           </td>
@@ -190,6 +420,15 @@ document.addEventListener("DOMContentLoaded", function () {
           <td class="text-right" style="color: green;">${formatarMoeda(
             dado.pvvl
           )}</td>
+          <td class="text-center">
+            <div class="d-flex justify-content-center align-items-center gap-2">
+              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${
+                dado.pvcod
+              }, 'confirmados')">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>          
+          </td>
         `;
         corpoTabelaConfirmados.appendChild(tr);
         atualizarTotaisPedidos();
@@ -219,6 +458,15 @@ document.addEventListener("DOMContentLoaded", function () {
           <td class="text-right" style="color: green;">${formatarMoeda(
             dado.pvvl
           )}</td>
+          <td class="text-center">
+            <div class="d-flex justify-content-center align-items-center gap-2">
+              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${
+                dado.pvcod
+              }, 'confirmados')">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>          
+          </td>
         `;
         corpoTabelaConfirmados.appendChild(tr);
       });
