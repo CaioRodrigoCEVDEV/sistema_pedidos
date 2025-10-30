@@ -1,7 +1,7 @@
 const params = new URLSearchParams(window.location.search);
 const erroMsg = params.get("erroMSG");
 if (erroMsg === "acesso-negado") {
-  alertPersonalizado("Acesso negado. Permissão de administrador necessária.", 3000);
+  alertPersonalizado("Acesso negado. Contate o administrador.", 3000);
 }
 const novaURL = window.location.origin; + window.location.pathname;
 window.history.replaceState({}, document.title, novaURL+ '/painel');
