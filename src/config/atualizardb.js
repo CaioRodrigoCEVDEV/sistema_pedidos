@@ -90,7 +90,7 @@ async function atualizarDB() {
 
     // Table EST (estoque)
     await pool.query(`
-        CREATE TABLE public.est (
+        CREATE TABLE IF NOT exists public.est (
       estprocod int4 NOT NULL,
       estqt int4 NOT NULL,
       esttipo varchar(4) NULL,
@@ -100,7 +100,7 @@ async function atualizarDB() {
 
     // Table PV (pedidos de venda)
     await pool.query(`
-        CREATE TABLE public.pv (
+        CREATE TABLE IF NOT exists public.pv (
         pvcod int4 NOT NULL,
         pvvl numeric(14, 4) DEFAULT 0 NULL,
         pvobs varchar(254) NULL,
@@ -110,17 +110,11 @@ async function atualizarDB() {
         CONSTRAINT pvcod_pkey PRIMARY KEY (pvcod)
       );
 
-      -- Table Triggers
-
-      create trigger t_atualizar_saldo after
-      update
-          of pvconfirmado on
-          public.pv for each row execute procedure atualizar_saldo();
     `);
 
     // Table PVI (itens dos pedidos de venda)
     await pool.query(`
-        CREATE TABLE public.pvi (
+        CREATE TABLE IF NOT exists public.pvi (
           pvipvcod int4 NOT NULL,
           pviprocod int4 NOT NULL,
           pvivl numeric(14, 4) DEFAULT 0 NULL,
