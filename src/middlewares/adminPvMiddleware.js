@@ -39,12 +39,7 @@ function requireAdminPv(req, res, next) {
             next();
         } else {
             //return res.status(403).redirect('/painel');
-            return res.status(403).send(`
-                <script>
-                    alert("⚠️ Acesso negado: você não tem permissão para acessar esta página.");
-                    window.location.href = "/painel";
-                </script>
-                `);
+            return res.status(403).redirect('/painel?erroMSG=acesso-negado');
 
         }
     } catch (err) {
