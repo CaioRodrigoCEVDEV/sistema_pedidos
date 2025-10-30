@@ -1,4 +1,11 @@
 const params = new URLSearchParams(window.location.search);
+const erroMsg = params.get("erroMSG");
+if (erroMsg === "acesso-negado") {
+  alertPersonalizado("Acesso negado. Permissão de administrador necessária.", 3000);
+}
+const novaURL = window.location.origin; + window.location.pathname;
+window.history.replaceState({}, document.title, novaURL);
+
 const id = params.get("id");
 let marcascod = null;
 let marcacodModelo = null;
