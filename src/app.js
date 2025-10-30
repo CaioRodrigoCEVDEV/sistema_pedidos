@@ -23,6 +23,7 @@ const autenticarToken = require("./middlewares/middlewares");
 const requireAdmin = require("./middlewares/adminMiddleware");
 const requireAdminPv= require("./middlewares/adminPvMiddleware");
 const requireAdminEst= require("./middlewares/adminEstMiddleware");
+const requireAdminPages = require("./middlewares/adminPagesMiddleware");
 app.set("views", path.join(__dirname, "views"));
 app.use(morgan("dev"));
 app.use(bodyParser.json());
@@ -90,7 +91,7 @@ app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/login.html"));
 });
 
-app.get("/users",requireAdmin, (req, res) => {
+app.get("/users",requireAdminPages, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-usuarios.html"));
 });
 
@@ -113,7 +114,7 @@ app.get("/carrinho", (req, res) => {
 app.get("/perfil", autenticarToken,(req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/perfil.html"));
 });
-app.get("/configuracoes", requireAdmin, (req, res) => {
+app.get("/configuracoes", requireAdminPages, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/configuracoes.html"));
 });
 app.get("/painel", autenticarToken, (req, res) => {
