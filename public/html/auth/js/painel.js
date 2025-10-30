@@ -1466,6 +1466,12 @@ function editarCor(id, nome) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cornome }),
     })
+      .then(async (res) => {
+        if (res.status === 403) {
+          throw new Error("403");
+        }
+        return res.json();
+      })
       .then((r) => r.json())
       .then(() => {
         const msg = document.createElement("div");
@@ -1487,7 +1493,15 @@ function editarCor(id, nome) {
         document.body.removeChild(popup);
         carregarCores();
       })
-      .catch(() => alert("Erro ao atualizar cor"));
+      .catch((error) => {
+        if (error.message === "403") {
+          alert(
+            "Sem permissão para editar esta cor. Contate o administrador."
+          );
+        } else {
+          alert("Erro ao atualizar cor");
+        }
+      });
   };
 }
 
@@ -1523,7 +1537,10 @@ async function excluirCor(id) {
 
   document.getElementById("confirmarExcluirCor").onclick = async function () {
     try {
-      await fetch(`${BASE_URL}/cores/${id}`, { method: "DELETE" });
+      const res = await fetch(`${BASE_URL}/cores/${id}`, { method: "DELETE" });
+      if (res.status === 403) {
+        throw new Error("403");
+      }
       const msg = document.createElement("div");
       msg.textContent = "Cor excluída com sucesso!";
       msg.style.position = "fixed";
@@ -1542,9 +1559,12 @@ async function excluirCor(id) {
       }, 2000);
       document.body.removeChild(popup);
       carregarCores();
-    } catch (e) {
-      alert("Erro ao excluir cor");
-      document.body.removeChild(popup);
+    } catch (error) {
+      if (error.message === "403") {
+        alert("Sem permissão para excluir esta cor. Contate o administrador.");
+      } else {
+        alert("Erro ao excluir cor");
+      } document.body.removeChild(popup);
     }
   };
 }
