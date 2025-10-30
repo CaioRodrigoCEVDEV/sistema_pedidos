@@ -592,11 +592,14 @@ function editarProduto(codigo) {
           .map((c) => String(c.corcod));
 
         try {
-          await fetch(`${BASE_URL}/pro/${codigo}`, {
+          const res = await fetch(`${BASE_URL}/pro/${codigo}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prodes, provl }),
           });
+          if (res.status === 403) {
+            throw new Error("403");
+          }
 
           // adiciona novas cores
           for (const cor of selecionadas) {
@@ -639,8 +642,11 @@ function editarProduto(codigo) {
           document.body.removeChild(popup);
           carregarProPesquisa();
         } catch (erro) {
-          alert("Erro ao atualizar o produto.");
-          console.error(erro);
+          if (erro.message === "403") {
+            alert("Sem permissão para editar produtos.");
+          } else {
+            alert("Erro ao atualizar o produto.");
+          }
         }
       };
 
@@ -1635,7 +1641,10 @@ async function excluirPro(id) {
 
   document.getElementById("confirmarExcluirPeca").onclick = async function () {
     try {
-      await fetch(`${BASE_URL}/pro/${id}`, { method: "DELETE" });
+      const res =  await fetch(`${BASE_URL}/pro/${id}`, { method: "DELETE" });
+       
+      if (res.status === 200) {
+        
       // Mostra mensagem de sucesso como popup temporário
       const msg = document.createElement("div");
       msg.textContent = "Peça excluída com sucesso!";
@@ -1655,9 +1664,17 @@ async function excluirPro(id) {
       }, 2000);
       document.body.removeChild(popup);
       carregarPecas();
-    } catch (e) {
-      alert("Erro ao excluir peça");
+    } else if (res.status === 403) {
       document.body.removeChild(popup);
+        throw new Error("403");
+      }
+    } catch (erro) {
+      if (erro.message === "403") {
+          alert("Sem permissão para excluir produtos.");
+        } else {
+          alert("Erro ao criar produto.");
+        }
+        console.error(erro);
     }
   };
 }
