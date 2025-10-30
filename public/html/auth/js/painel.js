@@ -1295,6 +1295,12 @@ function editarTipo(id, nome) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tipodes }),
     })
+      .then((r) => {
+        if (r.status === 403) {
+          throw new Error("403");
+        }
+        return r;
+      })
       .then((r) => r.json())
       .then(() => {
         // Mostra mensagem de sucesso como popup temporário
@@ -1317,7 +1323,13 @@ function editarTipo(id, nome) {
         document.body.removeChild(popup);
         carregarTipos();
       })
-      .catch(() => alert("Erro ao atualizar tipo"));
+      .catch((error) => {
+        if (error.message === "403") {
+          alert("Sem permissão para editar tipos.");
+        } else {
+          alert("Erro ao atualizar tipo");
+        }
+      });
   };
 }
 
@@ -1355,7 +1367,10 @@ async function excluirTipo(id) {
 
   document.getElementById("confirmarExcluirTipo").onclick = async function () {
     try {
-      await fetch(`${BASE_URL}/tipo/${id}`, { method: "DELETE" });
+      const res = await fetch(`${BASE_URL}/tipo/${id}`, { method: "DELETE" });
+      if (res.status === 403) {
+        throw new Error("403");
+      }
       // Mostra mensagem de sucesso como popup temporário
       const msg = document.createElement("div");
       msg.textContent = "Tipo excluído com sucesso!";
@@ -1375,8 +1390,12 @@ async function excluirTipo(id) {
       }, 2000);
       document.body.removeChild(popup);
       carregarTipos();
-    } catch (e) {
-      alert("Erro ao excluir tipo");
+    } catch (error) {
+      if (error.message === "403") {
+        alert("Sem permissão para excluir este tipo. Contate o administrador.");
+      } else {
+        alert("Erro ao excluir tipo");
+      }
       document.body.removeChild(popup);
     }
   };
