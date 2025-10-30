@@ -907,6 +907,12 @@ function editarMarca(id, nome) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ marcasdes }),
     })
+    .then((res) => {
+        if (res.status === 403) {
+          throw new Error("403");
+        }
+        return res;
+      })
       .then((r) => r.json())
       .then(() => {
         // Mostra mensagem de sucesso como popup temporário
@@ -929,7 +935,15 @@ function editarMarca(id, nome) {
         document.body.removeChild(popup);
         carregarMarcas();
       })
-      .catch(() => alert("Erro ao atualizar marca"));
+      .catch((erro) => {
+        if (erro.message === "403") {
+          alert("Sem permissão para editar marcas. Contate o administrador.");
+        } else {
+          alert("Erro ao atualizar a marca.");
+        }
+        console.error(erro);
+        document.body.removeChild(popup);
+      })
   };
 }
 
@@ -989,7 +1003,10 @@ async function excluirMarca(id) {
 
   document.getElementById("confirmarExcluirMarca").onclick = async function () {
     try {
-      await fetch(`${BASE_URL}/marcas/status/${id}`, { method: "PUT" });
+      const res = await fetch(`${BASE_URL}/marcas/status/${id}`, { method: "PUT" });
+      if (res.status === 403) {
+        throw new Error("403");
+      }
       // Mostra mensagem de sucesso como popup temporário
       const msg = document.createElement("div");
       msg.textContent = "Marca excluída com sucesso!";
@@ -1009,10 +1026,13 @@ async function excluirMarca(id) {
       }, 2000);
       document.body.removeChild(popup);
       carregarMarcas();
-    } catch (e) {
-      alert("Erro ao excluir marca ou modelos vinculados.");
-      document.body.removeChild(popup);
-    }
+    } catch (error) {
+      if (error.message === "403") {
+        alert("Sem permissão para excluir marcas. Contate o administrador.");
+      } else {
+        alert("Erro ao excluir a marca.");
+      } console.error("Erro ao excluir marca:", error);
+    } document.body.removeChild(popup);
   };
 }
 

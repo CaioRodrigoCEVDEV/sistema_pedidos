@@ -12,12 +12,12 @@ router.post(
   autenticarToken,
   marcasController.atualizarOrdemMarcas
 );
-router.put("/marcas/:id", autenticarToken, marcasController.atualizarMarcas);
+router.put("/marcas/:id", requireAdmin, marcasController.atualizarMarcas);
 router.put(
   "/marcas/status/:id",
-  autenticarToken,
+  requireAdmin,
   marcasController.atualizarMarcasStatus
 );
-router.delete("/marcas/:id", autenticarToken, marcasController.deletarMarcas);
+router.delete("/marcas/:id", requireAdmin, marcasController.deletarMarcas);
 
 module.exports = router;
