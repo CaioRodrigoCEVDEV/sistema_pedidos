@@ -8,6 +8,8 @@ exports.validarLogin = async (req, res) => {
     try {
         const result = await pool.query('SELECT usucod,usunome,usuemail, ususenha,usuadm ,ususta, usuest, usupv FROM usu WHERE usuemail = $1', [usuemail]);
 
+        const empresaResult = await pool.query('SELECT empusapv, empusaest FROM emp WHERE empcod = 1');
+
         if (result.rowCount === 1 && result.rows[0].ususta === 'I') {
             return res.status(403).json({ mensagem: 'Usuário inativo. Contate o administrador.' });
         }
@@ -21,7 +23,9 @@ exports.validarLogin = async (req, res) => {
         }
 
         const usuario = result.rows[0];
+        const empresa = empresaResult.rows[0];
 
+        console.log('Usuário encontrado:', empresa.empusaest);
         // Gera o hash MD5 da senha recebida
         const senhaHash = crypto.createHash('md5').update(ususenha).digest('hex');
 
@@ -32,20 +36,22 @@ exports.validarLogin = async (req, res) => {
         // Se tudo ok, retorna sucesso
 
         const token = jwt.sign({ 
-            usuemail:usuario.usuemail,
-            usucod:  usuario.usucod,
-            usunome: usuario.usunome,
-            usuadm:  usuario.usuadm,
-            ususta:  usuario.ususta,
-            usuest:  usuario.usuest,
-            usupv:   usuario.usupv    }, 'chave-secreta', { expiresIn: '60m' });
+            usuemail: usuario.usuemail,
+            usucod:   usuario.usucod,
+            usunome:  usuario.usunome,
+            usuadm:   usuario.usuadm,
+            ususta:   usuario.ususta,
+            usuest:   usuario.usuest,
+            usupv:    usuario.usupv,
+            empusapv: empresa.empusapv,
+            empusaest:empresa.empusaest    }, 'chave-secreta', { expiresIn: '60m' });
         res.cookie('token',token,{
             httpOnly: true,
             secure: process.env.HTTPS,
             sameSite: 'Strict',
         });
 
-        res.status(200).json({ mensagem: 'Login bem-sucedido',token, usunome: usuario.usunome, usuemail: usuario.usuemail, usuadm: usuario.usuadm, ususta: usuario.ususta, usuest: usuario.usuest, usupv: usuario.usupv });
+        res.status(200).json({ mensagem: 'Login bem-sucedido',token, usunome: usuario.usunome, usuemail: usuario.usuemail, usuadm: usuario.usuadm, ususta: usuario.ususta, usuest: usuario.usuest, usupv: usuario.usupv, empusapv: empresa.empusapv, empusaest: empresa.empusaest });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao validar login' });
