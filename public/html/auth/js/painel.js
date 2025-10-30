@@ -4,7 +4,7 @@ if (erroMsg === "acesso-negado") {
   alertPersonalizado("Acesso negado. Permissão de administrador necessária.", 3000);
 }
 const novaURL = window.location.origin; + window.location.pathname;
-window.history.replaceState({}, document.title, novaURL);
+window.history.replaceState({}, document.title, novaURL+ '/painel');
 
 const id = params.get("id");
 let marcascod = null;
