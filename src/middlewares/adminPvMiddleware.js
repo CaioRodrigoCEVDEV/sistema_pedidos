@@ -16,7 +16,9 @@ function requireAdminPv(req, res, next) {
             usunome: decoded.usunome,
             usuadm: decoded.usuadm,
             usupv: decoded.usupv,
-            usuest: decoded.usuest
+            usuest: decoded.usuest,
+            empusapv: decoded.empusapv,
+            empusaest: decoded.empusaest
         }, 'chave-secreta', { expiresIn: '60m' });
 
         // gauda o novo token com mais 10m em cookies
@@ -33,6 +35,10 @@ function requireAdminPv(req, res, next) {
         res.clearCookie('usupv');
 
         req.token = decoded; // Armazena dados decodificados para uso futuro
+
+        if (decoded.empusapv !== 'S') {
+            return res.status(403).redirect('/painel?erroMSG=modulo-nao-habilitado');
+        }
 
         if (decoded && decoded.usupv === 'S') {
             req.user = decoded; // Optional: store decoded user info
