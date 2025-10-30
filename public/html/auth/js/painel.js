@@ -2483,7 +2483,8 @@ function alertPersonalizado(message, time) {
     alertPersonalizado.id = "alertPersonalizado";
     alertPersonalizado.style = `
         position: fixed;
-        bottom: 30px;
+        width: 350px;
+        top: 8%;
         left: 50%;
         transform: translateX(-50%);
         background-color: #333;
