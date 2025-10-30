@@ -226,6 +226,6 @@ exports.confirmarItemPv = async (req, res) => {
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "erro ao cancelar pedido" });
+    res.status(500).json({ error: "erro ao confirmar itens pedidos pedido" });
   }
 };

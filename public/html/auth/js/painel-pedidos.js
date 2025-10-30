@@ -123,10 +123,11 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             const procod = it.pviprocod || 0;
             const pv = it.pvcod || pvcod;
             return `<tr>
-              <td class="text-center" id=${procod}>${i + 1}</td>
+              <td class="text-center" data-procod="${procod}">${i + 1}</td>
               <td>${descricao}</td>
               <td style="padding: 0.2rem;">
                 <input type="number" class="form-control form-control-sm text-end qtd-input" 
+                      data-procod="${procod}"
                       value="${Math.floor(qtd)}" 
                       min="0"
                       style="width: 100%; height: auto; border-radius: 0.25rem; padding: 0.25rem;">
@@ -201,24 +202,29 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
     if (newBtnConfirm) {
       newBtnConfirm.addEventListener("click", async () => {
         try {
-          const inputsQtde = document.querySelectorAll(".qtd-input");
-          const quantidades = Array.from(inputsQtde).map((inp) =>
-            Number(inp.value)
-          );
+          // pega todas as linhas de itens
+          const linhas = modalEl.querySelectorAll("tbody tr");
+          const itens = [];
 
-          const procodCell = document.getElementById(procod);
-          const valorProcod = Number(procodCell.id);
+          linhas.forEach((tr) => {
+            const cellProcod = tr.querySelector("[data-procod]");
+            const inputQtd = tr.querySelector(".qtd-input");
 
-          const pviqtde = quantidades[0];
-          const procod = valorProcod;
+            // garante que ambos existam
+            if (cellProcod && inputQtd) {
+              const procod = Number(cellProcod.dataset.procod);
+              const qtd = Number(inputQtd.value);
+              itens.push({ procod, qtd });
+            }
+          });
 
-          console.log({ pvcod, pviqtde, procod });
+          // confirma cada item do pedido
+          for (const item of itens) {
+            await confirmarPedido(pvcod, item.qtd, item.procod);
+          }
 
-          await confirmarPedido(pvcod, pviqtde, procod);
-          // fechar modal
-          const m =
-            bootstrap?.Modal?.getInstance(modalEl) ||
-            new bootstrap.Modal(modalEl);
+          // fecha o modal ao fim
+          const m = bootstrap.Modal.getInstance(modalEl);
           m.hide();
         } catch (err) {
           console.error("Erro ao confirmar via modal:", err);
@@ -284,7 +290,6 @@ async function cancelarItem(procod, pvcod) {
     alert("Erro ao cancelar o item.");
   }
 }
-
 // confirmação de pedidos
 async function confirmarPedido(pvcod, pviqtde, procod) {
   try {
@@ -333,7 +338,6 @@ async function confirmarPedido(pvcod, pviqtde, procod) {
 }
 
 async function confirmarItensPedido(pvcod, pviqtde, procod) {
-  console.log("Confirmando item:", { pvcod, pviqtde, procod });
   try {
     const response = await fetch(
       `${BASE_URL}/pedidos/itens/confirmar/${pvcod}`,
@@ -353,8 +357,8 @@ async function confirmarItensPedido(pvcod, pviqtde, procod) {
       // alert("Erro ao confirmar o pedido.");
     }
   } catch (error) {
-    console.error("Erro ao confirmar o pedido:", error);
-    alert("Erro ao confirmar o pedido.");
+    console.error("Erro ao confirmar itens do pedido pedido:", error);
+    alert("Erro ao confirmar itens do pedido pedido.");
   }
 }
 
@@ -475,10 +479,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  window.confirmarPedido = async function (pvcod) {
+  window.confirmarPedido = async function (pvcod, pviqtde, procod) {
     // chama a implementação original (mantendo comportamento atual)
     try {
-      await originalConfirmar(pvcod);
+      await originalConfirmar(pvcod, pviqtde, procod);
     } catch (err) {
       // original já faz tratamento/alertas; apenas logamos o erro aqui também
       console.error("Erro na confirmação original:", err);

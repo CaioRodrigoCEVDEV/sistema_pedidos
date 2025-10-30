@@ -47,7 +47,10 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.emp ADD IF NOT exists empusaest varchar(1) default 'N';`
     );
-    
+    await pool.query(
+      `alter table public.procor add IF NOT exists procorqtde int null;`
+    );
+
     // FIM NOVOS CAMPOS
     // ==================================================================================================================================
 
@@ -84,6 +87,68 @@ async function atualizarDB() {
       ALTER TABLE public.vw_tipo_pecas OWNER TO postgres;
       GRANT ALL ON TABLE public.vw_tipo_pecas TO postgres;
     `);
+
+    // Table EST (estoque)
+    await pool.query(`
+        CREATE TABLE public.est (
+      estprocod int4 NOT NULL,
+      estqt int4 NOT NULL,
+      esttipo varchar(4) NULL,
+      CONSTRAINT est_pkey PRIMARY KEY (estprocod)
+      );
+    `);
+
+    // Table PV (pedidos de venda)
+    await pool.query(`
+        CREATE TABLE public.pv (
+        pvcod int4 NOT NULL,
+        pvvl numeric(14, 4) DEFAULT 0 NULL,
+        pvobs varchar(254) NULL,
+        pvcanal varchar(10) NULL,
+        pvconfirmado bpchar(2) NULL,
+        pvsta bpchar(2) NULL,
+        CONSTRAINT pvcod_pkey PRIMARY KEY (pvcod)
+      );
+
+      -- Table Triggers
+
+      create trigger t_atualizar_saldo after
+      update
+          of pvconfirmado on
+          public.pv for each row execute procedure atualizar_saldo();
+    `);
+
+    // Table PVI (itens dos pedidos de venda)
+    await pool.query(`
+        CREATE TABLE public.pvi (
+          pvipvcod int4 NOT NULL,
+          pviprocod int4 NOT NULL,
+          pvivl numeric(14, 4) DEFAULT 0 NULL,
+          pviqtde numeric(14, 4) DEFAULT 0 NULL
+      );
+    `);
+
+    // função de trigger para atualizar saldo no estoque
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION public.atualizar_saldo()
+      RETURNS trigger
+      LANGUAGE plpgsql
+      AS $function$
+      BEGIN
+        IF NEW.pvconfirmado = 'S' THEN
+          UPDATE pro
+            SET proqtde = proqtde - pvi.pviqtde
+            FROM pvi
+          WHERE pvi.pviprocod = pro.procod
+            AND pvi.pvipvcod = NEW.pvcod;
+        END IF;
+
+        RETURN NEW;
+      END;
+      $function$
+      ;  
+    `);
+
     // FIM INSERTS CONDICIONAIS
 
     await pool.query("COMMIT");
