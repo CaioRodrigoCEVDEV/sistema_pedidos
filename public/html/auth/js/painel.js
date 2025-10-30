@@ -1121,6 +1121,12 @@ function editarModelo(id, nome, marca) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ moddes, modmarcascod }),
     })
+     .then(async (res) => {
+        if (res.status === 403) {
+          throw new Error("403");
+        }
+        return res.json();
+      })
       .then((r) => r.json())
       .then(() => {
         // Mostra mensagem de sucesso como popup temporário
@@ -1143,7 +1149,14 @@ function editarModelo(id, nome, marca) {
         document.body.removeChild(popup);
         carregarModelos();
       })
-      .catch(() => alert("Erro ao atualizar modelo"));
+      .catch((error) => {
+        if (error.message === "403") {
+          alert("Sem permissão para editar modelos. Contate o administrador.");
+        } else {
+          alert("Erro ao atualizar modelo");
+        }
+        document.body.removeChild(popup);
+      });
   };
 }
 
@@ -1182,7 +1195,10 @@ async function excluirModelo(id) {
   document.getElementById("confirmarExcluirModelo").onclick =
     async function () {
       try {
-        await fetch(`${BASE_URL}/modelo/${id}`, { method: "DELETE" });
+        const res =  await fetch(`${BASE_URL}/modelo/${id}`, { method: "DELETE" });
+        if (res.status === 403) {
+          throw new Error("403");
+        }
         // Mostra mensagem de sucesso como popup temporário
         const msg = document.createElement("div");
         msg.textContent = "Modelo excluído com sucesso!";
@@ -1203,7 +1219,11 @@ async function excluirModelo(id) {
         document.body.removeChild(popup);
         carregarModelos();
       } catch (e) {
-        alert("Erro ao excluir modelo");
+        if (e.message === "403") {
+          alert("Sem permissão para excluir modelos. Contate o administrador.");
+        } else {
+          alert("Erro ao excluir modelo");
+        }
         document.body.removeChild(popup);
       }
     };

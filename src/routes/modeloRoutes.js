@@ -8,8 +8,8 @@ router.get("/modelo/:id", modeloController.listarModelo);
 router.get("/mod/:id", modeloController.buscarModelo);
 router.get("/modelos", modeloController.listarTodosModelos);
 router.post("/modelo", requireAdmin, modeloController.inserirModelo);
-router.put("/modelo/:id", autenticarToken, modeloController.atualizarModelo);
-router.delete("/modelo/:id", autenticarToken, modeloController.deletarModelo);
+router.put("/modelo/:id", requireAdmin, modeloController.atualizarModelo);
+router.delete("/modelo/:id", requireAdmin, modeloController.deletarModelo);
 router.post(
   "/modelo/ordem",
   autenticarToken,
