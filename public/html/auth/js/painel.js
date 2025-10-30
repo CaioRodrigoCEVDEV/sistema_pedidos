@@ -3,6 +3,9 @@ const erroMsg = params.get("erroMSG");
 if (erroMsg === "acesso-negado") {
   alertPersonalizado("Acesso negado. Contate o administrador.", 3000);
 }
+if (erroMsg === "modulo-nao-habilitado") {
+  alertPersonalizado("Módulo não habilitado para empresa.", 3000);
+}
 const novaURL = window.location.origin; + window.location.pathname;
 window.history.replaceState({}, document.title, novaURL+ '/painel');
 
