@@ -36,11 +36,18 @@ async function atualizarDB() {
       `ALTER TABLE public.usu ADD IF NOT exists ususta varchar(1) default 'A';`
     );
     await pool.query(
-      `ALTER TABLE public.usu ADD IF NOT exists usuest varchar(1) default 'S';`
+      `ALTER TABLE public.usu ADD IF NOT exists usuest varchar(1) default 'N';`
     );
     await pool.query(
-      `ALTER TABLE public.usu ADD IF NOT exists usupv varchar(1) default 'S';`
+      `ALTER TABLE public.usu ADD IF NOT exists usupv varchar(1) default 'N';`
     );
+    await pool.query(
+      `ALTER TABLE public.emp ADD IF NOT exists empusapv varchar(1) default 'N';`
+    );
+    await pool.query(
+      `ALTER TABLE public.emp ADD IF NOT exists empusaest varchar(1) default 'N';`
+    );
+    
     // FIM NOVOS CAMPOS
     // ==================================================================================================================================
 
