@@ -76,6 +76,8 @@ CREATE TABLE public.usu (
   ususenha varchar(32) NULL,
   usuadm bpchar(1) default 'N',
   ususta varchar(1) DEFAULT 'A'::character varying NULL,
+  usuest varchar(1) default 'S',
+  usupv varchar(1) default 'S',
 	CONSTRAINT pk_usu PRIMARY KEY (usuemail)
 );
 
