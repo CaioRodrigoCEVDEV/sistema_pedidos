@@ -16,9 +16,10 @@ function requireAdminEst(req, res, next) {
             usunome: decoded.usunome,
             usuadm: decoded.usuadm,
             usupv: decoded.usupv,
-            usuest: decoded.usuest
+            usuest: decoded.usuest,
+            empusaest: decoded.empusaest
         }, 'chave-secreta', { expiresIn: '60m' });
-
+        console.log('Token renovado para o usuário:', 'usario est',decoded.usuest,'empresa est', decoded.empusaest);
         // gauda o novo token com mais 10m em cookies
         res.cookie('token', novoToken, {
             httpOnly: true,
@@ -33,6 +34,10 @@ function requireAdminEst(req, res, next) {
         res.clearCookie('usupv');
 
         req.token = decoded; // Armazena dados decodificados para uso futuro
+
+        if (decoded.empusaest !== 'S') {
+            return res.status(403).redirect('/painel?erroMSG=modulo-nao-habilitado');
+        }
 
         if (decoded && decoded.usuest === 'S') {
             req.user = decoded; // Optional: store decoded user info
