@@ -45,5 +45,20 @@ router.put(
   autenticarToken,
   pedidosController.cancelarPedido
 );
+router.get(
+  "/pedido/detalhe/:pvcod",
+  autenticarToken,
+  pedidosController.listarPedidosPendentesDetalhe
+);
+router.put(
+  "/pedidos/itens/cancelar/:pvcod",
+  autenticarToken,
+  pedidosController.cancelarItemPv
+);
+router.put(
+  "/pedidos/itens/confirmar/:pvcod",
+  autenticarToken,
+  pedidosController.confirmarItemPv
+);
 
 module.exports = router;

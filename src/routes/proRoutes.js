@@ -37,5 +37,19 @@ router.delete(
   autenticarToken,
   proController.deletarProdutoCoresDisponiveis
 );
-
+router.get(
+  "/proComEstoque",
+  autenticarToken,
+  proController.listarProdutosComEstoque
+);
+router.get(
+  "/proSemEstoque",
+  autenticarToken,
+  proController.listarProdutosSemEstoque
+);
+router.put(
+  "/pro/estoque/:id",
+  autenticarToken,
+  proController.gravarEstoqueProduto
+);
 module.exports = router;
