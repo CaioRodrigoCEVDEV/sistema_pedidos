@@ -77,7 +77,7 @@ exports.deleteTipo = async (req, res) => {
 
   try {
     const result = await pool.query(
-      "update from tipo where tipocod = $1 returning *",
+      "delete from tipo where tipocod = $1 returning *",
       [id]
     );
     res.status(200).json(result.rows);
