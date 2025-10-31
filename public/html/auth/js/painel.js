@@ -235,8 +235,7 @@ document
         }
         return res.json();
       })
-      .then((res) => res.json())
-      .then((resposta) => {
+      .then(() => {
         const msg = document.createElement("div");
         msg.textContent = "Modelo cadastrado com sucesso!";
         msg.style.position = "fixed";
@@ -1159,7 +1158,6 @@ function editarModelo(id, nome, marca) {
         }
         return res.json();
       })
-      .then((r) => r.json())
       .then(() => {
         // Mostra mensagem de sucesso como popup temporário
         const msg = document.createElement("div");
