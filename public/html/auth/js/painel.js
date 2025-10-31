@@ -1413,40 +1413,44 @@ async function excluirTipo(id) {
     document.body.removeChild(popup);
   };
 
-  document.getElementById("confirmarExcluirTipo").onclick = async function () {
-    try {
-      const res = await fetch(`${BASE_URL}/tipo/${id}`, { method: "DELETE" });
-      if (res.status === 403) {
-        throw new Error("403");
+  document.getElementById("confirmarExcluirTipo").onclick = 
+    async function () {
+      try {
+        const res = await fetch(`${BASE_URL}/tipo/${id}`, { method: "DELETE" });  
+        if (res.status === 403) {
+          throw new Error("403");
+        }
+        // Mostra mensagem de sucesso como popup temporário
+        const msg = document.createElement("div");
+        msg.textContent = "Tipo excluído com sucesso!";
+        msg.style.position = "fixed";
+        msg.style.top = "20px";
+        msg.style.left = "50%";
+        msg.style.transform = "translateX(-50%)";
+        msg.style.background = "#dc3545";
+        msg.style.color = "#fff";
+        msg.style.padding = "12px 24px";
+        msg.style.borderRadius = "6px";
+        msg.style.zIndex = "10000";
+        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+        document.body.appendChild(msg);
+        setTimeout(() => {
+          msg.remove();
+        }, 2000);
+        document.body.removeChild(popup);
+        carregarTipos();
+      } catch (error) {
+        if (error.message === "403") {
+          alertPersonalizado("Sem permissão para excluir este tipo. Contate o administrador.",2000);
+        } else {
+          alert("Erro ao excluir tipo");
+        }
+        document.body.removeChild(popup);
       }
-      // Mostra mensagem de sucesso como popup temporário
-      const msg = document.createElement("div");
-      msg.textContent = "Tipo excluído com sucesso!";
-      msg.style.position = "fixed";
-      msg.style.top = "20px";
-      msg.style.left = "50%";
-      msg.style.transform = "translateX(-50%)";
-      msg.style.background = "#dc3545";
-      msg.style.color = "#fff";
-      msg.style.padding = "12px 24px";
-      msg.style.borderRadius = "6px";
-      msg.style.zIndex = "10000";
-      msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-      document.body.appendChild(msg);
-      setTimeout(() => {
-        msg.remove();
-      }, 2000);
-      document.body.removeChild(popup);
-      carregarTipos();
-    } catch (error) {
-      if (error.message === "403") {
-        alertPersonalizado("Sem permissão para excluir este tipo. Contate o administrador.",2000);
-      } else {
-        alert("Erro ao excluir tipo");
-      }
-      document.body.removeChild(popup);
-    }
+    
+  
   };
+
 }
 
 // ------- GESTÃO CORES ---------
@@ -1539,7 +1543,6 @@ function editarCor(id, nome) {
         }
         return res.json();
       })
-      .then((r) => r.json())
       .then(() => {
         const msg = document.createElement("div");
         msg.textContent = "Cor atualizada com sucesso!";
@@ -1563,9 +1566,13 @@ function editarCor(id, nome) {
       .catch((error) => {
         if (error.message === "403") {
           alertPersonalizado("Sem permissão para editar esta cor. Contate o administrador.",2000);
-        } else {
+        } else if (error.message === "200") {
+          alert("OK");
+        }
+        else {
           alert("Erro ao atualizar cor");
         }
+        document.body.removeChild(popup);
       });
   };
 }
