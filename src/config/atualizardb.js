@@ -144,6 +144,15 @@ async function atualizarDB() {
     `);
 
     // FIM INSERTS CONDICIONAIS
+     
+    //inicio das triggers
+    await pool.query(`
+      DROP TRIGGER IF EXISTS t_atualizar_saldo ON pv;
+      create trigger t_atualizar_saldo after
+      update
+            of pvconfirmado on
+            public.pv for each row execute procedure atualizar_saldo()
+    `);
 
     await pool.query("COMMIT");
     console.log("✅ atualizardb: tabelas e registros padrão garantidos.");
