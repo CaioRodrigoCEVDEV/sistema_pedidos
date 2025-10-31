@@ -134,3 +134,13 @@ body {
 .management-group h5 {
   margin-bottom: 0.5rem;
 }
+
+
+/* Estilo Login*/
+
+.login-form{
+    width: 420px;
+    margin: 50px auto;
+    border-radius: 10px;
+}
+/* Fim Estilo Login */

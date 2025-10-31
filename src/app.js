@@ -20,6 +20,10 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // <-- pas
 
 // Middlewares
 const autenticarToken = require("./middlewares/middlewares");
+const requireAdmin = require("./middlewares/adminMiddleware");
+const requireAdminPv= require("./middlewares/adminPvMiddleware");
+const requireAdminEst= require("./middlewares/adminEstMiddleware");
+const requireAdminPages = require("./middlewares/adminPagesMiddleware");
 app.set("views", path.join(__dirname, "views"));
 app.use(morgan("dev"));
 app.use(bodyParser.json());
@@ -67,6 +71,16 @@ app.use(coresRoutes);
 const pedidosRoutes = require("./routes/pedidosRoutes");
 app.use(pedidosRoutes);
 
+const estoqueRoutes = require("./routes/estoqueRoutes");
+app.use(estoqueRoutes);
+
+const usuarioRoute = require("./routes/usuarioRoute");
+app.use(usuarioRoute);
+
+// Adicionando a nova rota usuarioRoute2 para testar MODELS
+const usuarioRoute2 = require("./routes/usuarioRoute2");
+app.use(usuarioRoute2);
+
 // Rotas de páginas
 
 app.get("/", (req, res) => {
@@ -76,6 +90,11 @@ app.get("/", (req, res) => {
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/login.html"));
 });
+
+app.get("/users",requireAdminPages, (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-usuarios.html"));
+});
+
 app.get("/index", (req, res) => {
   //res.sendFile(path.join(__dirname, "../public/html/index.html"));
   res.redirect("/");
@@ -92,10 +111,10 @@ app.get("/lista-pecas", (req, res) => {
 app.get("/carrinho", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/carrinho.html"));
 });
-app.get("/perfil", autenticarToken, (req, res) => {
+app.get("/perfil", autenticarToken,(req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/perfil.html"));
 });
-app.get("/configuracoes", autenticarToken, (req, res) => {
+app.get("/configuracoes", requireAdminPages, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/configuracoes.html"));
 });
 app.get("/painel", autenticarToken, (req, res) => {
@@ -104,11 +123,16 @@ app.get("/painel", autenticarToken, (req, res) => {
   );
 });
 
-app.get("/pedidos", autenticarToken, (req, res) => {
+app.get("/pedidos", requireAdminPv, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-pedidos.html")
   );
 });
+app.get("/estoque", requireAdminEst,(req, res) => {
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-estoque.html"));
+});
+
+
 
 app.get("/dashboard", autenticarToken, (req, res) => {
   res.sendFile(
@@ -207,11 +231,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-app.post(
-  "/upload-logo",
-  autenticarToken,
-  upload.single("logo"),
-  async (req, res) => {
+app.post(  "/upload-logo",  requireAdmin,  upload.single("logo"),  async (req, res) => {
     try {
       const jpegPath = path.join(uploadsDir, "logo.jpg");
       const pngPath = path.join(uploadsDir, "apple-touch-icon.png");

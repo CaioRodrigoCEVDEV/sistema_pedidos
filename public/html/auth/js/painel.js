@@ -1,4 +1,14 @@
 const params = new URLSearchParams(window.location.search);
+const erroMsg = params.get("erroMSG");
+if (erroMsg === "acesso-negado") {
+  alertPersonalizado("Acesso negado. Contate o administrador.", 3000);
+}
+if (erroMsg === "modulo-nao-habilitado") {
+  alertPersonalizado("Módulo não habilitado para empresa.", 3000);
+}
+const novaURL = window.location.origin; + window.location.pathname;
+window.history.replaceState({}, document.title, novaURL+ '/painel');
+
 const id = params.get("id");
 let marcascod = null;
 let marcacodModelo = null;
@@ -23,9 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
         holder.innerHTML = ""; // zera antes
         let html = '<option value="">Selecione uma marca</option>';
         dados.forEach((marca) => {
-          html += `<option value="${marca.marcascod}"${
-            id == marca.marcascod ? " selected" : ""
-          }>${marca.marcasdes}</option>`;
+          html += `<option value="${marca.marcascod}"${id == marca.marcascod ? " selected" : ""
+            }>${marca.marcasdes}</option>`;
         });
         holder.innerHTML = html;
       })
@@ -99,9 +108,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!holder) return;
         let html = '<option value="">Selecione o tipo</option>';
         dados.forEach((tipo) => {
-          html += `<option value="${tipo.tipocod}"${
-            id == tipo.tipocod ? " selected" : ""
-          }>${tipo.tipodes}</option>`;
+          html += `<option value="${tipo.tipocod}"${id == tipo.tipocod ? " selected" : ""
+            }>${tipo.tipodes}</option>`;
         });
         holder.innerHTML = html;
       })
@@ -169,8 +177,13 @@ document
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
-      .then((res) => res.json())
-      .then((resposta) => {
+      .then(async (res) => {
+        if (res.status === 403) {
+          throw new Error("403");
+        }
+        return res.json();
+      })
+      .then(() => {
         const msg = document.createElement("div");
         msg.textContent = "Marca cadastrada com sucesso!";
         msg.style.position = "fixed";
@@ -190,7 +203,11 @@ document
         form.reset();
       })
       .catch((erro) => {
-        alert("Erro ao salvar os dados.");
+        if (erro.message === "403") {
+          alertPersonalizado("Sem permissão para criar marcas.",2000);
+        } else {
+          alert("Erro ao salvar os dados.");
+        }
         console.error(erro);
       });
   });
@@ -212,6 +229,12 @@ document
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
+      .then(async (res) => {
+        if (res.status === 403) {
+          throw new Error("403");
+        }
+        return res.json();
+      })
       .then((res) => res.json())
       .then((resposta) => {
         const msg = document.createElement("div");
@@ -233,12 +256,16 @@ document
         form.reset();
       })
       .catch((erro) => {
-        alert("Erro ao salvar os dados.");
+        if (erro.message === "403") {
+          alertPersonalizado("Sem permissão para criar Modelo.",2000);
+        } else {
+          alert("Erro ao salvar os dados.");
+        }
         console.error(erro);
       });
   });
 
-//função para criar modelo
+//função para criar tipo
 document
   .getElementById("cadastrarPainelTipo")
   .addEventListener("submit", function (e) {
@@ -253,6 +280,12 @@ document
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
+      .then(async (res) => {
+        if (res.status === 403) {
+          throw new Error("403");
+        }
+        return res.json();
+      })
       .then((res) => res.json())
       .then((resposta) => {
         const msg = document.createElement("div");
@@ -274,7 +307,11 @@ document
         form.reset();
       })
       .catch((erro) => {
-        alert("Erro ao salvar os dados.");
+        if (erro.message === "403") {
+          alertPersonalizado("Sem permissão para criar Tipo de Peças.",2000);
+        } else {
+          alert("Erro ao salvar os dados.");
+        }
         console.error(erro);
       });
   });
@@ -294,6 +331,12 @@ document
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
+      .then(async (res) => {
+        if (res.status === 403) {
+          throw new Error("403");
+        }
+        return res.json();
+      })
       .then((res) => res.json())
       .then((resposta) => {
         const msg = document.createElement("div");
@@ -315,7 +358,11 @@ document
         form.reset();
       })
       .catch((erro) => {
-        alert("Erro ao salvar os dados.");
+        if (erro.message === "403") {
+          alertPersonalizado("Sem permissão para criar Cor.",2000);
+        } else {
+          alert("Erro ao salvar os dados.");
+        }
         console.error(erro);
       });
   });
@@ -346,6 +393,9 @@ document
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      if (res.status === 403) {
+        throw new Error("403");
+      }
       const resposta = await res.json();
       let procod =
         resposta.procod || (Array.isArray(resposta) && resposta[0]?.procod);
@@ -386,8 +436,12 @@ document
       //console.log(resposta);
       form.reset();
     } catch (erro) {
-      alert("Erro ao salvar os dados.");
-      console.error(erro);
+      if (erro.message === "403") {
+          alertPersonalizado("Sem permissão para criar produtos.",2000);
+        } else {
+          alert("Erro ao criar produto.");
+        }
+        console.error(erro);
     }
   });
 
@@ -430,14 +484,12 @@ inputPesquisa.addEventListener("input", function () {
           <td>${produto.prodes}</td>
           <td>${formatarMoeda(produto.provl)}</td>
           <td>
-            <button class="btn btn-primary btn-sm" onclick="editarProduto('${
-              produto.procod
-            }')">
+            <button class="btn btn-primary btn-sm" onclick="editarProduto('${produto.procod
+          }')">
               <i class="fa fa-edit"></i>
             </button>
-            <button class="btn btn-danger btn-sm" onclick="excluirProduto('${
-              produto.procod
-            }')">
+            <button class="btn btn-danger btn-sm" onclick="excluirProduto('${produto.procod
+          }')">
               <i class="fa fa-trash"></i>
             </button>
           </td>
@@ -503,24 +555,21 @@ function editarProduto(codigo) {
             <div class="mb-3" id="editarProdutoCores">
               <label>Selecione a(s) cor(es):</label><br>
               ${coresDisponiveis
-                .map(
-                  (c) => `
+          .map(
+            (c) => `
               <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="procor" value="${
-                  c.corcod
-                }"
+                <input class="form-check-input" type="checkbox" name="procor" value="${c.corcod
+              }"
                   id="editar_cor_${c.corcod}" 
-                  ${
-                    coresProduto.some((cp) => cp.corcod == c.corcod)
-                      ? "checked"
-                      : ""
-                  }>
-                <label class="form-check-label" for="editar_cor_${c.corcod}">${
-                    c.cornome
-                  }</label>
+                  ${coresProduto.some((cp) => cp.corcod == c.corcod)
+                ? "checked"
+                : ""
+              }>
+                <label class="form-check-label" for="editar_cor_${c.corcod}">${c.cornome
+              }</label>
               </div>`
-                )
-                .join("")}
+          )
+          .join("")}
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;">
               <button type="button" class="btn btn-secondary" id="cancelarEditarProduto">Cancelar</button>
@@ -553,11 +602,14 @@ function editarProduto(codigo) {
           .map((c) => String(c.corcod));
 
         try {
-          await fetch(`${BASE_URL}/pro/${codigo}`, {
+          const res = await fetch(`${BASE_URL}/pro/${codigo}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prodes, provl }),
           });
+          if (res.status === 403) {
+            throw new Error("403");
+          }
 
           // adiciona novas cores
           for (const cor of selecionadas) {
@@ -600,8 +652,13 @@ function editarProduto(codigo) {
           document.body.removeChild(popup);
           carregarProPesquisa();
         } catch (erro) {
-          alert("Erro ao atualizar o produto.");
-          console.error(erro);
+          if (erro.message === "403") {
+            document.body.removeChild(popup);
+            alertPersonalizado("Sem permissão para editar produtos.",2000);
+          } else {
+            document.body.removeChild(popup);
+            alertPersonalizado("Erro ao atualizar o produto.",2000);
+          }
         }
       };
 
@@ -639,14 +696,12 @@ function carregarProPesquisa() {
           <td>${produto.prodes}</td>
           <td>${formatarMoeda(produto.provl)}</td>
           <td>
-            <button class="btn btn-primary btn-sm" onclick="editarProduto('${
-              produto.procod
-            }')">
+            <button class="btn btn-primary btn-sm" onclick="editarProduto('${produto.procod
+          }')">
               <i class="fa fa-edit"></i>
             </button>
-            <button class="btn btn-danger btn-sm" onclick="excluirProduto('${
-              produto.procod
-            }')">
+            <button class="btn btn-danger btn-sm" onclick="excluirProduto('${produto.procod
+          }')">
               <i class="fa fa-trash"></i>
             </button>
           </td>
@@ -802,15 +857,13 @@ function carregarMarcas() {
         tr.innerHTML = `
           <td class="marca-des">${m.marcasdes}</td>
           <td>
-            <button class="btn btn-sm btn-primary" onclick="editarMarca(${
-              m.marcascod
-            }, '${m.marcasdes.replace(
-          /'/g,
-          "\\'"
-        )}')"><i class='fa fa-edit'></i></button>
-            <button class="btn btn-sm btn-danger" onclick="excluirMarca(${
-              m.marcascod
-            })"><i class='fa fa-trash'></i></button>
+            <button class="btn btn-sm btn-primary" onclick="editarMarca(${m.marcascod
+          }, '${m.marcasdes.replace(
+            /'/g,
+            "\\'"
+          )}')"><i class='fa fa-edit'></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirMarca(${m.marcascod
+          })"><i class='fa fa-trash'></i></button>
           </td>`;
         tbody.appendChild(tr);
       });
@@ -839,9 +892,8 @@ function editarMarca(id, nome) {
       <form id="formEditarMarca">
         <div class="mb-3">
           <label for="editarMarcaDescricao" class="form-label">Descrição</label>
-          <input type="text" class="form-control" id="editarMarcaDescricao" name="marcasdes" value="${
-            nome || ""
-          }" required>
+          <input type="text" class="form-control" id="editarMarcaDescricao" name="marcasdes" value="${nome || ""
+    }" required>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
           <button type="button" class="btn btn-secondary" id="cancelarEditarMarca">Cancelar</button>
@@ -867,6 +919,12 @@ function editarMarca(id, nome) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ marcasdes }),
     })
+    .then((res) => {
+        if (res.status === 403) {
+          throw new Error("403");
+        }
+        return res;
+      })
       .then((r) => r.json())
       .then(() => {
         // Mostra mensagem de sucesso como popup temporário
@@ -889,7 +947,15 @@ function editarMarca(id, nome) {
         document.body.removeChild(popup);
         carregarMarcas();
       })
-      .catch(() => alert("Erro ao atualizar marca"));
+      .catch((erro) => {
+        if (erro.message === "403") {
+          alertPersonalizado("Sem permissão para editar marcas. Contate o administrador.",2000);
+        } else {
+          alert("Erro ao atualizar a marca.");
+        }
+        console.error(erro);
+        document.body.removeChild(popup);
+      })
   };
 }
 
@@ -949,7 +1015,10 @@ async function excluirMarca(id) {
 
   document.getElementById("confirmarExcluirMarca").onclick = async function () {
     try {
-      await fetch(`${BASE_URL}/marcas/status/${id}`, { method: "PUT" });
+      const res = await fetch(`${BASE_URL}/marcas/status/${id}`, { method: "PUT" });
+      if (res.status === 403) {
+        throw new Error("403");
+      }
       // Mostra mensagem de sucesso como popup temporário
       const msg = document.createElement("div");
       msg.textContent = "Marca excluída com sucesso!";
@@ -969,10 +1038,13 @@ async function excluirMarca(id) {
       }, 2000);
       document.body.removeChild(popup);
       carregarMarcas();
-    } catch (e) {
-      alert("Erro ao excluir marca ou modelos vinculados.");
-      document.body.removeChild(popup);
-    }
+    } catch (error) {
+      if (error.message === "403") {
+        alertPersonalizado("Sem permissão para excluir marcas. Contate o administrador.",2000);
+      } else {
+        alert("Erro ao excluir a marca.");
+      } console.error("Erro ao excluir marca:", error);
+    } document.body.removeChild(popup);
   };
 }
 
@@ -1002,14 +1074,11 @@ function carregarModelos() {
         tr.innerHTML = `
           <td>${m.moddes}</td>
           <td>
-            <button class="btn btn-sm btn-primary" onclick="editarModelo(${
-              m.modcod
-            }, '${m.moddes.replace(/'/g, "'")}', ${
-          m.modmarcascod
-        })"><i class='fa fa-edit'></i></button>
-            <button class="btn btn-sm btn-danger" onclick="excluirModelo(${
-              m.modcod
-            })"><i class='fa fa-trash'></i></button>
+            <button class="btn btn-sm btn-primary" onclick="editarModelo(${m.modcod
+          }, '${m.moddes.replace(/'/g, "'")}', ${m.modmarcascod
+          })"><i class='fa fa-edit'></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirModelo(${m.modcod
+          })"><i class='fa fa-trash'></i></button>
           </td>`;
         tbody.appendChild(tr);
       });
@@ -1038,9 +1107,8 @@ function editarModelo(id, nome, marca) {
       <form id="formEditarModelo">
         <div class="mb-3">
           <label for="editarModeloDescricao" class="form-label">Descrição</label>
-          <input type="text" class="form-control" id="editarModeloDescricao" name="moddes" value="${
-            nome || ""
-          }" required>
+          <input type="text" class="form-control" id="editarModeloDescricao" name="moddes" value="${nome || ""
+    }" required>
         </div>
         <div class="mb-3">
           <label for="editarModeloMarca" class="form-label">Marca</label>
@@ -1065,9 +1133,8 @@ function editarModelo(id, nome, marca) {
       const select = document.getElementById("editarModeloMarca");
       select.innerHTML = '<option value="">Selecione uma marca</option>';
       marcas.forEach((m) => {
-        select.innerHTML += `<option value="${m.marcascod}"${
-          m.marcascod == marca ? " selected" : ""
-        }>${m.marcasdes}</option>`;
+        select.innerHTML += `<option value="${m.marcascod}"${m.marcascod == marca ? " selected" : ""
+          }>${m.marcasdes}</option>`;
       });
     });
 
@@ -1086,6 +1153,12 @@ function editarModelo(id, nome, marca) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ moddes, modmarcascod }),
     })
+     .then(async (res) => {
+        if (res.status === 403) {
+          throw new Error("403");
+        }
+        return res.json();
+      })
       .then((r) => r.json())
       .then(() => {
         // Mostra mensagem de sucesso como popup temporário
@@ -1108,7 +1181,14 @@ function editarModelo(id, nome, marca) {
         document.body.removeChild(popup);
         carregarModelos();
       })
-      .catch(() => alert("Erro ao atualizar modelo"));
+      .catch((error) => {
+        if (error.message === "403") {
+          alertPersonalizado("Sem permissão para editar modelos. Contate o administrador.",2000);
+        } else {
+          alert("Erro ao atualizar modelo");
+        }
+        document.body.removeChild(popup);
+      });
   };
 }
 
@@ -1147,7 +1227,10 @@ async function excluirModelo(id) {
   document.getElementById("confirmarExcluirModelo").onclick =
     async function () {
       try {
-        await fetch(`${BASE_URL}/modelo/${id}`, { method: "DELETE" });
+        const res =  await fetch(`${BASE_URL}/modelo/${id}`, { method: "DELETE" });
+        if (res.status === 403) {
+          throw new Error("403");
+        }
         // Mostra mensagem de sucesso como popup temporário
         const msg = document.createElement("div");
         msg.textContent = "Modelo excluído com sucesso!";
@@ -1168,7 +1251,11 @@ async function excluirModelo(id) {
         document.body.removeChild(popup);
         carregarModelos();
       } catch (e) {
-        alert("Erro ao excluir modelo");
+        if (e.message === "403") {
+          alertPersonalizado("Sem permissão para excluir modelos. Contate o administrador.",2000);
+        } else {
+          alert("Erro ao excluir modelo");
+        }
         document.body.removeChild(popup);
       }
     };
@@ -1200,15 +1287,13 @@ function carregarTipos() {
         tr.innerHTML = `
           <td>${t.tipodes}</td>
           <td>
-            <button class="btn btn-sm btn-primary" onclick="editarTipo(${
-              t.tipocod
-            }, '${t.tipodes.replace(
-          /'/g,
-          "'"
-        )}')"><i class='fa fa-edit'></i></button>
-            <button class="btn btn-sm btn-danger" onclick="excluirTipo(${
-              t.tipocod
-            })"><i class='fa fa-trash'></i></button>
+            <button class="btn btn-sm btn-primary" onclick="editarTipo(${t.tipocod
+          }, '${t.tipodes.replace(
+            /'/g,
+            "'"
+          )}')"><i class='fa fa-edit'></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirTipo(${t.tipocod
+          })"><i class='fa fa-trash'></i></button>
           </td>`;
         tbody.appendChild(tr);
       });
@@ -1237,9 +1322,8 @@ function editarTipo(id, nome) {
       <form id="formEditarTipo">
         <div class="mb-3">
           <label for="editarTipoDescricao" class="form-label">Descrição</label>
-          <input type="text" class="form-control" id="editarTipoDescricao" name="tipodes" value="${
-            nome || ""
-          }" required>
+          <input type="text" class="form-control" id="editarTipoDescricao" name="tipodes" value="${nome || ""
+    }" required>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
           <button type="button" class="btn btn-secondary" id="cancelarEditarTipo">Cancelar</button>
@@ -1263,6 +1347,12 @@ function editarTipo(id, nome) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tipodes }),
     })
+      .then((r) => {
+        if (r.status === 403) {
+          throw new Error("403");
+        }
+        return r;
+      })
       .then((r) => r.json())
       .then(() => {
         // Mostra mensagem de sucesso como popup temporário
@@ -1285,7 +1375,13 @@ function editarTipo(id, nome) {
         document.body.removeChild(popup);
         carregarTipos();
       })
-      .catch(() => alert("Erro ao atualizar tipo"));
+      .catch((error) => {
+        if (error.message === "403") {
+          alertPersonalizado("Sem permissão para editar tipos.",2000);
+        } else {
+          alert("Erro ao atualizar tipo");
+        }
+      });
   };
 }
 
@@ -1323,7 +1419,10 @@ async function excluirTipo(id) {
 
   document.getElementById("confirmarExcluirTipo").onclick = async function () {
     try {
-      await fetch(`${BASE_URL}/tipo/${id}`, { method: "DELETE" });
+      const res = await fetch(`${BASE_URL}/tipo/${id}`, { method: "DELETE" });
+      if (res.status === 403) {
+        throw new Error("403");
+      }
       // Mostra mensagem de sucesso como popup temporário
       const msg = document.createElement("div");
       msg.textContent = "Tipo excluído com sucesso!";
@@ -1343,8 +1442,12 @@ async function excluirTipo(id) {
       }, 2000);
       document.body.removeChild(popup);
       carregarTipos();
-    } catch (e) {
-      alert("Erro ao excluir tipo");
+    } catch (error) {
+      if (error.message === "403") {
+        alertPersonalizado("Sem permissão para excluir este tipo. Contate o administrador.",2000);
+      } else {
+        alert("Erro ao excluir tipo");
+      }
       document.body.removeChild(popup);
     }
   };
@@ -1379,9 +1482,8 @@ function carregarCores() {
             data-cod="${c.corcod}" 
             data-nome="${c.cornome.replace(/"/g, "&quot;")}" 
             onclick="editarCor(this.dataset.cod, this.dataset.nome)"><i class='fa fa-edit'></i></button>
-            <button class="btn btn-sm btn-danger" onclick="excluirCor(${
-              c.corcod
-            })"><i class='fa fa-trash'></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirCor(${c.corcod
+          })"><i class='fa fa-trash'></i></button>
           </td>`;
         tbody.appendChild(tr);
       });
@@ -1410,8 +1512,8 @@ function editarCor(id, nome) {
         <div class="mb-3">
           <label for="editarCorDescricao" class="form-label">Descrição</label>
           <input type="text" class="form-control" id="editarCorDescricao" name="cornome" value="${(
-            nome || ""
-          ).replace(/"/g, "&quot;")}"
+      nome || ""
+    ).replace(/"/g, "&quot;")}"
           }" required>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -1435,6 +1537,12 @@ function editarCor(id, nome) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cornome }),
     })
+      .then(async (res) => {
+        if (res.status === 403) {
+          throw new Error("403");
+        }
+        return res.json();
+      })
       .then((r) => r.json())
       .then(() => {
         const msg = document.createElement("div");
@@ -1456,7 +1564,13 @@ function editarCor(id, nome) {
         document.body.removeChild(popup);
         carregarCores();
       })
-      .catch(() => alert("Erro ao atualizar cor"));
+      .catch((error) => {
+        if (error.message === "403") {
+          alertPersonalizado("Sem permissão para editar esta cor. Contate o administrador.",2000);
+        } else {
+          alert("Erro ao atualizar cor");
+        }
+      });
   };
 }
 
@@ -1492,7 +1606,10 @@ async function excluirCor(id) {
 
   document.getElementById("confirmarExcluirCor").onclick = async function () {
     try {
-      await fetch(`${BASE_URL}/cores/${id}`, { method: "DELETE" });
+      const res = await fetch(`${BASE_URL}/cores/${id}`, { method: "DELETE" });
+      if (res.status === 403) {
+        throw new Error("403");
+      }
       const msg = document.createElement("div");
       msg.textContent = "Cor excluída com sucesso!";
       msg.style.position = "fixed";
@@ -1511,9 +1628,12 @@ async function excluirCor(id) {
       }, 2000);
       document.body.removeChild(popup);
       carregarCores();
-    } catch (e) {
-      alert("Erro ao excluir cor");
-      document.body.removeChild(popup);
+    } catch (error) {
+      if (error.message === "403") {
+        alertPersonalizado("Sem permissão para excluir esta cor. Contate o administrador.",2000);
+      } else {
+        alert("Erro ao excluir cor");
+      } document.body.removeChild(popup);
     }
   };
 }
@@ -1546,16 +1666,13 @@ function carregarPecas() {
           <td>${formatarMoeda(t.provl)}</td>
           <td>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-sm btn-primary btn-editar-peca" data-id="${
-                t.procod
-              }" data-nome="${t.prodes.replace(/"/g, "&quot;")}" data-valor="${
-          t.provl
-        }">
+              <button class="btn btn-sm btn-primary btn-editar-peca" data-id="${t.procod
+          }" data-nome="${t.prodes.replace(/"/g, "&quot;")}" data-valor="${t.provl
+          }">
                 <i class='fa fa-edit'></i>
               </button>
-              <button class="btn btn-sm btn-danger btn-excluir-peca" data-id="${
-                t.procod
-              }">
+              <button class="btn btn-sm btn-danger btn-excluir-peca" data-id="${t.procod
+          }">
                 <i class='fa fa-trash'></i>
               </button>
             </div>
@@ -1613,7 +1730,10 @@ async function excluirPro(id) {
 
   document.getElementById("confirmarExcluirPeca").onclick = async function () {
     try {
-      await fetch(`${BASE_URL}/pro/${id}`, { method: "DELETE" });
+      const res =  await fetch(`${BASE_URL}/pro/${id}`, { method: "DELETE" });
+       
+      if (res.status === 200) {
+        
       // Mostra mensagem de sucesso como popup temporário
       const msg = document.createElement("div");
       msg.textContent = "Peça excluída com sucesso!";
@@ -1633,9 +1753,17 @@ async function excluirPro(id) {
       }, 2000);
       document.body.removeChild(popup);
       carregarPecas();
-    } catch (e) {
-      alert("Erro ao excluir peça");
+    } else if (res.status === 403) {
       document.body.removeChild(popup);
+        throw new Error("403");
+      }
+    } catch (erro) {
+      if (erro.message === "403") {
+          alertPersonalizado("Sem permissão para excluir produtos.",2000);
+        } else {
+          alert("Erro ao criar produto.");
+        }
+        console.error(erro);
     }
   };
 }
@@ -1820,12 +1948,12 @@ function toggleOrdemMarca() {
         holder.innerHTML = `
             <ul id="sortable" class="list-group">
               ${marcas
-                .map(
-                  (m) =>
-                    `<li class="list-group-item" data-id="${m.marcascod}"><span class="handle">☰ </span>${m.marcasdes}
+            .map(
+              (m) =>
+                `<li class="list-group-item" data-id="${m.marcascod}"><span class="handle">☰ </span>${m.marcasdes}
                     </li>`
-                )
-                .join("")}
+            )
+            .join("")}
             </ul>
             <button id="salvarOrdem" class="btn btn-success btn-block mt-3">Salvar Ordem</button>
           `;
@@ -1918,12 +2046,12 @@ function toggleOrdemModelo() {
           holder.innerHTML = `
             <ul id="sortable" class="list-group">
               ${modelosFiltrados
-                .map(
-                  (m) =>
-                    `<li class="list-group-item" data-id="${m.modcod}"><span class="handle">☰ </span>${m.moddes}
+              .map(
+                (m) =>
+                  `<li class="list-group-item" data-id="${m.modcod}"><span class="handle">☰ </span>${m.moddes}
                     </li>`
-                )
-                .join("")}
+              )
+              .join("")}
             </ul>
             <button id="salvarOrdem" class="btn btn-success btn-block mt-3">Salvar Ordem</button>
           `;
@@ -2102,13 +2230,13 @@ function toggleOrdemPeca() {
         holder.innerHTML = `
             <ul id="sortable" class="list-group">
             ${produtos
-              .map(
-                (p) =>
-                  `<li class="list-group-item" data-id="${p.procod}">
+            .map(
+              (p) =>
+                `<li class="list-group-item" data-id="${p.procod}">
                      <span class="handle">☰ </span>${p.prodes}
                    </li>`
-              )
-              .join("")}
+            )
+            .join("")}
             </ul>
             <button id="salvarOrdem" class="btn btn-success btn-block mt-3">Salvar Ordem</button>
           `;
@@ -2345,3 +2473,40 @@ processCharges();
 setInterval(() => {
   processCharges();
 }, 24 * 60 * 60 * 1000);
+
+
+
+// alertPersonalizado personalizado Tom FORMAL
+
+function alertPersonalizado(message, time) {
+  let alertPersonalizado = document.getElementById("alertPersonalizado");
+
+  if (!alertPersonalizado) {
+    alertPersonalizado = document.createElement("div");
+    alertPersonalizado.id = "alertPersonalizado";
+    alertPersonalizado.style = `
+        position: fixed;
+        width: 350px;
+        top: 8%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: #fff;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s;
+      `;
+    document.body.appendChild(alertPersonalizado);
+  }
+
+  alertPersonalizado.textContent = message;
+  alertPersonalizado.style.opacity = "1";
+
+  setTimeout(() => {
+    alertPersonalizado.style.opacity = "0";
+    alertPersonalizado.remove();
+  }, time);
+}

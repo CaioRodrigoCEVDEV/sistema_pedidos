@@ -217,3 +217,91 @@ exports.atualizarOrdemProdutos = async (req, res) => {
     return res.status(500).json({ message: "Erro interno ao atualizar ordem" });
   }
 };
+
+exports.listarProdutosComEstoque = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `select 
+        procod,
+        marcasdes,
+        moddes,
+        tipodes,
+        coalesce(cornome, 'Sem Cor') as cordes,
+        case when procorcorescod is null then proqtde else procorqtde end as qtde,
+        procorcorescod
+        from pro
+        join marcas on marcascod = promarcascod 
+        join tipo on tipocod = protipocod
+        left join procor on procod = procorprocod
+        left join cores on corcod = procorcorescod
+        join modelo on modcod = promodcod
+        where case when procorcorescod is null then proqtde else procorqtde end > 0
+        and prosit = 'A'`
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao buscar produtos estoque" });
+  }
+};
+
+exports.listarProdutosSemEstoque = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `select 
+        procod,
+        marcasdes,
+        moddes,
+        tipodes,
+        coalesce(cornome, 'Sem Cor') as cordes,
+        case when procorcorescod is null then proqtde else procorqtde end as qtde,
+        procorcorescod
+        from pro
+        join marcas on marcascod = promarcascod 
+        join tipo on tipocod = protipocod
+        left join procor on procod = procorprocod
+        left join cores on corcod = procorcorescod
+        join modelo on modcod = promodcod
+        where case when procorcorescod is null then proqtde else procorqtde end <= 0
+        and prosit = 'A'`
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao buscar produtos estoque" });
+  }
+};
+
+exports.gravarEstoqueProduto = async (req, res) => {
+  const { id } = req.params;
+  const { quantidade, cor = null } = req.body;
+
+  console.log("Recebido no backend:", { id, quantidade, cor });
+  try {
+    const produto = await pool.query(
+      "SELECT procorprocod FROM procor WHERE procorprocod = $1 group by procorprocod",
+      [id]
+    );
+
+    if (
+      produto.rows.length > 0 &&
+      produto.rows[0].procorprocod &&
+      cor !== null
+    ) {
+      await pool.query(
+        "UPDATE procor SET procorqtde = procorqtde + $1 WHERE procorprocod = $2 and procorcorescod = $3",
+        [quantidade, id, cor]
+      );
+    } else {
+      await pool.query(
+        "UPDATE pro SET proqtde = proqtde + $1 WHERE procod = $2",
+        [quantidade, id]
+      );
+    }
+
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: "Erro ao atualizar estoque" });
+  }
+};

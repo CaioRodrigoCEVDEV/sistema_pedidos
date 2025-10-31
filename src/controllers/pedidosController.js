@@ -67,7 +67,7 @@ exports.inserirPvi = async (req, res) => {
 exports.listarPv = async (req, res) => {
   try {
     const result = await pool.query(
-      "select * from pv where pvconfirmado = 'N' and pvsta = 'A' order by pvcod desc"
+      "select * from pv left join pvi on pvipvcod = pvcod where pvconfirmado = 'N' and pvsta = 'A' and pviprocod is not null order by pvcod desc"
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -167,5 +167,65 @@ exports.cancelarPedido = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "erro ao cancelar pedido" });
+  }
+};
+
+exports.listarPedidosPendentesDetalhe = async (req, res) => {
+  const pvcod = req.params.pvcod;
+
+  try {
+    const result = await pool.query(
+      `select 
+       pvcod,
+       prodes,
+       pvvl,
+       pviprocod,
+       pvivl,
+       pviqtde,
+       pvobs
+       from pv
+       join pvi on pvipvcod = pvcod
+       join pro on procod = pviprocod
+       where pvcod = $1`,
+      [pvcod]
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro buscar pedidos pendentes" });
+  }
+};
+
+exports.cancelarItemPv = async (req, res) => {
+  const { procod } = req.body;
+  const pvcod = req.params.pvcod;
+
+  try {
+    const result = await pool.query(
+      "update pvi set pviqtde = 0 where pviprocod = $1 and pvipvcod = $2 RETURNING *",
+      [procod, pvcod]
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "erro ao cancelar pedido" });
+  }
+};
+
+exports.confirmarItemPv = async (req, res) => {
+  const { procod, pviqtde } = req.body;
+  const pvcod = req.params.pvcod;
+
+  console.log({ procod, pviqtde, pvcod });
+
+  try {
+    const result = await pool.query(
+      "update pvi set pviqtde = $1 where pviprocod = $2 and pvipvcod = $3 RETURNING *",
+      [pviqtde, procod, pvcod]
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "erro ao confirmar itens pedidos pedido" });
   }
 };
