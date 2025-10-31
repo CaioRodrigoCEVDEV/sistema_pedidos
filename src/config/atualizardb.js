@@ -11,6 +11,7 @@ async function atualizarDB() {
     // NOVOS CAMPOS QUE FOMOS ADICIONANDO ADD AQUI: pleaSE
 
     // Exemplo: LEMBRAR SEMPRE DE COLOCAR O "IF NOT EXISTS"
+
     //  await pool.query(`ALTER TABLE public.emp ADD IF NOT exists empcod serial4 NOT NULL;`);
 
     await pool.query(
@@ -50,7 +51,9 @@ async function atualizarDB() {
     await pool.query(
       `alter table public.procor add IF NOT exists procorqtde int null;`
     );
-
+        await pool.query(
+      `ALTER TABLE public.pro ADD IF NOT exists proqtde int4 DEFAULT 0 NOT NULL;`
+    );
     // FIM NOVOS CAMPOS
     // ==================================================================================================================================
 
@@ -65,8 +68,8 @@ async function atualizarDB() {
 
     // USU default (usucod = 1, usunome = 'orderup')
     await pool.query(`
-      INSERT INTO public.usu (usunome, usuemail, ususenha)
-      VALUES ('orderup', 'admin@orderup.com.br', md5('orderup@'))
+      INSERT INTO public.usu (usunome, usuemail, ususenha,usuadm,usupv,usuest)
+      VALUES ('orderup', 'admin@orderup.com.br', md5('orderup@'),'S','S','S')
       ON CONFLICT (usuemail) DO NOTHING;
     `);
 
@@ -154,6 +157,21 @@ async function atualizarDB() {
             public.pv for each row execute procedure atualizar_saldo()
     `);
 
+    //fim das triggers
+
+
+    //inicio das sequences
+
+    await pool.query(`CREATE SEQUENCE IF NOT EXISTS public.pv_seq
+                      INCREMENT BY 1
+                      MINVALUE 1
+                      MAXVALUE 9223372036854775807
+                      START 1
+                      CACHE 1
+                      NO CYCLE;`);
+    //fim das sequences
+
+    
     await pool.query("COMMIT");
     console.log("✅ atualizardb: tabelas e registros padrão garantidos.");
   } catch (err) {
