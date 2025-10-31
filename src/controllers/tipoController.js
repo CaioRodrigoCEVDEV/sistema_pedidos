@@ -83,6 +83,11 @@ exports.deleteTipo = async (req, res) => {
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
+    if (error.code === "23503") {
+      return res
+        .status(409)
+        .json({ error: "Não é possível excluir este tipo pois existem produtos vinculados a ele." });
+    }
     res.status(500).json({ error: "Erro ao excluir tipo" });
   }
 };
