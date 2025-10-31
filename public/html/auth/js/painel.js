@@ -285,8 +285,7 @@ document
         }
         return res.json();
       })
-      .then((res) => res.json())
-      .then((resposta) => {
+      .then(() => {
         const msg = document.createElement("div");
         msg.textContent = "Tipo cadastrado com sucesso!";
         msg.style.position = "fixed";
@@ -336,8 +335,7 @@ document
         }
         return res.json();
       })
-      .then((res) => res.json())
-      .then((resposta) => {
+      .then(() => {
         const msg = document.createElement("div");
         msg.textContent = "cor cadastrado com sucesso!";
         msg.style.position = "fixed";
