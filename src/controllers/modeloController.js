@@ -70,8 +70,14 @@ exports.deletarModelo = async (req, res) => {
       [id]
     );
     res.status(200).json(result.rows);
-  } catch {
+  } catch (error){
     console.error(error);
+
+    if (error.code === '23503') {
+      return res.status(409).json({
+        error: 'Não é permitido excluir este modelo, pois está vinculado a outros registros.'
+      });
+    }
     res.status(500).json({ error: "Erro ao excluir modelo" });
   }
 };

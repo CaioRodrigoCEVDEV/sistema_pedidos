@@ -1227,6 +1227,9 @@ async function excluirModelo(id) {
         if (res.status === 403) {
           throw new Error("403");
         }
+        if (res.status === 409) {
+          throw new Error("409");
+        }
         // Mostra mensagem de sucesso como popup temporário
         const msg = document.createElement("div");
         msg.textContent = "Modelo excluído com sucesso!";
@@ -1249,6 +1252,8 @@ async function excluirModelo(id) {
       } catch (e) {
         if (e.message === "403") {
           alertPersonalizado("Sem permissão para excluir modelos. Contate o administrador.",2000);
+        } else if (e.message === "409") {
+          alertPersonalizado("Não é possível excluir este modelo pois existem produtos vinculados a ele.",3000);
         } else {
           alert("Erro ao excluir modelo");
         }
@@ -1420,6 +1425,9 @@ async function excluirTipo(id) {
         if (res.status === 403) {
           throw new Error("403");
         }
+        if (res.status === 409) {
+          throw new Error("409");
+        }
         // Mostra mensagem de sucesso como popup temporário
         const msg = document.createElement("div");
         msg.textContent = "Tipo excluído com sucesso!";
@@ -1442,7 +1450,12 @@ async function excluirTipo(id) {
       } catch (error) {
         if (error.message === "403") {
           alertPersonalizado("Sem permissão para excluir este tipo. Contate o administrador.",2000);
-        } else {
+        }
+        else if (error.message === "409") {
+          alertPersonalizado("Não é possível excluir este tipo pois existem produtos vinculados a ele.",3000);
+        }
+
+        else {
           alert("Erro ao excluir tipo");
         }
         document.body.removeChild(popup);
