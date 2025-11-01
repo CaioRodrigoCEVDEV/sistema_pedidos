@@ -162,207 +162,207 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-//Função para criar marca
-document
-  .getElementById("cadastrarPainelMarca")
-  .addEventListener("submit", function (e) {
-    e.preventDefault();
+// //Função para criar marca
+// document
+//   .getElementById("cadastrarPainelMarca")
+//   .addEventListener("submit", function (e) {
+//     e.preventDefault();
 
-    const form = e.target;
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+//     const form = e.target;
+//     const formData = new FormData(form);
+//     const data = Object.fromEntries(formData.entries());
 
-    fetch(`${BASE_URL}/marcas`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-      .then(async (res) => {
-        if (res.status === 403) {
-          throw new Error("403");
-        }
-        return res.json();
-      })
-      .then(() => {
-        const msg = document.createElement("div");
-        msg.textContent = "Marca cadastrada com sucesso!";
-        msg.style.position = "fixed";
-        msg.style.top = "20px";
-        msg.style.left = "50%";
-        msg.style.transform = "translateX(-50%)";
-        msg.style.background = "#28a745";
-        msg.style.color = "#fff";
-        msg.style.padding = "12px 24px";
-        msg.style.borderRadius = "6px";
-        msg.style.zIndex = "10000";
-        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-        document.body.appendChild(msg);
-        setTimeout(() => {
-          msg.remove();
-        }, 2000);
-        form.reset();
-      })
-      .catch((erro) => {
-        if (erro.message === "403") {
-          alertPersonalizado("Sem permissão para criar marcas.",2000);
-        } else {
-          alert("Erro ao salvar os dados.");
-        }
-        console.error(erro);
-      });
-  });
+//     fetch(`${BASE_URL}/marcas`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(data),
+//     })
+//       .then(async (res) => {
+//         if (res.status === 403) {
+//           throw new Error("403");
+//         }
+//         return res.json();
+//       })
+//       .then(() => {
+//         const msg = document.createElement("div");
+//         msg.textContent = "Marca cadastrada com sucesso!";
+//         msg.style.position = "fixed";
+//         msg.style.top = "20px";
+//         msg.style.left = "50%";
+//         msg.style.transform = "translateX(-50%)";
+//         msg.style.background = "#28a745";
+//         msg.style.color = "#fff";
+//         msg.style.padding = "12px 24px";
+//         msg.style.borderRadius = "6px";
+//         msg.style.zIndex = "10000";
+//         msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+//         document.body.appendChild(msg);
+//         setTimeout(() => {
+//           msg.remove();
+//         }, 2000);
+//         form.reset();
+//       })
+//       .catch((erro) => {
+//         if (erro.message === "403") {
+//           alertPersonalizado("Sem permissão para criar marcas.",2000);
+//         } else {
+//           alert("Erro ao salvar os dados.");
+//         }
+//         console.error(erro);
+//       });
+//   });
 
-//função para criar modelo
-document
-  .getElementById("cadastrarPainelModelo")
-  .addEventListener("submit", function (e) {
-    e.preventDefault();
+// //função para criar modelo
+// document
+//   .getElementById("cadastrarPainelModelo")
+//   .addEventListener("submit", function (e) {
+//     e.preventDefault();
 
-    const form = e.target;
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+//     const form = e.target;
+//     const formData = new FormData(form);
+//     const data = Object.fromEntries(formData.entries());
 
-    data.modmarcascod = marcacodModelo;
+//     data.modmarcascod = marcacodModelo;
 
-    fetch(`${BASE_URL}/modelo`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-      .then(async (res) => {
-        if (res.status === 403) {
-          throw new Error("403");
-        }
-        return res.json();
-      })
-      .then(() => {
-        const msg = document.createElement("div");
-        msg.textContent = "Modelo cadastrado com sucesso!";
-        msg.style.position = "fixed";
-        msg.style.top = "20px";
-        msg.style.left = "50%";
-        msg.style.transform = "translateX(-50%)";
-        msg.style.background = "#28a745";
-        msg.style.color = "#fff";
-        msg.style.padding = "12px 24px";
-        msg.style.borderRadius = "6px";
-        msg.style.zIndex = "10000";
-        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-        document.body.appendChild(msg);
-        setTimeout(() => {
-          msg.remove();
-        }, 2000);
-        form.reset();
-      })
-      .catch((erro) => {
-        if (erro.message === "403") {
-          alertPersonalizado("Sem permissão para criar Modelo.",2000);
-        } else {
-          alert("Erro ao salvar os dados.");
-        }
-        console.error(erro);
-      });
-  });
+//     fetch(`${BASE_URL}/modelo`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(data),
+//     })
+//       .then(async (res) => {
+//         if (res.status === 403) {
+//           throw new Error("403");
+//         }
+//         return res.json();
+//       })
+//       .then(() => {
+//         const msg = document.createElement("div");
+//         msg.textContent = "Modelo cadastrado com sucesso!";
+//         msg.style.position = "fixed";
+//         msg.style.top = "20px";
+//         msg.style.left = "50%";
+//         msg.style.transform = "translateX(-50%)";
+//         msg.style.background = "#28a745";
+//         msg.style.color = "#fff";
+//         msg.style.padding = "12px 24px";
+//         msg.style.borderRadius = "6px";
+//         msg.style.zIndex = "10000";
+//         msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+//         document.body.appendChild(msg);
+//         setTimeout(() => {
+//           msg.remove();
+//         }, 2000);
+//         form.reset();
+//       })
+//       .catch((erro) => {
+//         if (erro.message === "403") {
+//           alertPersonalizado("Sem permissão para criar Modelo.",2000);
+//         } else {
+//           alert("Erro ao salvar os dados.");
+//         }
+//         console.error(erro);
+//       });
+//   });
 
 //função para criar tipo
-document
-  .getElementById("cadastrarPainelTipo")
-  .addEventListener("submit", function (e) {
-    e.preventDefault();
+// document
+//   .getElementById("cadastrarPainelTipo")
+//   .addEventListener("submit", function (e) {
+//     e.preventDefault();
 
-    const form = e.target;
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+//     const form = e.target;
+//     const formData = new FormData(form);
+//     const data = Object.fromEntries(formData.entries());
 
-    fetch(`${BASE_URL}/tipo`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-      .then(async (res) => {
-        if (res.status === 403) {
-          throw new Error("403");
-        }
-        return res.json();
-      })
-      .then(() => {
-        const msg = document.createElement("div");
-        msg.textContent = "Tipo cadastrado com sucesso!";
-        msg.style.position = "fixed";
-        msg.style.top = "20px";
-        msg.style.left = "50%";
-        msg.style.transform = "translateX(-50%)";
-        msg.style.background = "#28a745";
-        msg.style.color = "#fff";
-        msg.style.padding = "12px 24px";
-        msg.style.borderRadius = "6px";
-        msg.style.zIndex = "10000";
-        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-        document.body.appendChild(msg);
-        setTimeout(() => {
-          msg.remove();
-        }, 2000);
-        form.reset();
-      })
-      .catch((erro) => {
-        if (erro.message === "403") {
-          alertPersonalizado("Sem permissão para criar Tipo de Peças.",2000);
-        } else {
-          alert("Erro ao salvar os dados.");
-        }
-        console.error(erro);
-      });
-  });
+//     fetch(`${BASE_URL}/tipo`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(data),
+//     })
+//       .then(async (res) => {
+//         if (res.status === 403) {
+//           throw new Error("403");
+//         }
+//         return res.json();
+//       })
+//       .then(() => {
+//         const msg = document.createElement("div");
+//         msg.textContent = "Tipo cadastrado com sucesso!";
+//         msg.style.position = "fixed";
+//         msg.style.top = "20px";
+//         msg.style.left = "50%";
+//         msg.style.transform = "translateX(-50%)";
+//         msg.style.background = "#28a745";
+//         msg.style.color = "#fff";
+//         msg.style.padding = "12px 24px";
+//         msg.style.borderRadius = "6px";
+//         msg.style.zIndex = "10000";
+//         msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+//         document.body.appendChild(msg);
+//         setTimeout(() => {
+//           msg.remove();
+//         }, 2000);
+//         form.reset();
+//       })
+//       .catch((erro) => {
+//         if (erro.message === "403") {
+//           alertPersonalizado("Sem permissão para criar Tipo de Peças.",2000);
+//         } else {
+//           alert("Erro ao salvar os dados.");
+//         }
+//         console.error(erro);
+//       });
+//   });
 
 //função para criar cor
-document
-  .getElementById("cadastrarPainelCor")
-  .addEventListener("submit", function (e) {
-    e.preventDefault();
+// document
+//   .getElementById("cadastrarPainelCor")
+//   .addEventListener("submit", function (e) {
+//     e.preventDefault();
 
-    const form = e.target;
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+//     const form = e.target;
+//     const formData = new FormData(form);
+//     const data = Object.fromEntries(formData.entries());
 
-    fetch(`${BASE_URL}/cores`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-      .then(async (res) => {
-        if (res.status === 403) {
-          throw new Error("403");
-        }
-        return res.json();
-      })
-      .then(() => {
-        const msg = document.createElement("div");
-        msg.textContent = "cor cadastrado com sucesso!";
-        msg.style.position = "fixed";
-        msg.style.top = "20px";
-        msg.style.left = "50%";
-        msg.style.transform = "translateX(-50%)";
-        msg.style.background = "#28a745";
-        msg.style.color = "#fff";
-        msg.style.padding = "12px 24px";
-        msg.style.borderRadius = "6px";
-        msg.style.zIndex = "10000";
-        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-        document.body.appendChild(msg);
-        setTimeout(() => {
-          msg.remove();
-        }, 2000);
-        form.reset();
-      })
-      .catch((erro) => {
-        if (erro.message === "403") {
-          alertPersonalizado("Sem permissão para criar Cor.",2000);
-        } else {
-          alert("Erro ao salvar os dados.");
-        }
-        console.error(erro);
-      });
-  });
+//     fetch(`${BASE_URL}/cores`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(data),
+//     })
+//       .then(async (res) => {
+//         if (res.status === 403) {
+//           throw new Error("403");
+//         }
+//         return res.json();
+//       })
+//       .then(() => {
+//         const msg = document.createElement("div");
+//         msg.textContent = "cor cadastrado com sucesso!";
+//         msg.style.position = "fixed";
+//         msg.style.top = "20px";
+//         msg.style.left = "50%";
+//         msg.style.transform = "translateX(-50%)";
+//         msg.style.background = "#28a745";
+//         msg.style.color = "#fff";
+//         msg.style.padding = "12px 24px";
+//         msg.style.borderRadius = "6px";
+//         msg.style.zIndex = "10000";
+//         msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+//         document.body.appendChild(msg);
+//         setTimeout(() => {
+//           msg.remove();
+//         }, 2000);
+//         form.reset();
+//       })
+//       .catch((erro) => {
+//         if (erro.message === "403") {
+//           alertPersonalizado("Sem permissão para criar Cor.",2000);
+//         } else {
+//           alert("Erro ao salvar os dados.");
+//         }
+//         console.error(erro);
+//       });
+//   });
 
 //função para criar PRODUTO
 document
@@ -1041,7 +1041,7 @@ async function excluirMarca(id) {
       } else {
         alert("Erro ao excluir a marca.");
       } console.error("Erro ao excluir marca:", error);
-    } document.body.removeChild(popup);
+    } 
   };
 }
 
