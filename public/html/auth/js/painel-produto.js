@@ -61,7 +61,7 @@ btnProduto.addEventListener('click', () => {
     }
     const tipos = await response.json();
     const protipocod = document.getElementById('popupProdutoModaltipo');
-    protipocod.innerHTML = '<option value="">Selecione o Tipo</option>';
+    protipocod.innerHTML = '<option value="">Selecione</option>';
     tipos.forEach(tipo => {
       const option = document.createElement('option');
       option.value = tipo.tipocod;
