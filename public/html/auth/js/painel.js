@@ -129,38 +129,38 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 // listar cor no painel/criar produto
-document.addEventListener("DOMContentLoaded", () => {
-  function carregarCoresPainel() {
-    fetch(`${BASE_URL}/procores/`)
-      .then((res) => res.json())
-      .then((dados) => {
-        const holder = document.getElementById("selectPainelCor");
-        if (!holder) return;
-        holder.innerHTML = ""; // zera antes
+// document.addEventListener("DOMContentLoaded", () => {
+//   function carregarCoresPainel() {
+//     fetch(`${BASE_URL}/procores/`)
+//       .then((res) => res.json())
+//       .then((dados) => {
+//         const holder = document.getElementById("selectPainelCor");
+//         if (!holder) return;
+//         holder.innerHTML = ""; // zera antes
 
-        let html = "<label>Selecione a(s) cor(es):</label><br>";
-        dados.forEach((cor) => {
-          html += `
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="procor" value="${cor.corcod}" id="cor_${cor.corcod}">
-              <label class="form-check-label" for="cor_${cor.corcod}">${cor.cornome}</label>
-            </div>
-          `;
-        });
-        holder.innerHTML = html;
-      })
-      .catch(console.error);
-  }
+//         let html = "<label>Selecione a(s) cor(es):</label><br>";
+//         dados.forEach((cor) => {
+//           html += `
+//             <div class="form-check">
+//               <input class="form-check-input" type="checkbox" name="procor" value="${cor.corcod}" id="cor_${cor.corcod}">
+//               <label class="form-check-label" for="cor_${cor.corcod}">${cor.cornome}</label>
+//             </div>
+//           `;
+//         });
+//         holder.innerHTML = html;
+//       })
+//       .catch(console.error);
+//   }
 
-  // Carrega inicialmente
-  carregarCoresPainel();
+//   // Carrega inicialmente
+//   carregarCoresPainel();
 
-  // Carrega novamente ao abrir o dropdown
-  const dropdownBtn = document.getElementById("dropdownPeca");
-  if (dropdownBtn) {
-    dropdownBtn.addEventListener("click", carregarCoresPainel);
-  }
-});
+//   // Carrega novamente ao abrir o dropdown
+//   const dropdownBtn = document.getElementById("dropdownPeca");
+//   if (dropdownBtn) {
+//     dropdownBtn.addEventListener("click", carregarCoresPainel);
+//   }
+// });
 
 // //Função para criar marca
 // document
@@ -365,82 +365,82 @@ document.addEventListener("DOMContentLoaded", () => {
 //   });
 
 //função para criar PRODUTO
-document
-  .getElementById("cadastrarPainelPeca")
-  .addEventListener("submit", async function (e) {
-    e.preventDefault();
+// document
+//   .getElementById("cadastrarPainelPeca")
+//   .addEventListener("submit", async function (e) {
+//     e.preventDefault();
 
-    const form = e.target;
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+//     const form = e.target;
+//     const formData = new FormData(form);
+//     const data = Object.fromEntries(formData.entries());
 
-    data.promarcascod = marcascod;
-    data.promodcod = modelo;
-    data.protipocod = tipo;
+//     data.promarcascod = marcascod;
+//     data.promodcod = modelo;
+//     data.protipocod = tipo;
 
-    // Pega todos os checkboxes marcados de cor
-    const corCheckboxes = document.querySelectorAll(
-      '#selectPainelCor input[type="checkbox"]:checked'
-    );
-    const corIds = Array.from(corCheckboxes).map((cb) => cb.value);
-    try {
-      // Cria o produto
-      const res = await fetch(`${BASE_URL}/pro`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (res.status === 403) {
-        throw new Error("403");
-      }
-      const resposta = await res.json();
-      let procod =
-        resposta.procod || (Array.isArray(resposta) && resposta[0]?.procod);
-      if (!procod) {
-        throw new Error("Resposta inválida ao criar produto");
-      } else {
-        const msg = document.createElement("div");
-        msg.textContent = "Produto cadastrado com sucesso!";
-        msg.style.position = "fixed";
-        msg.style.top = "20px";
-        msg.style.left = "50%";
-        msg.style.transform = "translateX(-50%)";
-        msg.style.background = "#28a745";
-        msg.style.color = "#fff";
-        msg.style.padding = "12px 24px";
-        msg.style.borderRadius = "6px";
-        msg.style.zIndex = "10000";
-        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-        document.body.appendChild(msg);
-        setTimeout(() => {
-          msg.remove();
-        }, 2000);
-      }
+//     // Pega todos os checkboxes marcados de cor
+//     const corCheckboxes = document.querySelectorAll(
+//       '#selectPainelCor input[type="checkbox"]:checked'
+//     );
+//     const corIds = Array.from(corCheckboxes).map((cb) => cb.value);
+//     try {
+//       // Cria o produto
+//       const res = await fetch(`${BASE_URL}/pro`, {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify(data),
+//       });
+//       if (res.status === 403) {
+//         throw new Error("403");
+//       }
+//       const resposta = await res.json();
+//       let procod =
+//         resposta.procod || (Array.isArray(resposta) && resposta[0]?.procod);
+//       if (!procod) {
+//         throw new Error("Resposta inválida ao criar produto");
+//       } else {
+//         const msg = document.createElement("div");
+//         msg.textContent = "Produto cadastrado com sucesso!";
+//         msg.style.position = "fixed";
+//         msg.style.top = "20px";
+//         msg.style.left = "50%";
+//         msg.style.transform = "translateX(-50%)";
+//         msg.style.background = "#28a745";
+//         msg.style.color = "#fff";
+//         msg.style.padding = "12px 24px";
+//         msg.style.borderRadius = "6px";
+//         msg.style.zIndex = "10000";
+//         msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+//         document.body.appendChild(msg);
+//         setTimeout(() => {
+//           msg.remove();
+//         }, 2000);
+//       }
 
-      // Grava as cores disponíveis se houver cores marcadas e procod válido
-      if (procod && corIds.length > 0) {
-        // Para cada cor marcada, faz um POST individual
-        for (const corcod of corIds) {
-          await fetch(
-            `${BASE_URL}/proCoresDisponiveis/${procod}?corescod=${corcod}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-      }
-      //console.log(resposta);
-      form.reset();
-    } catch (erro) {
-      if (erro.message === "403") {
-          alertPersonalizado("Sem permissão para criar produtos.",2000);
-        } else {
-          alert("Erro ao criar produto.");
-        }
-        console.error(erro);
-    }
-  });
+//       // Grava as cores disponíveis se houver cores marcadas e procod válido
+//       if (procod && corIds.length > 0) {
+//         // Para cada cor marcada, faz um POST individual
+//         for (const corcod of corIds) {
+//           await fetch(
+//             `${BASE_URL}/proCoresDisponiveis/${procod}?corescod=${corcod}`,
+//             {
+//               method: "POST",
+//               headers: { "Content-Type": "application/json" },
+//             }
+//           );
+//         }
+//       }
+//       //console.log(resposta);
+//       form.reset();
+//     } catch (erro) {
+//       if (erro.message === "403") {
+//           alertPersonalizado("Sem permissão para criar produtos.",2000);
+//         } else {
+//           alert("Erro ao criar produto.");
+//         }
+//         console.error(erro);
+//     }
+//   });
 
 const inputPesquisa = document.getElementById("pesquisa");
 const tabelaArea = document.getElementById("tabelaArea");
