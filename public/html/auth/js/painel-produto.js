@@ -13,7 +13,7 @@ btnProduto.addEventListener('click', () => {
         throw new Error('Erro ao buscar marcas');
       }
       const marcas = await response.json();
-      promarcascod.innerHTML = '<option value="">Selecione a Marca</option>';
+      promarcascod.innerHTML = '<option value="">Selecione</option>';
       marcas.forEach(marca => {
         const option = document.createElement('option');
         option.value = marca.marcascod;
@@ -31,7 +31,7 @@ btnProduto.addEventListener('click', () => {
       if (!response.ok) throw new Error('Erro ao buscar modelos');
       const modelos = await response.json();
       const promodcod = document.getElementById('popupProdutoModalModelo');
-      promodcod.innerHTML = '<option value="">Selecione o Modelo</option>';
+      promodcod.innerHTML = '<option value="">Selecione</option>';
       modelos.forEach(modelo => {
         const option = document.createElement('option');
         option.value = modelo.modcod;
@@ -49,7 +49,7 @@ btnProduto.addEventListener('click', () => {
     if (marcascod) {
       fetchModelos(marcascod);
     } else {
-      promodcod.innerHTML = '<option value="">Selecione o Modelo</option>';
+      promodcod.innerHTML = '<option value="">Selecione</option>';
     }
   });
 
