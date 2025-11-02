@@ -43,7 +43,8 @@ btnModelo.addEventListener('click', () => {
 modeloForm.addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const payload = {
-    moddes: descricaoModelo.value.trim()
+    moddes: descricaoModelo.value.trim(),
+    modmarcascod: modmarcascod.value,
   };
 
   try {
