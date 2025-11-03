@@ -143,3 +143,17 @@ body {
   max-height: 250px;
   overflow-y: auto;
 }
+.card-animation{
+    transition: 0.5s;
+    
+}
+.card-animation:hover {
+  transform: rotate(-120turn) scale(1.8) translateX(200px);
+}
+.card-animation-2{
+    transition: 0.5s;
+    
+}
+.card-animation-2:hover {
+  transform: rotate(120turn) scale(0.8) translateX(400px);
+}
