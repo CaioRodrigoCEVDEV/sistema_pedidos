@@ -16,7 +16,7 @@ btnModelo.addEventListener('click', () => {
         throw new Error('Erro ao buscar marcas');
       }
       const marcas = await response.json();
-      modmarcascod.innerHTML = '<option value="">Selecione a Marca</option>';
+      modmarcascod.innerHTML = '<option value="">Selecione</option>';
       marcas.forEach(marca => {
         const option = document.createElement('option');
         option.value = marca.marcascod;
