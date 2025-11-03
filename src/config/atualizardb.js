@@ -51,7 +51,7 @@ async function atualizarDB() {
     await pool.query(
       `alter table public.procor add IF NOT exists procorqtde int null;`
     );
-        await pool.query(
+    await pool.query(
       `ALTER TABLE public.pro ADD IF NOT exists proqtde int4 DEFAULT 0 NOT NULL;`
     );
     // FIM NOVOS CAMPOS
@@ -146,16 +146,49 @@ async function atualizarDB() {
       ;  
     `);
 
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION public.retornar_saldo()
+      RETURNS trigger
+      LANGUAGE plpgsql
+      AS $function$
+        BEGIN
+          IF NEW.pvsta = 'X'  THEN
+            UPDATE pro
+              SET proqtde = proqtde + pvi.pviqtde
+              FROM pvi
+            WHERE pvi.pviprocod = pro.procod 
+              AND pvi.pvipvcod = NEW.pvcod and NEW.pvconfirmado = 'S';
+          END IF;
+
+          RETURN NEW;
+        END;
+        $function$
+          ; 
+    `);
+
     // FIM INSERTS CONDICIONAIS
-     
+
     //inicio das triggers
     await pool.query(`
       DROP TRIGGER IF EXISTS t_atualizar_saldo ON pv;
-      create trigger t_atualizar_saldo after
-      update
-            of pvconfirmado on
-            public.pv for each row execute procedure atualizar_saldo()
+      CREATE TRIGGER t_atualizar_saldo
+      AFTER UPDATE OF pvconfirmado
+      ON public.pv
+      FOR EACH ROW
+      WHEN (NEW.pvconfirmado = 'S')
+      execute procedure atualizar_saldo()
     `);
+
+    await pool.query(`
+      DROP TRIGGER IF EXISTS t_retornar_saldo ON public.pv;
+      CREATE TRIGGER t_retornar_saldo
+      AFTER UPDATE OF pvsta
+      ON public.pv
+      FOR EACH ROW
+      WHEN (NEW.pvsta = 'X')
+      execute procedure retornar_saldo()
+    `);
+
 
     //fim das triggers
 
@@ -171,7 +204,7 @@ async function atualizarDB() {
                       NO CYCLE;`);
     //fim das sequences
 
-    
+
     await pool.query("COMMIT");
     console.log("✅ atualizardb: tabelas e registros padrão garantidos.");
   } catch (err) {
