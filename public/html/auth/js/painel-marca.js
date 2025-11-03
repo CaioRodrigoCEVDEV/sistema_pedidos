@@ -5,13 +5,10 @@ const btnMarca = document.getElementById('dropdownMarca');
 const btnExcluir = document.getElementById('btnDelete');
 const marcaForm = document.getElementById('marcaForm');
 const descricaoMarca = document.getElementById('descricaoMarca');
-const marcassit = document.getElementById('marcassit');
 
 // Novo usuário
 btnMarca.addEventListener('click', () => {
   descricaoMarca.value = '';
-  marcassit.checked = true;
-  marcassit.disabled = true;
   btnExcluir.style.display = 'none';
   userModal.show();
 });

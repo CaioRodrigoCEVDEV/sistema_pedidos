@@ -2,7 +2,6 @@
 const modeloModalEl = document.getElementById('modeloModal');
 const modeloModal = new bootstrap.Modal(modeloModalEl);
 const btnModelo = document.getElementById('dropdownModelo');
-// const btnExcluir = document.getElementById('btnDelete');
 const modeloForm = document.getElementById('modeloForm');
 const modmarcascod = document.getElementById('popupMarcaModalModelo');
 
@@ -29,8 +28,6 @@ btnModelo.addEventListener('click', () => {
   } 
   fetchMarcas();
   descricaoModelo.value = '';
-  modsit.checked = true;
-  modsit.disabled = true;
   btnExcluir.style.display = 'none';
   modeloModal.show();
   //função para preencher o select de marcas no modal modelo
@@ -70,7 +67,7 @@ modeloForm.addEventListener('submit', async (ev) => {
         msg.style.padding = "12px 24px";
         msg.style.borderRadius = "6px";
         msg.style.zIndex = "10000";
-        msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+        msg.style.boxShadow = "0 2px 8px rgba(36, 11, 11, 0.2)";
         document.body.appendChild(msg);
         setTimeout(() => {
           msg.remove();
