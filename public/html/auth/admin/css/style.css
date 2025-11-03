@@ -157,3 +157,14 @@ body {
 .card-animation-2:hover {
   transform: rotate(120turn) scale(0.8) translateX(400px);
 }
+
+.card.h-100:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+/* smaller number on very small screens */
+@media (max-width: 420px) {
+  .card h3 {
+    font-size: 1.5rem;
+  }
+}
