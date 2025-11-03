@@ -223,6 +223,7 @@ exports.listarProdutosComEstoque = async (req, res) => {
     const result = await pool.query(
       `select 
         procod,
+        prodes,
         marcasdes,
         moddes,
         tipodes,
@@ -250,6 +251,7 @@ exports.listarProdutosSemEstoque = async (req, res) => {
     const result = await pool.query(
       `select 
         procod,
+        prodes,
         marcasdes,
         moddes,
         tipodes,

@@ -50,6 +50,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td class="text-center">${dado.pvcod}</td>
+          <td class="text-center">${dado.pvcanal}</td>
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center align-items-center gap-2">
@@ -424,6 +425,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td class="text-center" style="color: green;">${dado.pvcod}</td>
+          <td class="text-center" style="color: green;">${dado.pvcanal}</td>
           <td class="text-right" style="color: green;">${formatarMoeda(
           dado.pvvl
         )}</td>
