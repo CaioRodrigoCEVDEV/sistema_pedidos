@@ -1,16 +1,18 @@
-main{
-    min-height: 80vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-footer{
-    max-width: 10px;
-}
-
-
-.tabela-scroll {
-  max-height: 250px; /* ajuste conforme o layout */
+.tabela-scroll,
+.table-scroll {
+  max-height: 300px; /* altura aproximada para 5 linhas */
   overflow-y: auto;
-  display: block;
+  overflow-x: hidden;
+}
+
+/* melhora o visual da barra de rolagem */
+.tabela-scroll::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tabela-scroll::-webkit-scrollbar-thumb,
+.table-scroll::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 4px;
 }
