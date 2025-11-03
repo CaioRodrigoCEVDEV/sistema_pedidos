@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // pedidos pedentes
 document.addEventListener("DOMContentLoaded", function () {
-  fetch(`${BASE_URL}/pedidos/listar`)
+  fetch(`${BASE_URL}/v2/pedidos/listar`)
     .then((res) => res.json())
     .then((dados) => {
       const corpoTabela = document.getElementById("corpoTabela");
@@ -237,7 +237,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
       newBtnCancel.addEventListener("click", async () => {
         if (!confirm("Tem certeza que deseja cancelar este pedido?")) return;
         try {
-          await cancelarItem(pvcod);
+          await cancelarPv(pvcod);
           const m =
             bootstrap?.Modal?.getInstance(modalEl) ||
             new bootstrap.Modal(modalEl);
@@ -290,6 +290,35 @@ async function cancelarItem(procod, pvcod) {
     alert("Erro ao cancelar o item.");
   }
 }
+
+
+// cancelar Pedido
+async function cancelarPv(pvcod) {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/v2/pedidos/cancelar/${pvcod}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pvcod: pvcod }),
+      }
+    );
+    if (response.ok) {
+      alert("Pedido cancelado com sucesso!");
+      location.reload();
+      // Atualize a interface do usuário conforme necessário
+    } else {
+      alert("Erro ao cancelar o Pedido.");
+    }
+  } catch (error) {
+    console.error("Erro ao cancelar o Pedido:", error);
+    alert("Erro ao cancelar o Pedido.");
+  }
+}
+
+
 // confirmação de pedidos
 async function confirmarPedido(pvcod, pviqtde, procod) {
   try {
