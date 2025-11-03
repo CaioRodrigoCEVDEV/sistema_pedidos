@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
+          <td>${dado.prodes}</td>
           <td>${dado.marcasdes}</td>
           <td>${dado.moddes}</td>
           <td>${dado.tipodes}</td>
@@ -47,6 +48,7 @@ document.addEventListener("DOMContentLoaded", function () {
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
+          <td>${dado.prodes}</td>
           <td>${dado.marcasdes}</td>
           <td>${dado.moddes}</td>
           <td>${dado.tipodes}</td>
