@@ -14,4 +14,45 @@ async function totalVendas() {
         return result.rows;
 }
 
-module.exports = { totalVendas };
+async function listarPv() {
+    const result = await pool.query(
+      `select 
+            pvcod,
+            pvvl,
+            pvobs,
+            pvcanal,
+            pvconfirmado,
+            pvsta,
+            pvipvcod,
+            sum(pvivl) as pvvltotal,
+            pviqtde 
+            from pv 
+            left join pvi on pvipvcod = pvcod
+            where pvconfirmado = 'N' 
+            and pvsta = 'A' 
+            and pviprocod is not null 
+            group by 
+            pvcod,
+            pvvl,
+            pvobs,
+            pvcanal,
+            pvconfirmado,
+            pvsta,
+            pvipvcod,
+            pviqtde 
+            order by pvcod desc`
+    );
+    return result.rows;
+}
+
+async function cancelarPedido(req, res) {
+    const pvcod = req.params.pvcod;
+    const result = await pool.query(
+      "update pv set pvsta = 'X' where pvcod = $1 RETURNING *",
+      [pvcod]
+    );
+    return result.rows;
+    
+}
+
+module.exports = { totalVendas, listarPv ,cancelarPedido};
