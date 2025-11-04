@@ -81,7 +81,7 @@ btnProduto.addEventListener('click', () => {
          if (!holder) return;
          holder.innerHTML = ""; // zera antes
 
-         let html = "<label>Selecione a(s) cor(es):</label><br>";
+         let html = "";
          dados.forEach((cor) => {
            html += `
              <div class="form-check">

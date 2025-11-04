@@ -155,3 +155,13 @@
     font-size: 0.92rem;
   }
 }
+
+#produtoModal #selectPainelCor {
+
+  max-height: 200px; /* altura máxima para rolagem */
+  border: 1px solid #ddd; /* opcional, visual */
+  border-radius: 8px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  overflow-y: auto; /* caso tenha muitas cores */
+}
