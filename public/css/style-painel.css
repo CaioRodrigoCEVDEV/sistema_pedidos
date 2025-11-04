@@ -1,4 +1,15 @@
+/* Base: evitar overflow horizontal em mobile */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden; /* evita arraste lateral */
+  box-sizing: border-box;
+}
+
 main {
-      margin-top: 120px;
-      height: 120%;
-    }
+  margin-top: clamp(72px, 10vh, 120px);
+  min-height: 100svh; /* usa altura visível no mobile */
+  height: auto;       /* remove height: 120% */
+}
