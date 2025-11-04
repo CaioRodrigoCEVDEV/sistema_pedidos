@@ -1,4 +1,77 @@
+/* Base: evitar overflow horizontal em mobile */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
 main {
-      margin-top: 120px;
-      height: 120%;
-    }
+  margin-top: clamp(72px, 10vh, 120px);
+  min-height: 100svh;
+  height: auto;
+  width: 100%;
+  position: relative;
+}
+
+/* Garantir que wrapper não cause overflow em portrait mobile */
+.wrapper {
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Forçar containers e elementos a não ultrapassar viewport */
+.container, .container-fluid, .row {
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Ajustes específicos para telas móveis (até 450px) */
+@media (max-width: 450px) {
+  body, html, .wrapper {
+    overflow-x: hidden !important;
+  }
+  
+  main {
+    margin-top: clamp(60px, 8vh, 100px);
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  /* Remover margens do navbar que causam overflow */
+  .navbar {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  /* Reduzir padding de containers em mobile */
+  .container, .container-fluid {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+  
+  /* Garantir que cards e rows não ultrapassem */
+  .row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  /* Ajustar padding do main em mobile */
+  main.p-3 {
+    padding: 0.5rem !important;
+  }
+}
