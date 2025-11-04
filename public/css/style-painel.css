@@ -3,27 +3,34 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
   margin: 0;
   padding: 0;
   width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden; /* evita arraste lateral */
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
 }
 
 main {
   margin-top: clamp(72px, 10vh, 120px);
-  min-height: 100svh; /* usa altura visível no mobile */
-  height: auto;       /* remove height: 120% */
+  min-height: 100svh;
+  height: auto;
   width: 100%;
-  max-width: 100vw;
+  position: relative;
 }
 
 /* Garantir que wrapper não cause overflow em portrait mobile */
 .wrapper {
   width: 100%;
-  max-width: 100vw;
   overflow-x: hidden;
+  position: relative;
 }
 
 /* Ajustes específicos para telas muito estreitas (portrait mobile) */
@@ -37,5 +44,12 @@ main {
   .container, .container-fluid {
     padding-left: 12px;
     padding-right: 12px;
+  }
+}
+
+/* Ajustes para dispositivos médios como S8+ */
+@media (min-width: 401px) and (max-width: 450px) {
+  main {
+    margin-top: clamp(70px, 9vh, 110px);
   }
 }
