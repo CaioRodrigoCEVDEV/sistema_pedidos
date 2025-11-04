@@ -29,10 +29,23 @@ main {
   box-shadow: 0 8px 24px rgba(0,0,0,0.2);
 }
 
-/* Ajustes para telas muito estreitas (360px e similares) */
-@media (max-width: 400px) {
+/* Forçar containers a não ultrapassar viewport */
+.container, .container-fluid, .row {
+  max-width: 100% !important;
+}
+
+/* Ajustes para telas móveis (até 450px) */
+@media (max-width: 450px) {
   main {
     margin-top: clamp(60px, 8vh, 100px);
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  /* Remover margens que causam overflow */
+  .navbar {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
   
   .overlay {
@@ -44,20 +57,21 @@ main {
     padding: 16px;
     max-height: min(92svh, 600px);
   }
-}
-
-/* Ajustes para dispositivos médios como S8+ (401px-450px) */
-@media (min-width: 401px) and (max-width: 450px) {
-  main {
-    margin-top: clamp(70px, 9vh, 110px);
+  
+  /* Reduzir padding de containers */
+  .container, .container-fluid {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
   }
   
-  .overlay {
-    padding: 12px;
+  /* Garantir que rows não ultrapassem */
+  .row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
   
-  .popup {
-    width: min(520px, 94vw);
-    padding: 18px;
+  /* Ajustar padding do main */
+  main.p-3 {
+    padding: 0.5rem !important;
   }
 }

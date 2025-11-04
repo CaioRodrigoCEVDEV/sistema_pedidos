@@ -33,23 +33,45 @@ main {
   position: relative;
 }
 
-/* Ajustes específicos para telas muito estreitas (portrait mobile) */
-@media (max-width: 400px) {
-  main {
-    margin-top: clamp(60px, 8vh, 100px);
-    padding-left: 0;
-    padding-right: 0;
-  }
-  
-  .container, .container-fluid {
-    padding-left: 12px;
-    padding-right: 12px;
-  }
+/* Forçar containers e elementos a não ultrapassar viewport */
+.container, .container-fluid, .row {
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
-/* Ajustes para dispositivos médios como S8+ */
-@media (min-width: 401px) and (max-width: 450px) {
+/* Ajustes específicos para telas móveis (até 450px) */
+@media (max-width: 450px) {
+  body, html, .wrapper {
+    overflow-x: hidden !important;
+  }
+  
   main {
-    margin-top: clamp(70px, 9vh, 110px);
+    margin-top: clamp(60px, 8vh, 100px);
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  /* Remover margens do navbar que causam overflow */
+  .navbar {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  /* Reduzir padding de containers em mobile */
+  .container, .container-fluid {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+  
+  /* Garantir que cards e rows não ultrapassem */
+  .row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  /* Ajustar padding do main em mobile */
+  main.p-3 {
+    padding: 0.5rem !important;
   }
 }
