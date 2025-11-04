@@ -1,15 +1,41 @@
 /* Base: evitar overflow horizontal em mobile */
+* {
+  box-sizing: border-box;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-  max-width: 100%;
+  max-width: 100vw;
   overflow-x: hidden; /* evita arraste lateral */
-  box-sizing: border-box;
 }
 
 main {
   margin-top: clamp(72px, 10vh, 120px);
   min-height: 100svh; /* usa altura visível no mobile */
   height: auto;       /* remove height: 120% */
+  width: 100%;
+  max-width: 100vw;
+}
+
+/* Garantir que wrapper não cause overflow em portrait mobile */
+.wrapper {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Ajustes específicos para telas muito estreitas (portrait mobile) */
+@media (max-width: 400px) {
+  main {
+    margin-top: clamp(60px, 8vh, 100px);
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  .container, .container-fluid {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
 }
