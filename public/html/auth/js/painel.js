@@ -1378,10 +1378,7 @@ function editarCor(id, nome) {
     <form id="formEditarCor">
       <div class="mb-3">
         <label for="editarCorDescricao" class="form-label">Descrição</label>
-        <input type="text" class="form-control" id="editarCorDescricao" name="cornome" value="${(
-      nome || ""
-    ).replace(/"/g, "&quot;")}"
-        }" required>
+        <input type="text" class="form-control" id="editarCorDescricao" name="cornome" value="${(nome || "").replace(/"/g, "&quot;")}" required>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button type="button" class="btn btn-secondary" id="cancelarEditarCor">Cancelar</button>
@@ -2029,8 +2026,6 @@ function toggleOrdemTipoPeca() {
 
   selectHtml += `<select id="modelosSelectOrdem" class="form-control mb-2">
                       <option value="">Selecione o modelo</option>`;
-  selectHtml += `</select>`;
-
   selectHtml += `</select>
                  <button id="btnBuscarTipoPecasOrdem" class="btn btn-primary btn-block mt-2">Buscar</button>
                  <div id="listaOrdemHolder" class="mt-3"></div>`;
