@@ -2230,6 +2230,11 @@ function toggleOrdemMarca() {
       });
   });
 }
+
+//********************************************* */
+
+//função para gerar mensagem de cobrança
+async function dadosPagamento() {
   try {
     const response = await fetch(`${BASE_URL}/emp/pagamento`); // sua rota no backend
     if (!response.ok) throw new Error("Erro ao buscar dados de pagamento");
