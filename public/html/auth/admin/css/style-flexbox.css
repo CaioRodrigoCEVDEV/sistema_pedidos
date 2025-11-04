@@ -1,10 +1,18 @@
 .wrapper {
       display: grid;
       grid-template-rows: auto 1fr auto;
+      grid-template-columns: minmax(0, 1fr); /* Prevent grid from expanding beyond viewport */
       min-height: 100svh;
       width: 100%;
+      max-width: 100%;
       overflow-x: hidden;
       position: relative;
+    }
+
+/* Ensure all direct children of wrapper respect grid constraints */
+.wrapper > * {
+      min-width: 0; /* Allow flex/grid children to shrink below content size */
+      max-width: 100%;
     }
 
 .panel-hero {
