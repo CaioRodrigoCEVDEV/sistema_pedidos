@@ -12,6 +12,7 @@
   );
   border-radius: 0.75rem;
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  padding: 10px;
 }
 .panel-hero .icon-circle {
   width: 56px;
