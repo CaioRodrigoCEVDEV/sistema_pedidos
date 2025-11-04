@@ -1488,7 +1488,8 @@ async function excluirCor(id) {
         alertPersonalizado("Sem permissão para excluir esta cor. Contate o administrador.",2000);
       } else {
         alert("Erro ao excluir cor");
-      } fecharPopup();
+      }
+      fecharPopup();
     }
   };
 }
