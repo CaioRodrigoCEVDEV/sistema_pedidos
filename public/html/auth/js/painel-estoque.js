@@ -1,6 +1,6 @@
 // table produtos com estoque
 document.addEventListener("DOMContentLoaded", function () {
-  fetch(`${BASE_URL}/proComEstoque`)
+  fetch(`${BASE_URL}/v2/proComEstoque`)
     .then((res) => res.json())
     .then((dados) => {
       const estoque = document.getElementById("tabela-estoque");
@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // table produtos sem estoque
 document.addEventListener("DOMContentLoaded", function () {
-  fetch(`${BASE_URL}/proSemEstoque`)
+  fetch(`${BASE_URL}/v2/proSemEstoque`)
     .then((res) => res.json())
     .then((dados) => {
       const semEstoque = document.getElementById("tabela-sem-estoque");

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const proController = require("../controllers/proController");
+const proControllerV2 = require("../controllers/proControllerV2");
 const autenticarToken = require("../middlewares/middlewares");
 const requireAdmin = require("../middlewares/adminMiddleware");
 
@@ -52,4 +53,18 @@ router.put(
   autenticarToken,
   proController.gravarEstoqueProduto
 );
+
+// V2 Routes com models
+router.get(
+  "/v2/proComEstoque",
+  autenticarToken,
+  proControllerV2.listarProdutosComEstoque
+);
+router.get(
+  "/v2/proSemEstoque",
+  autenticarToken,
+  proControllerV2.listarProdutosSemEstoque
+);
+
+
 module.exports = router;
