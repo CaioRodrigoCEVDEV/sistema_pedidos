@@ -42,6 +42,17 @@
   .search-input {
     width: 100%;
   }
+  
+  /* Fix button layout on mobile */
+  .panel-hero .ms-md-auto {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  
+  .panel-hero .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
 }    
 
 .dashboard-card {
