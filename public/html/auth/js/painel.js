@@ -512,51 +512,77 @@ function editarProduto(codigo) {
     fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) => r.json()),
   ])
     .then(([produto, coresDisponiveis, coresProduto]) => {
+      // Cria o popup
+      let popup = document.createElement("div");
+      popup.id = "popupEditarProduto";
+      popup.style.position = "fixed";
+      popup.style.top = "0";
+      popup.style.left = "0";
+      popup.style.width = "100vw";
+      popup.style.height = "100vh";
+      popup.style.background = "rgba(0,0,0,0.5)";
+      popup.style.display = "flex";
+      popup.style.alignItems = "center";
+      popup.style.justifyContent = "center";
+      popup.style.zIndex = "9999";
+
       // Preenche os campos com os dados carregados do produto
-      const formHTML = `
-        <form id="formEditarProduto">
-          <div class="mb-3">
-            <label for="editarDescricao" class="form-label">Descrição</label>
-            <input type="text" class="form-control" id="editarDescricao" name="prodes" 
-              value="${produto[0].prodes || ""}" required>
-          </div>
-          <div class="mb-3">
-            <label for="editarValor" class="form-label">Valor</label>
-            <input type="number" step="0.01" class="form-control" id="editarValor" name="provl" 
-              value="${Number(produto[0].provl).toFixed(2) || ""}" required>
-          </div>
-          <div class="mb-3" id="editarProdutoCores">
-            <label>Selecione a(s) cor(es):</label><br>
-            ${coresDisponiveis
+      popup.innerHTML = `
+        <div style="
+            background:#fff;
+            padding:24px;
+            border-radius:8px;
+            min-width:300px;
+            max-width:90vw;
+            max-height:90vh;   /* limite de altura */
+            overflow-y:auto;   /* cria scroll se passar do limite */
+        ">
+          <h5>Editar Produto</h5>
+          <form id="formEditarProduto">
+            <div class="mb-3">
+              <label for="editarDescricao" class="form-label">Descrição</label>
+              <input type="text" class="form-control" id="editarDescricao" name="prodes" 
+                value="${produto[0].prodes || ""}" required>
+            </div>
+            <div class="mb-3">
+              <label for="editarValor" class="form-label">Valor</label>
+              <input type="number" step="0.01" class="form-control" id="editarValor" name="provl" 
+                value="${Number(produto[0].provl).toFixed(2) || ""}" required>
+            </div>
+            <div class="mb-3" id="editarProdutoCores">
+              <label>Selecione a(s) cor(es):</label><br>
+              ${coresDisponiveis
           .map(
             (c) => `
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="procor" value="${c.corcod
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="procor" value="${c.corcod
               }"
-                id="editar_cor_${c.corcod}" 
-                ${coresProduto.some((cp) => cp.corcod == c.corcod)
+                  id="editar_cor_${c.corcod}" 
+                  ${coresProduto.some((cp) => cp.corcod == c.corcod)
                 ? "checked"
                 : ""
               }>
-              <label class="form-check-label" for="editar_cor_${c.corcod}">${c.cornome
+                <label class="form-check-label" for="editar_cor_${c.corcod}">${c.cornome
               }</label>
-            </div>`
+              </div>`
           )
           .join("")}
-          </div>
-          <div style="display:flex;gap:8px;justify-content:flex-end;">
-            <button type="button" class="btn btn-secondary" id="cancelarEditarProduto">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Salvar</button>
-          </div>
-        </form>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+              <button type="button" class="btn btn-secondary" id="cancelarEditarProduto">Cancelar</button>
+              <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+          </form>
+        </div>
       `;
 
-      const popup = criarPopup("Editar Produto", formHTML);
-      abrirPopup(popup);
+      document.body.appendChild(popup);
 
-      popup.querySelector('#cancelarEditarProduto').addEventListener('click', fecharPopup);
+      document.getElementById("cancelarEditarProduto").onclick = function () {
+        document.body.removeChild(popup);
+      };
 
-      popup.querySelector("#formEditarProduto").onsubmit = async function (
+      document.getElementById("formEditarProduto").onsubmit = async function (
         e
       ) {
         e.preventDefault();
@@ -620,14 +646,14 @@ function editarProduto(codigo) {
           setTimeout(() => {
             msg.remove();
           }, 2000);
-          fecharPopup();
+          document.body.removeChild(popup);
           carregarProPesquisa();
         } catch (erro) {
           if (erro.message === "403") {
-            fecharPopup();
+            document.body.removeChild(popup);
             alertPersonalizado("Sem permissão para editar produtos.",2000);
           } else {
-            fecharPopup();
+            document.body.removeChild(popup);
             alertPersonalizado("Erro ao atualizar o produto.",2000);
           }
         }
@@ -684,22 +710,37 @@ function carregarProPesquisa() {
 
 async function excluirProduto(id) {
   // Cria o popup de confirmação customizado
-  const formHTML = `
-    <p>Tem certeza que deseja excluir este Produto?</p>
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button type="button" class="btn btn-secondary" id="cancelarExcluirPro">Cancelar</button>
-      <button type="button" class="btn btn-danger" id="confirmarExcluirPro">Excluir</button>
+  let popup = document.createElement("div");
+  popup.id = "popupExcluirProduto";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Excluir Tipo</h5>
+      <p>Tem certeza que deseja excluir este Produto?</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" id="cancelarExcluirPro">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmarExcluirPro">Excluir</button>
+      </div>
     </div>
   `;
 
-  const popup = criarPopup("Excluir Produto", formHTML);
-  abrirPopup(popup);
+  document.body.appendChild(popup);
 
-  popup.querySelector("#cancelarExcluirPro").onclick = function () {
-    fecharPopup();
+  document.getElementById("cancelarExcluirPro").onclick = function () {
+    document.body.removeChild(popup);
   };
 
-  popup.querySelector("#confirmarExcluirPro").onclick = async function () {
+  document.getElementById("confirmarExcluirPro").onclick = async function () {
     try {
       await fetch(`${BASE_URL}/pro/${id}`, { method: "DELETE" });
 
@@ -725,10 +766,10 @@ async function excluirProduto(id) {
         msg.remove();
       }, 2000);
 
-      fecharPopup();
+      document.body.removeChild(popup);
     } catch (e) {
       alert("Erro ao excluir produto");
-      fecharPopup();
+      document.body.removeChild(popup);
     }
   };
 }
@@ -829,28 +870,43 @@ function carregarMarcas() {
 
 function editarMarca(id, nome) {
   // Cria o popup
-  const formHTML = `
-    <form id="formEditarMarca">
-      <div class="mb-3">
-        <label for="editarMarcaDescricao" class="form-label">Descrição</label>
-        <input type="text" class="form-control" id="editarMarcaDescricao" name="marcasdes" value="${nome || ""
+  let popup = document.createElement("div");
+  popup.id = "popupEditarMarca";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Editar Marca</h5>
+      <form id="formEditarMarca">
+        <div class="mb-3">
+          <label for="editarMarcaDescricao" class="form-label">Descrição</label>
+          <input type="text" class="form-control" id="editarMarcaDescricao" name="marcasdes" value="${nome || ""
     }" required>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button type="button" class="btn btn-secondary" id="cancelarEditarMarca">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Salvar</button>
-      </div>
-    </form>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button type="button" class="btn btn-secondary" id="cancelarEditarMarca">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
   `;
 
-  const popup = criarPopup("Editar Marca", formHTML);
-  abrirPopup(popup);
+  document.body.appendChild(popup);
 
-  popup.querySelector("#cancelarEditarMarca").onclick = function () {
-    fecharPopup();
+  document.getElementById("cancelarEditarMarca").onclick = function () {
+    document.body.removeChild(popup);
   };
 
-  popup.querySelector("#formEditarMarca").onsubmit = function (e) {
+  document.getElementById("formEditarMarca").onsubmit = function (e) {
     e.preventDefault();
     const marcasdes = document
       .getElementById("editarMarcaDescricao")
@@ -885,7 +941,7 @@ function editarMarca(id, nome) {
         setTimeout(() => {
           msg.remove();
         }, 2000);
-        fecharPopup();
+        document.body.removeChild(popup);
         carregarMarcas();
       })
       .catch((erro) => {
@@ -895,7 +951,7 @@ function editarMarca(id, nome) {
           alert("Erro ao atualizar a marca.");
         }
         console.error(erro);
-        fecharPopup();
+        document.body.removeChild(popup);
       })
   };
 }
@@ -914,32 +970,47 @@ async function excluirMarca(id) {
   }
 
   // Cria o popup de confirmação customizado
-  let mensagem = ``;
+  let popup = document.createElement("div");
+  popup.id = "popupExcluirMarca";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  let mensagem = `<h5>Excluir Marca</h5>`;
   if (modelosVinculados.length > 0) {
-    mensagem = `
+    mensagem += `
       <p>Existem <b>${modelosVinculados.length}</b> modelo(s) vinculados a esta marca.<br>
       Excluir a marca irá excluir todos os modelos vinculados.<br>
       Tem certeza que deseja continuar?</p>
     `;
   } else {
-    mensagem = `<p>Tem certeza que deseja excluir esta marca?</p>`;
+    mensagem += `<p>Tem certeza que deseja excluir esta marca?</p>`;
   }
 
-  mensagem += `
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button type="button" class="btn btn-secondary" id="cancelarExcluirMarca">Cancelar</button>
-      <button type="button" class="btn btn-danger" id="confirmarExcluirMarca">Excluir</button>
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      ${mensagem}
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" id="cancelarExcluirMarca">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmarExcluirMarca">Excluir</button>
+      </div>
     </div>
   `;
 
-  const popup = criarPopup("Excluir Marca", mensagem);
-  abrirPopup(popup);
+  document.body.appendChild(popup);
 
-  popup.querySelector("#cancelarExcluirMarca").onclick = function () {
-    fecharPopup();
+  document.getElementById("cancelarExcluirMarca").onclick = function () {
+    document.body.removeChild(popup);
   };
 
-  popup.querySelector("#confirmarExcluirMarca").onclick = async function () {
+  document.getElementById("confirmarExcluirMarca").onclick = async function () {
     try {
       const res = await fetch(`${BASE_URL}/marcas/status/${id}`, { method: "PUT" });
       if (res.status === 403) {
@@ -962,7 +1033,7 @@ async function excluirMarca(id) {
       setTimeout(() => {
         msg.remove();
       }, 2000);
-      fecharPopup();
+      document.body.removeChild(popup);
       carregarMarcas();
     } catch (error) {
       if (error.message === "403") {
@@ -1014,34 +1085,49 @@ function carregarModelos() {
 
 function editarModelo(id, nome, marca) {
   // Cria o popup
-  const formHTML = `
-    <form id="formEditarModelo">
-      <div class="mb-3">
-        <label for="editarModeloDescricao" class="form-label">Descrição</label>
-        <input type="text" class="form-control" id="editarModeloDescricao" name="moddes" value="${nome || ""
+  let popup = document.createElement("div");
+  popup.id = "popupEditarModelo";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Editar Modelo</h5>
+      <form id="formEditarModelo">
+        <div class="mb-3">
+          <label for="editarModeloDescricao" class="form-label">Descrição</label>
+          <input type="text" class="form-control" id="editarModeloDescricao" name="moddes" value="${nome || ""
     }" required>
-      </div>
-      <div class="mb-3">
-        <label for="editarModeloMarca" class="form-label">Marca</label>
-        <select class="form-control" id="editarModeloMarca" name="modmarcascod" required>
-          <option value="">Carregando marcas...</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button type="button" class="btn btn-secondary" id="cancelarEditarModelo">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Salvar</button>
-      </div>
-    </form>
+        </div>
+        <div class="mb-3">
+          <label for="editarModeloMarca" class="form-label">Marca</label>
+          <select class="form-control" id="editarModeloMarca" name="modmarcascod" required>
+            <option value="">Carregando marcas...</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button type="button" class="btn btn-secondary" id="cancelarEditarModelo">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
   `;
 
-  const popup = criarPopup("Editar Modelo", formHTML);
-  abrirPopup(popup);
+  document.body.appendChild(popup);
 
   // Carrega as marcas no select
   fetch(`${BASE_URL}/marcas`)
     .then((r) => r.json())
     .then((marcas) => {
-      const select = popup.querySelector("#editarModeloMarca");
+      const select = document.getElementById("editarModeloMarca");
       select.innerHTML = '<option value="">Selecione uma marca</option>';
       marcas.forEach((m) => {
         select.innerHTML += `<option value="${m.marcascod}"${m.marcascod == marca ? " selected" : ""
@@ -1049,16 +1135,16 @@ function editarModelo(id, nome, marca) {
       });
     });
 
-  popup.querySelector("#cancelarEditarModelo").onclick = function () {
-    fecharPopup();
+  document.getElementById("cancelarEditarModelo").onclick = function () {
+    document.body.removeChild(popup);
   };
 
-  popup.querySelector("#formEditarModelo").onsubmit = function (e) {
+  document.getElementById("formEditarModelo").onsubmit = function (e) {
     e.preventDefault();
-    const moddes = popup
-      .querySelector("#editarModeloDescricao")
+    const moddes = document
+      .getElementById("editarModeloDescricao")
       .value.trim();
-    const modmarcascod = popup.querySelector("#editarModeloMarca").value;
+    const modmarcascod = document.getElementById("editarModeloMarca").value;
     fetch(`${BASE_URL}/modelo/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -1088,7 +1174,7 @@ function editarModelo(id, nome, marca) {
         setTimeout(() => {
           msg.remove();
         }, 2000);
-        fecharPopup();
+        document.body.removeChild(popup);
         carregarModelos();
       })
       .catch((error) => {
@@ -1097,29 +1183,44 @@ function editarModelo(id, nome, marca) {
         } else {
           alert("Erro ao atualizar modelo");
         }
-        fecharPopup();
+        document.body.removeChild(popup);
       });
   };
 }
 
 async function excluirModelo(id) {
   // Cria o popup de confirmação customizado
-  const formHTML = `
-    <p>Tem certeza que deseja excluir este modelo?</p>
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button type="button" class="btn btn-secondary" id="cancelarExcluirModelo">Cancelar</button>
-      <button type="button" class="btn btn-danger" id="confirmarExcluirModelo">Excluir</button>
+  let popup = document.createElement("div");
+  popup.id = "popupExcluirModelo";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Excluir Modelo</h5>
+      <p>Tem certeza que deseja excluir este modelo?</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" id="cancelarExcluirModelo">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmarExcluirModelo">Excluir</button>
+      </div>
     </div>
   `;
 
-  const popup = criarPopup("Excluir Modelo", formHTML);
-  abrirPopup(popup);
+  document.body.appendChild(popup);
 
-  popup.querySelector("#cancelarExcluirModelo").onclick = function () {
-    fecharPopup();
+  document.getElementById("cancelarExcluirModelo").onclick = function () {
+    document.body.removeChild(popup);
   };
 
-  popup.querySelector("#confirmarExcluirModelo").onclick =
+  document.getElementById("confirmarExcluirModelo").onclick =
     async function () {
       try {
         const res =  await fetch(`${BASE_URL}/modelo/${id}`, { method: "DELETE" });
@@ -1146,7 +1247,7 @@ async function excluirModelo(id) {
         setTimeout(() => {
           msg.remove();
         }, 2000);
-        fecharPopup();
+        document.body.removeChild(popup);
         carregarModelos();
       } catch (e) {
         if (e.message === "403") {
@@ -1156,7 +1257,7 @@ async function excluirModelo(id) {
         } else {
           alert("Erro ao excluir modelo");
         }
-        fecharPopup();
+        document.body.removeChild(popup);
       }
     };
 }
@@ -1203,30 +1304,45 @@ function carregarTipos() {
 
 function editarTipo(id, nome) {
   // Cria o popup
-  const formHTML = `
-    <form id="formEditarTipo">
-      <div class="mb-3">
-        <label for="editarTipoDescricao" class="form-label">Descrição</label>
-        <input type="text" class="form-control" id="editarTipoDescricao" name="tipodes" value="${nome || ""
+  let popup = document.createElement("div");
+  popup.id = "popupEditarTipo";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Editar Tipo</h5>
+      <form id="formEditarTipo">
+        <div class="mb-3">
+          <label for="editarTipoDescricao" class="form-label">Descrição</label>
+          <input type="text" class="form-control" id="editarTipoDescricao" name="tipodes" value="${nome || ""
     }" required>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button type="button" class="btn btn-secondary" id="cancelarEditarTipo">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Salvar</button>
-      </div>
-    </form>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button type="button" class="btn btn-secondary" id="cancelarEditarTipo">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
   `;
 
-  const popup = criarPopup("Editar Tipo", formHTML);
-  abrirPopup(popup);
+  document.body.appendChild(popup);
 
-  popup.querySelector("#cancelarEditarTipo").onclick = function () {
-    fecharPopup();
+  document.getElementById("cancelarEditarTipo").onclick = function () {
+    document.body.removeChild(popup);
   };
 
-  popup.querySelector("#formEditarTipo").onsubmit = function (e) {
+  document.getElementById("formEditarTipo").onsubmit = function (e) {
     e.preventDefault();
-    const tipodes = popup.querySelector("#editarTipoDescricao").value.trim();
+    const tipodes = document.getElementById("editarTipoDescricao").value.trim();
     fetch(`${BASE_URL}/tipo/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -1257,7 +1373,7 @@ function editarTipo(id, nome) {
         setTimeout(() => {
           msg.remove();
         }, 2000);
-        fecharPopup();
+        document.body.removeChild(popup);
         carregarTipos();
       })
       .catch((error) => {
@@ -1272,22 +1388,37 @@ function editarTipo(id, nome) {
 
 async function excluirTipo(id) {
   // Cria o popup de confirmação customizado
-  const formHTML = `
-    <p>Tem certeza que deseja excluir este tipo?</p>
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button type="button" class="btn btn-secondary" id="cancelarExcluirTipo">Cancelar</button>
-      <button type="button" class="btn btn-danger" id="confirmarExcluirTipo">Excluir</button>
+  let popup = document.createElement("div");
+  popup.id = "popupExcluirTipo";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Excluir Tipo</h5>
+      <p>Tem certeza que deseja excluir este tipo?</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" id="cancelarExcluirTipo">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmarExcluirTipo">Excluir</button>
+      </div>
     </div>
   `;
 
-  const popup = criarPopup("Excluir Tipo", formHTML);
-  abrirPopup(popup);
+  document.body.appendChild(popup);
 
-  popup.querySelector("#cancelarExcluirTipo").onclick = function () {
-    fecharPopup();
+  document.getElementById("cancelarExcluirTipo").onclick = function () {
+    document.body.removeChild(popup);
   };
 
-  popup.querySelector("#confirmarExcluirTipo").onclick = 
+  document.getElementById("confirmarExcluirTipo").onclick = 
     async function () {
       try {
         const res = await fetch(`${BASE_URL}/tipo/${id}`, { method: "DELETE" });  
@@ -1314,7 +1445,7 @@ async function excluirTipo(id) {
         setTimeout(() => {
           msg.remove();
         }, 2000);
-        fecharPopup();
+        document.body.removeChild(popup);
         carregarTipos();
       } catch (error) {
         if (error.message === "403") {
@@ -1327,7 +1458,7 @@ async function excluirTipo(id) {
         else {
           alert("Erro ao excluir tipo");
         }
-        fecharPopup();
+        document.body.removeChild(popup);
       }
     
   
@@ -1374,28 +1505,46 @@ function carregarCores() {
 }
 
 function editarCor(id, nome) {
-  const formHTML = `
-    <form id="formEditarCor">
-      <div class="mb-3">
-        <label for="editarCorDescricao" class="form-label">Descrição</label>
-        <input type="text" class="form-control" id="editarCorDescricao" name="cornome" value="${(nome || "").replace(/"/g, "&quot;")}" required>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button type="button" class="btn btn-secondary" id="cancelarEditarCor">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Salvar</button>
-      </div>
-    </form>`;
+  let popup = document.createElement("div");
+  popup.id = "popupEditarCor";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
 
-  const popup = criarPopup("Editar Cor", formHTML);
-  abrirPopup(popup);
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Editar Cor</h5>
+      <form id="formEditarCor">
+        <div class="mb-3">
+          <label for="editarCorDescricao" class="form-label">Descrição</label>
+          <input type="text" class="form-control" id="editarCorDescricao" name="cornome" value="${(
+      nome || ""
+    ).replace(/"/g, "&quot;")}"
+          }" required>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button type="button" class="btn btn-secondary" id="cancelarEditarCor">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>`;
 
-  popup.querySelector("#cancelarEditarCor").onclick = function () {
-    fecharPopup();
+  document.body.appendChild(popup);
+
+  document.getElementById("cancelarEditarCor").onclick = function () {
+    document.body.removeChild(popup);
   };
 
-  popup.querySelector("#formEditarCor").onsubmit = function (e) {
+  document.getElementById("formEditarCor").onsubmit = function (e) {
     e.preventDefault();
-    const cornome = popup.querySelector("#editarCorDescricao").value.trim();
+    const cornome = document.getElementById("editarCorDescricao").value.trim();
     fetch(`${BASE_URL}/cores/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -1424,7 +1573,7 @@ function editarCor(id, nome) {
         setTimeout(() => {
           msg.remove();
         }, 2000);
-        fecharPopup();
+        document.body.removeChild(popup);
         carregarCores();
       })
       .catch((error) => {
@@ -1436,27 +1585,42 @@ function editarCor(id, nome) {
         else {
           alert("Erro ao atualizar cor");
         }
-        fecharPopup();
+        document.body.removeChild(popup);
       });
   };
 }
 
 async function excluirCor(id) {
-  const formHTML = `
-    <p>Tem certeza que deseja excluir esta cor?</p>
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button type="button" class="btn btn-secondary" id="cancelarExcluirCor">Cancelar</button>
-      <button type="button" class="btn btn-danger" id="confirmarExcluirCor">Excluir</button>
+  let popup = document.createElement("div");
+  popup.id = "popupExcluirCor";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Excluir Cor</h5>
+      <p>Tem certeza que deseja excluir esta cor?</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" id="cancelarExcluirCor">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmarExcluirCor">Excluir</button>
+      </div>
     </div>`;
 
-  const popup = criarPopup("Excluir Cor", formHTML);
-  abrirPopup(popup);
+  document.body.appendChild(popup);
 
-  popup.querySelector("#cancelarExcluirCor").onclick = function () {
-    fecharPopup();
+  document.getElementById("cancelarExcluirCor").onclick = function () {
+    document.body.removeChild(popup);
   };
 
-  popup.querySelector("#confirmarExcluirCor").onclick = async function () {
+  document.getElementById("confirmarExcluirCor").onclick = async function () {
     try {
       const res = await fetch(`${BASE_URL}/cores/${id}`, { method: "DELETE" });
       if (res.status === 403) {
@@ -1478,15 +1642,14 @@ async function excluirCor(id) {
       setTimeout(() => {
         msg.remove();
       }, 2000);
-      fecharPopup();
+      document.body.removeChild(popup);
       carregarCores();
     } catch (error) {
       if (error.message === "403") {
         alertPersonalizado("Sem permissão para excluir esta cor. Contate o administrador.",2000);
       } else {
         alert("Erro ao excluir cor");
-      }
-      fecharPopup();
+      } document.body.removeChild(popup);
     }
   };
 }
@@ -1551,22 +1714,37 @@ document.getElementById("corpoTabela").addEventListener("click", function (e) {
 
 async function excluirPro(id) {
   // Cria o popup de confirmação customizado
-  const formHTML = `
-    <p>Tem certeza que deseja excluir esta peça?</p>
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button type="button" class="btn btn-secondary" id="cancelarExcluirPeca">Cancelar</button>
-      <button type="button" class="btn btn-danger" id="confirmarExcluirPeca">Excluir</button>
+  let popup = document.createElement("div");
+  popup.id = "popupExcluirPeca";
+  popup.style.position = "fixed";
+  popup.style.top = "0";
+  popup.style.left = "0";
+  popup.style.width = "100vw";
+  popup.style.height = "100vh";
+  popup.style.background = "rgba(0,0,0,0.5)";
+  popup.style.display = "flex";
+  popup.style.alignItems = "center";
+  popup.style.justifyContent = "center";
+  popup.style.zIndex = "9999";
+
+  popup.innerHTML = `
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+      <h5>Excluir Peça</h5>
+      <p>Tem certeza que deseja excluir esta peça?</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" id="cancelarExcluirPeca">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmarExcluirPeca">Excluir</button>
+      </div>
     </div>
   `;
 
-  const popup = criarPopup("Excluir Peça", formHTML);
-  abrirPopup(popup);
+  document.body.appendChild(popup);
 
-  popup.querySelector("#cancelarExcluirPeca").onclick = function () {
-    fecharPopup();
+  document.getElementById("cancelarExcluirPeca").onclick = function () {
+    document.body.removeChild(popup);
   };
 
-  popup.querySelector("#confirmarExcluirPeca").onclick = async function () {
+  document.getElementById("confirmarExcluirPeca").onclick = async function () {
     try {
       const res =  await fetch(`${BASE_URL}/pro/${id}`, { method: "DELETE" });
        
@@ -1589,10 +1767,10 @@ async function excluirPro(id) {
       setTimeout(() => {
         msg.remove();
       }, 2000);
-      fecharPopup();
+      document.body.removeChild(popup);
       carregarPecas();
     } else if (res.status === 403) {
-      fecharPopup();
+      document.body.removeChild(popup);
         throw new Error("403");
       }
     } catch (erro) {
@@ -1630,41 +1808,53 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ==========================
-// 1️⃣ Helpers: Overlay e Popup (Padronizados para Mobile)
+// 1️⃣ Helpers: Overlay e Popup
 // ==========================
 function criarOverlay() {
   const overlay = document.createElement("div");
-  overlay.className = "overlay";
-  // Fecha ao clicar fora do conteúdo
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) fecharPopup();
-  });
+  overlay.classList.add("overlay");
+  overlay.style.position = "fixed";
+  overlay.style.top = 0;
+  overlay.style.left = 0;
+  overlay.style.width = "100%";
+  overlay.style.height = "100%";
+  overlay.style.background = "rgba(0,0,0,0.5)";
+  overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.zIndex = 9999;
   return overlay;
 }
 
-function criarPopup(titulo, conteudoHTML = "") {
+function criarPopup(titulo) {
   const popup = document.createElement("div");
-  popup.className = "popup";
+  popup.classList.add("popup");
+  popup.style.background = "#fff";
+  popup.style.padding = "20px";
+  popup.style.borderRadius = "8px";
+  popup.style.maxHeight = "80vh";
+  popup.style.overflowY = "auto";
+  popup.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
+  popup.style.margin = "1rem";
+
   popup.innerHTML = `
-    ${titulo ? `<h5 style="margin-top:0">${titulo}</h5>` : ""}
-    ${conteudoHTML}
+    <h4>${titulo}</h4>
+  `;
+
+  popup.fecharHTML = `
+    <div style="text-align:right; margin-top:10px;">
+      <button class="btn btn-secondary" onclick="fecharPopup(this)">Fechar</button>
+    </div>
   `;
   return popup;
 }
 
-function abrirPopup(node) {
-  const overlay = criarOverlay();
-  overlay.appendChild(node);
-  document.body.appendChild(overlay);
-}
-
 function fecharPopup(btn) {
-  // Se btn for fornecido, remove o popup pai
-  if (btn) {
-    const popup = btn.closest(".popup");
-    if (popup) popup.remove();
-  }
-  // Remove o overlay
+  // remove o popup
+  const popup = btn.closest(".popup");
+  if (popup) popup.remove();
+
+  // remove o overlay
   const overlay = document.querySelector(".overlay");
   if (overlay) overlay.remove();
 }
@@ -1753,11 +1943,92 @@ document.addEventListener("DOMContentLoaded", () => {
     .catch(console.error);
 });
 
+function toggleOrdemMarca() {
+  const overlay = criarOverlay();
+  const popup = criarPopup("Gerenciar Ordem das Marcas");
+
+  // Select de marcas + botão buscar
+  let selectHtml = `<button id="btnBuscarMarcaOrdem" class="btn btn-primary btn-block mt-2">Buscar</button>
+                 <div id="listaOrdemHolder" class="mt-3"></div>`;
+
+  popup.innerHTML = popup.innerHTML + selectHtml + popup.fecharHTML;
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+
+  // Evento buscar modelos
+  popup.querySelector("#btnBuscarMarcaOrdem").addEventListener("click", () => {
+    fetch(`${BASE_URL}/marcas`)
+      .then((r) => r.json())
+      .then((marcas) => {
+        const holder = popup.querySelector("#listaOrdemHolder");
+        holder.innerHTML = `
+            <ul id="sortable" class="list-group">
+              ${marcas
+            .map(
+              (m) =>
+                `<li class="list-group-item" data-id="${m.marcascod}"><span class="handle">☰ </span>${m.marcasdes}
+                    </li>`
+            )
+            .join("")}
+            </ul>
+            <button id="salvarOrdem" class="btn btn-success btn-block mt-3">Salvar Ordem</button>
+          `;
+
+        // Ativa drag & drop com SortableJS (funciona no celular)
+        Sortable.create(holder.querySelector("#sortable"), {
+          handle: ".handle",
+          animation: 150,
+          fallbackOnBody: true, // usa fallback que permite scroll no mobile
+          swapThreshold: 0.65, // melhora a troca entre itens
+          scroll: true, // ativa auto-scroll
+          scrollSensitivity: 60, // velocidade do scroll quando chega perto da borda
+          scrollSpeed: 10, // intensidade do scroll
+        });
+
+        // Salvar ordem
+        popup.querySelector("#salvarOrdem").addEventListener("click", () => {
+          const ordem = [...holder.querySelectorAll("li")].map((li) => ({
+            id: li.dataset.id,
+            descricao: li.textContent,
+          }));
+
+          fetch(`${BASE_URL}/marcas/ordem`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ordem }),
+          })
+            .then((r) => r.json())
+            .then(() => {
+              const msg = document.createElement("div");
+              msg.textContent = "Ordem Atualizada com sucesso!";
+              msg.style.position = "fixed";
+              msg.style.top = "20px";
+              msg.style.left = "50%";
+              msg.style.transform = "translateX(-50%)";
+              msg.style.background = "#28a745";
+              msg.style.color = "#fff";
+              msg.style.padding = "12px 24px";
+              msg.style.borderRadius = "6px";
+              msg.style.zIndex = "10000";
+              msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+              document.body.appendChild(msg);
+              setTimeout(() => {
+                msg.remove();
+              }, 2000);
+            })
+            .catch(console.error);
+        });
+      });
+  });
+}
 // ==========================
 // 4️⃣ Toggle Ordem: Popup completo
 // ==========================
 function toggleOrdemModelo() {
   if (!marcasCache.length) return alert("Nenhuma marca carregada ainda!");
+
+  const overlay = criarOverlay();
+  const popup = criarPopup("Gerenciar Ordem dos Modelos");
 
   // Select de marcas + botão buscar
   let selectHtml = `<select id="marcaSelectOrdem" class="form-control">
@@ -1769,15 +2040,9 @@ function toggleOrdemModelo() {
                  <button id="btnBuscarModelosOrdem" class="btn btn-primary btn-block mt-2">Buscar</button>
                  <div id="listaOrdemHolder" class="mt-3"></div>`;
 
-  const popup = criarPopup("Gerenciar Ordem dos Modelos", selectHtml);
-  abrirPopup(popup);
-
-  // Adiciona botão fechar
-  const btnFechar = document.createElement("button");
-  btnFechar.className = "btn btn-secondary mt-3";
-  btnFechar.textContent = "Fechar";
-  btnFechar.onclick = fecharPopup;
-  popup.appendChild(btnFechar);
+  popup.innerHTML = popup.innerHTML + selectHtml + popup.fecharHTML;
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
 
   // Evento buscar modelos
   popup
@@ -1855,9 +2120,40 @@ function toggleOrdemModelo() {
     });
 }
 
+//********************************************* */
+function criarPopupPeca(titulo) {
+  const popup = document.createElement("div");
+  popup.classList.add("popup");
+  popup.style.background = "#fff";
+  popup.style.padding = "20px";
+  popup.style.borderRadius = "8px";
+  popup.style.maxHeight = "80vh";
+  popup.style.overflowY = "auto";
+  popup.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
+  popup.style.margin = "1rem";
+
+  popup.innerHTML = `
+    <h4>${titulo}</h4>
+  `;
+
+  popup.fecharHTML = `
+    <div style="text-align:right; margin-top:10px;">
+      <button class="btn btn-secondary" onclick="fecharPopup(this)">Fechar</button>
+    </div>
+  `;
+  return popup;
+}
+
+// ==========================
+// 4️⃣ Toggle Ordem: Popup completo
+// ==========================
 function toggleOrdemPeca() {
   if (!marcasCache.length) return alert("Nenhuma marca carregada ainda!");
+  //if (!modelosCache.length) return alert("Nenhum modelo carregado ainda!");
   if (!tiposCache.length) return alert("Nenhum tipo carregado ainda!");
+
+  const overlay = criarOverlay();
+  const popup = criarPopup("Gerenciar Ordem Tipos");
 
   // Select de marcas + botão buscar
   let selectHtml = `<select id="marcaSelectOrdem" class="form-control mb-2">
@@ -1881,15 +2177,9 @@ function toggleOrdemPeca() {
                  <button id="btnBuscarPecasOrdem" class="btn btn-primary btn-block mt-2">Buscar</button>
                  <div id="listaOrdemHolder" class="mt-3"></div>`;
 
-  const popup = criarPopup("Gerenciar Ordem Tipos", selectHtml);
-  abrirPopup(popup);
-
-  // Adiciona botão fechar
-  const btnFechar = document.createElement("button");
-  btnFechar.className = "btn btn-secondary mt-3";
-  btnFechar.textContent = "Fechar";
-  btnFechar.onclick = fecharPopup;
-  popup.appendChild(btnFechar);
+  popup.innerHTML = popup.innerHTML + selectHtml + popup.fecharHTML;
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
 
   const marcaSelect = popup.querySelector("#marcaSelectOrdem");
   const modelosSelect = popup.querySelector("#modelosSelectOrdem");
@@ -1971,11 +2261,11 @@ function toggleOrdemPeca() {
         Sortable.create(holder.querySelector("#sortable"), {
           handle: ".handle",
           animation: 150,
-          fallbackOnBody: true,
-          swapThreshold: 0.65,
-          scroll: true,
-          scrollSensitivity: 60,
-          scrollSpeed: 10,
+          fallbackOnBody: true, // usa fallback que permite scroll no mobile
+          swapThreshold: 0.65, // melhora a troca entre itens
+          scroll: true, // ativa auto-scroll
+          scrollSensitivity: 60, // velocidade do scroll quando chega perto da borda
+          scrollSpeed: 10, // intensidade do scroll
         });
 
         // Salvar ordem
@@ -2016,6 +2306,9 @@ function toggleOrdemPeca() {
 }
 
 function toggleOrdemTipoPeca() {
+  const overlay = criarOverlay();
+  const popup = criarPopup("Gerenciar Ordem dos Tipos");
+
   // Select de marcas + botão buscar
   let selectHtml = `<select id="marcaSelectOrdem" class="form-control mb-2">
                       <option value="">Selecione a marca</option>`;
@@ -2026,19 +2319,15 @@ function toggleOrdemTipoPeca() {
 
   selectHtml += `<select id="modelosSelectOrdem" class="form-control mb-2">
                       <option value="">Selecione o modelo</option>`;
+  selectHtml += `</select>`;
+
   selectHtml += `</select>
                  <button id="btnBuscarTipoPecasOrdem" class="btn btn-primary btn-block mt-2">Buscar</button>
                  <div id="listaOrdemHolder" class="mt-3"></div>`;
 
-  const popup = criarPopup("Gerenciar Ordem dos Tipos", selectHtml);
-  abrirPopup(popup);
-
-  // Adiciona botão fechar
-  const btnFechar = document.createElement("button");
-  btnFechar.className = "btn btn-secondary mt-3";
-  btnFechar.textContent = "Fechar";
-  btnFechar.onclick = fecharPopup;
-  popup.appendChild(btnFechar);
+  popup.innerHTML = popup.innerHTML + selectHtml + popup.fecharHTML;
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
 
   const marcaSelect = popup.querySelector("#marcaSelectOrdem");
   const modelosSelect = popup.querySelector("#modelosSelectOrdem");
@@ -2099,11 +2388,11 @@ function toggleOrdemTipoPeca() {
           Sortable.create(holder.querySelector("#sortable"), {
             handle: ".handle",
             animation: 150,
-            fallbackOnBody: true,
-            swapThreshold: 0.65,
-            scroll: true,
-            scrollSensitivity: 60,
-            scrollSpeed: 10,
+            fallbackOnBody: true, // usa fallback que permite scroll no mobile
+            swapThreshold: 0.65, // melhora a troca entre itens
+            scroll: true, // ativa auto-scroll
+            scrollSensitivity: 60, // velocidade do scroll quando chega perto da borda
+            scrollSpeed: 10, // intensidade do scroll
           });
 
           // Salvar ordem
@@ -2141,90 +2430,6 @@ function toggleOrdemTipoPeca() {
           });
         });
     });
-}
-
-//********************************************* */
-
-function toggleOrdemMarca() {
-  // Select de marcas + botão buscar
-  let selectHtml = `<button id="btnBuscarMarcaOrdem" class="btn btn-primary btn-block mt-2">Buscar</button>
-                 <div id="listaOrdemHolder" class="mt-3"></div>`;
-
-  const popup = criarPopup("Gerenciar Ordem das Marcas", selectHtml);
-  abrirPopup(popup);
-
-  // Adiciona botão fechar
-  const btnFechar = document.createElement("button");
-  btnFechar.className = "btn btn-secondary mt-3";
-  btnFechar.textContent = "Fechar";
-  btnFechar.onclick = fecharPopup;
-  popup.appendChild(btnFechar);
-
-  // Evento buscar modelos
-  popup.querySelector("#btnBuscarMarcaOrdem").addEventListener("click", () => {
-    fetch(`${BASE_URL}/marcas`)
-      .then((r) => r.json())
-      .then((marcas) => {
-        const holder = popup.querySelector("#listaOrdemHolder");
-        holder.innerHTML = `
-            <ul id="sortable" class="list-group">
-              ${marcas
-            .map(
-              (m) =>
-                `<li class="list-group-item" data-id="${m.marcascod}"><span class="handle">☰ </span>${m.marcasdes}
-                    </li>`
-            )
-            .join("")}
-            </ul>
-            <button id="salvarOrdem" class="btn btn-success btn-block mt-3">Salvar Ordem</button>
-          `;
-
-        // Ativa drag & drop com SortableJS (funciona no celular)
-        Sortable.create(holder.querySelector("#sortable"), {
-          handle: ".handle",
-          animation: 150,
-          fallbackOnBody: true, // usa fallback que permite scroll no mobile
-          swapThreshold: 0.65, // melhora a troca entre itens
-          scroll: true, // ativa auto-scroll
-          scrollSensitivity: 60, // velocidade do scroll quando chega perto da borda
-          scrollSpeed: 10, // intensidade do scroll
-        });
-
-        // Salvar ordem
-        popup.querySelector("#salvarOrdem").addEventListener("click", () => {
-          const ordem = [...holder.querySelectorAll("li")].map((li) => ({
-            id: li.dataset.id,
-            descricao: li.textContent,
-          }));
-
-          fetch(`${BASE_URL}/marcas/ordem`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ordem }),
-          })
-            .then((r) => r.json())
-            .then(() => {
-              const msg = document.createElement("div");
-              msg.textContent = "Ordem Atualizada com sucesso!";
-              msg.style.position = "fixed";
-              msg.style.top = "20px";
-              msg.style.left = "50%";
-              msg.style.transform = "translateX(-50%)";
-              msg.style.background = "#28a745";
-              msg.style.color = "#fff";
-              msg.style.padding = "12px 24px";
-              msg.style.borderRadius = "6px";
-              msg.style.zIndex = "10000";
-              msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-              document.body.appendChild(msg);
-              setTimeout(() => {
-                msg.remove();
-              }, 2000);
-            })
-            .catch(console.error);
-        });
-      });
-  });
 }
 
 //********************************************* */

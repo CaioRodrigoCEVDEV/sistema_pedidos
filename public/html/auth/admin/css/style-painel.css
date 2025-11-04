@@ -1,77 +1,24 @@
 main {
   margin-top: 120px;
-  height: auto;
-  width: 100%;
-  position: relative;
+  height: 120%;
 }
 
-/* Overlay ocupa a tela inteira e centraliza conteúdo com grid */
 .overlay {
   position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 16px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: rgba(0,0,0,0.5);
-  z-index: 1000;
-  box-sizing: border-box;
-  overflow-y: auto;
+  z-index: 999; /* atrás do popup */
 }
-
-/* Popup responsivo e rolável quando necessário */
 .popup {
-  width: min(520px, 92vw);
-  max-height: min(90svh, 600px);
-  overflow: auto;
-  background: #fff;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
-
-/* Forçar containers a não ultrapassar viewport */
-.container, .container-fluid, .row {
-  max-width: 100% !important;
-}
-
-/* Ajustes para telas móveis (até 450px) */
-@media (max-width: 450px) {
-  main {
-    margin-top: clamp(60px, 8vh, 100px);
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-  
-  /* Remover margens que causam overflow */
-  .navbar {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-  
-  .overlay {
-    padding: 8px;
-  }
-  
-  .popup {
-    width: min(520px, 96vw);
-    padding: 16px;
-    max-height: min(92svh, 600px);
-  }
-  
-  /* Reduzir padding de containers */
-  .container, .container-fluid {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-  }
-  
-  /* Garantir que rows não ultrapassem */
-  .row {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-  
-  /* Ajustar padding do main */
-  main.p-3 {
-    padding: 0.5rem !important;
-  }
+  z-index: 1000; /* acima do overlay */
 }
