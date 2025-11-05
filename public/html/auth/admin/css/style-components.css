@@ -1,7 +1,6 @@
 .bg-grad-1 {
   background: linear-gradient(135deg, #6ea8fe, #3b82f6);
 }
-
 .bg-grad-2 {
   background: linear-gradient(135deg, #a78bfa, #7c3aed);
 }
@@ -40,6 +39,43 @@
     background: linear-gradient(135deg, #3081fb, #106cff);
   }
 }
+.button-color-2 {
+    width: 100%;
+  padding: 0.4rem;
+  border-radius: 8px;
+  border: none;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  &:hover {
+    background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  }
+}
+.button-color-3 {
+    width: 100%;
+  padding: 0.4rem;
+  border-radius: 8px;
+  border: none;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(135deg, #f59e0b, #fb923c);
+  &:hover {
+    background: linear-gradient(135deg, #d97706, #f97316);
+  }
+}
+.button-color-4 {
+    width: 100%;
+  padding: 0.4rem;
+  border-radius: 8px;
+  border: none;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(135deg, #34d399, #10b981);
+  &:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+  }
+}
+
 /*Titulo das paginas*/
 .panel-hero {
   background: linear-gradient(
