@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         aria-label="Quantidade" aria-describedby="basic-addon1">
                 </div>
                 <div class="col">
-                    <button class="btn btn-success"
+                    <button class="button-color-4"
                         onclick="adicionarEstoque(${dado.procod}, this.closest('.row').querySelector('input').value, ${dado.procorcorescod})">
                         Adicionar
                     </button>
@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         aria-label="Quantidade" aria-describedby="basic-addon1">
                 </div>
                 <div class="col">
-                    <button class="btn btn-success"
+                    <button class="button-color-4"
                         onclick="adicionarEstoque(${dado.procod}, this.closest('.row').querySelector('input').value, ${dado.procorcorescod})">
                         Adicionar
                     </button>
