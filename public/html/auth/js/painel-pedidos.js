@@ -54,9 +54,9 @@ document.addEventListener("DOMContentLoaded", function () {
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${dado.pvcod
+              <button type="button" class="button-color-3" onclick="abriDetalhePedido(${dado.pvcod
           })">
-                <i class="bi bi-search"></i>
+                <i class="fa-solid fa-wrench"></i>
               </button>
             </div>          
           </td>
@@ -99,7 +99,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
           <div class="modal-footer">
             <button type="button" id="btnCancelarPedidoModal" class="btn btn-danger">Cancelar Pedido</button>
             ${status !== "confirmados"
-        ? '<button type="button" id="btnConfirmarPedidoModal" class="btn btn-success">Confirmar Pedido</button>'
+        ? '<button type="button" id="btnConfirmarPedidoModal" class="button-color-4 w-25">Confirmar Pedido</button>'
         : ""
       }
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
@@ -431,9 +431,9 @@ document.addEventListener("DOMContentLoaded", function () {
         )}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${dado.pvcod
+              <button type="button" class="button-color-4" onclick="abriDetalhePedido(${dado.pvcod
           }, 'confirmados')">
-                <i class="bi bi-search"></i>
+                <i class="fa-solid fa-eye"></i>
               </button>
             </div>          
           </td>
