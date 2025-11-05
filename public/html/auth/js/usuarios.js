@@ -216,7 +216,9 @@ btnNew.addEventListener('click', () => {
 // Toggle mostrar senha
 togglePwd.addEventListener('click', () => {
   usuSenha.type = usuSenha.type === 'password' ? 'text' : 'password';
-  togglePwd.textContent = usuSenha.type === 'password' ? '👁' : '🙈';
+  togglePwd.innerHTML = usuSenha.type === 'password'
+    ? '<i class="fa-solid fa-eye"></i>'
+    : '<i class="fa-solid fa-eye-slash"></i>';
 });
 
 
