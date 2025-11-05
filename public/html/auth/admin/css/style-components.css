@@ -1,0 +1,43 @@
+.bg-grad-1 {
+  background: linear-gradient(135deg, #6ea8fe, #3b82f6);
+}
+
+.bg-grad-2 {
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+}
+.bg-grad-3 {
+  background: linear-gradient(135deg, #f59e0b, #fb923c);
+}
+.bg-grad-4 {
+  background: linear-gradient(135deg, #34d399, #10b981);
+}
+
+.bg-card-1 {
+  background: linear-gradient(135deg, #6ea8fe, #3b82f6);
+}
+.bg-card-2 {
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+}
+.bg-card-3 {
+  background: linear-gradient(135deg, #f59e0b, #fb923c);
+}
+.bg-card-4 {
+  background: linear-gradient(135deg, #34d399, #10b981);
+}
+.bg-card-5 {
+  background: linear-gradient(135deg, #f472b6, #fb7185);
+}
+
+.button-color-1 {
+    width: 100%;
+  padding: 0.4rem;
+  border-radius: 8px;
+  border: none;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(135deg, #6ea8fe, #3b82f6);
+  &:hover {
+    background: linear-gradient(135deg, #3081fb, #106cff);
+  }
+}
+
