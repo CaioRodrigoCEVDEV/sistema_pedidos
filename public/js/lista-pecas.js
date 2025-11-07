@@ -45,19 +45,21 @@ document.addEventListener("DOMContentLoaded", function () {
     .then((dados) => {
       const corpoTabela = document.getElementById("corpoTabela");
       corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
+      console.log(dados);
 
       dados.forEach((dado) => {
         const item = document.createElement("div");
         item.className = "cart-item";
         item.dataset.preco = dado.provl;
+        const isDisabled = dado.prosemest === "S";
         item.innerHTML = `
             <div class="item-name">${dado.prodes}</div>
             <div class="item-tipo">${dado.tipodes}</div>
-            <div class="item-price">${formatarMoeda(
-              dado.provl
-            )} <button class="btn btn-info btn-sm btn-add" onclick="adicionarAoCarrinho('${
-          dado.procod
-        }')">Adicionar</button></div>
+            <div class="item-price">${formatarMoeda(dado.provl)} 
+              <button class="btn btn-info btn-sm btn-add" ${isDisabled ? 'disabled title="Indisponível no semestre"' : `onclick="adicionarAoCarrinho('${dado.procod}')"`}>
+          ${isDisabled ? "Indisponível" : "Adicionar"}
+              </button>
+            </div>
           `;
 
         corpoTabela.appendChild(item);
