@@ -11,12 +11,13 @@ exports.sequencia = async (req, res) => {
 };
 
 exports.inserirPv = async (req, res, next) => {
-  const { pvcod, total, obs, canal, status, confirmado } = req.body;
+  const { pvcod, total, obs, canal, status, confirmado, codigoVendedor } =
+    req.body;
 
   try {
     const result = await pool.query(
-      "INSERT INTO pv (pvcod, pvvl, pvobs, pvcanal, pvsta, pvconfirmado) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-      [pvcod, total, obs, canal, status, confirmado]
+      "INSERT INTO pv (pvcod, pvvl, pvobs, pvcanal, pvsta, pvconfirmado, pvrcacod) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+      [pvcod, total, obs, canal, status, confirmado, codigoVendedor]
     );
 
     // guarda o pvcod e o total para o próximo passo
@@ -65,9 +66,14 @@ exports.inserirPvi = async (req, res) => {
 };
 
 exports.listarPv = async (req, res) => {
+  const usucod = req.token.usucod;
   try {
     const result = await pool.query(
-      "select * from pv left join pvi on pvipvcod = pvcod where pvconfirmado = 'N' and pvsta = 'A' and pviprocod is not null order by pvcod desc"
+      "select * from pv left join usu on usucod = pvrcacod left join pvi on pvipvcod = pvcod " +
+        "where pvconfirmado = 'N' and pvsta = 'A' and pviprocod is not null " +
+        "and pvrcacod = $1 or pvrcacod is null " +
+        "order by pvcod desc",
+      [usucod]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -125,9 +131,11 @@ exports.listarTotalPvConfirmados = async (req, res) => {
 };
 
 exports.listarPvConfirmados = async (req, res) => {
+  const usucod = req.token.usucod;
   try {
     const result = await pool.query(
-      "select * from pv where pvconfirmado = 'S' and pvsta = 'A' order by pvcod desc"
+      "select * from pv left join usu on usucod = pvrcacod where pvconfirmado = 'S' and pvsta = 'A' and pvrcacod = $1 or pvrcacod is null order by pvcod desc",
+      [usucod]
     );
     res.status(200).json(result.rows);
   } catch (error) {

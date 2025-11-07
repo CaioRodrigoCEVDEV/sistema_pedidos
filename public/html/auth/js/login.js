@@ -99,11 +99,14 @@ document.getElementById("formLogin").addEventListener("submit", async (e) => {
         localStorage.removeItem("savedPassword");
       }
       localStorage.setItem("usuarioLogado", usuemail);
-      console.log(usuemail);
+      localStorage.setItem("usuarioName", data.usucod);
       window.location.href = `${BASE_URL}/painel`;
     } else {
       if (response.status === 403) {
-        alertPersonalizado(data.mensagem || "Usuário inativo. Contate o administrador.", 3000);
+        alertPersonalizado(
+          data.mensagem || "Usuário inativo. Contate o administrador.",
+          3000
+        );
         return;
       }
       alertPersonalizado(data.mensagem || "Email ou senha incorretos!", 2000);

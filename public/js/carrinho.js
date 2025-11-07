@@ -4,6 +4,7 @@ const id = params.get("id");
 const modelo = params.get("modelo");
 const marcascod = params.get("marcascod");
 const qtde = params.get("qtde");
+const codigoVendedor = document.getElementById("codigoVendedor");
 
 function formatarMoeda(valor) {
   return Number(valor).toLocaleString("pt-BR", {
@@ -23,14 +24,32 @@ document.addEventListener("DOMContentLoaded", function () {
   const usuarioLogado = localStorage.getItem("usuarioLogado");
   const botaoOrcamento = document.getElementById("botao-orcamento");
 
-  console.log(usuarioLogado);
-
   if (usuarioLogado) {
+    buscarVendedores();
     botaoOrcamento.style.display = "inline";
+    codigoVendedor.style.display = "inline";
   } else {
     botaoOrcamento.style.display = "none";
+    codigoVendedor.style.display = "none";
   }
 });
+
+async function buscarVendedores({ keepSearch = true } = {}) {
+  try {
+    const res = await fetch(`${BASE_URL}/vendedor/listar`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const dados = await res.json();
+    const list = Array.isArray(dados) ? dados : [];
+
+    const select = document.getElementById("codigoVendedor");
+    list.forEach((m) => {
+      select.innerHTML += `<option value="${m.usucod}">${m.usunome}</option>`;
+    });
+  } catch (err) {
+    console.error("Failed to refresh users:", err);
+    alert("Erro ao recarregar vendedores. Veja console para mais detalhes.");
+  }
+}
 
 function renderCart() {
   const corpoTabela = document.getElementById("carrinhoCorpo");
@@ -243,6 +262,7 @@ async function enviarWhatsApp() {
       canal: "BALCAO",
       status: "A",
       confirmado: "N",
+      codigoVendedor: codigoVendedor.value || null,
     }),
   });
   const data = await respPedido.json();
@@ -354,6 +374,7 @@ async function enviarWhatsAppEntrega() {
       canal: "ENTREGA",
       status: "A",
       confirmado: "N",
+      codigoVendedor: codigoVendedor.value || null,
     }),
   });
   const data = await respPedido.json();

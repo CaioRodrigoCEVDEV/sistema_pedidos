@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // pedidos pedentes
 document.addEventListener("DOMContentLoaded", function () {
-  fetch(`${BASE_URL}/v2/pedidos/listar`)
+  fetch(`${BASE_URL}/pedidos/listar`)
     .then((res) => res.json())
     .then((dados) => {
       const corpoTabela = document.getElementById("corpoTabela");
@@ -51,11 +51,13 @@ document.addEventListener("DOMContentLoaded", function () {
         tr.innerHTML = `
           <td class="text-center">${dado.pvcod}</td>
           <td class="text-center">${dado.pvcanal}</td>
+          <td class="text-center">${dado.usunome || "Sem Vendedor"}</td>
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="button-color-3" onclick="abriDetalhePedido(${dado.pvcod
-          })">
+              <button type="button" class="button-color-3" onclick="abriDetalhePedido(${
+                dado.pvcod
+              })">
                 <i class="fa-solid fa-wrench"></i>
               </button>
             </div>          
@@ -98,10 +100,11 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
           </div>
           <div class="modal-footer">
             <button type="button" id="btnCancelarPedidoModal" class="btn btn-danger">Cancelar Pedido</button>
-            ${status !== "confirmados"
-        ? '<button type="button" id="btnConfirmarPedidoModal" class="button-color-4 w-25">Confirmar Pedido</button>'
-        : ""
-      }
+            ${
+              status !== "confirmados"
+                ? '<button type="button" id="btnConfirmarPedidoModal" class="button-color-4 w-25">Confirmar Pedido</button>'
+                : ""
+            }
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
           </div>
         </div>
@@ -114,14 +117,14 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
 
     const linhasItens = pedido.length
       ? pedido
-        .map((it, i) => {
-          const descricao = it.prodes || "";
-          const qtd = it.pviqtde ?? 0;
-          const preco = it.pvivl ?? 0;
-          const subtotal = it.pvivl * it.pviqtde ?? 0;
-          const procod = it.pviprocod || 0;
-          const pv = it.pvcod || pvcod;
-          return `<tr>
+          .map((it, i) => {
+            const descricao = it.prodes || "";
+            const qtd = it.pviqtde ?? 0;
+            const preco = it.pvivl ?? 0;
+            const subtotal = it.pvivl * it.pviqtde ?? 0;
+            const procod = it.pviprocod || 0;
+            const pv = it.pvcod || pvcod;
+            return `<tr>
               <td class="text-center" data-procod="${procod}">${i + 1}</td>
               <td>${descricao}</td>
               <td style="padding: 0.2rem;">
@@ -140,8 +143,8 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
                 </button>
               </td>
             </tr>`;
-        })
-        .join("")
+          })
+          .join("")
       : `<tr><td colspan="6" class="text-center">Nenhum item encontrado</td></tr>`;
 
     const totalPedido = pedido.reduce(
@@ -170,10 +173,11 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
               <th colspan="4" class="text-end">Total</th>
               <th class="text-end">${formatarMoeda(totalPedido)}</th>
             </tr>
-            ${pedido.pvobs
-        ? `<tr><td colspan="5"><strong>Obs:</strong> ${pedido.pvobs}</td></tr>`
-        : ""
-      }
+            ${
+              pedido.pvobs
+                ? `<tr><td colspan="5"><strong>Obs:</strong> ${pedido.pvobs}</td></tr>`
+                : ""
+            }
           </tfoot>
         </table>
       </div>
@@ -199,9 +203,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
 
     if (newBtnConfirm) {
       newBtnConfirm.addEventListener("click", async () => {
-
         try {
-
           // // pega todas as linhas de itens
           const linhas = modalEl.querySelectorAll("tbody tr");
           const itens = [];
@@ -209,7 +211,6 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
           linhas.forEach((tr) => {
             const cellProcod = tr.querySelector("[data-procod]");
             const inputQtd = tr.querySelector(".qtd-input");
-
 
             // garante que ambos existam
             if (cellProcod && inputQtd) {
@@ -228,16 +229,12 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
           const m = bootstrap.Modal.getInstance(modalEl);
           m.hide();
           await confirmarPedido(pvcod);
-          
         } catch (err) {
           console.error("Erro ao confirmar via modal:", err);
           alert("Erro ao confirmar pedido.");
-        }
-        finally {
+        } finally {
           window.location.reload();
-
         }
-        
       });
     }
 
@@ -299,20 +296,16 @@ async function cancelarItem(procod, pvcod) {
   }
 }
 
-
 // cancelar Pedido
 async function cancelarPv(pvcod) {
   try {
-    const response = await fetch(
-      `${BASE_URL}/v2/pedidos/cancelar/${pvcod}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ pvcod: pvcod }),
-      }
-    );
+    const response = await fetch(`${BASE_URL}/v2/pedidos/cancelar/${pvcod}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ pvcod: pvcod }),
+    });
     if (response.ok) {
       alert("Pedido cancelado com sucesso!");
       location.reload();
@@ -325,7 +318,6 @@ async function cancelarPv(pvcod) {
     alert("Erro ao cancelar o Pedido.");
   }
 }
-
 
 // confirmação de pedidos
 async function confirmarPedido(pvcod) {
@@ -389,8 +381,9 @@ async function cancelarPedido(pvcod) {
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${dado.pvcod
-          }, 'confirmados')">
+              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${
+                dado.pvcod
+              }, 'confirmados')">
                 <i class="bi bi-search"></i>
               </button>
             </div>          
@@ -426,13 +419,17 @@ document.addEventListener("DOMContentLoaded", function () {
         tr.innerHTML = `
           <td class="text-center" style="color: green;">${dado.pvcod}</td>
           <td class="text-center" style="color: green;">${dado.pvcanal}</td>
+          <td class="text-center" style="color: green;">${
+            dado.usunome || "Sem Vendedor"
+          }</td>
           <td class="text-right" style="color: green;">${formatarMoeda(
-          dado.pvvl
-        )}</td>
+            dado.pvvl
+          )}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="button-color-4" onclick="abriDetalhePedido(${dado.pvcod
-          }, 'confirmados')">
+              <button type="button" class="button-color-4" onclick="abriDetalhePedido(${
+                dado.pvcod
+              }, 'confirmados')">
                 <i class="fa-solid fa-eye"></i>
               </button>
             </div>          
