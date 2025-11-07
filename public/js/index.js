@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         
           <div class="col-6 col-md-4 col-lg-3">
             <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-100 text-decoration-none">
-              <button class="btn btn-success w-100 shadow-sm py-3 fw-semibold brand-btn">
+              <button class="btn btn-primary w-100 shadow-sm py-3 fw-semibold brand-btn">
                 ${dado.marcasdes}
               </button>
             </a>
@@ -537,7 +537,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 deferredPrompt = null;
             });
         });
-        
+
 // Registro do Service Worker
 if ("serviceWorker" in navigator) {
             navigator.serviceWorker.register("/sw.js").then(() => {
