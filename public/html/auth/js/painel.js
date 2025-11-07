@@ -529,53 +529,51 @@ function editarProduto(codigo) {
       // Preenche os campos com os dados carregados do produto
       popup.innerHTML = `
         <div style="
-            background:#fff;
-            padding:24px;
-            border-radius:8px;
-            min-width:300px;
-            max-width:90vw;
-            max-height:90vh;   /* limite de altura */
-            overflow-y:auto;   /* cria scroll se passar do limite */
+        background:#fff;
+        padding:24px;
+        border-radius:8px;
+        min-width:300px;
+        width:40vw;
+        max-height:80vh;   /* limite de altura do popup */
+        overflow:auto;     /* adiciona barra de rolagem quando necessário */
+        -webkit-overflow-scrolling: touch;
+        box-sizing: border-box;
         ">
-          <h5>Editar Produto</h5>
+          <h5>📦 Editar Produto</h5>
+          <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
           <form id="formEditarProduto">
-            <div class="mb-3">
-              <label for="editarDescricao" class="form-label">Descrição</label>
-              <input type="text" class="form-control" id="editarDescricao" name="prodes" 
-                value="${produto[0].prodes || ""}" required>
+        <div class="mb-3">
+          <label for="editarDescricao" class="form-label">📝 Descrição</label>
+          <input type="text" class="form-control" id="editarDescricao" name="prodes" 
+            value="${produto[0].prodes || ""}" required>
+        </div>
+        <div class="mb-3">
+          <label for="editarValor" class="form-label">💰 Valor</label>
+          <input type="number" step="0.01" class="form-control" id="editarValor" name="provl" 
+            value="${Number(produto[0].provl).toFixed(2) || ""}" required>
+        </div>
+        <div>
+          <label for="editarEst" class="form-label">Sem estoque</label>
+          <input class="form-check-input" type="checkbox" name="prosemest" value="${produto.prosemest}" id="editar_prosemest" ${produto.some((pro) => pro.prosemest === 'S') ? "checked" : "" }>
+        </div>
+        <div>
+          <details close>
+            <summary class="mb-2">🎨 Vincule as cores disponíveis do produto</summary>
+            <div class="mb-3" id="editarProdutoCores" style="max-height:220px; overflow:auto; padding-right:8px;">
+          <label> </label><br>
+          ${coresDisponiveis.map((c) => `
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="procor" value="${c.corcod}" id="editar_cor_${c.corcod}" ${coresProduto.some((cp) => cp.corcod == c.corcod) ? "checked" : ""}>
+              <label class="form-check-label" for="editar_cor_${c.corcod}">${c.cornome}</label>
             </div>
-            <div class="mb-3">
-              <label for="editarValor" class="form-label">Valor</label>
-              <input type="number" step="0.01" class="form-control" id="editarValor" name="provl" 
-                value="${Number(produto[0].provl).toFixed(2) || ""}" required>
+          `).join('')}
             </div>
-            <div>
-              <label for="editarEst" class="form-label">Sem estoque</label>
-              <input class="form-check-input" type="checkbox" name="prosemest" value="${produto.prosemest}" id="editar_prosemest" ${produto.some((pro) => pro.prosemest === 'S') ? "checked" : "" }>
-            </div>
-            <div class="mb-3" id="editarProdutoCores">
-              <label>Selecione a(s) cor(es):</label><br>
-              ${coresDisponiveis
-          .map(
-            (c) => `
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="procor" value="${c.corcod
-              }"
-                  id="editar_cor_${c.corcod}" 
-                  ${coresProduto.some((cp) => cp.corcod == c.corcod)
-                ? "checked"
-                : ""
-              }>
-                <label class="form-check-label" for="editar_cor_${c.corcod}">${c.cornome
-              }</label>
-              </div>`
-          )
-          .join("")}
-            </div>
-            <div style="display:flex;gap:8px;justify-content:flex-end;">
-              <button type="button" class="btn btn-secondary" id="cancelarEditarProduto">Cancelar</button>
-              <button type="submit" class="btn btn-primary">Salvar</button>
-            </div>
+          </details>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button type="button" class="btn btn-secondary" id="cancelarEditarProduto">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
           </form>
         </div>
       `;
@@ -595,7 +593,7 @@ function editarProduto(codigo) {
         const provl = document.getElementById("editarValor").value;
         const editar_prosemest = document.getElementById("editar_prosemest").checked;
         const prosemest = editar_prosemest ? 'S' : 'N';
-        console.log(editar_prosemest);
+        //console.log(editar_prosemest);
         const corCheckboxes = popup.querySelectorAll(
           '#editarProdutoCores input[type="checkbox"]'
         );
@@ -892,11 +890,12 @@ function editarMarca(id, nome) {
   popup.style.zIndex = "9999";
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
-      <h5>Editar Marca</h5>
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;width:40vw;">
+      <h5>🏷️ Editar Marca</h5>
+      <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
       <form id="formEditarMarca">
         <div class="mb-3">
-          <label for="editarMarcaDescricao" class="form-label">Descrição</label>
+          <label for="editarMarcaDescricao" class="form-label">📝 Descrição</label>
           <input type="text" class="form-control" id="editarMarcaDescricao" name="marcasdes" value="${nome || ""
     }" required>
         </div>
@@ -1108,15 +1107,16 @@ function editarModelo(id, nome, marca) {
 
   popup.innerHTML = `
     <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
-      <h5>Editar Modelo</h5>
+      <h5>📱 Editar Modelo</h5>
+      <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
       <form id="formEditarModelo">
         <div class="mb-3">
-          <label for="editarModeloDescricao" class="form-label">Descrição</label>
+          <label for="editarModeloDescricao" class="form-label">📝 Descrição</label>
           <input type="text" class="form-control" id="editarModeloDescricao" name="moddes" value="${nome || ""
     }" required>
         </div>
         <div class="mb-3">
-          <label for="editarModeloMarca" class="form-label">Marca</label>
+          <label for="editarModeloMarca" class="form-label">🏷️ Marca</label>
           <select class="form-control" id="editarModeloMarca" name="modmarcascod" required>
             <option value="">Carregando marcas...</option>
           </select>
@@ -1136,7 +1136,7 @@ function editarModelo(id, nome, marca) {
     .then((r) => r.json())
     .then((marcas) => {
       const select = document.getElementById("editarModeloMarca");
-      select.innerHTML = '<option value="">Selecione uma marca</option>';
+      select.innerHTML = '<option value="">Selecione</option>';
       marcas.forEach((m) => {
         select.innerHTML += `<option value="${m.marcascod}"${m.marcascod == marca ? " selected" : ""
           }>${m.marcasdes}</option>`;
@@ -1326,11 +1326,12 @@ function editarTipo(id, nome) {
   popup.style.zIndex = "9999";
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
-      <h5>Editar Tipo</h5>
+    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;width:40vw;">
+      <h5>📋 Editar Tipo</h5>
+      <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
       <form id="formEditarTipo">
         <div class="mb-3">
-          <label for="editarTipoDescricao" class="form-label">Descrição</label>
+          <label for="editarTipoDescricao" class="form-label">📝 Descrição</label>
           <input type="text" class="form-control" id="editarTipoDescricao" name="tipodes" value="${nome || ""
     }" required>
         </div>
@@ -1528,10 +1529,11 @@ function editarCor(id, nome) {
 
   popup.innerHTML = `
     <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
-      <h5>Editar Cor</h5>
+      <h5>🎨 Editar Cor</h5>
+      <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
       <form id="formEditarCor">
         <div class="mb-3">
-          <label for="editarCorDescricao" class="form-label">Descrição</label>
+          <label for="editarCorDescricao" class="form-label">📝 Descrição</label>
           <input type="text" class="form-control" id="editarCorDescricao" name="cornome" value="${(
       nome || ""
     ).replace(/"/g, "&quot;")}"
