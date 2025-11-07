@@ -20,19 +20,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       let html = '<div class="row g-4">'; // gap entre os itens
       dados.forEach((dado) => {
         html += `
-        <style> .brand-btn {
-    border-radius: 12px;
-    transition: all 0.2s ease-in-out;
-  }
-  .brand-btn:hover {
-    background-color: #0d6efd;
-    color: white;
-    transform: translateY(-2px);
-  }
-  </style>
-          <div class="col-6 col-md-4 col-lg-3 px-2 mb-3">
+        
+          <div class="col-6 col-md-4 col-lg-3">
             <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-100 text-decoration-none">
-              <button class="btn btn-light w-100 shadow-sm py-3 fw-semibold brand-btn">
+              <button class="btn btn-success w-100 shadow-sm py-3 fw-semibold brand-btn">
                 ${dado.marcasdes}
               </button>
             </a>
@@ -525,3 +516,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// Botão de instalação PWA
+ let deferredPrompt;
+        const btnInstall = document.getElementById("btnInstall");
+
+        // Captura o evento antes do Chrome exibir o banner nativo
+        window.addEventListener("beforeinstallprompt", (e) => {
+            e.preventDefault(); // impede o banner automático
+            deferredPrompt = e;
+            btnInstall.style.display = "block"; // mostra botão manual
+        });
+
+        // Quando o usuário clicar no botão
+        btnInstall.addEventListener("click", () => {
+            btnInstall.style.display = "none"; // esconde o botão
+            deferredPrompt.prompt(); // dispara o banner nativo
+            deferredPrompt.userChoice.then((choiceResult) => {
+                console.log("Usuário escolheu:", choiceResult.outcome);
+                deferredPrompt = null;
+            });
+        });
+        
+// Registro do Service Worker
+if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/sw.js").then(() => {
+                console.log("Service Worker registrado");
+            });
+        }
