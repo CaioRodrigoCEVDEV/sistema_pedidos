@@ -73,10 +73,10 @@
                 </div>
             </div>
             <div id="cardsArea">
-                <div class="container">
+                <div class="container bg-warning">
                     <h2 class="text-center fw-bold mb-5">Selecione a Marca do Aparelho</h2>
                 </div>
-                <div class="container">
+                <div class="container bg-danger">
                     <div id="marcaTitulo">
                         <!--Conteudo inserido via js marcas cadastradas-->
                     </div>
@@ -89,7 +89,7 @@
                 </div>
             </div>
         </main>
-        <footer class="border-top bg-white shadow py-4 fixed-bottom">
+        <footer class="border-top bg-white shadow py-4 ">
             <div class="w-75 m-auto d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div class="small text-muted">© <span id="y"></span> Sistema Pedidos via Whatsapp — <a href="#">MTTR
                         Tecnologia que transforma seu negócio.</a></div>
@@ -129,47 +129,11 @@
         </div>
     </div>
 
-
     <!-- Botão oculto que só aparece quando o Chrome liberar o install prompt -->
-    <button id="btnInstall" class="btn btn-success" style="display:none; 
-         position:fixed; 
-         bottom:20px; 
-         left:50%; 
-         transform:translateX(-50%); 
-         z-index:9999;">
+    <button id="btnInstall" class="btn btn-success">
         📲 Instalar App
     </button>
 
-
-
-    <script>
-        let deferredPrompt;
-        const btnInstall = document.getElementById("btnInstall");
-
-        // Captura o evento antes do Chrome exibir o banner nativo
-        window.addEventListener("beforeinstallprompt", (e) => {
-            e.preventDefault(); // impede o banner automático
-            deferredPrompt = e;
-            btnInstall.style.display = "block"; // mostra botão manual
-        });
-
-        // Quando o usuário clicar no botão
-        btnInstall.addEventListener("click", () => {
-            btnInstall.style.display = "none"; // esconde o botão
-            deferredPrompt.prompt(); // dispara o banner nativo
-            deferredPrompt.userChoice.then((choiceResult) => {
-                console.log("Usuário escolheu:", choiceResult.outcome);
-                deferredPrompt = null;
-            });
-        });
-    </script>
-    <script>
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("/sw.js").then(() => {
-                console.log("Service Worker registrado");
-            });
-        }
-    </script>
 
     <script src="../js/nomeEmpresa.js"></script>
     <script src="/config.js"></script>
