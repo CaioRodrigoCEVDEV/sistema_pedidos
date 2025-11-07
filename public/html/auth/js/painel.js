@@ -549,6 +549,10 @@ function editarProduto(codigo) {
               <input type="number" step="0.01" class="form-control" id="editarValor" name="provl" 
                 value="${Number(produto[0].provl).toFixed(2) || ""}" required>
             </div>
+            <div>
+              <label for="editarEst" class="form-label">Sem estoque</label>
+              <input class="form-check-input" type="checkbox" name="prosemest" value="${produto.prosemest}" id="editar_prosemest" ${produto.some((pro) => pro.prosemest === 'S') ? "checked" : "" }>
+            </div>
             <div class="mb-3" id="editarProdutoCores">
               <label>Selecione a(s) cor(es):</label><br>
               ${coresDisponiveis
@@ -577,6 +581,7 @@ function editarProduto(codigo) {
       `;
 
       document.body.appendChild(popup);
+      
 
       document.getElementById("cancelarEditarProduto").onclick = function () {
         document.body.removeChild(popup);
@@ -588,6 +593,9 @@ function editarProduto(codigo) {
         e.preventDefault();
         const prodes = document.getElementById("editarDescricao").value.trim();
         const provl = document.getElementById("editarValor").value;
+        const editar_prosemest = document.getElementById("editar_prosemest").checked;
+        const prosemest = editar_prosemest ? 'S' : 'N';
+        console.log(editar_prosemest);
         const corCheckboxes = popup.querySelectorAll(
           '#editarProdutoCores input[type="checkbox"]'
         );
@@ -602,7 +610,7 @@ function editarProduto(codigo) {
           const res = await fetch(`${BASE_URL}/pro/${codigo}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prodes, provl }),
+            body: JSON.stringify({ prodes, provl,prosemest }),
           });
           if (res.status === 403) {
             throw new Error("403");
