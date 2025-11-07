@@ -54,8 +54,12 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.pro ADD IF NOT exists proqtde int4 DEFAULT 0 NOT NULL;`
     );
-    await pool.query(`ALTER TABLE public.pv ADD if not exists pvdtcad date DEFAULT now() NOT NULL;
-`)
+    await pool.query(`ALTER TABLE public.pv ADD if not exists pvdtcad date DEFAULT now() NOT NULL;`
+
+    )
+    await pool.query(`ALTER TABLE public.pro ADD if not exists prosemest varchar(1) default 'N';`
+      
+    )    
     // FIM NOVOS CAMPOS
     // ==================================================================================================================================
 
