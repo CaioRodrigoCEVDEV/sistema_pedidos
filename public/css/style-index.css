@@ -1,25 +1,19 @@
-html,body {
-  height: 100%;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-}
 
-/* Main ocupa o espaço restante */
-main {
-  flex: 1 0 auto;
+.button-cart {
+    position: fixed;
+    width: 50px;
+    height: 50px;
+    bottom: 20px;
+    right: 20px;
+    background-color: #f3f3f3c8;
+    color: #121212;
+    border-radius: 50px;
+    text-align: center;
+    font-size: 30px;
+    box-shadow: 1px 1px 2px #888;
+    
 }
-
-/* Footer no final, mas só se não houver conteúdo suficiente */
-footer {
-  flex-shrink: 0;
-}
-.brand-btn {
-  border-radius: 12px;
-  transition: all 0.2s ease-in-out;
-}
-.brand-btn:hover {
-  background-color: #0d6efd;
-  color: white;
-  transform: translateY(-2px);
+.button-cart:hover {
+    background-color: #ffffff;
+    transition: 0.5s;
 }

@@ -23,26 +23,7 @@
   font-style: normal;
 }
 
-html, body {
-    height: 100%;
-    margin: 0;
-    overflow-x: hidden;
-}
-body {
-    margin-top: 4rem;
-}
 
-main{
-    
-    flex: 1;
-}
-
-.page-wrapper {
-    padding-top: 5em;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
 
 .navbar {
   background-color: rgba(255, 255, 255, 0.7); /* Fundo branco semitransparente */
