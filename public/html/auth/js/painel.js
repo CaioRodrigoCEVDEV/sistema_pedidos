@@ -553,7 +553,7 @@ function editarProduto(codigo) {
             value="${Number(produto[0].provl).toFixed(2) || ""}" required>
         </div>
         <div>
-          <label for="editarEst" class="form-label">Sem estoque</label>
+          <label for="editarEst" class="form-label">📥 Sem estoque</label>
           <input class="form-check-input" type="checkbox" name="prosemest" value="${produto.prosemest}" id="editar_prosemest" ${produto.some((pro) => pro.prosemest === 'S') ? "checked" : "" }>
         </div>
         <div>
