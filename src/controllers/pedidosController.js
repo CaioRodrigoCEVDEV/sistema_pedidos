@@ -157,16 +157,42 @@ exports.listarTotalPvConfirmados = async (req, res) => {
 
 exports.listarPvConfirmados = async (req, res) => {
   const usucod = req.token.usucod;
-  const {dataInicio, dataFim} = req.query;
+  let { dataInicio, dataFim } = req.query || {};
+  
+  if (!dataInicio) dataInicio = "1900-01-01";
+  if (!dataFim) dataFim = "2999-12-31";
+
   try {
     const result = await pool.query(
-      `select * from pv 
-              left join usu on usucod = pvrcacod 
-              where pvconfirmado = 'S' 
-              and pvsta = 'A' 
-              and (pvrcacod = $1 or pvrcacod is null) 
-              and pvdtcad between $2 and $3
-              order by pvcod desc`,
+      `select 
+            pvcod,
+            pvvl,
+            pvobs,
+            pvcanal,
+            pvconfirmado,
+            pvsta,
+            pvipvcod,
+            pvrcacod,
+            sum(pvivl) as pvvltotal,
+            usunome
+            from pv 
+            left join pvi on pvipvcod = pvcod
+            left join usu on usucod = pvrcacod
+            where pvconfirmado = 'S' 
+            and (pvrcacod = $1 or pvrcacod is null )
+            and pvsta = 'A' 
+            and pviprocod is not null 
+            and pvdtcad between $2 and $3
+            group by 
+            pvcod,
+            pvvl,
+            pvobs,
+            pvcanal,
+            pvconfirmado,
+            pvsta,
+            pvipvcod,
+            usunome
+            order by pvcod desc`,
       [usucod,dataInicio, dataFim]
     );
     res.status(200).json(result.rows);
@@ -178,7 +204,11 @@ exports.listarPvConfirmados = async (req, res) => {
 
 exports.listarPvPendentes = async (req, res) => {
   const usucod = req.token.usucod;
-  const {dataInicio, dataFim} = req.query;
+  let { dataInicio, dataFim } = req.query || {};
+  
+  if (!dataInicio) dataInicio = "1900-01-01";
+  if (!dataFim) dataFim = "2999-12-31";
+
   try {
     const result = await pool.query(
       `       
