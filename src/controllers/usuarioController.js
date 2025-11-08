@@ -77,8 +77,8 @@ exports.atualizarCadastro = async (req, res) => {
       .digest("hex");
 
     await pool.query(
-      "UPDATE usu SET usunome = $1, ususenha = $2, usuadm = $3, ususta = $4 WHERE usucod = $5",
-      [usunome, newSenhaHash, usuadm, ususta, id]
+      "UPDATE usu SET  usunome = $1, ususenha = $2,usuadm = $3, ususta = $4 ,usupv = $5 ,usuest = $6, usurca = $7 WHERE usuemail = $8",
+      [usunome, newSenhaHash, usuadm, ususta, usupv, usuest, usurca, id]
     );
 
     res.status(200).json({ mensagem: "Usuario atualizado com sucesso" });
@@ -158,7 +158,7 @@ exports.excluirCadastro = async (req, res) => {
 exports.listarVendedores = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT usucod,usunome,usuemail,usurca FROM usu WHERE ususta in ('A','I') and usurca = 'S' ORDER BY ususta,usucod DESC`
+      `SELECT usucod,usunome,usuemail,usurca FROM usu WHERE ususta in ('A','I') and usurca = 'S' and usuemail <> 'admin@orderup.com.br' ORDER BY ususta,usucod DESC`
     );
     res.status(200).json(result.rows);
   } catch (error) {
