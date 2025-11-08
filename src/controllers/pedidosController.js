@@ -69,10 +69,35 @@ exports.listarPv = async (req, res) => {
   const usucod = req.token.usucod;
   try {
     const result = await pool.query(
-      "select * from pv left join usu on usucod = pvrcacod left join pvi on pvipvcod = pvcod " +
-        "where pvconfirmado = 'N' and pvsta = 'A' and pviprocod is not null " +
-        "and pvrcacod = $1 or pvrcacod is null " +
-        "order by pvcod desc",
+      `       
+        select 
+            pvcod,
+            pvvl,
+            pvobs,
+            pvcanal,
+            pvconfirmado,
+            pvsta,
+            pvipvcod,
+            pvrcacod,
+            sum(pvivl) as pvvltotal,
+            usunome
+            from pv 
+            left join pvi on pvipvcod = pvcod
+            left join usu on usucod = pvrcacod
+            where pvconfirmado = 'N' 
+            and (pvrcacod = $1 or pvrcacod is null )
+            and pvsta = 'A' 
+            and pviprocod is not null 
+            group by 
+            pvcod,
+            pvvl,
+            pvobs,
+            pvcanal,
+            pvconfirmado,
+            pvsta,
+            pvipvcod,
+            usunome
+            order by pvcod desc`,
       [usucod]
     );
     res.status(200).json(result.rows);
@@ -134,7 +159,7 @@ exports.listarPvConfirmados = async (req, res) => {
   const usucod = req.token.usucod;
   try {
     const result = await pool.query(
-      "select * from pv left join usu on usucod = pvrcacod where pvconfirmado = 'S' and pvsta = 'A' and pvrcacod = $1 or pvrcacod is null order by pvcod desc",
+      "select * from pv left join usu on usucod = pvrcacod where pvconfirmado = 'S' and pvsta = 'A' and (pvrcacod = $1 or pvrcacod is null) order by pvcod desc",
       [usucod]
     );
     res.status(200).json(result.rows);
@@ -194,7 +219,7 @@ exports.listarPedidosPendentesDetalhe = async (req, res) => {
        from pv
        join pvi on pvipvcod = pvcod
        join pro on procod = pviprocod
-       where pvcod = $1`,
+       where pvcod = $1 and pvsta = 'A'`,
       [pvcod]
     );
     res.status(200).json(result.rows);
