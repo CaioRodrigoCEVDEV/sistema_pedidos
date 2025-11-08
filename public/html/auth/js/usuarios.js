@@ -54,6 +54,7 @@ const usuEmail = document.getElementById("usuEmail");
 const usuSenha = document.getElementById("usuSenha");
 const usuAdm = document.getElementById("usuAdm");
 const usuSta = document.getElementById("usuSta");
+const usuRca = document.getElementById("usuRca");
 const usuPv = document.getElementById("usuPv");
 const usuEst = document.getElementById("usuEst");
 const togglePwd = document.getElementById("togglePwd");
@@ -116,7 +117,7 @@ function doSearch(term) {
 function openUserModal(usucod) {
   const u = users.find((x) => x.usucod == usucod);
   if (!u) return;
-  console.log(u.usuemail.length);
+  //console.log(u.usuemail.length);
   if (u.usuemail.length >= 3) {
     usuId.value = u.usucod;
     usuNome.value = u.usunome;
@@ -128,6 +129,7 @@ function openUserModal(usucod) {
     usuPv.checked = u.usupv === "S";
     usuEst.checked = u.usuest === "S";
     usuSta.checked = u.ususta === "A" ? true : u.ususta === "I" ? false : false;
+    usuRca.checked = u.usurca === "S";
     userModal.show();
   }
 }
@@ -145,6 +147,7 @@ userForm.addEventListener("submit", async (ev) => {
     usupv: usuPv.checked ? "S" : "N",
     usuest: usuEst.checked ? "S" : "N",
     ususta: usuSta.checked ? "A" : "I",
+    usurca: usuRca.checked ? "S" : "N",
   };
 
   try {
@@ -223,6 +226,7 @@ btnNew.addEventListener("click", () => {
   usuPv.checked = false;
   usuEst.checked = false;
   usuSta.checked = true;
+  usuRca.checked = false;
   userModal.show();
 });
 

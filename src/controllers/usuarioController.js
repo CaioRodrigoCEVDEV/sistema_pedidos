@@ -56,14 +56,14 @@ exports.validarLogin = async (req, res) => {
 
 exports.atualizarCadastro = async (req, res) => {
   const { id } = req.params;
-  const { usunome, ususenha, usuadm, ususta, usupv, usuest } = req.body;
+  const { usunome, ususenha, usuadm, ususta, usupv, usuest,usurca } = req.body;
 
   try {
     if (ususenha === undefined || ususenha.trim() === "") {
       // Atualiza sem alterar a senha
       await pool.query(
-        "UPDATE usu SET usunome = $1, usuadm = $2, ususta = $3,usupv = $4 ,usuest = $5 WHERE usuemail = $6",
-        [usunome, usuadm, ususta, usupv, usuest, id]
+        "UPDATE usu SET usunome = $1, usuadm = $2, ususta = $3,usupv = $4 ,usuest = $5, usurca = $6 WHERE usuemail = $7",
+        [usunome, usuadm, ususta, usupv, usuest,usurca, id]
       );
       return res
         .status(200)
@@ -89,7 +89,7 @@ exports.atualizarCadastro = async (req, res) => {
 };
 
 exports.cadastrarlogin = async (req, res) => {
-  const { usunome, usuemail, ususenha, usuadm, ususta, usupv, usuest } =
+  const { usunome, usuemail, ususenha, usuadm, ususta, usupv, usuest,usurca } =
     req.body;
   const senhaHash = crypto.createHash("md5").update(ususenha).digest("hex");
 
@@ -104,8 +104,8 @@ exports.cadastrarlogin = async (req, res) => {
         .json({ error: "Email já existe na base de dados, Faça o Login!" });
     }
     await pool.query(
-      "INSERT INTO usu (usunome, usuemail, ususenha,usuadm,ususta,usupv,usuest) VALUES ($1, $2, $3,$4,$5,$6,$7)",
-      [usunome, usuemail, senhaHash, usuadm, ususta, usupv, usuest]
+      "INSERT INTO usu (usunome, usuemail, ususenha,usuadm,ususta,usupv,usuest,usurca) VALUES ($1, $2, $3,$4,$5,$6,$7,$8)",
+      [usunome, usuemail, senhaHash, usuadm, ususta, usupv, usuest,usurca]
     );
     return res.status(201).json({ message: "Usuário cadastrado com sucesso" });
   } catch (error) {
