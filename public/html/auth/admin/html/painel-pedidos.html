@@ -276,6 +276,37 @@
                 </div>
               </div>
             </div>
+                              <form class="row gx-2 gy-2 mb-3 align-items-center" id="formFiltroPeriodo" onsubmit="return false;">
+                      <div class="col-auto">
+                        <label for="filtroPeriodoSelect" class="form-label visually-hidden">Período</label>
+                        <select id="filtroPeriodoSelect" class="form-select" aria-label="Período">
+                          <option value="todos">Todos</option>
+                          <option value="hoje">Hoje</option>
+                          <option value="ult7">Últimos 7 dias</option>
+                          <option value="ult30">Últimos 30 dias</option>
+                          <option value="personalizado">Personalizado</option>
+                        </select>
+                      </div>
+
+                      <div class="col-auto">
+                        <label for="filtroDataInicio" class="form-label visually-hidden">Início</label>
+                        <input type="date" class="form-control" id="filtroDataInicio" name="dataInicio" aria-label="Data início" disabled>
+                      </div>
+
+                      <div class="col-auto">
+                        <label for="filtroDataFim" class="form-label visually-hidden">Fim</label>
+                        <input type="date" class="form-control" id="filtroDataFim" name="dataFim" aria-label="Data fim" disabled>
+                      </div>
+
+                      <div class="col-auto d-flex gap-2">
+                        <button type="button" class="btn btn-primary" id="btnAplicarFiltroPeriodo">Aplicar</button>
+                        <button type="button" class="btn btn-outline-secondary" id="btnLimparFiltroPeriodo">Limpar</button>
+                      </div>
+
+                      <div class="col-12">
+                        <small class="text-muted">Filtre pedidos finalizados por período. Escolha "Personalizado" para editar datas manualmente.</small>
+                      </div>
+                    </form>
 
             <div class="col-12 col-md-6">
               <div class="card shadow-sm">
@@ -321,6 +352,7 @@
                 </div>
               </div>
             </div>
+            
             <div class="col-12 col-md-6">
               <div class="card shadow-sm">
                 <div class="card-body">
