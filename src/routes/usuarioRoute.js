@@ -27,7 +27,6 @@ router.post(
 
 router.get(
   "/vendedor/listar/",
-  autenticarToken,
   usuarioController.listarVendedores
 );
 

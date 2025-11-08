@@ -158,7 +158,7 @@ exports.excluirCadastro = async (req, res) => {
 exports.listarVendedores = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT * FROM usu WHERE ususta in ('A','I') and usurca = 'S' ORDER BY ususta,usucod DESC`
+      `SELECT usucod,usunome,usuemail,usurca FROM usu WHERE ususta in ('A','I') and usurca = 'S' ORDER BY ususta,usucod DESC`
     );
     res.status(200).json(result.rows);
   } catch (error) {
