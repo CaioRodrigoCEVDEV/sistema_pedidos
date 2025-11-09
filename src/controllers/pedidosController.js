@@ -157,6 +157,7 @@ exports.listarTotalPvConfirmados = async (req, res) => {
 
 exports.listarPvConfirmados = async (req, res) => {
   const usucod = req.token.usucod;
+  const usuadm = req.token.usuadm;
   let { dataInicio, dataFim } = req.query || {};
   
   if (!dataInicio) dataInicio = "1900-01-01";
@@ -164,36 +165,44 @@ exports.listarPvConfirmados = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `select 
-            pvcod,
-            pvvl,
-            pvobs,
-            pvcanal,
-            pvconfirmado,
-            pvsta,
-            pvipvcod,
-            pvrcacod,
-            sum(pvivl) as pvvltotal,
-            usunome
-            from pv 
-            left join pvi on pvipvcod = pvcod
-            left join usu on usucod = pvrcacod
-            where pvconfirmado = 'S' 
-            and (pvrcacod = $1 or pvrcacod is null )
-            and pvsta = 'A' 
-            and pviprocod is not null 
-            and pvdtcad between $2 and $3
-            group by 
-            pvcod,
-            pvvl,
-            pvobs,
-            pvcanal,
-            pvconfirmado,
-            pvsta,
-            pvipvcod,
-            usunome
-            order by pvcod desc`,
-      [usucod,dataInicio, dataFim]
+      ` SELECT 
+        pv.pvcod,
+        pv.pvvl,
+        pv.pvobs,
+        pv.pvcanal,
+        pv.pvconfirmado,
+        pv.pvsta,
+        pvipvcod,
+        pv.pvrcacod,
+        SUM(pvi.pvivl) AS pvvltotal,
+        usu.usunome
+    FROM pv
+    LEFT JOIN pvi ON pvipvcod = pvcod
+    LEFT JOIN usu ON usu.usucod = pv.pvrcacod
+    WHERE pv.pvconfirmado = 'S'
+    AND (
+          -- se for admin, vê tudo
+          ($1 = 'S')
+          -- caso contrário, só vê registros do usuário ou NULL
+          OR (pv.pvrcacod = $2 OR pv.pvrcacod IS NULL)
+        )
+    AND pv.pvsta = 'A'
+    AND pviprocod IS NOT NULL
+    AND pv.pvdtcad BETWEEN $3 AND $4
+    GROUP BY 
+    pv.pvcod,
+    pv.pvvl,
+    pv.pvobs,
+    pv.pvcanal,
+    pv.pvconfirmado,
+    pv.pvsta,
+    pvipvcod,
+    pv.pvrcacod,
+    usu.usunome
+    ORDER BY pv.pvcod DESC;
+      
+        `,
+      [ usuadm,usucod,dataInicio, dataFim]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -204,6 +213,7 @@ exports.listarPvConfirmados = async (req, res) => {
 
 exports.listarPvPendentes = async (req, res) => {
   const usucod = req.token.usucod;
+  const usuadm = req.token.usuadm;
   let { dataInicio, dataFim } = req.query || {};
   
   if (!dataInicio) dataInicio = "1900-01-01";
@@ -211,37 +221,44 @@ exports.listarPvPendentes = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `       
-        select 
-            pvcod,
-            pvvl,
-            pvobs,
-            pvcanal,
-            pvconfirmado,
-            pvsta,
-            pvipvcod,
-            pvrcacod,
-            sum(pvivl) as pvvltotal,
-            usunome
-            from pv 
-            left join pvi on pvipvcod = pvcod
-            left join usu on usucod = pvrcacod
-            where pvconfirmado = 'N' 
-            and (pvrcacod = $1 or pvrcacod is null )
-            and pvsta = 'A' 
-            and pviprocod is not null 
-            and pvdtcad between $2 and $3
-            group by 
-            pvcod,
-            pvvl,
-            pvobs,
-            pvcanal,
-            pvconfirmado,
-            pvsta,
-            pvipvcod,
-            usunome
-            order by pvcod desc`,
-      [usucod,dataInicio, dataFim]
+      ` SELECT 
+        pv.pvcod,
+        pv.pvvl,
+        pv.pvobs,
+        pv.pvcanal,
+        pv.pvconfirmado,
+        pv.pvsta,
+        pvipvcod,
+        pv.pvrcacod,
+        SUM(pvi.pvivl) AS pvvltotal,
+        usu.usunome
+    FROM pv
+    LEFT JOIN pvi ON pvipvcod = pvcod
+    LEFT JOIN usu ON usu.usucod = pv.pvrcacod
+    WHERE pv.pvconfirmado = 'N'
+    AND (
+          -- se for admin, vê tudo
+          ($1 = 'S')
+          -- caso contrário, só vê registros do usuário ou NULL
+          OR (pv.pvrcacod = $2 OR pv.pvrcacod IS NULL)
+        )
+    AND pv.pvsta = 'A'
+    AND pviprocod IS NOT NULL
+    AND pv.pvdtcad BETWEEN $3 AND $4
+    GROUP BY 
+    pv.pvcod,
+    pv.pvvl,
+    pv.pvobs,
+    pv.pvcanal,
+    pv.pvconfirmado,
+    pv.pvsta,
+    pvipvcod,
+    pv.pvrcacod,
+    usu.usunome
+    ORDER BY pv.pvcod DESC;
+      
+        `,
+      [ usuadm,usucod,dataInicio, dataFim]
     );
     res.status(200).json(result.rows);
   } catch (error) {
