@@ -225,6 +225,16 @@ let quantidadeEmoji = "\u{1F522}"; // 🔢
 
 // função para retirar balcão pegar o id do produto e a quantidade e valor total gerar um formulario e abrir conversa no whatsapp
 async function enviarWhatsApp() {
+  const disabledDiv = document.getElementById('divFinalizar');
+  try{
+  disabledDiv.style.pointerEvents = 'none';
+  disabledDiv.style.opacity = '0.6';
+  disabledDiv.status.userSelect = 'none';
+  }
+  catch (error){
+    console.error("Failed", error);
+  }
+
   const respSeq = await fetch("/pedidos/sequencia");
   const seqData = await respSeq.json();
   const pvcod = seqData.nextval;
@@ -338,6 +348,17 @@ async function enviarWhatsApp() {
 
 // quando clicar lá no botão de entrega, abrir um popup com nome completo e endereço
 async function enviarWhatsAppEntrega() {
+  
+  const disabledDiv = document.getElementById('divFinalizar');
+  try{
+  disabledDiv.style.pointerEvents = 'none';
+  disabledDiv.style.opacity = '0.6';
+  disabledDiv.status.userSelect = 'none';
+  }
+  catch (error){
+    console.error("Failed", error);
+  }
+
   const respSeq = await fetch("/pedidos/sequencia");
   const seqData = await respSeq.json();
   const pvcod = seqData.nextval;
