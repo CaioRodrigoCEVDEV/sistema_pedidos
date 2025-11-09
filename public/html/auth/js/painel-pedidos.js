@@ -64,6 +64,7 @@
     applyPreset('todos');
     // opcional: limpar tabela
     tabelaConfirmados.innerHTML = '';
+    tabelaPendentes.innerHTML = '';
   });
 
 // Fim filtro
