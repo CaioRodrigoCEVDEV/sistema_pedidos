@@ -1,3 +1,28 @@
+function createHeaderUser() {
+  const header = document.getElementById("header");
+  header.innerHTML = `
+  <nav class="navbar navbar-expand-lg navbar-light  shadow-sm rounded p-2 m-1">
+                <a class="navbar-brand" href="index" id="nomeEmpresa"><img src="/uploads/logo.jpg" width="30"
+                        height="30" alt="" /></a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item active">
+                            <a class="nav-link" href="index">Inicio</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="painel">Acesso</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+  `;
+}
+document.addEventListener("DOMContentLoaded", createHeaderUser);
+
 function createHeader() {
   const header = document.getElementById("header-admin");
   header.innerHTML = `
@@ -11,7 +36,7 @@ function createHeader() {
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav">
             <li class="nav-item active">
-              <a class="nav-link" href="index">Inicio<span class="visually-hidden">(Página atual)</span></a>
+              <a class="nav-link" href="index">Inicio</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="painel">Painel</a>
@@ -41,7 +66,27 @@ function createHeader() {
         </div>
       </nav>  
   `;
+
+
+  const btnSair = document.getElementById("buttonSair");
+  if (btnSair) {
+    btnSair.addEventListener("click", (event) => {
+      event.preventDefault();
+
+      localStorage.removeItem("usuarioLogado");
+
+      fetch("/auth/sair", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).finally(() => {
+        window.location.href = "/index";
+      });
+    });
+  }
 }
+
 document.addEventListener("DOMContentLoaded", createHeader);
 
 function createFooter() {
@@ -60,5 +105,22 @@ function createFooter() {
             </div>
   `;
 }
-
 document.addEventListener("DOMContentLoaded", createFooter);
+
+document
+  .getElementById("buttonSair")
+  .addEventListener("click", function (event) {
+    event.preventDefault();
+
+    localStorage.removeItem("usuarioLogado");
+
+    fetch("/auth/sair", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).finally(() => {
+      // Redireciona após logout
+      window.location.href = "/index";
+    });
+  });
