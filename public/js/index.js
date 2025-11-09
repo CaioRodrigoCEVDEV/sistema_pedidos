@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!holder) return;
       holder.innerHTML = ""; // zera antes
 
-      let html = '<div class="row g-4">'; // gap entre os itens
+      let html = '<div class="row g-3">'; // gap entre os itens
       dados.forEach((dado) => {
         html += `
         
@@ -518,29 +518,29 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Botão de instalação PWA
- let deferredPrompt;
-        const btnInstall = document.getElementById("btnInstall");
+let deferredPrompt;
+const btnInstall = document.getElementById("btnInstall");
 
-        // Captura o evento antes do Chrome exibir o banner nativo
-        window.addEventListener("beforeinstallprompt", (e) => {
-            e.preventDefault(); // impede o banner automático
-            deferredPrompt = e;
-            btnInstall.style.display = "block"; // mostra botão manual
-        });
+// Captura o evento antes do Chrome exibir o banner nativo
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault(); // impede o banner automático
+  deferredPrompt = e;
+  btnInstall.style.display = "block"; // mostra botão manual
+});
 
-        // Quando o usuário clicar no botão
-        btnInstall.addEventListener("click", () => {
-            btnInstall.style.display = "none"; // esconde o botão
-            deferredPrompt.prompt(); // dispara o banner nativo
-            deferredPrompt.userChoice.then((choiceResult) => {
-                console.log("Usuário escolheu:", choiceResult.outcome);
-                deferredPrompt = null;
-            });
-        });
+// Quando o usuário clicar no botão
+btnInstall.addEventListener("click", () => {
+  btnInstall.style.display = "none"; // esconde o botão
+  deferredPrompt.prompt(); // dispara o banner nativo
+  deferredPrompt.userChoice.then((choiceResult) => {
+    console.log("Usuário escolheu:", choiceResult.outcome);
+    deferredPrompt = null;
+  });
+});
 
 // Registro do Service Worker
 if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("/sw.js").then(() => {
-                console.log("Service Worker registrado");
-            });
-        }
+  navigator.serviceWorker.register("/sw.js").then(() => {
+    console.log("Service Worker registrado");
+  });
+}
