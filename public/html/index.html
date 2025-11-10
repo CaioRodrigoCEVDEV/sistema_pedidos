@@ -47,13 +47,21 @@
                 <div class="col-md-6">
                     <label for="pesquisa" class="m-2 fw-medium">Pesquisa Geral</label>
                     <div class="input-group">
-                        <span class="input-group-text bg-white" for="pesquisa">
-                            <i class="bi bi-search"></i>
+                        <span class="input-group-text text-primary border border-primary " for="pesquisa">
+                            <i class="fa-solid fa-magnifying-glass"></i>
                         </span>
-                        <input class="form-control" type="search" placeholder="Pesquisar" aria-label="Pesquisar"
+                        <input class="form-control border-primary" type="search" placeholder="Pesquisar" aria-label="Pesquisar"
                             id="pesquisa">
-                            <span class="input-group-text bg-white " for="pesquisa">
-                            <a href="" class="text-decoration-none btn btn-outline-success"><i class="fa-solid fa-cart-arrow-down"></i> Carrinho</a>
+                        
+                            <a class="btn btn-primary d-flex align-items-center gap-2" 
+                               id="openCartModal" 
+                               style="background: linear-gradient(145deg, #2196F3, #1976D2); 
+                                      border: none; 
+                                      box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+                                      transition: all 0.3s ease;">
+                                <i class="bi bi-cart2"></i>
+                                <span>Carrinho</span>
+                            </a>
                         </span>
                     </div>
                 </div>
@@ -89,9 +97,6 @@
         </footer>
     </div>
     <!-- Botão do carrinho flutuante -->
-    <botton class="button-cart" id="openCartModal">
-        <i class="bi bi-cart4"></i>
-    </botton>
 
 
     <!-- Modal do Carrinho -->

@@ -20,11 +20,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       let html = '<div class="row g-3">'; // gap entre os itens
       dados.forEach((dado) => {
         html += `
-        
           <div class="col-6 col-md-4 col-lg-3">
             <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-100 text-decoration-none">
-              <button class="btn btn-primary w-100 shadow-sm py-3 fw-semibold brand-btn">
-                ${dado.marcasdes}
+              <button class="btn w-100 shadow-sm py-3 fw-semibold brand-btn" style="
+          background: linear-gradient(145deg, #e6f2ff, #f0f8ff);
+          border: none;
+          color: #0066cc;
+          transition: all 0.3s ease;
+          border-radius: 10px;
+          box-shadow: 5px 5px 10px #cce4ff,
+               -5px -5px 10px #f0f8ff;
+              " onmouseover="this.style.transform='translateY(-3px)';
+               this.style.boxShadow='7px 7px 15px #cce4ff, -7px -7px 15px #f0f8ff';
+               this.style.color='#0052cc'"
+           onmouseout="this.style.transform='translateY(0)';
+               this.style.boxShadow='5px 5px 10px #cce4ff, -5px -5px 10px #f0f8ff';
+               this.style.color='#0066cc'">
+          ${dado.marcasdes}
               </button>
             </a>
           </div>`;
