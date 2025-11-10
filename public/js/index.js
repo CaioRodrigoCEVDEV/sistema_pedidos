@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     acessórios: { icon: "cog", domain: "gear.google.com" },
     oppo: { icon: "oppo", domain: "oppo.com" },
     caio: { icon: null, domain: "xvideos.com" },
+    huawei: { icon: "huawei", domain: "huawei.com" },
   };
 
   function normalize(name) {
