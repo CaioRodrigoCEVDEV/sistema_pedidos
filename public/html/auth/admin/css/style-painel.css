@@ -10,6 +10,7 @@
   z-index: 999; /* atrás do popup */
 }
 .popup {
+  width: 350px;
   min-width: 250px;
   background: white;
   padding: 20px;
