@@ -93,10 +93,10 @@ function createFooter() {
   const footer = document.getElementById("footer");
   footer.className = "border-top py-4 bg-white shadow";
   footer.innerHTML = `
-      <div class="container m-auto d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <div class="small text-muted">© <span id="y"></span> Sistema Pedidos via Whatsapp — <a href="#">MTTR
+      <div class="container m-auto d-flex flex-column flex-md-row flex-wrap align-items-center justify-content-center justify-content-md-between gap-2">
+                <div class="small text-muted text-center text-md-start">© <span id="y"></span> Sistema Pedidos via Whatsapp — <a href="#">MTTR
                         Tecnologia que transforma seu negócio.</a></div>
-                <div class="d-flex gap-3  small">
+                <div class="d-flex gap-3 small justify-content-center">
                     <span class="badge rounded-pill text-bg-primary text-white">
                         <a href="https://wa.me/5561981697924?text=Ol%C3%A1!%20Tenho%20interesse%20para%20marcar%20uma%20reuni%C3%A3o%20para%20entender%20mais%20sobre%20as%20solu%C3%A7%C3%B5es%20que%20voc%C3%AAs%20oferecem!%20"
                             target="_blank" class="text-white text-decoration-none">Contato</a>
