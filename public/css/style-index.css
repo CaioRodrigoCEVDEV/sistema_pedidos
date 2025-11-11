@@ -25,12 +25,12 @@ main{
 
 /* Estilo dos cards com logo */
 .brand-btn {
-    background: linear-gradient(145deg, #e6f2ff, #f0f8ff);
+    background: linear-gradient(145deg, #f5f5f5, #eeeeee);
     border: none;
-    /* color: #0066cc; */
+    /* color: #6b6b6b; */
     transition: transform 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
     border-radius: 10px;
-    box-shadow: 5px 5px 10px #cce4ff, -5px -5px 10px #f0f8ff;
+    box-shadow: 5px 5px 10px #d1d1d1, -5px -5px 10px #ffffff;
     display: flex;
     align-items: center;
     gap: 12px;
