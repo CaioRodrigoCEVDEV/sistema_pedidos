@@ -36,8 +36,17 @@ router.get(
   autenticarToken,
   proControllerV2.listarProdutosSemEstoque
 );
+router.get(
+  "/v2/proComEstoque/:marca/:modelo",
+  autenticarToken,
+  proControllerV2.listarProdutosComEstoqueItem
+);
+router.get(
+  "/v2/proSemEstoque/:marca/:modelo",
+  autenticarToken,
+  proControllerV2.listarProdutosSemEstoqueItem
+);
 // Fim V2 Routes com models
-
 
 // ==================  PUT
 router.put("/pro/:id", requireAdmin, proController.editarProduto);
@@ -46,7 +55,6 @@ router.put(
   autenticarToken,
   proController.alterarProdutoCoresDisponiveis
 );
-
 
 // ==================  POST
 router.post("/pro", requireAdmin, proController.inserirProduto);
@@ -60,7 +68,6 @@ router.post(
   autenticarToken,
   proController.inserirProdutoCoresDisponiveis
 );
-
 
 // ==================  DELETE
 router.delete("/pro/:id", requireAdmin, proController.excluirProduto);

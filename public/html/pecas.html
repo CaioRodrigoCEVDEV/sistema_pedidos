@@ -34,9 +34,22 @@
               <h2 class="inter">Tipo Peça</h2>
             </div>
             <div class="col-auto">
-              <button type="button" class="btn btn-outline-dark m-2" onclick="window.history.back();">
-                <i class="bi bi-box-arrow-in-left"></i> Voltar
-              </button>
+              <div class="d-flex">
+                  <span>
+                      <a class="btn btn-primary d-flex align-items-center m-2" 
+                          id="openCartModal" 
+                          style="background: linear-gradient(145deg, #2196F3, #1976D2); 
+                                border: none; 
+                                box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+                                transition: all 0.3s ease;">
+                          <i class="bi bi-cart2"></i>
+                          <span>Carrinho</span>
+                      </a>
+                </span>
+                <button type="button" class="btn btn-outline-dark m-2" onclick="window.history.back();">
+                  <i class="bi bi-box-arrow-in-left"></i> Voltar
+                </button>
+              </div>
             </div>
           </div>
           <div class="row">
@@ -79,12 +92,6 @@
       <!--Conteudo do footer adicionado via JS-->
     </footer>
   </div>
-
-  <!-- Botão do carrinho flutuante -->
-  <botton class="button-cart" id="openCartModal">
-    <i class="bi bi-cart4"></i>
-  </botton>
-
 
   <!-- Modal do Carrinho -->
   <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel"

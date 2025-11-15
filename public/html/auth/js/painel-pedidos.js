@@ -1,71 +1,71 @@
 // Inicio filtro
 // filtro de data: formata Date para yyyy-mm-dd
-  function toInputDate(d){
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,'0');
-    const dd = String(d.getDate()).padStart(2,'0');
-    return `${y}-${m}-${dd}`;
+function toInputDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+const select = document.getElementById("filtroPeriodoSelect");
+const inputInicio = document.getElementById("filtroDataInicio");
+const inputFim = document.getElementById("filtroDataFim");
+const btnAplicar = document.getElementById("btnAplicarFiltroPeriodo");
+const btnLimpar = document.getElementById("btnLimparFiltroPeriodo");
+const tabelaConfirmados = document.getElementById("corpoTabelaConfirmados"); // onde preencher
+const tabelaPendentes = document.getElementById("corpoTabela");
+
+function setRange(startDate, endDate) {
+  inputInicio.value = startDate ? toInputDate(startDate) : "";
+  inputFim.value = endDate ? toInputDate(endDate) : "";
+}
+
+function enableDateInputs(enable) {
+  inputInicio.disabled = !enable;
+  inputFim.disabled = !enable;
+}
+
+function applyPreset(preset) {
+  const today = new Date();
+  let start = null;
+  let end = null;
+
+  if (preset === "hoje") {
+    start = new Date(today);
+    end = new Date(today);
+  } else if (preset === "ult7") {
+    // últimos 7 dias: de (hoje -6) até hoje -> 7 dias inclusive
+    start = new Date(today);
+    start.setDate(today.getDate() - 6);
+    end = new Date(today);
+  } else if (preset === "ult30") {
+    start = new Date(today);
+    start.setDate(today.getDate() - 29);
+    end = new Date(today);
+  } else if (preset === "todos") {
+    start = null;
+    end = null;
+  } else if (preset === "personalizado") {
+    // não altera valores, apenas habilita edição
   }
 
-  const select = document.getElementById('filtroPeriodoSelect');
-  const inputInicio = document.getElementById('filtroDataInicio');
-  const inputFim = document.getElementById('filtroDataFim');
-  const btnAplicar = document.getElementById('btnAplicarFiltroPeriodo');
-  const btnLimpar = document.getElementById('btnLimparFiltroPeriodo');
-  const tabelaConfirmados = document.getElementById('corpoTabelaConfirmados'); // onde preencher
-  const tabelaPendentes = document.getElementById('corpoTabela');
+  setRange(start, end);
+  enableDateInputs(preset === "personalizado");
+}
 
-  function setRange(startDate, endDate){
-    inputInicio.value = startDate ? toInputDate(startDate) : '';
-    inputFim.value = endDate ? toInputDate(endDate) : '';
-  }
+// on change do select
+select.addEventListener("change", function () {
+  applyPreset(this.value);
+});
 
-  function enableDateInputs(enable){
-    inputInicio.disabled = !enable;
-    inputFim.disabled = !enable;
-  }
-
-  function applyPreset(preset){
-    const today = new Date();
-    let start = null;
-    let end = null;
-
-    if(preset === 'hoje'){
-      start = new Date(today);
-      end = new Date(today);
-    } else if(preset === 'ult7'){
-      // últimos 7 dias: de (hoje -6) até hoje -> 7 dias inclusive
-      start = new Date(today);
-      start.setDate(today.getDate() - 6);
-      end = new Date(today);
-    } else if(preset === 'ult30'){
-      start = new Date(today);
-      start.setDate(today.getDate() - 29);
-      end = new Date(today);
-    } else if(preset === 'todos'){
-      start = null;
-      end = null;
-    } else if(preset === 'personalizado'){
-      // não altera valores, apenas habilita edição
-    }
-
-    setRange(start, end);
-    enableDateInputs(preset === 'personalizado');
-  }
-
-  // on change do select
-  select.addEventListener('change', function(){
-    applyPreset(this.value);
-  });
-
-  // limpar botão
-  btnLimpar.addEventListener('click', function(){
-    select.value = 'todos';
-    applyPreset('todos');
-    // opcional: limpar tabela
-    tabelaConfirmados.innerHTML = '';
-    tabelaPendentes.innerHTML = '';
-  });
+// limpar botão
+btnLimpar.addEventListener("click", function () {
+  select.value = "todos";
+  applyPreset("todos");
+  // opcional: limpar tabela
+  tabelaConfirmados.innerHTML = "";
+  tabelaPendentes.innerHTML = "";
+});
 
 // Fim filtro
 
@@ -442,33 +442,31 @@ async function cancelarPedido(pvcod) {
     console.error("Erro ao cancelar o pedido:", error);
     alert("Erro ao cancelar o pedido.");
   }
-};
+}
 
 //inicio tabela
 // PEDIDOS FINALIZADOS
-(function(){
-  
-
+(function () {
   // função que faz fetch (adapte a URL / parâmetros conforme sua API)
-  async function fetchPedidosFinalizados(params = {}){
+  async function fetchPedidosFinalizados(params = {}) {
     // Exemplo: endpoint que aceita dataInicio e dataFim no formato YYYY-MM-DD
     const qs = new URLSearchParams();
-    if(params.dataInicio) qs.set('dataInicio', params.dataInicio);
-    if(params.dataFim) qs.set('dataFim', params.dataFim);
+    if (params.dataInicio) qs.set("dataInicio", params.dataInicio);
+    if (params.dataFim) qs.set("dataFim", params.dataFim);
 
     // Ajuste a URL para o seu endpoint real:
     const url = `${BASE_URL}/pedidos/confirmados?` + qs.toString();
 
     try {
-      const res = await fetch(url, { credentials: 'include' });
-      if(!res.ok) throw new Error('Erro ao buscar pedidos: ' + res.status);
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Erro ao buscar pedidos: " + res.status);
       const data = await res.json();
 
       // Preencher tabela - adapte conforme o formato de 'data' da sua API
-      tabelaConfirmados.innerHTML = ''; // limpa
-      if(Array.isArray(data) && data.length){
-        data.forEach(dado => {
-          const tr = document.createElement('tr');
+      tabelaConfirmados.innerHTML = ""; // limpa
+      if (Array.isArray(data) && data.length) {
+        data.forEach((dado) => {
+          const tr = document.createElement("tr");
           tr.innerHTML = `
           <td class="text-center" style="color: green;">${dado.pvcod}</td>
           <td class="text-center" style="color: green;">${dado.pvcanal}</td>
@@ -491,7 +489,8 @@ async function cancelarPedido(pvcod) {
           tabelaConfirmados.appendChild(tr);
         });
       } else {
-        tabelaConfirmados.innerHTML = '<tr><td colspan="5">Nenhum pedido encontrado para o período selecionado.</td></tr>';
+        tabelaConfirmados.innerHTML =
+          '<tr><td colspan="5">Nenhum pedido encontrado para o período selecionado.</td></tr>';
       }
     } catch (err) {
       console.error(err);
@@ -499,28 +498,28 @@ async function cancelarPedido(pvcod) {
     }
   }
 
-// PEDIDOS PENDENTES
+  // PEDIDOS PENDENTES
 
   // função que faz fetch (adapte a URL / parâmetros conforme sua API)
-  async function fetchPedidosPendentes(params = {}){
+  async function fetchPedidosPendentes(params = {}) {
     // Exemplo: endpoint que aceita dataInicio e dataFim no formato YYYY-MM-DD
     const qs = new URLSearchParams();
-    if(params.dataInicio) qs.set('dataInicio', params.dataInicio);
-    if(params.dataFim) qs.set('dataFim', params.dataFim);
+    if (params.dataInicio) qs.set("dataInicio", params.dataInicio);
+    if (params.dataFim) qs.set("dataFim", params.dataFim);
 
     // Ajuste a URL para o seu endpoint real:
     const url = `${BASE_URL}/pedidos/pendentes?` + qs.toString();
 
     try {
-      const res = await fetch(url, { credentials: 'include' });
-      if(!res.ok) throw new Error('Erro ao buscar pedidos: ' + res.status);
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Erro ao buscar pedidos: " + res.status);
       const data = await res.json();
 
       // Preencher tabela - adapte conforme o formato de 'data' da sua API
-      tabelaPendentes.innerHTML = ''; // limpa
-      if(Array.isArray(data) && data.length){
-        data.forEach(dado => {
-          const tr = document.createElement('tr');
+      tabelaPendentes.innerHTML = ""; // limpa
+      if (Array.isArray(data) && data.length) {
+        data.forEach((dado) => {
+          const tr = document.createElement("tr");
           tr.innerHTML = `
           <td class="text-center">${dado.pvcod}</td>
           <td class="text-center">${dado.pvcanal}</td>
@@ -539,21 +538,22 @@ async function cancelarPedido(pvcod) {
           tabelaPendentes.appendChild(tr);
         });
       } else {
-        tabelaPendentes.innerHTML = '<tr><td colspan="5">Nenhum pedido encontrado para o período selecionado.</td></tr>';
+        tabelaPendentes.innerHTML =
+          '<tr><td colspan="5">Nenhum pedido encontrado para o período selecionado.</td></tr>';
       }
     } catch (err) {
       console.error(err);
       tabelaPendentes.innerHTML = `<tr><td colspan="5">Erro ao carregar pedidos.</td></tr>`;
     }
   }
-//Fim tabela
+  //Fim tabela
   // Aplicar botão: monta params e chama fetch
-  btnAplicar.addEventListener('click', function(){
+  btnAplicar.addEventListener("click", function () {
     const inicio = inputInicio.value || null;
     const fim = inputFim.value || null;
 
     // Se select é 'todos' e não tem datas, chamar sem filtros
-    if(select.value === 'todos' && !inicio && !fim){
+    if (select.value === "todos" && !inicio && !fim) {
       fetchPedidosFinalizados();
       fetchPedidosPendentes();
       return;
@@ -567,9 +567,8 @@ async function cancelarPedido(pvcod) {
   });
 
   // inicializa com últimos 7 dias (opcional). Se preferir começar com 'todos', troque para 'todos'
-  select.value = 'hoje';
-  applyPreset('hoje');
+  select.value = "hoje";
+  applyPreset("hoje");
   // e já carrega os pedidos dos últimos 7 dias automaticamente:
   btnAplicar.click();
-
 })();

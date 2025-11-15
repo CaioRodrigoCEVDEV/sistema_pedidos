@@ -58,11 +58,22 @@
             </div>
             <div class="row p-3">
               <div class="input-group input-pesquisa">
-                <span class="input-group-text bg-white border-info" for="pesquisa">
-                  <i class="bi bi-search text-info"></i>
+                <span class="input-group-text text-primary bg-white border border-primary " for="pesquisa">
+                    <i class="fa-solid fa-magnifying-glass"></i>
                 </span>
-                <input class="form-control border-info" type="search" placeholder="Pesquisar" aria-label="Pesquisar"
-                  id="pesquisa" />
+                <input class="form-control border-primary" type="search" placeholder="Pesquisar" aria-label="Pesquisar"
+                    id="pesquisa">
+                
+                    <a class="btn btn-primary d-flex align-items-center gap-2" 
+                        id="openCartModal" 
+                        style="background: linear-gradient(145deg, #2196F3, #1976D2); 
+                              border: none; 
+                              box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+                              transition: all 0.3s ease;">
+                        <i class="bi bi-cart2"></i>
+                        <span>Carrinho</span>
+                    </a>
+                </span>
               </div>
             </div>
           </div>
@@ -80,13 +91,6 @@
       <!--Conteudo do footer adicionado via JS-->
     </footer>
   </div>
-
-  
-    <!-- Botão do carrinho flutuante -->
-    <botton class="button-cart" id="openCartModal">
-        <i class="bi bi-cart4"></i>
-    </botton>
-
 
     <!-- Modal do Carrinho -->
     <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel"
