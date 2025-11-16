@@ -45,19 +45,21 @@ document.addEventListener("DOMContentLoaded", function () {
     .then((dados) => {
       const corpoTabela = document.getElementById("corpoTabela");
       corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
+      //console.log(dados);
 
       dados.forEach((dado) => {
         const item = document.createElement("div");
         item.className = "cart-item";
         item.dataset.preco = dado.provl;
+        const isDisabled = dado.prosemest === "S";
         item.innerHTML = `
             <div class="item-name">${dado.prodes}</div>
             <div class="item-tipo">${dado.tipodes}</div>
-            <div class="item-price">${formatarMoeda(
-              dado.provl
-            )} <button class="btn btn-info btn-sm btn-add" onclick="adicionarAoCarrinho('${
-          dado.procod
-        }')">Adicionar</button></div>
+            <div class="item-price">${formatarMoeda(dado.provl)} 
+              <button class="${isDisabled ? 'btn btn-danger btn-sm btn-add' : 'btn btn-info btn-sm btn-add'}" ${isDisabled ? 'disabled title="Em Falta"' : `onclick="adicionarAoCarrinho('${dado.procod}')"`}>
+          ${isDisabled ? "Em Falta" : "Adicionar"}
+              </button>
+            </div>
           `;
 
         corpoTabela.appendChild(item);
@@ -173,9 +175,8 @@ document.getElementById("openCartModal").addEventListener("click", function () {
         .map(
           (item, idx) => `
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>${item.nome} <small class="text-muted">(R$ ${
-            item.preco ? Number(item.preco).toFixed(2) : "0.00"
-          })</small></span>
+          <span>${item.nome} <small class="text-muted">(R$ ${item.preco ? Number(item.preco).toFixed(2) : "0.00"
+            })</small></span>
           <span>
             <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
           </span>
@@ -326,8 +327,8 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
     <p>Escolha a cor do produto:</p>
     <select id="select-cor">
       ${cores
-        .map((cor) => `<option value="${cor.procod}">${cor.cornome}</option>`)
-        .join("")}
+      .map((cor) => `<option value="${cor.procod}">${cor.cornome}</option>`)
+      .join("")}
     </select>
     <div id="modal-cor-botoes">
       <button id="btn-cancelar-cor">Cancelar</button>
@@ -344,7 +345,7 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       document.getElementById("select-cor").options[
         document.getElementById("select-cor").selectedIndex
       ].text;
-    const idComCor = `${procod}-${corSelecionada}`;
+    const idComCor = `${procod}`;
     const nomeComCor = `${nome} (${corSelecionada})`;
 
     adicionarProdutoAoCarrinho(

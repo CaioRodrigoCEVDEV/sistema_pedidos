@@ -43,6 +43,9 @@ async function atualizarDB() {
       `ALTER TABLE public.usu ADD IF NOT exists usupv varchar(1) default 'N';`
     );
     await pool.query(
+      `ALTER TABLE public.usu ADD IF NOT exists usurca varchar(1) default 'N';`
+    );
+    await pool.query(
       `ALTER TABLE public.emp ADD IF NOT exists empusapv varchar(1) default 'N';`
     );
     await pool.query(
@@ -54,8 +57,13 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.pro ADD IF NOT exists proqtde int4 DEFAULT 0 NOT NULL;`
     );
-    await pool.query(`ALTER TABLE public.pv ADD if not exists pvdtcad date DEFAULT now() NOT NULL;
-`)
+    await pool.query(`ALTER TABLE public.pv ADD if not exists pvdtcad date DEFAULT now() NOT NULL;`
+    )
+    await pool.query(`ALTER TABLE public.pv ADD if not exists pvrcacod int4 NULL;`
+    )
+    await pool.query(`ALTER TABLE public.pro ADD if not exists prosemest varchar(1) default 'N';`
+      
+    )    
     // FIM NOVOS CAMPOS
     // ==================================================================================================================================
 

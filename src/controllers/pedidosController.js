@@ -11,12 +11,13 @@ exports.sequencia = async (req, res) => {
 };
 
 exports.inserirPv = async (req, res, next) => {
-  const { pvcod, total, obs, canal, status, confirmado } = req.body;
+  const { pvcod, total, obs, canal, status, confirmado, codigoVendedor } =
+    req.body;
 
   try {
     const result = await pool.query(
-      "INSERT INTO pv (pvcod, pvvl, pvobs, pvcanal, pvsta, pvconfirmado) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-      [pvcod, total, obs, canal, status, confirmado]
+      "INSERT INTO pv (pvcod, pvvl, pvobs, pvcanal, pvsta, pvconfirmado, pvrcacod) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+      [pvcod, total, obs, canal, status, confirmado, codigoVendedor]
     );
 
     // guarda o pvcod e o total para o próximo passo
@@ -65,9 +66,39 @@ exports.inserirPvi = async (req, res) => {
 };
 
 exports.listarPv = async (req, res) => {
+  const usucod = req.token.usucod;
   try {
     const result = await pool.query(
-      "select * from pv left join pvi on pvipvcod = pvcod where pvconfirmado = 'N' and pvsta = 'A' and pviprocod is not null order by pvcod desc"
+      `       
+        select 
+            pvcod,
+            pvvl,
+            pvobs,
+            pvcanal,
+            pvconfirmado,
+            pvsta,
+            pvipvcod,
+            pvrcacod,
+            sum(pvivl) as pvvltotal,
+            usunome
+            from pv 
+            left join pvi on pvipvcod = pvcod
+            left join usu on usucod = pvrcacod
+            where pvconfirmado = 'N' 
+            and (pvrcacod = $1 or pvrcacod is null )
+            and pvsta = 'A' 
+            and pviprocod is not null 
+            group by 
+            pvcod,
+            pvvl,
+            pvobs,
+            pvcanal,
+            pvconfirmado,
+            pvsta,
+            pvipvcod,
+            usunome
+            order by pvcod desc`,
+      [usucod]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -76,7 +107,7 @@ exports.listarPv = async (req, res) => {
   }
 };
 
-exports.listarPvPendentes = async (req, res) => {
+exports.listarPvPendentesCount = async (req, res) => {
   try {
     const result = await pool.query(
       "select count(*) from pv where pvconfirmado = 'N' and pvsta = 'A' "
@@ -125,9 +156,109 @@ exports.listarTotalPvConfirmados = async (req, res) => {
 };
 
 exports.listarPvConfirmados = async (req, res) => {
+  const usucod = req.token.usucod;
+  const usuadm = req.token.usuadm;
+  let { dataInicio, dataFim } = req.query || {};
+  
+  if (!dataInicio) dataInicio = "1900-01-01";
+  if (!dataFim) dataFim = "2999-12-31";
+
   try {
     const result = await pool.query(
-      "select * from pv where pvconfirmado = 'S' and pvsta = 'A' order by pvcod desc"
+      ` SELECT 
+        pv.pvcod,
+        pv.pvvl,
+        pv.pvobs,
+        pv.pvcanal,
+        pv.pvconfirmado,
+        pv.pvsta,
+        pvipvcod,
+        pv.pvrcacod,
+        SUM(pvi.pvivl) AS pvvltotal,
+        usu.usunome
+    FROM pv
+    LEFT JOIN pvi ON pvipvcod = pvcod
+    LEFT JOIN usu ON usu.usucod = pv.pvrcacod
+    WHERE pv.pvconfirmado = 'S'
+    AND (
+          -- se for admin, vê tudo
+          ($1 = 'S')
+          -- caso contrário, só vê registros do usuário ou NULL
+          OR (pv.pvrcacod = $2 OR pv.pvrcacod IS NULL)
+        )
+    AND pv.pvsta = 'A'
+    AND pviprocod IS NOT NULL
+    AND pv.pvdtcad BETWEEN $3 AND $4
+    GROUP BY 
+    pv.pvcod,
+    pv.pvvl,
+    pv.pvobs,
+    pv.pvcanal,
+    pv.pvconfirmado,
+    pv.pvsta,
+    pvipvcod,
+    pv.pvrcacod,
+    usu.usunome
+    ORDER BY pv.pvcod DESC;
+      
+        `,
+      [ usuadm,usucod,dataInicio, dataFim]
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro buscar pedidos" });
+  }
+};
+
+exports.listarPvPendentes = async (req, res) => {
+  const usucod = req.token.usucod;
+  const usuadm = req.token.usuadm;
+  let { dataInicio, dataFim } = req.query || {};
+  
+  if (!dataInicio) dataInicio = "1900-01-01";
+  if (!dataFim) dataFim = "2999-12-31";
+
+  try {
+    const result = await pool.query(
+      ` SELECT 
+        pv.pvcod,
+        pv.pvvl,
+        pv.pvobs,
+        pv.pvcanal,
+        pv.pvconfirmado,
+        pv.pvsta,
+        pvipvcod,
+        pv.pvrcacod,
+        SUM(pvi.pvivl) AS pvvltotal,
+        usu.usunome
+    FROM pv
+    LEFT JOIN pvi ON pvipvcod = pvcod
+    LEFT JOIN usu ON usu.usucod = pv.pvrcacod
+    WHERE pv.pvconfirmado = 'N'
+    AND (
+          -- se for admin, vê tudo
+          ($1 = 'S')
+          -- caso contrário, só vê registros do usuário ou NULL
+          OR (pv.pvrcacod = $2 OR pv.pvrcacod IS NULL)
+        )
+    AND pv.pvsta = 'A'
+    AND pviprocod IS NOT NULL
+    AND pv.pvdtcad BETWEEN $3 AND $4
+    GROUP BY 
+    pv.pvcod,
+    pv.pvvl,
+    pv.pvobs,
+    pv.pvcanal,
+    pv.pvconfirmado,
+    pv.pvsta,
+    pvipvcod,
+    pv.pvrcacod,
+    usu.usunome
+    ORDER BY pv.pvcod DESC;
+      
+        `,
+      [ usuadm,usucod,dataInicio, dataFim]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -186,7 +317,7 @@ exports.listarPedidosPendentesDetalhe = async (req, res) => {
        from pv
        join pvi on pvipvcod = pvcod
        join pro on procod = pviprocod
-       where pvcod = $1`,
+       where pvcod = $1 and pvsta = 'A'`,
       [pvcod]
     );
     res.status(200).json(result.rows);

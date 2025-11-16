@@ -4,6 +4,7 @@ const id = params.get("id");
 const modelo = params.get("modelo");
 const marcascod = params.get("marcascod");
 const qtde = params.get("qtde");
+const codigoVendedor = document.getElementById("codigoVendedor");
 
 function formatarMoeda(valor) {
   return Number(valor).toLocaleString("pt-BR", {
@@ -20,17 +21,55 @@ function limparCarrinho() {
 
 //função para verificar se esta logado e mostrar o botão orçamento
 document.addEventListener("DOMContentLoaded", function () {
+fetch(`${BASE_URL}/emp`)
+  .then((response) => response.json())
+  .then((data) => {
+      const empusapv = data.empusapv
+      console.log(empusapv);
+
+
   const usuarioLogado = localStorage.getItem("usuarioLogado");
   const botaoOrcamento = document.getElementById("botao-orcamento");
+  
 
-  console.log(usuarioLogado);
-
-  if (usuarioLogado) {
+  if (usuarioLogado && empusapv === 'S') {
+    buscarVendedores();
+    codigoVendedor.style.display = "inline";
     botaoOrcamento.style.display = "inline";
-  } else {
+  }
+    
+  else if (usuarioLogado && empusapv === 'N'){
+      botaoOrcamento.style.display = "inline";
+      codigoVendedor.style.display = "none";
+  }
+   else {
+    codigoVendedor.style.display = "none";
     botaoOrcamento.style.display = "none";
   }
+    })
+    .catch((error) => {
+      console.error("Erro ao buscar configurações da empresa:", error);
+     
+    });
+
 });
+
+async function buscarVendedores({ keepSearch = true } = {}) {
+  try {
+    const res = await fetch(`${BASE_URL}/vendedor/listar`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const dados = await res.json();
+    const list = Array.isArray(dados) ? dados : [];
+
+    const select = document.getElementById("codigoVendedor");
+    list.forEach((m) => {
+      select.innerHTML += `<option value="${m.usucod}">${m.usunome}</option>`;
+    });
+  } catch (err) {
+    console.error("Failed to refresh users:", err);
+    alert("Erro ao recarregar vendedores. Veja console para mais detalhes.");
+  }
+}
 
 function renderCart() {
   const corpoTabela = document.getElementById("carrinhoCorpo");
@@ -206,6 +245,16 @@ let quantidadeEmoji = "\u{1F522}"; // 🔢
 
 // função para retirar balcão pegar o id do produto e a quantidade e valor total gerar um formulario e abrir conversa no whatsapp
 async function enviarWhatsApp() {
+  const disabledDiv = document.getElementById('divFinalizar');
+  try{
+  disabledDiv.style.pointerEvents = 'none';
+  disabledDiv.style.opacity = '0.6';
+  disabledDiv.status.userSelect = 'none';
+  }
+  catch (error){
+    console.error("Failed", error);
+  }
+
   const respSeq = await fetch("/pedidos/sequencia");
   const seqData = await respSeq.json();
   const pvcod = seqData.nextval;
@@ -243,6 +292,7 @@ async function enviarWhatsApp() {
       canal: "BALCAO",
       status: "A",
       confirmado: "N",
+      codigoVendedor: codigoVendedor.value || null,
     }),
   });
   const data = await respPedido.json();
@@ -318,6 +368,17 @@ async function enviarWhatsApp() {
 
 // quando clicar lá no botão de entrega, abrir um popup com nome completo e endereço
 async function enviarWhatsAppEntrega() {
+  
+  const disabledDiv = document.getElementById('divFinalizar');
+  try{
+  disabledDiv.style.pointerEvents = 'none';
+  disabledDiv.style.opacity = '0.6';
+  disabledDiv.status.userSelect = 'none';
+  }
+  catch (error){
+    console.error("Failed", error);
+  }
+
   const respSeq = await fetch("/pedidos/sequencia");
   const seqData = await respSeq.json();
   const pvcod = seqData.nextval;
@@ -354,6 +415,7 @@ async function enviarWhatsAppEntrega() {
       canal: "ENTREGA",
       status: "A",
       confirmado: "N",
+      codigoVendedor: codigoVendedor.value || null,
     }),
   });
   const data = await respPedido.json();

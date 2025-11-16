@@ -11,9 +11,9 @@ router.post(
 );
 router.get("/pedidos/listar", autenticarToken, pedidosController.listarPv);
 router.get(
-  "/pedidos/pendentes",
+  "/pedidos/pendentescount",
   autenticarToken,
-  pedidosController.listarPvPendentes
+  pedidosController.listarPvPendentesCount
 );
 router.get(
   "/pedidos/balcao",
@@ -29,6 +29,11 @@ router.get(
   "/pedidos/total/confirmados",
   autenticarToken,
   pedidosController.listarTotalPvConfirmados
+);
+router.get(
+  "/pedidos/pendentes",
+  autenticarToken,
+  pedidosController.listarPvPendentes
 );
 router.get(
   "/pedidos/confirmados",

@@ -9,40 +9,143 @@ function formatarMoeda(valor) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await verificarLogin();
+  // se você tem uma função verificarLogin, chamamos aqui.
+  if (typeof verificarLogin === "function") {
+    try {
+      await verificarLogin();
+    } catch (err) {
+      console.error("Erro em verificarLogin:", err);
+    }
+  }
+
+  const brandMap = {
+    samsung: { icon: "samsung", domain: "samsung.com" },
+    motorola: { icon: "motorola", domain: "motorola.com" },
+    xiaomi: { icon: "xiaomi", domain: "mi.com" },
+    iphone: { icon: "apple", domain: "apple.com" },
+    apple: { icon: "apple", domain: "apple.com" },
+    realme: { icon: null, domain: "realme.com" },
+    infinix: { icon: null, domain: "infinixmobility.com" },
+    nokia: { icon: "nokia", domain: "nokia.com" },
+    lg: { icon: "lg", domain: "lg.com" },
+    asus: { icon: "asus", domain: "asus.com" },
+    tecnospark: { icon: null, domain: "tecno-mobile.com" },
+    itel: { icon: null, domain: "itel-mobile.com" },
+    acessorios: { icon: null, domain: "gear.google.com" },
+    oppo: { icon: "oppo", domain: "oppo.com" },
+    caio: { icon: null, domain: "xvideos.com" },
+    huawei: { icon: "huawei", domain: "huawei.com" },
+  };
+
+  function normalize(name) {
+    return String(name || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\s+/g, "");
+  }
+
+  function getIconURL(brand) {
+    const slug = normalize(brand);
+    const info = brandMap[slug];
+    if (!info) return "https://cdn.simpleicons.org/cog";
+
+    if (info.icon) return `https://cdn.simpleicons.org/${info.icon}`;
+    return `https://www.google.com/s2/favicons?sz=64&domain=${info.domain}`;
+  }
+
+  // Pega o elemento onde as marcas serão inseridas
+  const holder = document.getElementById("marcaTitulo");
+  if (!holder) {
+    console.warn("Elemento #marcaTitulo não encontrado.");
+    return;
+  }
+
+  // Limpa antes de popular
+  holder.innerHTML = "";
+
+  // Busca as marcas da API
   fetch(`${BASE_URL}/marcas/`)
-    .then((res) => res.json())
-    .then((dados) => {
-      const holder = document.getElementById("marcaTitulo");
-      if (!holder) return;
-      holder.innerHTML = ""; // zera antes
-
-      let html = '<div class="row g-4">'; // gap entre os itens
-      dados.forEach((dado) => {
-        html += `
-        <style> .brand-btn {
-    border-radius: 12px;
-    transition: all 0.2s ease-in-out;
-  }
-  .brand-btn:hover {
-    background-color: #0d6efd;
-    color: white;
-    transform: translateY(-2px);
-  }
-  </style>
-          <div class="col-6 col-md-4 col-lg-3 px-2 mb-3">
-            <a href="modelo?id=${dado.marcascod}&marcascod=${dado.marcascod}" class="w-100 text-decoration-none">
-              <button class="btn btn-light w-100 shadow-sm py-3 fw-semibold brand-btn">
-                ${dado.marcasdes}
-              </button>
-            </a>
-          </div>`;
-      });
-      html += "</div>";
-
-      holder.innerHTML = html;
+    .then((res) => {
+      if (!res.ok) throw new Error("Resposta da API não OK: " + res.status);
+      return res.json();
     })
-    .catch(console.error);
+    .then((dados) => {
+      // dados pode ser array de strings ou array de objetos.
+      if (!Array.isArray(dados) || dados.length === 0) {
+        holder.innerHTML = "<p>Nenhuma marca encontrada.</p>";
+        return;
+      }
+
+      const row = document.createElement("div");
+      row.className = "row g-3";
+
+      dados.forEach((item) => {
+        // Normaliza diferentes formatos de item retornado pela API
+        // Tente mapear as propriedades mais prováveis (baseado no seu código comentado)
+        const isString = typeof item === "string";
+        const label = isString
+          ? item
+          : item.marcasdes || item.nome || item.name || item.label || "";
+        // campo de id/código da marca:
+        const code = isString
+          ? "" // sem código se item for apenas string
+          : item.marcascod || item.id || item.codigo || "";
+
+        // Cria coluna
+        const col = document.createElement("div");
+        col.className = "col-6 col-md-4 col-lg-3 brand-col";
+
+        // Cria link que leva para a página de modelos com o marcascod como parâmetro
+        // Se não houver code, o link vai apenas para 'modelo' sem query string.
+        const href =
+          code !== ""
+            ? `modelo?id=${encodeURIComponent(
+                code
+              )}&marcascod=${encodeURIComponent(code)}`
+            : "modelo";
+
+        const link = document.createElement("a");
+        link.className = "brand-link";
+        link.href = href;
+        link.setAttribute("aria-label", label);
+
+        // Botão estilizado (sem type para não submeter formulários inválidos)
+        const btn = document.createElement("button");
+        btn.className = "brand-btn";
+        btn.type = "button";
+
+        // Imagem do ícone
+        const img = document.createElement("img");
+        img.src = getIconURL(label);
+        img.alt = `${label} logo`;
+        img.loading = "lazy";
+
+        // fallback final
+        img.onerror = () => {
+          img.onerror = null;
+          img.src = "https://cdn.simpleicons.org/cog";
+        };
+
+        const span = document.createElement("span");
+        span.textContent = label;
+
+        btn.appendChild(img);
+        btn.appendChild(span);
+
+        // Coloca o botão dentro do link (clicando em qualquer lugar do botão segue o link)
+        link.appendChild(btn);
+        col.appendChild(link);
+        row.appendChild(col);
+      });
+
+      holder.appendChild(row);
+    })
+    .catch((err) => {
+      console.error("Erro ao buscar marcas:", err);
+      holder.innerHTML =
+        "<p>Erro ao carregar marcas. Veja o console para detalhes.</p>";
+    });
 });
 
 const inputPesquisa = document.getElementById("pesquisa");
@@ -162,7 +265,6 @@ inputPesquisa.addEventListener("input", function () {
         filtrados.forEach((modelo) => {
           const item = document.createElement("div");
           item.className = "cart-item";
-          //item.style.maxWidth = "50%"; removido feature do alan
           item.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <div class="item-name">${modelo.moddes}</div>
@@ -525,3 +627,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// Botão de instalação PWA
+let deferredPrompt;
+const btnInstall = document.getElementById("btnInstall");
+
+// Captura o evento antes do Chrome exibir o banner nativo
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault(); // impede o banner automático
+  deferredPrompt = e;
+  btnInstall.style.display = "block"; // mostra botão manual
+});
+
+// Quando o usuário clicar no botão
+btnInstall.addEventListener("click", () => {
+  btnInstall.style.display = "none"; // esconde o botão
+  deferredPrompt.prompt(); // dispara o banner nativo
+  deferredPrompt.userChoice.then((choiceResult) => {
+    console.log("Usuário escolheu:", choiceResult.outcome);
+    deferredPrompt = null;
+  });
+});
+
+// Registro do Service Worker
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").then(() => {
+    console.log("Service Worker registrado");
+  });
+}

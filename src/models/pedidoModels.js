@@ -1,9 +1,9 @@
-const pool = require('../config/db');
-const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
+const pool = require("../config/db");
+const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 
-async function totalVendas() {   
-        const result = await pool.query(`select
+async function totalVendas() {
+  const result = await pool.query(`select
             count(pvcod) as total_pedido,
             pvconfirmado,
             pvcanal,
@@ -11,12 +11,12 @@ async function totalVendas() {
             from pv
             group by pv.pvconfirmado ,pv.pvcanal 
             order by pv.pvcanal`);
-        return result.rows;
+  return result.rows;
 }
 
 async function listarPv() {
-    const result = await pool.query(
-      `select 
+  const result = await pool.query(
+    `select 
             pvcod,
             pvvl,
             pvobs,
@@ -31,6 +31,7 @@ async function listarPv() {
             where pvconfirmado = 'N' 
             and pvsta = 'A' 
             and pviprocod is not null 
+            and pvrcacod = $1 
             group by 
             pvcod,
             pvvl,
@@ -41,18 +42,17 @@ async function listarPv() {
             pvipvcod,
             pviqtde 
             order by pvcod desc`
-    );
-    return result.rows;
+  );
+  return result.rows;
 }
 
 async function cancelarPedido(req, res) {
-    const pvcod = req.params.pvcod;
-    const result = await pool.query(
-      "update pv set pvsta = 'X' where pvcod = $1 RETURNING *",
-      [pvcod]
-    );
-    return result.rows;
-    
+  const pvcod = req.params.pvcod;
+  const result = await pool.query(
+    "update pv set pvsta = 'X' where pvcod = $1 RETURNING *",
+    [pvcod]
+  );
+  return result.rows;
 }
 
-module.exports = { totalVendas, listarPv ,cancelarPedido};
+module.exports = { totalVendas, listarPv, cancelarPedido };

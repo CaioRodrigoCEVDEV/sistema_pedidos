@@ -1,3 +1,74 @@
+// Inicio filtro
+// filtro de data: formata Date para yyyy-mm-dd
+function toInputDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+const select = document.getElementById("filtroPeriodoSelect");
+const inputInicio = document.getElementById("filtroDataInicio");
+const inputFim = document.getElementById("filtroDataFim");
+const btnAplicar = document.getElementById("btnAplicarFiltroPeriodo");
+const btnLimpar = document.getElementById("btnLimparFiltroPeriodo");
+const tabelaConfirmados = document.getElementById("corpoTabelaConfirmados"); // onde preencher
+const tabelaPendentes = document.getElementById("corpoTabela");
+
+function setRange(startDate, endDate) {
+  inputInicio.value = startDate ? toInputDate(startDate) : "";
+  inputFim.value = endDate ? toInputDate(endDate) : "";
+}
+
+function enableDateInputs(enable) {
+  inputInicio.disabled = !enable;
+  inputFim.disabled = !enable;
+}
+
+function applyPreset(preset) {
+  const today = new Date();
+  let start = null;
+  let end = null;
+
+  if (preset === "hoje") {
+    start = new Date(today);
+    end = new Date(today);
+  } else if (preset === "ult7") {
+    // últimos 7 dias: de (hoje -6) até hoje -> 7 dias inclusive
+    start = new Date(today);
+    start.setDate(today.getDate() - 6);
+    end = new Date(today);
+  } else if (preset === "ult30") {
+    start = new Date(today);
+    start.setDate(today.getDate() - 29);
+    end = new Date(today);
+  } else if (preset === "todos") {
+    start = null;
+    end = null;
+  } else if (preset === "personalizado") {
+    // não altera valores, apenas habilita edição
+  }
+
+  setRange(start, end);
+  enableDateInputs(preset === "personalizado");
+}
+
+// on change do select
+select.addEventListener("change", function () {
+  applyPreset(this.value);
+});
+
+// limpar botão
+btnLimpar.addEventListener("click", function () {
+  select.value = "todos";
+  applyPreset("todos");
+  // opcional: limpar tabela
+  tabelaConfirmados.innerHTML = "";
+  tabelaPendentes.innerHTML = "";
+});
+
+// Fim filtro
+
 function formatarMoeda(valor) {
   return Number(valor).toLocaleString("pt-BR", {
     style: "currency",
@@ -10,7 +81,7 @@ function formatarMoeda(valor) {
 async function atualizarTotaisPedidos() {
   try {
     const [pedidos, pvBalcao, pvEntrega, pvConfirmados] = await Promise.all([
-      fetch(`${BASE_URL}/pedidos/pendentes`).then((r) => r.json()),
+      fetch(`${BASE_URL}/pedidos/pendentescount`).then((r) => r.json()),
       fetch(`${BASE_URL}/pedidos/balcao`).then((r) => r.json()),
       fetch(`${BASE_URL}/pedidos/entrega`).then((r) => r.json()),
       fetch(`${BASE_URL}/pedidos/total/confirmados`).then((r) => r.json()),
@@ -36,35 +107,6 @@ window.atualizarTotaisPedidos = atualizarTotaisPedidos;
 // chama uma vez ao carregar a página
 document.addEventListener("DOMContentLoaded", () => {
   atualizarTotaisPedidos();
-});
-
-// pedidos pedentes
-document.addEventListener("DOMContentLoaded", function () {
-  fetch(`${BASE_URL}/v2/pedidos/listar`)
-    .then((res) => res.json())
-    .then((dados) => {
-      const corpoTabela = document.getElementById("corpoTabela");
-      corpoTabela.innerHTML = ""; // limpa o conteúdo atual da tabela
-
-      dados.forEach((dado) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="text-center">${dado.pvcod}</td>
-          <td class="text-center">${dado.pvcanal}</td>
-          <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
-          <td class="text-center">
-            <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${dado.pvcod
-          })">
-                <i class="bi bi-search"></i>
-              </button>
-            </div>          
-          </td>
-        `;
-        corpoTabela.appendChild(tr);
-      });
-    })
-    .catch((erro) => console.error("Erro ao carregar pedidos:", erro));
 });
 
 async function abriDetalhePedido(pvcod, status = "pendentes") {
@@ -98,10 +140,11 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
           </div>
           <div class="modal-footer">
             <button type="button" id="btnCancelarPedidoModal" class="btn btn-danger">Cancelar Pedido</button>
-            ${status !== "confirmados"
-        ? '<button type="button" id="btnConfirmarPedidoModal" class="btn btn-success">Confirmar Pedido</button>'
-        : ""
-      }
+            ${
+              status !== "confirmados"
+                ? '<button type="button" id="btnConfirmarPedidoModal" class="button-color-4 w-25">Confirmar Pedido</button>'
+                : ""
+            }
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
           </div>
         </div>
@@ -114,14 +157,14 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
 
     const linhasItens = pedido.length
       ? pedido
-        .map((it, i) => {
-          const descricao = it.prodes || "";
-          const qtd = it.pviqtde ?? 0;
-          const preco = it.pvivl ?? 0;
-          const subtotal = it.pvivl * it.pviqtde ?? 0;
-          const procod = it.pviprocod || 0;
-          const pv = it.pvcod || pvcod;
-          return `<tr>
+          .map((it, i) => {
+            const descricao = it.prodes || "";
+            const qtd = it.pviqtde ?? 0;
+            const preco = it.pvivl ?? 0;
+            const subtotal = it.pvivl * it.pviqtde ?? 0;
+            const procod = it.pviprocod || 0;
+            const pv = it.pvcod || pvcod;
+            return `<tr>
               <td class="text-center" data-procod="${procod}">${i + 1}</td>
               <td>${descricao}</td>
               <td style="padding: 0.2rem;">
@@ -140,8 +183,8 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
                 </button>
               </td>
             </tr>`;
-        })
-        .join("")
+          })
+          .join("")
       : `<tr><td colspan="6" class="text-center">Nenhum item encontrado</td></tr>`;
 
     const totalPedido = pedido.reduce(
@@ -170,10 +213,11 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
               <th colspan="4" class="text-end">Total</th>
               <th class="text-end">${formatarMoeda(totalPedido)}</th>
             </tr>
-            ${pedido.pvobs
-        ? `<tr><td colspan="5"><strong>Obs:</strong> ${pedido.pvobs}</td></tr>`
-        : ""
-      }
+            ${
+              pedido.pvobs
+                ? `<tr><td colspan="5"><strong>Obs:</strong> ${pedido.pvobs}</td></tr>`
+                : ""
+            }
           </tfoot>
         </table>
       </div>
@@ -199,9 +243,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
 
     if (newBtnConfirm) {
       newBtnConfirm.addEventListener("click", async () => {
-
         try {
-
           // // pega todas as linhas de itens
           const linhas = modalEl.querySelectorAll("tbody tr");
           const itens = [];
@@ -209,7 +251,6 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
           linhas.forEach((tr) => {
             const cellProcod = tr.querySelector("[data-procod]");
             const inputQtd = tr.querySelector(".qtd-input");
-
 
             // garante que ambos existam
             if (cellProcod && inputQtd) {
@@ -228,16 +269,12 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
           const m = bootstrap.Modal.getInstance(modalEl);
           m.hide();
           await confirmarPedido(pvcod);
-          
         } catch (err) {
           console.error("Erro ao confirmar via modal:", err);
           alert("Erro ao confirmar pedido.");
-        }
-        finally {
+        } finally {
           window.location.reload();
-
         }
-        
       });
     }
 
@@ -299,20 +336,16 @@ async function cancelarItem(procod, pvcod) {
   }
 }
 
-
 // cancelar Pedido
 async function cancelarPv(pvcod) {
   try {
-    const response = await fetch(
-      `${BASE_URL}/v2/pedidos/cancelar/${pvcod}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ pvcod: pvcod }),
-      }
-    );
+    const response = await fetch(`${BASE_URL}/v2/pedidos/cancelar/${pvcod}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ pvcod: pvcod }),
+    });
     if (response.ok) {
       alert("Pedido cancelado com sucesso!");
       location.reload();
@@ -325,7 +358,6 @@ async function cancelarPv(pvcod) {
     alert("Erro ao cancelar o Pedido.");
   }
 }
-
 
 // confirmação de pedidos
 async function confirmarPedido(pvcod) {
@@ -389,8 +421,9 @@ async function cancelarPedido(pvcod) {
           <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${dado.pvcod
-          }, 'confirmados')">
+              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${
+                dado.pvcod
+              }, 'confirmados')">
                 <i class="bi bi-search"></i>
               </button>
             </div>          
@@ -411,88 +444,131 @@ async function cancelarPedido(pvcod) {
   }
 }
 
-// pedidos confirmados
-document.addEventListener("DOMContentLoaded", function () {
-  fetch(`${BASE_URL}/pedidos/confirmados`)
-    .then((res) => res.json())
-    .then((dados) => {
-      const corpoTabelaConfirmados = document.getElementById(
-        "corpoTabelaConfirmados"
-      );
-      corpoTabelaConfirmados.innerHTML = ""; // limpa o conteúdo atual da tabela
+//inicio tabela
+// PEDIDOS FINALIZADOS
+(function () {
+  // função que faz fetch (adapte a URL / parâmetros conforme sua API)
+  async function fetchPedidosFinalizados(params = {}) {
+    // Exemplo: endpoint que aceita dataInicio e dataFim no formato YYYY-MM-DD
+    const qs = new URLSearchParams();
+    if (params.dataInicio) qs.set("dataInicio", params.dataInicio);
+    if (params.dataFim) qs.set("dataFim", params.dataFim);
 
-      dados.forEach((dado) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
+    // Ajuste a URL para o seu endpoint real:
+    const url = `${BASE_URL}/pedidos/confirmados?` + qs.toString();
+
+    try {
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Erro ao buscar pedidos: " + res.status);
+      const data = await res.json();
+
+      // Preencher tabela - adapte conforme o formato de 'data' da sua API
+      tabelaConfirmados.innerHTML = ""; // limpa
+      if (Array.isArray(data) && data.length) {
+        data.forEach((dado) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
           <td class="text-center" style="color: green;">${dado.pvcod}</td>
           <td class="text-center" style="color: green;">${dado.pvcanal}</td>
-          <td class="text-right" style="color: green;">${formatarMoeda(
-          dado.pvvl
-        )}</td>
-          <td class="text-center">
-            <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${dado.pvcod
-          }, 'confirmados')">
-                <i class="bi bi-search"></i>
-              </button>
-            </div>          
-          </td>
-        `;
-        corpoTabelaConfirmados.appendChild(tr);
-        atualizarTotaisPedidos();
-      });
-    })
-    .catch((erro) => console.error("Erro ao carregar pedidos:", erro));
-});
-
-(function () {
-  // sobrescreve confirmarPedido para adicionar atualização da lista de confirmados
-  const originalConfirmar = window.confirmarPedido;
-  if (typeof originalConfirmar !== "function") return;
-
-  async function atualizarConfirmados() {
-    try {
-      const res = await fetch(`${BASE_URL}/pedidos/confirmados`);
-      const dados = await res.json();
-      const corpoTabelaConfirmados = document.getElementById(
-        "corpoTabelaConfirmados"
-      );
-      if (!corpoTabelaConfirmados) return;
-      corpoTabelaConfirmados.innerHTML = "";
-      dados.forEach((dado) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="text-center" style="color: green;">${dado.pvcod}</td>
+          <td class="text-center" style="color: green;">${
+            dado.usunome || "Sem Vendedor"
+          }</td>
           <td class="text-right" style="color: green;">${formatarMoeda(
             dado.pvvl
           )}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button type="button" class="btn btn-primary btn-sm" onclick="abriDetalhePedido(${
+              <button type="button" class="button-color-4" onclick="abriDetalhePedido(${
                 dado.pvcod
               }, 'confirmados')">
-                <i class="bi bi-search"></i>
+                <i class="fa-solid fa-eye"></i>
               </button>
             </div>          
           </td>
         `;
-        corpoTabelaConfirmados.appendChild(tr);
-      });
+          tabelaConfirmados.appendChild(tr);
+        });
+      } else {
+        tabelaConfirmados.innerHTML =
+          '<tr><td colspan="5">Nenhum pedido encontrado para o período selecionado.</td></tr>';
+      }
     } catch (err) {
-      console.error("Erro ao atualizar pedidos confirmados:", err);
+      console.error(err);
+      tabelaConfirmados.innerHTML = `<tr><td colspan="5">Erro ao carregar pedidos.</td></tr>`;
     }
   }
 
-  window.confirmarPedido = async function (pvcod, pviqtde, procod) {
-    // chama a implementação original (mantendo comportamento atual)
+  // PEDIDOS PENDENTES
+
+  // função que faz fetch (adapte a URL / parâmetros conforme sua API)
+  async function fetchPedidosPendentes(params = {}) {
+    // Exemplo: endpoint que aceita dataInicio e dataFim no formato YYYY-MM-DD
+    const qs = new URLSearchParams();
+    if (params.dataInicio) qs.set("dataInicio", params.dataInicio);
+    if (params.dataFim) qs.set("dataFim", params.dataFim);
+
+    // Ajuste a URL para o seu endpoint real:
+    const url = `${BASE_URL}/pedidos/pendentes?` + qs.toString();
+
     try {
-      await originalConfirmar(pvcod, pviqtde, procod);
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Erro ao buscar pedidos: " + res.status);
+      const data = await res.json();
+
+      // Preencher tabela - adapte conforme o formato de 'data' da sua API
+      tabelaPendentes.innerHTML = ""; // limpa
+      if (Array.isArray(data) && data.length) {
+        data.forEach((dado) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+          <td class="text-center">${dado.pvcod}</td>
+          <td class="text-center">${dado.pvcanal}</td>
+          <td class="text-center">${dado.usunome || "Sem Vendedor"}</td>
+          <td class="text-center">${formatarMoeda(dado.pvvl)}</td>
+          <td class="text-center">
+            <div class="d-flex justify-content-center align-items-center gap-2">
+              <button type="button" class="button-color-3" onclick="abriDetalhePedido(${
+                dado.pvcod
+              })">
+                <i class="fa-solid fa-wrench"></i>
+              </button>
+            </div>          
+          </td>
+        `;
+          tabelaPendentes.appendChild(tr);
+        });
+      } else {
+        tabelaPendentes.innerHTML =
+          '<tr><td colspan="5">Nenhum pedido encontrado para o período selecionado.</td></tr>';
+      }
     } catch (err) {
-      // original já faz tratamento/alertas; apenas logamos o erro aqui também
-      console.error("Erro na confirmação original:", err);
+      console.error(err);
+      tabelaPendentes.innerHTML = `<tr><td colspan="5">Erro ao carregar pedidos.</td></tr>`;
     }
-    // sempre tenta atualizar a lista de confirmados após a tentativa de confirmação
-    await atualizarConfirmados();
-    atualizarTotaisPedidos();
-  };
+  }
+  //Fim tabela
+  // Aplicar botão: monta params e chama fetch
+  btnAplicar.addEventListener("click", function () {
+    const inicio = inputInicio.value || null;
+    const fim = inputFim.value || null;
+
+    // Se select é 'todos' e não tem datas, chamar sem filtros
+    if (select.value === "todos" && !inicio && !fim) {
+      fetchPedidosFinalizados();
+      fetchPedidosPendentes();
+      return;
+    }
+
+    // Se uma das datas estiver preenchida sem a outra, você pode decidir:
+    // - forçar que ambas existam, ou
+    // - completar fim = inicio, etc. Aqui vamos permitir inicio ou fim individual.
+    fetchPedidosFinalizados({ dataInicio: inicio, dataFim: fim });
+    fetchPedidosPendentes({ dataInicio: inicio, dataFim: fim });
+  });
+
+  // inicializa com últimos 7 dias (opcional). Se preferir começar com 'todos', troque para 'todos'
+  select.value = "hoje";
+  applyPreset("hoje");
+  // e já carrega os pedidos dos últimos 7 dias automaticamente:
+  btnAplicar.click();
 })();
