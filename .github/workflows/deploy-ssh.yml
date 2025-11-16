@@ -1,52 +1,72 @@
-name: Deploy via SSH (git pull + systemctl)
+name: Deploy via SSH (systemctl + tag deploy)
 
 on:
   push:
     branches:
-      - main            # dispara a cada push na main
-      - release         # dispara a cada push na release
-  workflow_dispatch:     # ou manualmente no Actions
+      - release         # deploy para ambiente de testes
+    tags:
+      - 'v*.*.*'        # deploy para produção via TAG (ex: v2.0.0)
+  release:
+    types: [published]  # deploy para produção via Release publicada
+  workflow_dispatch:
 
 jobs:
-  deploy:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Prepare SSH known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
-      - name: Setup SSH key
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-      - name: Run remote deploy scripts
-        run: |
-          ssh -p "${{ secrets.SSH_PORT }}" "root@${{ secrets.SSH_HOST }}" '
-            set -e
-            chmod +x /root/deployJpPecas.sh
-            chmod +x /root/deployUTIdosCelulares.sh
-            /root/deployJpPecas.sh
-            /root/deployUTIdosCelulares.sh
-          '
-
+  # ============================
+  # DEPLOY PARA SERVIDOR DE TESTES
+  # ============================
   release:
     if: github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
     steps:
-      - name: Prepare SSH known_hosts
+      - name: Prepare SSH known_hosts (release)
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p "${{ secrets.SSH_PORT_RELEASE }}" "${{ secrets.SSH_HOST_RELEASE }}" >> ~/.ssh/known_hosts
-      - name: Setup SSH key
+          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Setup SSH key (release)
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY_RELEASE }}" > ~/.ssh/release_orderUp
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/release_orderUp
           chmod 600 ~/.ssh/release_orderUp
-      - name: Run remote deploy scripts
+
+      - name: Run remote release script
         run: |
-          ssh -i ~/.ssh/release_orderUp -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT_RELEASE }}" "root@${{ secrets.SSH_HOST_RELEASE }}" '
+          ssh -i ~/.ssh/release_orderUp -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT }}" "root@${{ secrets.SSH_HOST }}" '
             set -e
             chmod +x /root/releaseOrderUp.sh
             /root/releaseOrderUp.sh
           '
 
+  # ============================
+  # DEPLOY PARA PRODUÇÃO VIA TAG
+  # ============================
+  deploy_from_tag:
+    if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve TAG name
+        id: resolve_tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Prepare SSH known_hosts (tag deploy)
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Setup SSH key (tag deploy)
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Deploy tag on remote server
+        run: |
+          TAG="${{ steps.resolve_tag.outputs.tag }}"
+          echo "Deploying tag: $TAG"
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT }}" "root@${{ secrets.SSH_HOST }}" "/root/deployJpPecas.sh ${TAG}"
