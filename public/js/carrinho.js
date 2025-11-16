@@ -21,17 +21,37 @@ function limparCarrinho() {
 
 //função para verificar se esta logado e mostrar o botão orçamento
 document.addEventListener("DOMContentLoaded", function () {
+fetch(`${BASE_URL}/emp`)
+  .then((response) => response.json())
+  .then((data) => {
+      const empusapv = data.empusapv
+      console.log(empusapv);
+
+
   const usuarioLogado = localStorage.getItem("usuarioLogado");
   const botaoOrcamento = document.getElementById("botao-orcamento");
+  
 
-  if (usuarioLogado) {
+  if (usuarioLogado && empusapv === 'S') {
     buscarVendedores();
-    botaoOrcamento.style.display = "inline";
     codigoVendedor.style.display = "inline";
-  } else {
-    botaoOrcamento.style.display = "none";
-    codigoVendedor.style.display = "none";
+    botaoOrcamento.style.display = "inline";
   }
+    
+  else if (usuarioLogado && empusapv === 'N'){
+      botaoOrcamento.style.display = "inline";
+      codigoVendedor.style.display = "none";
+  }
+   else {
+    codigoVendedor.style.display = "none";
+    botaoOrcamento.style.display = "none";
+  }
+    })
+    .catch((error) => {
+      console.error("Erro ao buscar configurações da empresa:", error);
+     
+    });
+
 });
 
 async function buscarVendedores({ keepSearch = true } = {}) {
