@@ -66,3 +66,93 @@ jobs:
           TAG="${{ steps.resolve_tag.outputs.tag }}"
           echo "Deploying tag: $TAG"
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT }}" "root@${{ secrets.SSH_HOST }}" "/root/deployJpPecas.sh ${TAG}"
+
+
+
+  # ============================
+  # NOTIFICAÇÃO PARA O DISCORD
+  # ============================
+  discord_notify:
+    runs-on: ubuntu-latest
+    # Se preferir que rode APÓS os jobs de deploy, descomente a linha abaixo:
+    # needs: [release, deploy_from_tag]
+    steps:
+      - name: Checkout (to have access to repo info)
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Build and send Discord payload
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+        run: |
+          set -euo pipefail
+
+          esc() {
+            printf '%s' "$1" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g'
+          }
+
+          EVENT="${GITHUB_EVENT_NAME}"
+          REPO="${GITHUB_REPOSITORY}"
+          ACTOR="${GITHUB_ACTOR}"
+          REF="${GITHUB_REF}"
+          TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+          TITLE="GitHub event: ${EVENT}"
+          DESCRIPTION=""
+          URL="https://github.com/${REPO}"
+
+          if [ "${EVENT}" = "push" ]; then
+            BRANCH="${REF##*/}"
+            TITLE="Push to ${BRANCH}"
+            DESCRIPTION=$(jq -r '.commits | map("- " + .message + " (`" + (.id|.[0:7]) + "`) by " + (.author.name//.author.username)) | join("\n")' "${GITHUB_EVENT_PATH}" || echo "")
+            URL="https://github.com/${REPO}/commit/$(jq -r '.after' "${GITHUB_EVENT_PATH}")"
+          elif [ "${EVENT}" = "release" ]; then
+            TAG=$(jq -r '.release.tag_name' "${GITHUB_EVENT_PATH}")
+            TITLE="Release ${TAG}"
+            DESCRIPTION=$(jq -r '.release.body // "Sem descrição"' "${GITHUB_EVENT_PATH}")
+            URL=$(jq -r '.release.html_url' "${GITHUB_EVENT_PATH}")
+          elif [ "${EVENT}" = "workflow_dispatch" ]; then
+            TITLE="Manual workflow_dispatch by ${ACTOR}"
+            DESCRIPTION="Disparado manualmente"
+            URL="https://github.com/${REPO}/actions"
+          elif [ "${EVENT}" = "pull_request" ]; then
+            ACTION=$(jq -r '.action' "${GITHUB_EVENT_PATH}")
+            PR_TITLE=$(jq -r '.pull_request.title' "${GITHUB_EVENT_PATH}")
+            PR_USER=$(jq -r '.pull_request.user.login' "${GITHUB_EVENT_PATH}")
+            PR_URL=$(jq -r '.pull_request.html_url' "${GITHUB_EVENT_PATH}")
+            TITLE="PR ${ACTION}: ${PR_TITLE}"
+            DESCRIPTION="Autor: ${PR_USER}"
+            URL="${PR_URL}"
+          fi
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "username": "OrderUp",
+            "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            "embeds": [
+              {
+                "title": "$(esc "${TITLE}")",
+                "url": "$(esc "${URL}")",
+                "description": "$(esc "${DESCRIPTION}")",
+                "color": 3447003,
+                "fields": [
+                  { "name": "Repositório", "value": "$(esc "${REPO}")", "inline": true },
+                  { "name": "Por", "value": "$(esc "${ACTOR}")", "inline": true },
+                  { "name": "Ref", "value": "$(esc "${REF}")", "inline": true }
+                ],
+                "timestamp": "${TIMESTAMP}"
+              }
+            ]
+          }
+          EOF
+          )
+
+          echo "Sending notification to Discord..."
+          curl -sS -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "${WEBHOOK_URL}"
