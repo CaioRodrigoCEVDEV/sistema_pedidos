@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - release         # deploy para ambiente de testes
-    tags:
-      - 'v*.*.*'        # deploy para produção via TAG (ex: v2.0.0)
   release:
     types: [published]  # deploy para produção via Release publicada
   workflow_dispatch:
@@ -38,7 +36,7 @@ jobs:
   # DEPLOY PARA PRODUÇÃO VIA TAG
   # ============================
   deploy_from_tag:
-    if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
