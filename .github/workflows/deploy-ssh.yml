@@ -18,19 +18,17 @@ jobs:
     if: github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
     steps:
-      - name: Prepare SSH known_hosts (release)
+      - name: Prepare SSH known_hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
-
-      - name: Setup SSH key (release)
+          ssh-keyscan -p "${{ secrets.SSH_PORT_RELEASE }}" "${{ secrets.SSH_HOST_RELEASE }}" >> ~/.ssh/known_hosts
+      - name: Setup SSH key
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/release_orderUp
+          echo "${{ secrets.SSH_PRIVATE_KEY_RELEASE }}" > ~/.ssh/release_orderUp
           chmod 600 ~/.ssh/release_orderUp
-
-      - name: Run remote release script
+      - name: Run remote deploy scripts
         run: |
-          ssh -i ~/.ssh/release_orderUp -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT }}" "root@${{ secrets.SSH_HOST }}" '
+          ssh -i ~/.ssh/release_orderUp -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT_RELEASE }}" "root@${{ secrets.SSH_HOST_RELEASE }}" '
             set -e
             chmod +x /root/releaseOrderUp.sh
             /root/releaseOrderUp.sh
