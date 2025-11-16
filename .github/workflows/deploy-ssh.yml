@@ -135,7 +135,8 @@ jobs:
           fi
 
           # Monta payload JSON com escaping
-          PAYLOAD=$(cat <<EOF{
+          PAYLOAD=$(cat <<EOF
+          {
                               "username": "GitHub Bot",
                               "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
                               "embeds": [
