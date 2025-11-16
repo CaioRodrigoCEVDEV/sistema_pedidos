@@ -143,32 +143,38 @@ jobs:
           fi
 
           # *** ATENÇÃO: heredoc SEM espaços antes do { e SEM aspas no EOF ***
-          PAYLOAD=$(cat <<EOF
-          {
-            "username": "OrderUp",
-            "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-            "embeds": [
-              {
-                "title": "$(esc "${TITLE}")",
-                "url": "$(esc "${URL}")",
-                "description": "$(esc "${DESCRIPTION}")",
-                "color": 3447003,
-                "fields": [
-                  { "name": "Repositório", "value": "$(esc "${REPO}")", "inline": true },
-                  { "name": "Por", "value": "$(esc "${ACTOR}")", "inline": true },
-                  { "name": "Ref", "value": "$(esc "${REF}")", "inline": true }
-                ],
-                "timestamp": "${TIMESTAMP}"
-              }
-            ]
-          }
-          EOF
-          )
+          # cria payload com jq (mais seguro)
+          PAYLOAD=$(jq -n \
+            --arg title "$TITLE" \
+            --arg url "$URL" \
+            --arg desc "$DESCRIPTION" \
+            --arg repo "$REPO" \
+            --arg actor "$ACTOR" \
+            --arg ref "$REF" \
+            --arg ts "$TIMESTAMP" \
+            '{
+              username: "OrderUp",
+              avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+              embeds: [
+                {
+                  title: $title,
+                  url: $url,
+                  description: $desc,
+                  color: 3447003,
+                  fields: [
+                    { name: "Repositório", value: $repo, inline: true },
+                    { name: "Por", value: $actor, inline: true },
+                    { name: "Ref", value: $ref, inline: true }
+                  ],
+                  timestamp: $ts
+                }
+              ]
+            }' )
 
-          # debug: imprime o payload exato a ser enviado
-          echo "=== PAYLOAD (coming next) ==="
-          echo "$PAYLOAD"
-          echo "============================="
+          # valida JSON antes de enviar
+          echo "=== PAYLOAD ==="
+          echo "$PAYLOAD" | jq . || (echo "Payload JSON inválido" && exit 1)
+          echo "==============="
 
           # envia e captura resposta
           HTTP_RESPONSE=$(mktemp)
@@ -184,7 +190,6 @@ jobs:
             exit 1
           fi
 
-          # Discord retorna 204 quando OK
           if [ "$HTTP_CODE" != "204" ]; then
             echo "Aviso: Discord retornou status $HTTP_CODE — verifique a resposta acima."
           fi
