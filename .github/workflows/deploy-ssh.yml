@@ -133,26 +133,26 @@ jobs:
           fi
 
           PAYLOAD=$(cat <<'EOF'
-{
-  "username": "GitHub Bot",
-  "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-  "embeds": [
-    {
-      "title": "$(esc "${TITLE}")",
-      "url": "$(esc "${URL}")",
-      "description": "$(esc "${DESCRIPTION}")",
-      "color": 3447003,
-      "fields": [
-        { "name": "Repositório", "value": "$(esc "${REPO}")", "inline": true },
-        { "name": "Por", "value": "$(esc "${ACTOR}")", "inline": true },
-        { "name": "Ref", "value": "$(esc "${REF}")", "inline": true }
-      ],
-      "timestamp": "${TIMESTAMP}"
-    }
-  ]
-}
-EOF
-)
+          {
+            "username": "GitHub Bot",
+            "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            "embeds": [
+              {
+                "title": "$(esc "${TITLE}")",
+                "url": "$(esc "${URL}")",
+                "description": "$(esc "${DESCRIPTION}")",
+                "color": 3447003,
+                "fields": [
+                  { "name": "Repositório", "value": "$(esc "${REPO}")", "inline": true },
+                  { "name": "Por", "value": "$(esc "${ACTOR}")", "inline": true },
+                  { "name": "Ref", "value": "$(esc "${REF}")", "inline": true }
+                ],
+                "timestamp": "${TIMESTAMP}"
+              }
+            ]
+          }
+          EOF
+          )
 
           echo "Sending notification to Discord..."
           curl -sS -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "${WEBHOOK_URL}"
