@@ -94,9 +94,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Helpers
           esc() {
-            # escapa barras, aspas e converte novas linhas para \n
             printf '%s' "$1" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g'
           }
 
@@ -134,29 +132,27 @@ jobs:
             URL="${PR_URL}"
           fi
 
-          # Monta payload JSON com escaping
-          PAYLOAD=$(cat <<EOF
-          {
-                              "username": "GitHub Bot",
-                              "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-                              "embeds": [
-                                {
-                          "title": "$(esc "${TITLE}")",
-                          "url": "$(esc "${URL}")",
-                          "description": "$(esc "${DESCRIPTION}")",
-                          "color": 3447003,
-                          "fields": [
-                            { "name": "Repositório", "value": "$(esc "${REPO}")", "inline": true },
-                            { "name": "Por", "value": "$(esc "${ACTOR}")", "inline": true },
-                            { "name": "Ref", "value": "$(esc "${REF}")", "inline": true }
-                          ],
-                          "timestamp": "${TIMESTAMP}"
-                        }
-                      ]
-                    }
-                    EOF
-                    )
+          PAYLOAD=$(cat <<'EOF'
+{
+  "username": "GitHub Bot",
+  "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+  "embeds": [
+    {
+      "title": "$(esc "${TITLE}")",
+      "url": "$(esc "${URL}")",
+      "description": "$(esc "${DESCRIPTION}")",
+      "color": 3447003,
+      "fields": [
+        { "name": "Repositório", "value": "$(esc "${REPO}")", "inline": true },
+        { "name": "Por", "value": "$(esc "${ACTOR}")", "inline": true },
+        { "name": "Ref", "value": "$(esc "${REF}")", "inline": true }
+      ],
+      "timestamp": "${TIMESTAMP}"
+    }
+  ]
+}
+EOF
+)
 
           echo "Sending notification to Discord..."
-          curl -sS -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "${WEBHOOK_URL}" || (echo "Failed to send Discord notification" && exit 0)
-
+          curl -sS -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "${WEBHOOK_URL}"
