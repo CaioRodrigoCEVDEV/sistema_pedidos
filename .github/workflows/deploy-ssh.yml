@@ -71,7 +71,6 @@ jobs:
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT }}" "root@${{ secrets.SSH_HOST }}" "/root/deployJpPecas.sh ${TAG}"
 
 
-
   # ============================
   # NOTIFICAÇÃO PARA O DISCORD
   # ============================
@@ -93,7 +92,6 @@ jobs:
             echo "PR not merged — skipping notifications."
             exit 0
           fi
-
 
       - name: Build and send Discord payload
         env:
@@ -126,25 +124,27 @@ jobs:
             DESCRIPTION=$(jq -r '.commits | map("- " + .message + " (`" + (.id|.[0:7]) + "`) by " + (.author.name//.author.username)) | join("\n")' "${GITHUB_EVENT_PATH}" || echo "")
             URL="https://github.com/${REPO}/commit/$(jq -r '.after' "${GITHUB_EVENT_PATH}")"
           elif [ "${EVENT}" = "release" ]; then
-            TAG=$(jq -r '.release.tag_name' "${GITHUB_EVENT_PATH}")
+            TAG=$(jq -r '.release.tag_name' "${GITHUB_EVENT_PATH}" || echo "")
             TITLE="Release ${TAG}"
-            DESCRIPTION=$(jq -r '.release.body // "Sem descrição"' "${GITHUB_EVENT_PATH}")
-            URL=$(jq -r '.release.html_url' "${GITHUB_EVENT_PATH}")
+            DESCRIPTION=$(jq -r '.release.body // "Sem descrição"' "${GITHUB_EVENT_PATH}" || echo "")
+            URL=$(jq -r '.release.html_url' "${GITHUB_EVENT_PATH}" || echo "https://github.com/${REPO}")
           elif [ "${EVENT}" = "workflow_dispatch" ]; then
             TITLE="Manual workflow_dispatch by ${ACTOR}"
             DESCRIPTION="Disparado manualmente"
             URL="https://github.com/${REPO}/actions"
           elif [ "${EVENT}" = "pull_request" ]; then
-            ACTION=$(jq -r '.action' "${GITHUB_EVENT_PATH}")
-            PR_TITLE=$(jq -r '.pull_request.title' "${GITHUB_EVENT_PATH}")
-            PR_USER=$(jq -r '.pull_request.user.login' "${GITHUB_EVENT_PATH}")
-            PR_URL=$(jq -r '.pull_request.html_url' "${GITHUB_EVENT_PATH}")
+            ACTION=$(jq -r '.action' "${GITHUB_EVENT_PATH}" || echo "")
+            PR_TITLE=$(jq -r '.pull_request.title' "${GITHUB_EVENT_PATH}" || echo "")
+            PR_USER=$(jq -r '.pull_request.user.login' "${GITHUB_EVENT_PATH}" || echo "")
+            PR_URL=$(jq -r '.pull_request.html_url' "${GITHUB_EVENT_PATH}" || echo "")
             TITLE="PR ${ACTION}: ${PR_TITLE}"
             DESCRIPTION="Autor: ${PR_USER}"
             URL="${PR_URL}"
           fi
 
-          PAYLOAD=$(cat <<EOF {
+          # *** ATENÇÃO: heredoc SEM espaços antes do { e SEM aspas no EOF ***
+          PAYLOAD=$(cat <<EOF
+          {
             "username": "OrderUp",
             "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
             "embeds": [
@@ -165,5 +165,26 @@ jobs:
           EOF
           )
 
-          echo "Sending notification to Discord..."
-          curl -sS -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "${WEBHOOK_URL}"
+          # debug: imprime o payload exato a ser enviado
+          echo "=== PAYLOAD (coming next) ==="
+          echo "$PAYLOAD"
+          echo "============================="
+
+          # envia e captura resposta
+          HTTP_RESPONSE=$(mktemp)
+          HTTP_CODE=$(curl -sS -w "%{http_code}" -o "$HTTP_RESPONSE" -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "${WEBHOOK_URL}" || echo "CURL_FAILED")
+
+          echo "HTTP_CODE=${HTTP_CODE}"
+          echo "HTTP_BODY:"
+          cat "$HTTP_RESPONSE" || true
+          rm -f "$HTTP_RESPONSE"
+
+          if [ "$HTTP_CODE" = "CURL_FAILED" ]; then
+            echo "cURL falhou ao tentar contatar o webhook"
+            exit 1
+          fi
+
+          # Discord retorna 204 quando OK
+          if [ "$HTTP_CODE" != "204" ]; then
+            echo "Aviso: Discord retornou status $HTTP_CODE — verifique a resposta acima."
+          fi
