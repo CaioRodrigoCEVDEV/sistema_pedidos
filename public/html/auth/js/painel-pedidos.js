@@ -142,7 +142,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             <button type="button" id="btnCancelarPedidoModal" class="btn btn-danger">Cancelar Pedido</button>
             ${
               status !== "confirmados"
-                ? '<button type="button" id="btnConfirmarPedidoModal" class="button-color-4 w-25">Confirmar Pedido</button>'
+                ? '<button type="button" id="btnConfirmarPedidoModal" class="btn btn-success w-25">Confirmar Pedido</button>'
                 : ""
             }
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
