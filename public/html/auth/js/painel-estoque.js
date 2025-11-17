@@ -2,6 +2,7 @@ const marcasEstoque = document.getElementById("filtroMarcaSelect");
 const modelosEstoque = document.getElementById("filtroModeloSelect");
 const btnAplicarEstoque = document.getElementById("btnAplicarFiltroEstoque");
 const btnLimparEstoque = document.getElementById("btnLimparFiltroEstoque");
+const estoqueSelect = document.getElementById("filtroEstoqueSelect");
 
 async function adicionarEstoque(procod, quantidade, cor = null) {
   try {
@@ -108,11 +109,8 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
   // função que faz fetch (adapte a URL / parâmetros conforme sua API)
   async function fetchBuscarEstoque(params = {}) {
     const tabelaEstoque = document.getElementById("tabela-estoque");
-    const tabelaSemEstoque = document.getElementById("tabela-sem-estoque");
-
-    const { marca, modelo } = params;
-
-    // backend espera rotas com path params: /v2/proComEstoque/:marca/:modelo
+    const { marca, modelo, estoque } = params;
+    // backend espera rotas com path params: /v2/proComEstoque/:marca/:modelo ou /v2/proSemEstoque/:marca/:modelo
     const marcaParam =
       marca && marca !== "todas" ? encodeURIComponent(marca) : "todas";
     const modeloParam =
@@ -121,14 +119,27 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
     const temFiltro =
       (marca && marca !== "todas") || (modelo && modelo !== "todos");
 
-    const urlCom = temFiltro
-      ? `${BASE_URL}/v2/proComEstoque/${marcaParam}/${modeloParam}`
-      : `${BASE_URL}/v2/proComEstoque`;
-    const urlSem = temFiltro
-      ? `${BASE_URL}/v2/proSemEstoque/${marcaParam}/${modeloParam}`
-      : `${BASE_URL}/v2/proSemEstoque`;
+    // Define a URL baseada no filtro de estoque
+    let url;
+    console.log("Estoque selecionado:", estoque);
+    if (estoque === "0") {
+      // com estoque
+      url = temFiltro
+        ? `${BASE_URL}/v2/proComEstoque/${marcaParam}/${modeloParam}`
+        : `${BASE_URL}/v2/proComEstoque`;
+    } else if (estoque === "1") {
+      // sem estoque
+      url = temFiltro
+        ? `${BASE_URL}/v2/proSemEstoque/${marcaParam}/${modeloParam}`
+        : `${BASE_URL}/v2/proSemEstoque`;
+    } else {
+      // Se não houver filtro de estoque selecionado, não busca nada
+      tabelaEstoque.innerHTML =
+        '<tr><td colspan="7" class="text-center">Selecione um filtro de estoque.</td></tr>';
+      return;
+    }
 
-    console.log("Buscando estoque com URLs:", urlCom, urlSem);
+    console.log("Buscando estoque com URL:", url);
 
     const renderTabela = (tbody, dados) => {
       tbody.innerHTML = "";
@@ -168,32 +179,24 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
     };
 
     try {
-      const [resCom, resSem] = await Promise.all([
-        fetch(urlCom, { credentials: "include" }),
-        fetch(urlSem, { credentials: "include" }),
-      ]);
-      if (!resCom.ok || !resSem.ok) throw new Error("Erro ao buscar estoque.");
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Erro ao buscar estoque.");
 
-      const [dadosCom, dadosSem] = await Promise.all([
-        resCom.json(),
-        resSem.json(),
-      ]);
-
-      renderTabela(tabelaEstoque, dadosCom);
-      renderTabela(tabelaSemEstoque, dadosSem);
+      const dados = await res.json();
+      renderTabela(tabelaEstoque, dados);
     } catch (err) {
       console.error(err);
       tabelaEstoque.innerHTML =
-        '<tr><td colspan="7" class="text-center">Erro ao carregar.</td></tr>';
-      tabelaSemEstoque.innerHTML =
         '<tr><td colspan="7" class="text-center">Erro ao carregar.</td></tr>';
     }
   }
 
   btnAplicarEstoque.addEventListener("click", function () {
+    const estoqueSelect = document.getElementById("filtroEstoqueSelect");
     fetchBuscarEstoque({
       marca: marcasEstoque.value,
       modelo: modelosEstoque.value,
+      estoque: estoqueSelect.value,
     });
   });
 
@@ -201,9 +204,9 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
     marcasEstoque.value = "todas";
     await buscarTodosModelos(); // repopula modelos sem filtro
     modelosEstoque.value = "todos";
+    const estoqueSelect = document.getElementById("filtroEstoqueSelect");
+    estoqueSelect.value = ""; // Reseta o filtro de estoque
     const tabelaEstoque = document.getElementById("tabela-estoque");
-    const tabelaSemEstoque = document.getElementById("tabela-sem-estoque");
     tabelaEstoque.innerHTML = "";
-    tabelaSemEstoque.innerHTML = "";
   });
 })();
