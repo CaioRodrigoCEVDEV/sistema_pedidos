@@ -105,6 +105,7 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
 
   // Chama as funções para popular os selects ao carregar a página
   buscarMarcasEstoque();
+  document.getElementById("tituloEstoque").innerText = "Peças";
 
   // função que faz fetch (adapte a URL / parâmetros conforme sua API)
   async function fetchBuscarEstoque(params = {}) {
@@ -121,25 +122,25 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
 
     // Define a URL baseada no filtro de estoque
     let url;
-    console.log("Estoque selecionado:", estoque);
     if (estoque === "0") {
       // com estoque
       url = temFiltro
         ? `${BASE_URL}/v2/proComEstoque/${marcaParam}/${modeloParam}`
         : `${BASE_URL}/v2/proComEstoque`;
+      document.getElementById("tituloEstoque").innerText = "Peças em estoque";
     } else if (estoque === "1") {
       // sem estoque
       url = temFiltro
         ? `${BASE_URL}/v2/proSemEstoque/${marcaParam}/${modeloParam}`
         : `${BASE_URL}/v2/proSemEstoque`;
+      document.getElementById("tituloEstoque").innerText =
+        "Peças fora de estoque";
     } else {
       // Se não houver filtro de estoque selecionado, não busca nada
       tabelaEstoque.innerHTML =
         '<tr><td colspan="7" class="text-center">Selecione um filtro de estoque.</td></tr>';
       return;
     }
-
-    console.log("Buscando estoque com URL:", url);
 
     const renderTabela = (tbody, dados) => {
       tbody.innerHTML = "";
@@ -208,5 +209,6 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
     estoqueSelect.value = ""; // Reseta o filtro de estoque
     const tabelaEstoque = document.getElementById("tabela-estoque");
     tabelaEstoque.innerHTML = "";
+    document.getElementById("tituloEstoque").innerText = "Peças";
   });
 })();
