@@ -111,7 +111,6 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
   async function fetchBuscarEstoque(params = {}) {
     const tabelaEstoque = document.getElementById("tabela-estoque");
     const { marca, modelo, estoque } = params;
-    // backend espera rotas com path params: /v2/proComEstoque/:marca/:modelo ou /v2/proSemEstoque/:marca/:modelo
     const marcaParam =
       marca && marca !== "todas" ? encodeURIComponent(marca) : "todas";
     const modeloParam =
@@ -120,23 +119,21 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
     const temFiltro =
       (marca && marca !== "todas") || (modelo && modelo !== "todos");
 
-    // Define a URL baseada no filtro de estoque
     let url;
+    let isSemEstoque = false;
     if (estoque === "0") {
-      // com estoque
       url = temFiltro
         ? `${BASE_URL}/v2/proComEstoque/${marcaParam}/${modeloParam}`
         : `${BASE_URL}/v2/proComEstoque`;
       document.getElementById("tituloEstoque").innerText = "Peças em estoque";
     } else if (estoque === "1") {
-      // sem estoque
+      isSemEstoque = true;
       url = temFiltro
         ? `${BASE_URL}/v2/proSemEstoque/${marcaParam}/${modeloParam}`
         : `${BASE_URL}/v2/proSemEstoque`;
       document.getElementById("tituloEstoque").innerText =
         "Peças fora de estoque";
     } else {
-      // Se não houver filtro de estoque selecionado, não busca nada
       tabelaEstoque.innerHTML =
         '<tr><td colspan="7" class="text-center">Selecione um filtro de estoque.</td></tr>';
       return;
@@ -146,34 +143,39 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
       tbody.innerHTML = "";
       if (!dados || dados.length === 0) {
         tbody.innerHTML =
-          '<tr><td colspan="7" class="text-center">Nenhum produto encontrado.</td></tr>';
+          '<tr><td colspan="7" class="text-center py-4"><span class="text-muted">Nenhum produto encontrado.</span></td></tr>';
         return;
       }
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
+        const borderColor = isSemEstoque ? "border-start border-danger" : "border-start border-success";
+        const bgColor = isSemEstoque ? "bg-light" : "bg-light";
+        const badgeClass = isSemEstoque ? "bg-danger" : "bg-success";
+        const textColor = isSemEstoque ? "text-danger fw-semibold" : "text-success fw-semibold";
+        
+        tr.className = `${borderColor} ${bgColor} align-middle`;
+        tr.style.borderLeftWidth = "4px";
+        
         tr.innerHTML = `
-          <td>${dado.prodes}</td>
-          <td>${dado.marcasdes}</td>
-          <td>${dado.moddes}</td>
-          <td>${dado.tipodes}</td>
-          <td>${dado.cordes}</td>
+          <td class="text-dark">${dado.prodes}</td>
+          <td><span class="badge bg-secondary">${dado.marcasdes}</span></td>
+          <td class="text-dark">${dado.moddes}</td>
+          <td class="text-dark">${dado.tipodes}</td>
+          <td><span class="badge bg-light text-dark border">${dado.cordes}</span></td>
           <td>
             <div class="d-flex gap-2">
-              <div class="row">
-                <div class="col">
-                  <input type="text" class="form-control" placeholder="Quantidade"
-                    aria-label="Quantidade" aria-describedby="basic-addon1">
-                </div>
-                <div class="col">
-                  <button class="btn btn-success"
-                    onclick="adicionarEstoque(${dado.procod}, this.closest('.row').querySelector('input').value, ${dado.procorcorescod})">
-                    Adicionar
-                  </button>
-                </div>
-              </div>
+              <input type="number" min="0" class="form-control form-control-sm" placeholder="Qtd" 
+                style="max-width: 70px;" aria-label="Quantidade">
+              <button type="button" class="btn btn-sm btn-outline-${isSemEstoque ? 'danger' : 'success'} d-flex align-items-center"
+                onclick="adicionarEstoque(${dado.procod}, this.closest('.d-flex').querySelector('input').value, '${dado.procorcorescod}')" >
+                <i class="fa-regular fa-square-plus me-1"></i>
+                <span>Add</span>
+              </button>
             </div>
           </td>
-          <td class="text-center">${dado.qtde}</td>
+          <td class="text-center">
+            <span class="badge ${badgeClass}">${dado.qtde}</span>
+          </td>
         `;
         tbody.appendChild(tr);
       });
