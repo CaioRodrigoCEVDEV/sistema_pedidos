@@ -89,6 +89,7 @@
 }
 .btn-warning:hover {
   background-image: linear-gradient(90deg, #f57a00, #e05200);
+  color: #fff ;
 }
 
 /* SUCCESS - Verde */

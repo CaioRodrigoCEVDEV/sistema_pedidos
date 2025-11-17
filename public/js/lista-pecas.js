@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="item-name">${dado.prodes}</div>
             <div class="item-tipo">${dado.tipodes}</div>
             <div class="item-price">${formatarMoeda(dado.provl)} 
-              <button class="${isDisabled ? 'btn btn-danger btn-sm btn-add' : 'btn btn-info btn-sm btn-add'}" ${isDisabled ? 'disabled title="Em Falta"' : `onclick="adicionarAoCarrinho('${dado.procod}')"`}>
+              <button class="${isDisabled ? 'btn btn-danger btn-sm btn-add' : 'btn btn-primary btn-add'}" ${isDisabled ? 'disabled title="Em Falta"' : `onclick="adicionarAoCarrinho('${dado.procod}')"`}>
           ${isDisabled ? "Em Falta" : "Adicionar"}
               </button>
             </div>
