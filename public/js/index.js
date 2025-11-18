@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     nokia: { icon: "nokia", domain: "nokia.com" },
     lg: { icon: "lg", domain: "lg.com" },
     asus: { icon: "asus", domain: "asus.com" },
-    tecnospark: { icon: null, domain: "tecno-mobile.com" },
+    tecnospark: { icon: null, domain: "www.tecno-mobile.com" },
     itel: { icon: null, domain: "itel-mobile.com" },
     acessorios: { icon: null, domain: "gear.google.com" },
     oppo: { icon: "oppo", domain: "oppo.com" },

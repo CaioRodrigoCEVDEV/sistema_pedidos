@@ -21,37 +21,34 @@ function limparCarrinho() {
 
 //função para verificar se esta logado e mostrar o botão orçamento
 document.addEventListener("DOMContentLoaded", function () {
-fetch(`${BASE_URL}/emp`)
-  .then((response) => response.json())
-  .then((data) => {
-      const empusapv = data.empusapv
-      console.log(empusapv);
+  fetch(`${BASE_URL}/emp`)
+    .then((response) => response.json())
+    .then((data) => {
+      const empusapv = data.empusapv;
 
+      const usuarioLogado = localStorage.getItem("usuarioLogado");
+      const botaoOrcamento = document.getElementById("botao-orcamento");
 
-  const usuarioLogado = localStorage.getItem("usuarioLogado");
-  const botaoOrcamento = document.getElementById("botao-orcamento");
-  
-
-  if (usuarioLogado && empusapv === 'S') {
-    buscarVendedores();
-    codigoVendedor.style.display = "inline";
-    botaoOrcamento.style.display = "inline";
-  }
-    
-  else if (usuarioLogado && empusapv === 'N'){
-      botaoOrcamento.style.display = "inline";
-      codigoVendedor.style.display = "none";
-  }
-   else {
-    codigoVendedor.style.display = "none";
-    botaoOrcamento.style.display = "none";
-  }
+      if (usuarioLogado && empusapv === "S") {
+        buscarVendedores();
+        codigoVendedor.style.display = "inline";
+        botaoOrcamento.style.display = "inline";
+      } else if (usuarioLogado && empusapv === "N") {
+        botaoOrcamento.style.display = "inline";
+        codigoVendedor.style.display = "none";
+      } else {
+        codigoVendedor.style.display = "none";
+        botaoOrcamento.style.display = "none";
+      }
     })
     .catch((error) => {
       console.error("Erro ao buscar configurações da empresa:", error);
-     
     });
 
+  // Remove usuarioLogado do localStorage ao fechar a página
+  window.addEventListener("beforeunload", function () {
+    localStorage.removeItem("usuarioLogado");
+  });
 });
 
 async function buscarVendedores({ keepSearch = true } = {}) {
@@ -245,13 +242,12 @@ let quantidadeEmoji = "\u{1F522}"; // 🔢
 
 // função para retirar balcão pegar o id do produto e a quantidade e valor total gerar um formulario e abrir conversa no whatsapp
 async function enviarWhatsApp() {
-  const disabledDiv = document.getElementById('divFinalizar');
-  try{
-  disabledDiv.style.pointerEvents = 'none';
-  disabledDiv.style.opacity = '0.6';
-  disabledDiv.status.userSelect = 'none';
-  }
-  catch (error){
+  const disabledDiv = document.getElementById("divFinalizar");
+  try {
+    disabledDiv.style.pointerEvents = "none";
+    disabledDiv.style.opacity = "0.6";
+    disabledDiv.status.userSelect = "none";
+  } catch (error) {
     console.error("Failed", error);
   }
 
@@ -368,14 +364,12 @@ async function enviarWhatsApp() {
 
 // quando clicar lá no botão de entrega, abrir um popup com nome completo e endereço
 async function enviarWhatsAppEntrega() {
-  
-  const disabledDiv = document.getElementById('divFinalizar');
-  try{
-  disabledDiv.style.pointerEvents = 'none';
-  disabledDiv.style.opacity = '0.6';
-  disabledDiv.status.userSelect = 'none';
-  }
-  catch (error){
+  const disabledDiv = document.getElementById("divFinalizar");
+  try {
+    disabledDiv.style.pointerEvents = "none";
+    disabledDiv.style.opacity = "0.6";
+    disabledDiv.status.userSelect = "none";
+  } catch (error) {
     console.error("Failed", error);
   }
 
