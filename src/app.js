@@ -224,7 +224,7 @@ app.get("/manifest.json", async (req, res) => {
   res.json(manifest);
 });
 
-//  Rota para upload de logo
+//  Rota para upload de logo Empresa
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
@@ -256,26 +256,93 @@ app.post(
   }
 );
 
-// rota logo marca
+// diretório de uploads Imagens
+const uploadsDirMarca = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDirMarca)) {
+  fs.mkdirSync(uploadsDirMarca, { recursive: true });
+}
+
+// storage: salva com nome temporário (timestamp + original) para depois renomear
+const storageMarca = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDirMarca),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || ".tmp";
+    cb(null, `${Date.now()}${ext}`);
+  },
+});
+const uploadMarca = multer({ storage: storageMarca, limits: { fileSize: 5 * 1024 * 1024 } }); // limite 5MB
+
+// helper: cria slug seguro a partir da descrição
+function slugify(text) {
+  return String(text)
+    .normalize("NFKD")                 // remove acentos
+    .replace(/[\u0300-\u036f]/g, "")   // remove marcas diacríticas
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")      // remove chars inválidos
+    .replace(/\s+/g, "-")              // espaços -> hífen
+    .replace(/-+/g, "-");              // elimina hífens duplicados
+}
+
 app.post(
-  "/upload-logo-marca",
-  requireAdmin,
-  upload.single("logo-marca"),
+  "/save-marca",
+  uploadMarca.single("logo-marca"), // file optional: se não enviar, req.file será undefined
   async (req, res) => {
     try {
-      const tempPath = req.file.path; // arquivo temporário (ex: uploads/abc123)
-      const finalPath = path.join(uploadsDir, "logo-marca.jpg"); // destino final
+      const { descricaoMarca } = req.body;
+      if (!descricaoMarca || descricaoMarca.trim() === "") {
+        // se quiser obrigar descrição:
+        // limpa arquivo temporário enviado (se houver)
+        if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) {}
+        return res.status(400).send("Descrição da marca é obrigatória.");
+      }
 
-      // Processa a imagem e salva em outro arquivo
-      await sharp(tempPath).jpeg({ quality: 90 }).toFile(finalPath);
+      // slug para nome de arquivo
+      const slug = slugify(descricaoMarca);
+      if (!slug) {
+        if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) {}
+        return res.status(400).send("Descrição inválida para gerar nome de arquivo.");
+      }
 
-      // Apagar o arquivo temporário para não acumular lixo
-      fs.unlinkSync(tempPath);
+      // se não enviou arquivo, só salva os dados da marca (faça sua lógica aqui)
+      if (!req.file) {
+        // Exemplo: salvar descrição no banco (implemente conforme seu fluxo)
+        // await db.saveMarca({ descricao: descricaoMarca, logo: null, ... });
 
-      res.send("Logo salva com sucesso");
+        return res.redirect("/painel"); // ou onde for
+      }
+
+      // valida mimetype
+      const allowed = ["image/jpeg", "image/jpg", "image/png"];
+      if (!allowed.includes(req.file.mimetype)) {
+        try { fs.unlinkSync(req.file.path); } catch (e) {}
+        return res.status(400).send("Formato de arquivo não suportado. Envie JPG ou PNG.");
+      }
+
+      // caminhos finais
+      const jpegFilename = `${slug}.jpg`;
+      
+      const pngFilename = `${slug}.png`;
+      const jpegPath = path.join(uploadsDirMarca, jpegFilename);
+      const pngPath = path.join(uploadsDirMarca, pngFilename);
+
+      // converte com sharp: gera ambos JPG e PNG (substitui se já existirem)
+      // ler do arquivo temporário salvo por multer
+      await sharp(req.file.path).jpeg({ quality: 90 }).toFile(jpegPath);
+      await sharp(req.file.path).png().toFile(pngPath);
+
+      // remove arquivo temporário
+      try { fs.unlinkSync(req.file.path); } catch (e) { /* ignore */ }
+
+      // aqui você integra a persistência (exemplo: gravar no banco o nome da logo)
+      // await db.updateMarca({ descricao: descricaoMarca, logo_jpg: jpegFilename, logo_png: pngFilename, ... });
+
+      return res.redirect("/painel");
     } catch (err) {
-      console.error("Erro ao salvar logo:", err);
-      res.status(500).send("Erro ao processar logo");
+      console.error("Erro ao salvar marca/logo:", err);
+      // cleanup de segurança
+      if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) {}
+      return res.status(500).send("Erro ao processar marca e logo.");
     }
   }
 );

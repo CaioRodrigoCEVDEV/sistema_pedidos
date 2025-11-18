@@ -513,88 +513,78 @@
         </div>
 
         <!-- MARCAS | Modal de detalhe / edição -->
-        <div
-          class="modal fade"
-          id="userModal"
-          tabindex="-1"
-          aria-labelledby="userModalLabel"
-          aria-hidden="true"
-        >
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">🏷️ Dados da Marca</h5>
-                <button
-                  type="button"
-                  class="btn-close"
-                  data-bs-dismiss="modal"
-                ></button>
-              </div>
+<div
+  class="modal fade"
+  id="userModal"
+  tabindex="-1"
+  aria-labelledby="userModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🏷️ Dados da Marca</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
 
-              <div class="modal-body">
-                <!-- FORM PRINCIPAL -->
-                <form id="marcaForm">
-                  <input type="hidden" id="usuId" />
+      <div class="modal-body">
+        <!-- FORM UNIFICADO: dados + arquivo -->
+        <form id="marcaForm" action="/save-marca" method="POST" enctype="multipart/form-data">
+          <input type="hidden" id="usuId" name="usuId" />
 
-                  <div class="mb-3">
-                    <label class="form-label">📝 Descrição</label>
-                    <input
-                      type="text"
-                      name="marcasdes"
-                      id="descricaoMarca"
-                      class="form-control"
-                      required
-                    />
-                  </div>
-                </form>
+          <div class="mb-3">
+            <label class="form-label">📝 Descrição</label>
+            <input
+              type="text"
+              name="descricaoMarca"
+              id="descricaoMarca"
+              class="form-control"
+              required
+            />
+          </div>
 
-                <!-- FORM DO UPLOAD (SEPARADO, MAS NO MESMO MODAL) -->
-                <form
-                  action="/upload-logo-marca"
-                  method="POST"
-                  enctype="multipart/form-data"
-                  id="logoForm"
-                >
-                  <label class="form-label">📁 Logo da Marca</label>
-                  <div class="input-group">
-                    <input
-                      type="file"
-                      class="form-control"
-                      name="logo-marca"
-                      required
-                    />
-                    <button type="submit" class="btn btn-success">
-                      Salvar Logo
-                    </button>
-                  </div>
-                  <div class="form-text">
-                    Obs: Essa é a parte que aparecerá na página inicial
-                  </div>
-                </form>
-              </div>
-
-              <div class="modal-footer">
-                <button
-                  type="button"
-                  id="btnDelete"
-                  class="btn btn-outline-danger me-auto"
-                >
-                  Excluir
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  data-bs-dismiss="modal"
-                >
-                  Cancelar
-                </button>
-                <button type="submit" form="marcaForm" class="btn btn-primary">
-                  Salvar Dados
-                </button>
-              </div>
+          <div class="mb-3">
+            <label class="form-label">📁 Logo da Marca (JPG/PNG)</label>
+            <div class="input-group">
+              <input
+                type="file"
+                class="form-control"
+                name="logo-marca"
+                id="logoMarcaInput"
+                accept="image/jpeg,image/png"
+              />
+            </div>
+            <div class="form-text">
+              Obs: Essa é a parte que aparecerá na página inicial. Se não enviar arquivo, a logo não será alterada.
             </div>
           </div>
-        </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          id="btnDelete"
+          class="btn btn-outline-danger me-auto"
+        >
+          Excluir
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          Cancelar
+        </button>
+        <!-- botão único que envia tudo -->
+        <button type="submit" form="marcaForm" class="btn btn-primary">
+          Salvar Dados
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
         <!-- MODELO | Modal de detalhe / edição -->
         <div
           class="modal fade"

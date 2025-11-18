@@ -58,3 +58,69 @@ marcaForm.addEventListener("submit", async (ev) => {
     console.error(error);
   }
 });
+
+// Imagem Marca
+document.addEventListener("DOMContentLoaded", () => {
+  const marcaForm = document.getElementById("marcaForm");
+  if (!marcaForm) return console.warn("marcaForm não encontrado");
+
+  marcaForm.addEventListener("submit", async (e) => {
+    e.preventDefault(); // evita envio padrão para controlar e debugar
+    console.log("[marcaForm] submit interceptado");
+
+    const btn = marcaForm.querySelector('button[type="submit"]');
+    btn && (btn.disabled = true);
+    btn && (btn.innerText = "Salvando...");
+
+    try {
+      const fd = new FormData(marcaForm);
+
+      // DEBUG: listar entries do FormData no console
+      for (const pair of fd.entries()) {
+        console.log("FormData:", pair[0], pair[1]);
+      }
+
+      const resp = await fetch(marcaForm.action || "/save-marca", {
+        method: (marcaForm.method || "POST").toUpperCase(),
+        body: fd,
+        credentials: "include" // importante se auth via cookie/session
+      });
+
+      // Se o servidor fizer redirect para /painel com 302 e você quiser seguir,
+      // fetch seguirá automaticamente (mode same-origin) e retornará final response.
+      // Mas muitas vezes convém o servidor retornar JSON em vez de redirect para SPA.
+      const contentType = resp.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const data = await resp.json();
+        console.log("Resposta JSON:", data);
+        if (data.ok) {
+          // fechar modal e recarregar ou atualizar UI
+          const modalEl = document.getElementById("userModal");
+          try {
+            const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            bsModal.hide();
+          } catch(e) {}
+          location.reload();
+        } else {
+          throw new Error(data.error || "Erro desconhecido do servidor");
+        }
+      } else {
+        // se veio HTML/redirect, loga o texto (útil para debug)
+        const text = await resp.text();
+        console.log("Resposta não-JSON:", resp.status, text);
+        // se servidor retornou 302 -> você pode forçar um reload
+        if (resp.redirected) {
+          window.location = resp.url;
+        } else {
+          alert("Resposta inesperada do servidor. Veja console.");
+        }
+      }
+    } catch (err) {
+      console.error("Erro ao enviar marca:", err);
+      alert("Falha ao enviar: " + err.message);
+    } finally {
+      btn && (btn.disabled = false);
+      btn && (btn.innerText = "Salvar Dados");
+    }
+  });
+});
