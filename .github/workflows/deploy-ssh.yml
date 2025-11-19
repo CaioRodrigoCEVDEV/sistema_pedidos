@@ -68,7 +68,7 @@ jobs:
         run: |
           TAG="${{ steps.resolve_tag.outputs.tag }}"
           echo "Deploying tag: $TAG"
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT }}" "root@${{ secrets.SSH_HOST }}" "/root/deployJpPecas.sh ${TAG}"
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT }}" "root@${{ secrets.SSH_HOST }}" "/root/deployJpPecas.sh ${TAG}" && "/root/deployUTIdosCelulares.sh ${TAG}"
 
 
   # ============================
