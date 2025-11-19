@@ -21,8 +21,8 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // <-- pas
 // Middlewares
 const autenticarToken = require("./middlewares/middlewares");
 const requireAdmin = require("./middlewares/adminMiddleware");
-const requireAdminPv= require("./middlewares/adminPvMiddleware");
-const requireAdminEst= require("./middlewares/adminEstMiddleware");
+const requireAdminPv = require("./middlewares/adminPvMiddleware");
+const requireAdminEst = require("./middlewares/adminEstMiddleware");
 const requireAdminPages = require("./middlewares/adminPagesMiddleware");
 app.set("views", path.join(__dirname, "views"));
 app.use(morgan("dev"));
@@ -84,7 +84,6 @@ app.use(usuarioRoute2);
 const pedidoRoutesV2 = require("./routes/pedidosRoutesV2");
 app.use(pedidoRoutesV2);
 
-
 // Rotas de páginas
 
 app.get("/", (req, res) => {
@@ -95,8 +94,10 @@ app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/login.html"));
 });
 
-app.get("/users",requireAdminPages, (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-usuarios.html"));
+app.get("/users", requireAdminPages, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-usuarios.html")
+  );
 });
 
 app.get("/index", (req, res) => {
@@ -115,7 +116,7 @@ app.get("/lista-pecas", (req, res) => {
 app.get("/carrinho", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/carrinho.html"));
 });
-app.get("/perfil", autenticarToken,(req, res) => {
+app.get("/perfil", autenticarToken, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/perfil.html"));
 });
 app.get("/configuracoes", requireAdminPages, (req, res) => {
@@ -132,11 +133,11 @@ app.get("/pedidos", requireAdminPv, (req, res) => {
     path.join(__dirname, "../public/html/auth/admin/html/painel-pedidos.html")
   );
 });
-app.get("/estoque", requireAdminEst,(req, res) => {
-  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-estoque.html"));
+app.get("/estoque", requireAdminEst, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-estoque.html")
+  );
 });
-
-
 
 app.get("/dashboard", autenticarToken, (req, res) => {
   res.sendFile(
@@ -223,7 +224,7 @@ app.get("/manifest.json", async (req, res) => {
   res.json(manifest);
 });
 
-//  Rota para upload de logo
+//  Rota para upload de logo Empresa
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
@@ -235,7 +236,11 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-app.post(  "/upload-logo",  requireAdmin,  upload.single("logo"),  async (req, res) => {
+app.post(
+  "/upload-logo",
+  requireAdmin,
+  upload.single("logo"),
+  async (req, res) => {
     try {
       const jpegPath = path.join(uploadsDir, "logo.jpg");
       const pngPath = path.join(uploadsDir, "apple-touch-icon.png");
@@ -247,6 +252,97 @@ app.post(  "/upload-logo",  requireAdmin,  upload.single("logo"),  async (req, r
     } catch (err) {
       console.error("Erro ao salvar logo:", err);
       res.status(500).send("Erro ao processar logo");
+    }
+  }
+);
+
+// diretório de uploads Imagens
+const uploadsDirMarca = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDirMarca)) {
+  fs.mkdirSync(uploadsDirMarca, { recursive: true });
+}
+
+// storage: salva com nome temporário (timestamp + original) para depois renomear
+const storageMarca = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDirMarca),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || ".tmp";
+    cb(null, `${Date.now()}${ext}`);
+  },
+});
+const uploadMarca = multer({ storage: storageMarca, limits: { fileSize: 5 * 1024 * 1024 } }); // limite 5MB
+
+// helper: cria slug seguro a partir da descrição
+function slugify(text) {
+  return String(text)
+    .normalize("NFKD")                 // remove acentos
+    .replace(/[\u0300-\u036f]/g, "")   // remove marcas diacríticas
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")      // remove chars inválidos
+    .replace(/\s+/g, "-")              // espaços -> hífen
+    .replace(/-+/g, "-");              // elimina hífens duplicados
+}
+
+app.post(
+  "/save-marca",
+  uploadMarca.single("logo-marca"), // file optional: se não enviar, req.file será undefined
+  async (req, res) => {
+    try {
+      const { descricaoMarca } = req.body;
+      if (!descricaoMarca || descricaoMarca.trim() === "") {
+        // se quiser obrigar descrição:
+        // limpa arquivo temporário enviado (se houver)
+        if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) {}
+        return res.status(400).send("Descrição da marca é obrigatória.");
+      }
+
+      // slug para nome de arquivo
+      const slug = slugify(descricaoMarca);
+      if (!slug) {
+        if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) {}
+        return res.status(400).send("Descrição inválida para gerar nome de arquivo.");
+      }
+
+      // se não enviou arquivo, só salva os dados da marca (faça sua lógica aqui)
+      if (!req.file) {
+        // Exemplo: salvar descrição no banco (implemente conforme seu fluxo)
+        // await db.saveMarca({ descricao: descricaoMarca, logo: null, ... });
+
+        return res.redirect("/painel"); // ou onde for
+      }
+
+      // valida mimetype
+      const allowed = ["image/jpeg", "image/jpg", "image/png"];
+      if (!allowed.includes(req.file.mimetype)) {
+        try { fs.unlinkSync(req.file.path); } catch (e) {}
+        return res.status(400).send("Formato de arquivo não suportado. Envie JPG ou PNG.");
+      }
+
+      // caminhos finais
+      const jpegFilename = `${slug}.jpg`;
+      
+      const pngFilename = `${slug}.png`;
+      const jpegPath = path.join(uploadsDirMarca, jpegFilename);
+      const pngPath = path.join(uploadsDirMarca, pngFilename);
+
+      // converte com sharp: gera ambos JPG e PNG (substitui se já existirem)
+      // ler do arquivo temporário salvo por multer
+      await sharp(req.file.path).jpeg({ quality: 90 }).toFile(jpegPath);
+      await sharp(req.file.path).png().toFile(pngPath);
+
+      // remove arquivo temporário
+      try { fs.unlinkSync(req.file.path); } catch (e) { /* ignore */ }
+
+      // aqui você integra a persistência (exemplo: gravar no banco o nome da logo)
+      // await db.updateMarca({ descricao: descricaoMarca, logo_jpg: jpegFilename, logo_png: pngFilename, ... });
+
+      return res.redirect("/painel");
+    } catch (err) {
+      console.error("Erro ao salvar marca/logo:", err);
+      // cleanup de segurança
+      if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) {}
+      return res.status(500).send("Erro ao processar marca e logo.");
     }
   }
 );
