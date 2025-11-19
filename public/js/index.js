@@ -9,7 +9,7 @@ function formatarMoeda(valor) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // se você tem uma função verificarLogin, chamamos aqui.
+  // Se existir, chama verificarLogin()
   if (typeof verificarLogin === "function") {
     try {
       await verificarLogin();
@@ -17,6 +17,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("Erro em verificarLogin:", err);
     }
   }
+
+  // ======================================================
+  //  MAPEAMENTO DE MARCAS
+  // ======================================================
 
   const brandMap = {
     samsung: { icon: "samsung", domain: "samsung.com" },
@@ -37,6 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     huawei: { icon: "huawei", domain: "huawei.com" },
   };
 
+  // Normaliza marca (remove acentos, espaços...)
   function normalize(name) {
     return String(name || "")
       .normalize("NFD")
@@ -45,107 +50,141 @@ document.addEventListener("DOMContentLoaded", async () => {
       .replace(/\s+/g, "");
   }
 
+  // Pega o ícone do brandMap
   function getIconURL(brand) {
     const slug = normalize(brand);
     const info = brandMap[slug];
     if (!info) return "https://cdn.simpleicons.org/cog";
 
     if (info.icon) return `https://cdn.simpleicons.org/${info.icon}`;
+
     return `https://www.google.com/s2/favicons?sz=64&domain=${info.domain}`;
   }
 
-  // Pega o elemento onde as marcas serão inseridas
+  // ================================================
+  //   LÓGICA DE QUAL LOGO USAR (SEM HEAD!)
+  // ================================================
+
+  function getBrandLogo(brandName) {
+    const slug = normalize(brandName);
+    const info = brandMap[slug];
+
+    // 1) Se tem ícone oficial → usar e NUNCA tentar uploads
+    if (info && info.icon) {
+      return {
+        primary: `https://cdn.simpleicons.org/${info.icon}/000`,
+        isUploaded: false,
+        slug,
+      };
+    }
+
+    // 2) Se não tem ícone mas tem domínio → usar favicon, NUNCA uploads
+    if (info && info.domain) {
+      return {
+        primary: `https://www.google.com/s2/favicons?sz=64&domain=${info.domain}`,
+        isUploaded: false,
+        slug,
+      };
+    }
+
+    // 3) Marca criada pelo usuário → tentar uploads primeiro
+    return {
+      primary: `/uploads/${slug}.jpg`,
+      isUploaded: true,
+      slug,
+    };
+  }
+
+  // ======================================================
+  //  RENDERIZAÇÃO DAS MARCAS NO FRONT
+  // ======================================================
+
   const holder = document.getElementById("marcaTitulo");
+
   if (!holder) {
     console.warn("Elemento #marcaTitulo não encontrado.");
     return;
   }
 
-  // Limpa antes de popular
   holder.innerHTML = "";
 
-  // Busca as marcas da API
-  fetch(`${BASE_URL}/marcas/`)
-    .then((res) => {
-      if (!res.ok) throw new Error("Resposta da API não OK: " + res.status);
-      return res.json();
-    })
-    .then((dados) => {
-      // dados pode ser array de strings ou array de objetos.
-      if (!Array.isArray(dados) || dados.length === 0) {
-        holder.innerHTML = "<p>Nenhuma marca encontrada.</p>";
-        return;
-      }
+  try {
+    const res = await fetch(`${BASE_URL}/marcas/`, { credentials: "include" });
+    if (!res.ok) throw new Error("Erro ao buscar marcas: " + res.status);
 
-      const row = document.createElement("div");
-      row.className = "row g-3";
+    const dados = await res.json();
 
-      dados.forEach((item) => {
-        // Normaliza diferentes formatos de item retornado pela API
-        // Tente mapear as propriedades mais prováveis (baseado no seu código comentado)
-        const isString = typeof item === "string";
-        const label = isString
-          ? item
-          : item.marcasdes || item.nome || item.name || item.label || "";
-        // campo de id/código da marca:
-        const code = isString
-          ? "" // sem código se item for apenas string
-          : item.marcascod || item.id || item.codigo || "";
+    if (!Array.isArray(dados) || dados.length === 0) {
+      holder.innerHTML = "<p>Nenhuma marca encontrada.</p>";
+      return;
+    }
 
-        // Cria coluna
-        const col = document.createElement("div");
-        col.className = "col-6 col-md-4 col-lg-3 brand-col";
+    const row = document.createElement("div");
+    row.className = "row g-3";
 
-        // Cria link que leva para a página de modelos com o marcascod como parâmetro
-        // Se não houver code, o link vai apenas para 'modelo' sem query string.
-        const href =
-          code !== ""
-            ? `modelo?id=${encodeURIComponent(
-                code
-              )}&marcascod=${encodeURIComponent(code)}`
-            : "modelo";
+    for (const item of dados) {
+      const isString = typeof item === "string";
 
-        const link = document.createElement("a");
-        link.className = "brand-link";
-        link.href = href;
-        link.setAttribute("aria-label", label);
+      const label = isString
+        ? item
+        : item.marcasdes || item.nome || item.name || item.label || "";
 
-        // Botão estilizado (sem type para não submeter formulários inválidos)
-        const btn = document.createElement("button");
-        btn.className = "brand-btn";
-        btn.type = "button";
+      const code = isString
+        ? ""
+        : item.marcascod || item.id || item.codigo || "";
 
-        // Imagem do ícone
-        const img = document.createElement("img");
-        img.src = getIconURL(label);
-        img.alt = `${label} logo`;
-        img.loading = "lazy";
+      const logoInfo = getBrandLogo(label);
 
-        // fallback final
-        img.onerror = () => {
-          img.onerror = null;
-          img.src = "https://cdn.simpleicons.org/cog";
-        };
+      // -----------------------------
+      // CRIA COLUNA
+      // -----------------------------
 
-        const span = document.createElement("span");
-        span.textContent = label;
+      const col = document.createElement("div");
+      col.className = "col-6 col-md-4 col-lg-3 brand-col";
 
-        btn.appendChild(img);
-        btn.appendChild(span);
+      const href =
+        code !== ""
+          ? `modelo?id=${encodeURIComponent(
+              code
+            )}&marcascod=${encodeURIComponent(code)}`
+          : "modelo";
 
-        // Coloca o botão dentro do link (clicando em qualquer lugar do botão segue o link)
-        link.appendChild(btn);
-        col.appendChild(link);
-        row.appendChild(col);
-      });
+      const link = document.createElement("a");
+      link.className = "brand-link";
+      link.href = href;
+      link.setAttribute("aria-label", label);
 
-      holder.appendChild(row);
-    })
-    .catch((err) => {
-      console.error("Erro ao buscar marcas:", err);
-      holder.innerHTML =
-        "<p>Erro ao carregar marcas. Veja o console para detalhes.</p>";
-    });
+      const btn = document.createElement("button");
+      btn.className = "brand-btn";
+      btn.type = "button";
+
+      const img = document.createElement("img");
+      img.src = logoInfo.primary; // tenta logo do uploads
+      img.alt = `${label} logo`;
+      img.loading = "lazy";
+
+      // FALLBACK DE IMG (SEM HEAD)
+      img.onerror = () => {
+        img.onerror = null;
+        img.src = "https://cdn.simpleicons.org/cog/000";
+      };
+
+      const span = document.createElement("span");
+      span.textContent = label;
+
+      btn.appendChild(img);
+      btn.appendChild(span);
+      link.appendChild(btn);
+      col.appendChild(link);
+      row.appendChild(col);
+    }
+
+    holder.appendChild(row);
+  } catch (err) {
+    console.error("Erro ao carregar marcas:", err);
+    holder.innerHTML =
+      "<p>Erro ao carregar marcas. Veja o console para detalhes.</p>";
+  }
 });
 
 const inputPesquisa = document.getElementById("pesquisa");
