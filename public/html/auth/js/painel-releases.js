@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const filterInput = document.getElementById('filterInput');
   const sortSelect = document.getElementById('sortSelect');
   const cacheInfo = document.getElementById('cacheInfo');
-  const ghTokenInput = document.getElementById('ghToken');
+  //const ghTokenInput = document.getElementById('ghToken');
   const refreshBtn = document.getElementById('refreshBtn');
 
   // document.addEventListener("DOMContentLoaded",() => {
@@ -98,6 +98,8 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchReleasesFromGitHub() {
     const url = `${BASE_URL}/api/releases`;
 
+    console.log(url);
+
     const res = await fetch(url);
 
     if (!res.ok) {
@@ -112,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadAndRender(force = false) {
     msgEl.innerText = 'Carregando...'; listEl.innerHTML = '';
-    const token = ghTokenInput.value.trim() || null;
+    //const token = ghTokenInput.value.trim() || null;
     const cached = getCache();
     if (!force && cached && isCacheValid(cached.ts)) {
       renderList(cached.data);
@@ -120,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     try {
-      const data = await fetchReleasesFromGitHub(token);
+      const data = await fetchReleasesFromGitHub();
       setCache(data);
       renderList(data);
       msgEl.innerText = '';
