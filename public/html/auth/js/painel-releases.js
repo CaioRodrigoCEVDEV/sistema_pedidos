@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function fetchReleasesFromGitHub(token){
       const url = `https://${BASE_URL}/api/releases`;
-      const res = await fetch(url, { headers });
+      const res = await fetch(url);
       if(!res.ok){
         const txt = await res.text();
         throw new Error(`${res.status} ${res.statusText} — ${txt.slice(0,150)}`);
