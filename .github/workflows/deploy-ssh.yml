@@ -64,11 +64,19 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: Deploy tag on remote server
+      - name: Deploy tag on remote server JP
         run: |
           TAG="${{ steps.resolve_tag.outputs.tag }}"
-          echo "Deploying tag: $TAG"
+          echo "Deploying JP tag: $TAG"
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT }}" "root@${{ secrets.SSH_HOST }}" "/root/deployJpPecas.sh ${TAG}"
+          
+
+      - name: Deploy tag on remote server UTI
+        run: |
+          TAG="${{ steps.resolve_tag.outputs.tag }}"
+          echo "Deploying UTI tag: $TAG"
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT }}" "root@${{ secrets.SSH_HOST }}" "/root/deployUTIdosCelulares.sh ${TAG}"
+   
 
 
   # ============================
