@@ -46,13 +46,13 @@
       color:#24303b;
       font-size:.95rem;
       line-height:1.45;
-      max-height:3.3rem; /* collapsed */
+      max-height:10.3rem; /* collapsed */
       overflow:hidden;
       position:relative;
       transition: max-height .22s ease;
       white-space: pre-line;
     }
-    .release-desc.expanded { max-height: 400px; }
+    .release-desc.expanded { max-height: 1400px; }
 
     .readmore { font-size:.9rem; text-decoration:none; color:var(--accent); cursor:pointer; }
 
