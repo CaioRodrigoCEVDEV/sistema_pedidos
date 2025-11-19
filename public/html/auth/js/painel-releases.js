@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
        setTimeout(()=> filterInput.focus(), 300);
        loadAndRender();
      });
-    refreshBtn.addEventListener('click', ()=> loadAndRender(true));
+    //refreshBtn.addEventListener('click', ()=> loadAndRender(true));
     filterInput.addEventListener('input', renderFromCache);
     sortSelect.addEventListener('change', renderFromCache);
 
