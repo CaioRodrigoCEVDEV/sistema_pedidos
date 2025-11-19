@@ -96,8 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function fetchReleasesFromGitHub(token){
-      const url = `https://api.github.com/repos/${OWNER}/${REPO}/releases`;
-      const headers = token ? { Authorization: 'token ' + token } : {};
+      const url = `https://${BASE_URL}/api/releases`;
       const res = await fetch(url, { headers });
       if(!res.ok){
         const txt = await res.text();
