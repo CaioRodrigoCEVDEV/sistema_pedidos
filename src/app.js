@@ -410,64 +410,58 @@ const http = require('http');
 const crypto = require('crypto');
 
 
-// seu middleware JSON normal pros outros endpoints
+// mantenha o json parser para as demais rotas
 app.use(express.json());
 
-// cria server + socket.io (como você já tinha)
+// servidor & socket
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*' } // ajuste para seu domínio
+  cors: { origin: '*' }
 });
 
 const GITHUB_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'secreto_aqui';
 
-// função de verificação que recebe o raw buffer
+// helper: valida assinatura usando raw buffer
 function verifySignatureRaw(rawBuffer, signatureHeader) {
-  if (!signatureHeader) return false;
-  if (!signatureHeader.startsWith('sha256=')) return false;
-
-  const sigHex = signatureHeader.replace('sha256=', '');
+  if (!signatureHeader || !signatureHeader.startsWith('sha256=')) return false;
+  const sigHex = signatureHeader.slice('sha256='.length);
   const hmac = crypto.createHmac('sha256', GITHUB_SECRET);
-  const digestHex = hmac.update(rawBuffer).digest('hex');
-
-  const sigBuf = Buffer.from(sigHex, 'hex');
-  const digestBuf = Buffer.from(digestHex, 'hex');
-
-  // se tamanhos diferentes -> rejeita
-  if (sigBuf.length !== digestBuf.length) return false;
+  // rawBuffer é Buffer
+  const digest = hmac.update(rawBuffer).digest('hex');
 
   try {
-    return crypto.timingSafeEqual(sigBuf, digestBuf);
+    const a = Buffer.from(sigHex, 'hex');
+    const b = Buffer.from(digest, 'hex');
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
   } catch (e) {
     return false;
   }
 }
 
-// armazenamento simples (pode usar Redis)
+// armazenamento simples
 let latestRelease = { id: null, tag_name: null, published_at: null, body: null };
 
-// ROTA DO WEBHOOK: usa express.raw para obter Buffer bruto
+// NOTE: usamos express.raw aqui só para essa rota
 app.post('/github/webhook', express.raw({ type: 'application/json' }), (req, res) => {
-  const sigHeader = req.get('x-hub-signature-256');
-  // req.body aqui é um Buffer (raw) graças ao express.raw
-  if (!verifySignatureRaw(req.body, sigHeader)) {
-    console.warn('WebhooK: invalid signature');
+  const sig256 = req.get('x-hub-signature-256') || '';
+  if (!verifySignatureRaw(req.body, sig256)) {
+    console.log('Webhook: invalid signature');
     return res.status(401).send('invalid signature');
   }
 
-  // parse seguro do payload depois de verificar
+  // aqui o payload original como Buffer; parseia para objeto agora que já verificou
   let payload;
   try {
     payload = JSON.parse(req.body.toString('utf8'));
-  } catch (err) {
-    console.error('Webhook: erro ao parsear payload JSON', err);
-    return res.status(400).send('bad payload');
+  } catch (e) {
+    return res.status(400).send('invalid json');
   }
 
-  const event = req.get('x-github-event');
+  const event = req.get('x-github-event') || '';
 
   if (event === 'release' && payload.action === 'published') {
-    const rel = payload.release || {};
+    const rel = payload.release;
     const release = {
       id: rel.id,
       tag_name: rel.tag_name,
@@ -479,28 +473,24 @@ app.post('/github/webhook', express.raw({ type: 'application/json' }), (req, res
     };
 
     latestRelease = release;
-
     // se usar Redis: await redis.del('notify_cache');
     io.emit('new_release', release);
     console.log('New release published:', release.tag_name);
+  } else {
+    // pode logar ping / outros eventos
+    console.log('Webhook event:', event);
   }
 
-  return res.status(200).send('ok');
+  res.status(200).send('ok');
 });
 
-// endpoint opcional para o frontend pegar latest release (usa express.json normal)
-app.get('/api/releases/latest', (req, res) => {
-  res.json(latestRelease);
-});
+// endpoint opcional para leitura
+app.get('/api/releases/latest', (req, res) => res.json(latestRelease));
 
 io.on('connection', (socket) => {
   console.log('client connected', socket.id);
-  if (latestRelease && latestRelease.id) {
-    socket.emit('new_release', latestRelease);
-  }
+  if (latestRelease && latestRelease.id) socket.emit('new_release', latestRelease);
 });
-
-
 
 
 
