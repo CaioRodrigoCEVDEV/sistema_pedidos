@@ -421,9 +421,16 @@ const GITHUB_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'secreto_aqui';
 // util: validar assinatura
 function verifySignature(req) {
   const signature = req.get('x-hub-signature-256') || '';
-  const hmac = crypto.createHmac('sha256', GITHUB_SECRET);
-  const digest = 'sha256=' + hmac.update(JSON.stringify(req.body)).digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest));
+  if (!signature.startsWith('sha256=')) return false;
+  const sig = signature.replace('sha256=', '');
+  const hmac = crypto.createHmac('sha256', SECRET);
+  const digest = hmac.update(req.rawBody).digest('hex');
+  // timingSafeEqual exige buffers do mesmo tamanho
+  try {
+    return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(digest, 'hex'));
+  } catch (e) {
+    return false;
+  }
 }
 
 // armazenamento simples (pode usar Redis)
