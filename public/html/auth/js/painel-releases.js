@@ -216,7 +216,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div>
                   ${(r.body && r.body.length > 420) ? `<a href="#" class="readmore small" data-id="${r.id}">Ver mais</a>` : ''}
                 </div>
-                <div class="small text-muted">Publicada em ${new Date(r.published_at || Date.now()).toLocaleString()}</div>
               </div>
             </div>
           </div>
