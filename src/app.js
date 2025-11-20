@@ -390,6 +390,111 @@ app.get('/api/releases', async (req, res) => {
   }
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const { Server } = require('socket.io');
+const http = require('http');
+
+
+app.use(express.json({ type: 'application/json' })); // GitHub sends JSON
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' } // ajustar para domínio do seu frontend
+});
+
+const GITHUB_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'secreto_aqui';
+
+// util: validar assinatura
+function verifySignature(req) {
+  const signature = req.get('x-hub-signature-256') || '';
+  const hmac = crypto.createHmac('sha256', GITHUB_SECRET);
+  const digest = 'sha256=' + hmac.update(JSON.stringify(req.body)).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest));
+}
+
+// armazenamento simples (pode usar Redis)
+let latestRelease = { id: null, tag_name: null, published_at: null, body: null };
+
+app.post('/github/webhook', (req, res) => {
+  // validação
+  try {
+    if (!verifySignature(req)) {
+      return res.status(401).send('invalid signature');
+    }
+  } catch (e) {
+    return res.status(401).send('invalid signature');
+  }
+
+  const event = req.get('x-github-event');
+  const payload = req.body;
+
+  if (event === 'release' && payload.action === 'published') {
+    const release = {
+      id: payload.release.id,
+      tag_name: payload.release.tag_name,
+      name: payload.release.name,
+      html_url: payload.release.html_url,
+      body: payload.release.body,
+      published_at: payload.release.published_at,
+      author: payload.release.author
+    };
+
+    // atualizar cache/estado no server
+    latestRelease = release;
+
+    // limpar cache do módulo notify no servidor (exemplo: limpar Redis key)
+    // await redis.del('notify_cache'); // se usar Redis
+
+    // emitir evento para todos os clientes conectados
+    io.emit('new_release', release);
+
+    console.log('New release published:', release.tag_name);
+  }
+
+  res.status(200).send('ok');
+});
+
+// endpoint opcional para o frontend pegar latest release
+app.get('/api/releases/latest', (req, res) => {
+  res.json(latestRelease);
+});
+
+io.on('connection', (socket) => {
+  console.log('client connected', socket.id);
+  // opcional: enviar último estado ao conectar
+  if (latestRelease && latestRelease.id) {
+    socket.emit('new_release', latestRelease);
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Inicia o servidor
 (async () => {
   await atualizarDB();
