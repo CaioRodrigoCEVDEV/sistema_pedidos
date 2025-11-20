@@ -24,8 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-
-
 (function () {
   const OWNER = 'CaioRodrigoCEVDEV';
   const REPO = 'sistema_pedidos';
@@ -35,29 +33,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const openBtn = document.getElementById('openReleasesBtn');
   const releasesModalEl = document.getElementById('releasesModal');
-  const releasesModal = new bootstrap.Modal(releasesModalEl);
+  const releasesModal = releasesModalEl ? new bootstrap.Modal(releasesModalEl) : null;
   const listEl = document.getElementById('releasesList');
   const msgEl = document.getElementById('releasesMsg');
   const filterInput = document.getElementById('filterInput');
   const sortSelect = document.getElementById('sortSelect');
   const cacheInfo = document.getElementById('cacheInfo');
-  //const ghTokenInput = document.getElementById('ghToken');
   const refreshBtn = document.getElementById('refreshBtn');
 
-  // document.addEventListener("DOMContentLoaded",() => {
-  //   releasesModal.show();
-  //   setTimeout(()=> filterInput.focus(), 300);
-  //   loadAndRender();
-  // });
+  if (!listEl || !msgEl) {
+    console.warn('Releases: elementos essenciais não encontrados, abortando inicialização.');
+    return;
+  }
 
-  openBtn.addEventListener('click', () => {
-    releasesModal.show();
-    setTimeout(() => filterInput.focus(), 300);
-    loadAndRender();
-  });
-  //refreshBtn.addEventListener('click', ()=> loadAndRender(true));
-  filterInput.addEventListener('input', renderFromCache);
-  sortSelect.addEventListener('change', renderFromCache);
+  if (openBtn) {
+    openBtn.addEventListener('click', () => {
+      if (releasesModal) releasesModal.show();
+      setTimeout(() => filterInput && filterInput.focus(), 300);
+      loadAndRender();
+    });
+  }
+
+  if (filterInput) filterInput.addEventListener('input', renderFromCache);
+  if (sortSelect) sortSelect.addEventListener('change', renderFromCache);
+  if (refreshBtn) refreshBtn.addEventListener('click', () => loadAndRender(true));
 
   function getFavs() {
     try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch (e) { return []; }
@@ -90,44 +89,65 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function updateCacheInfo() {
     const c = getCache();
-    if (!c) { cacheInfo.innerText = 'Nenhum'; return; }
+    if (!c) { if (cacheInfo) cacheInfo.innerText = 'Nenhum'; return; }
     const mins = Math.round((Date.now() - c.ts) / 60000);
-    cacheInfo.innerText = (mins === 0 ? 'agora' : `${mins} min atrás`);
+    if (cacheInfo) cacheInfo.innerText = (mins === 0 ? 'agora' : `${mins} min atrás`);
   }
 
-  async function fetchReleasesFromGitHub() {
-    const url = `${BASE_URL}/api/releases`;
+  // ---------- FETCH ajustado para produção ----------
+  async function fetchReleasesFromGitHub(forceBypass = false) {
+    // usa URL relativa: /api/releases (mesmo host) — evita problemas de CORS/proxy
+    let url = '/api/releases';
+    if (forceBypass) url += `?t=${Date.now()}`;
+    // tenta sem cache; credentials same-origin para cookies se necessário
+    const opts = { cache: 'no-store', credentials: 'same-origin', headers: { 'Accept': 'application/json' } };
 
-    console.log(url);
-
-    const res = await fetch(url);
+    console.debug('[releases] fetching', url, opts);
+    const res = await fetch(url, opts);
 
     if (!res.ok) {
-      const txt = await res.text();
+      const txt = await res.text().catch(()=>'<no-body>');
       throw new Error(`${res.status} ${res.statusText} — ${txt.slice(0, 150)}`);
     }
 
-    const data = await res.json();
-    return data.releases; // já vem do backend com ok:true, releases:[...]
-  }
+    // tenta parse seguro
+    const payload = await res.json().catch(e => { throw new Error('JSON inválido da API de releases'); });
 
+    // backend expected format: { ok:true, releases:[...] } ou { releases:[...] }
+    const releases = payload.releases || payload.data || payload;
+    if (!Array.isArray(releases)) {
+      throw new Error('Formato inesperado do JSON de releases');
+    }
+    return releases;
+  }
 
   async function loadAndRender(force = false) {
     msgEl.innerText = 'Carregando...'; listEl.innerHTML = '';
-    //const token = ghTokenInput.value.trim() || null;
     const cached = getCache();
+
+    // se cache vigente e não for forçar, usa cache
     if (!force && cached && isCacheValid(cached.ts)) {
+      console.debug('[releases] usando cache válido');
       renderList(cached.data);
       msgEl.innerText = '';
       return;
     }
+
     try {
-      const data = await fetchReleasesFromGitHub();
+      // tenta fetch normal; se falhar por cache intermediário, tentamos com bypass
+      let data;
+      try {
+        data = await fetchReleasesFromGitHub(false);
+      } catch (e) {
+        console.warn('[releases] fetch sem bypass falhou:', e.message, 'Tentando com bypass ?t=');
+        // tenta forçar bypass (evita proxies/CDN cache)
+        data = await fetchReleasesFromGitHub(true);
+      }
       setCache(data);
       renderList(data);
       msgEl.innerText = '';
     } catch (err) {
-      console.error(err);
+      console.error('[releases] erro ao carregar releases', err);
       msgEl.innerHTML = `<div class="text-danger small">Erro: ${escapeHtml(err.message)}</div>`;
       if (cached && cached.data) {
         msgEl.innerHTML += `<div class="text-muted small">Usando cache local.</div>`;
@@ -150,13 +170,13 @@ document.addEventListener("DOMContentLoaded", () => {
       listEl.innerHTML = `<div class="empty-state">Nenhuma release encontrada.</div>`; return;
     }
 
-    const q = filterInput.value.trim().toLowerCase();
+    const q = (filterInput && filterInput.value) ? filterInput.value.trim().toLowerCase() : '';
     let list = releases.filter(r => {
       if (!q) return true;
       return ((r.name || '') + ' ' + (r.tag_name || '') + ' ' + (r.body || '')).toLowerCase().includes(q);
     });
 
-    if (sortSelect.value === 'date_asc') {
+    if (sortSelect && sortSelect.value === 'date_asc') {
       list.sort((a, b) => new Date(a.published_at) - new Date(b.published_at));
     } else {
       list.sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
@@ -168,16 +188,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const isFav = !!favs.find(f => f.id === r.id);
       const published = r.published_at ? new Date(r.published_at).toLocaleString() : '—';
       const short = (r.body || '').slice(0, 420);
-      const author = r.author?.login || '—';
-      const initials = (author && author[0]) ? author[0].toUpperCase() : '?';
       return `
           <div class="release-card">
             <div class="release-meta">
               <div class="version-badge">${escapeHtml(r.tag_name || r.name || '')}</div>
               <div class="date-small">${new Date(r.published_at || Date.now()).toLocaleDateString()}</div>
               <div class="mt-2">
-                <div class="author-avatar">${"O"}</div>
-                <div class="small text-muted mt-1">${"OrderUp"}</div>
+                <div class="author-avatar">O</div>
+                <div class="small text-muted mt-1">OrderUp</div>
               </div>
             </div>
 
@@ -187,7 +205,6 @@ document.addEventListener("DOMContentLoaded", () => {
                   <h5>${escapeHtml(r.name || '')}</h5>
                   <div class="release-sub">${escapeHtml(r.tag_name || '')} • <span class="text-muted">${escapeHtml(published)}</span></div>
                 </div>
-
               </div>
 
               <div class="release-desc" data-id="${r.id}">
@@ -207,7 +224,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join('');
 
     // events
-    //listEl.querySelectorAll('.openBtn').forEach(b=> b.addEventListener('click', e => window.open(e.currentTarget.dataset.url, '_blank','noopener')));
     listEl.querySelectorAll('.favBtn').forEach(b => b.addEventListener('click', e => {
       const id = Number(e.currentTarget.dataset.id);
       const release = releases.find(r => r.id === id);
@@ -220,16 +236,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!cardDesc) return;
       const expanded = cardDesc.classList.toggle('expanded');
       ev.currentTarget.innerText = expanded ? 'Ver menos' : 'Ver mais';
+      const cached = getCache();
+      const r = (cached && cached.data) ? cached.data.find(rr => rr.id === id) : null;
       if (expanded) {
-        // show full content (from cache)
-        const cached = getCache();
-        const r = (cached && cached.data) ? cached.data.find(rr => rr.id === id) : null;
         if (r) cardDesc.innerHTML = escapeHtml(r.body || '(sem descrição)');
       } else {
-        // collapse to summary
-        const cached = getCache();
-        const r = (cached && cached.data) ? cached.data.find(rr => rr.id === id) : null;
-        cardDesc.innerHTML = escapeHtml((r && r.body ? r.body.slice(0, 420) : '').replaceAll('\\n', '\n')) + (r && r.body && r.body.length > 420 ? '…' : '');
+        if (r) cardDesc.innerHTML = escapeHtml((r.body ? r.body.slice(0, 420) : '').replaceAll('\\n', '\n')) + (r && r.body && r.body.length > 420 ? '…' : '');
       }
     }));
   }
@@ -242,6 +254,4 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   updateCacheInfo();
-
-  // initial note: token client-side is insecure.
 })();
