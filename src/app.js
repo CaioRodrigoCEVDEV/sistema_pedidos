@@ -413,7 +413,14 @@ const crypto = require('crypto');
 
 // IMPORTANTE: precisamos do corpo bruto para validar a assinatura.
 // O middleware abaixo devolve req.body como Buffer para type application/json
-app.use(express.raw({ type: 'application/json' }));
+// --- importante: capturar raw body para validar assinatura ---
+app.use(express.json({
+  type: 'application/json',
+  verify: function (req, res, buf, encoding) {
+    // salva o buffer cru para a verificação do HMAC
+    req.rawBody = buf;
+  }
+}));
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -422,80 +429,63 @@ const io = new Server(server, {
 
 const GITHUB_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'secreto_aqui';
 
-// Função de verificação de assinatura (recebe req com req.body Buffer)
+// util: validar assinatura X-Hub-Signature-256
 function verifySignature(req) {
-  const signature256 = req.get('x-hub-signature-256') || '';
-  if (!signature256.startsWith('sha256=')) return false;
+  const signatureHeader = req.get('x-hub-signature-256') || '';
+  if (!signatureHeader.startsWith('sha256=')) return false;
 
-  const sig = signature256.replace('sha256=', '');
+  const signature = signatureHeader.replace('sha256=', '');
+
+  if (!req.rawBody || !Buffer.isBuffer(req.rawBody)) return false;
+
   const hmac = crypto.createHmac('sha256', GITHUB_SECRET);
-  // req.body é Buffer aqui (por conta do express.raw)
-  const digest = hmac.update(req.body).digest('hex');
+  const digest = hmac.update(req.rawBody).digest('hex');
 
-  try {
-    // timingSafeEqual exige buffers do mesmo tamanho
-    const sigBuf = Buffer.from(sig, 'hex');
-    const digestBuf = Buffer.from(digest, 'hex');
-    if (sigBuf.length !== digestBuf.length) return false;
-    return crypto.timingSafeEqual(sigBuf, digestBuf);
-  } catch (e) {
-    return false;
-  }
+  // buffers com mesmo tamanho são exigidos pelo timingSafeEqual
+  const sigBuf = Buffer.from(signature, 'hex');
+  const digestBuf = Buffer.from(digest, 'hex');
+  if (sigBuf.length !== digestBuf.length) return false;
+
+  return crypto.timingSafeEqual(sigBuf, digestBuf);
 }
 
 // armazenamento simples (pode usar Redis)
 let latestRelease = { id: null, tag_name: null, published_at: null, body: null };
 
-// webhook endpoint
 app.post('/github/webhook', (req, res) => {
-  // validar assinatura
-  if (!verifySignature(req)) {
-    console.warn('Webhook: assinatura inválida');
+  try {
+    if (!verifySignature(req)) {
+      console.warn('Webhook: invalid signature');
+      return res.status(401).send('invalid signature');
+    }
+  } catch (e) {
+    console.error('Webhook verify error', e);
     return res.status(401).send('invalid signature');
   }
 
-  // body: como usamos express.raw, precisamos parsear o JSON
-  let payload;
-  try {
-    payload = JSON.parse(req.body.toString('utf8'));
-  } catch (err) {
-    console.error('Webhook: erro parseando JSON', err);
-    return res.status(400).send('invalid json');
-  }
-
   const event = req.get('x-github-event');
+  const payload = req.body;
 
-  // responder ping (teste) para o GitHub
-  if (event === 'ping') {
-    console.log('Webhook ping recebido');
-    return res.status(200).json({ msg: 'pong' });
-  }
-
-  if (event === 'release' && payload.action === 'published') {
-    const rel = payload.release;
+  if (event === 'release' && payload && payload.action === 'published') {
     const release = {
-      id: rel.id,
-      tag_name: rel.tag_name,
-      name: rel.name,
-      html_url: rel.html_url,
-      body: rel.body,
-      published_at: rel.published_at,
-      author: rel.author
+      id: payload.release.id,
+      tag_name: payload.release.tag_name,
+      name: payload.release.name,
+      html_url: payload.release.html_url,
+      body: payload.release.body,
+      published_at: payload.release.published_at,
+      author: payload.release.author
     };
 
     latestRelease = release;
 
-    // Exemplo: limpar cache server-side (se usar Redis, descomente e ajuste)
-    // await redis.del('notify_cache');
-
+    // se usar Redis: await redis.del('notify_cache');
     io.emit('new_release', release);
-    console.log('New release published:', release.tag_name);
 
-    return res.status(200).send('ok');
+    console.log('New release published:', release.tag_name);
   }
 
-  // outros eventos: apenas ack
-  return res.status(200).send('event ignored');
+  return res.status(200).send('ok');
 });
 
 // endpoint opcional para frontend pegar latest release
@@ -509,7 +499,6 @@ io.on('connection', (socket) => {
     socket.emit('new_release', latestRelease);
   }
 });
-
 
 
 
