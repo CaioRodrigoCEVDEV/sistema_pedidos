@@ -5,11 +5,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!alertEl) return;
 
   if (localStorage.getItem("releaseIDClose") === "true") {
-    alertEl.remove();
+    // deixar sempre mostrando por enquanto// alertEl.remove();
+    localStorage.removeItem("releaseIDClose");
     return;
   }
 
-  // Hide the alert initially and display it after a brief delay with animation
   alertEl.style.display = "none";
   setTimeout(() => {
     alertEl.style.display = "block";
