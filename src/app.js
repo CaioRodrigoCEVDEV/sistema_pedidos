@@ -409,8 +409,9 @@ const { Server } = require('socket.io');
 const http = require('http');
 const crypto = require('crypto');
 
+const GITHUB_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'secreto_aqui';
 
-
+app.use('/github/webhook', express.raw({ type: '*/*' }));
 // IMPORTANTE: precisamos do corpo bruto para validar a assinatura.
 // O middleware abaixo devolve req.body como Buffer para type application/json
 // --- importante: capturar raw body para validar assinatura ---
@@ -427,7 +428,7 @@ const io = new Server(server, {
   cors: { origin: '*' } // ajuste para seu frontend em produção
 });
 
-const GITHUB_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'secreto_aqui';
+
 
 // util: validar assinatura X-Hub-Signature-256
 function verifySignature(req) {
