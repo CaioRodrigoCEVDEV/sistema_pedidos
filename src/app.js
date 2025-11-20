@@ -407,6 +407,8 @@ app.get('/api/releases', async (req, res) => {
 
 const { Server } = require('socket.io');
 const http = require('http');
+const crypto = require('crypto');
+
 
 
 // IMPORTANTE: precisamos do corpo bruto para validar a assinatura.
