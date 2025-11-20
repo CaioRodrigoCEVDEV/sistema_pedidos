@@ -390,9 +390,6 @@ app.get('/api/releases', async (req, res) => {
   }
 });
 
-
-
-console.log('GITHUB_TOKEN set?', !!process.env.GITHUB_TOKEN); // só para debug
 // Inicia o servidor
 (async () => {
   await atualizarDB();

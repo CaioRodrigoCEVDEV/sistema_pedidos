@@ -279,7 +279,7 @@ exports.gravarEstoqueProduto = async (req, res) => {
   const { id } = req.params;
   const { quantidade, cor = null } = req.body;
 
-  console.log("Recebido no backend:", { id, quantidade, cor });
+  //console.log("Recebido no backend:", { id, quantidade, cor });
   try {
     const produto = await pool.query(
       "SELECT procorprocod FROM procor WHERE procorprocod = $1 group by procorprocod",
@@ -292,12 +292,12 @@ exports.gravarEstoqueProduto = async (req, res) => {
       cor !== null
     ) {
       await pool.query(
-        "UPDATE procor SET procorqtde = procorqtde + $1 WHERE procorprocod = $2 and procorcorescod = $3",
+        "UPDATE procor SET procorqtde = $1 WHERE procorprocod = $2 and procorcorescod = $3",
         [quantidade, id, cor]
       );
     } else {
       await pool.query(
-        "UPDATE pro SET proqtde = proqtde + $1 WHERE procod = $2",
+        "UPDATE pro SET proqtde = $1 WHERE procod = $2",
         [quantidade, id]
       );
     }
