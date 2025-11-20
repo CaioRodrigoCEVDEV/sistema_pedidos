@@ -411,99 +411,77 @@ const crypto = require('crypto');
 
 const GITHUB_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'secreto_aqui';
 
+
+//
+// 1) CAPTURAR RAW BODY ANTES DO express.json()
+//
 app.use('/github/webhook', express.raw({ type: '*/*' }));
-// IMPORTANTE: precisamos do corpo bruto para validar a assinatura.
-// O middleware abaixo devolve req.body como Buffer para type application/json
-// --- importante: capturar raw body para validar assinatura ---
-app.use(express.json({
-  type: 'application/json',
-  verify: function (req, res, buf, encoding) {
-    // salva o buffer cru para a verificação do HMAC
-    req.rawBody = buf;
-  }
-}));
 
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*' } // ajuste para seu frontend em produção
-});
+//
+// 2) Demais rotas continuam com JSON normal
+//
+app.use(express.json());
 
-
-
-// util: validar assinatura X-Hub-Signature-256
 function verifySignature(req) {
-  const signatureHeader = req.get('x-hub-signature-256') || '';
-  if (!signatureHeader.startsWith('sha256=')) return false;
+  const signature = req.get("x-hub-signature-256") || "";
+  if (!signature.startsWith("sha256=")) return false;
 
-  const signature = signatureHeader.replace('sha256=', '');
+  const sig = signature.replace("sha256=", "");
 
-  if (!req.rawBody || !Buffer.isBuffer(req.rawBody)) return false;
+  const hmac = crypto.createHmac("sha256", GITHUB_SECRET);
+  const digest = hmac.update(req.body).digest("hex");
 
-  const hmac = crypto.createHmac('sha256', GITHUB_SECRET);
-  const digest = hmac.update(req.rawBody).digest('hex');
-
-  // buffers com mesmo tamanho são exigidos pelo timingSafeEqual
-  const sigBuf = Buffer.from(signature, 'hex');
-  const digestBuf = Buffer.from(digest, 'hex');
-  if (sigBuf.length !== digestBuf.length) return false;
-
-  return crypto.timingSafeEqual(sigBuf, digestBuf);
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(sig, "hex"),
+      Buffer.from(digest, "hex")
+    );
+  } catch (e) {
+    return false;
+  }
 }
 
-// armazenamento simples (pode usar Redis)
 let latestRelease = { id: null, tag_name: null, published_at: null, body: null };
 
-app.post('/github/webhook', (req, res) => {
-  try {
-    if (!verifySignature(req)) {
-      console.warn('Webhook: invalid signature');
-      return res.status(401).send('invalid signature');
-    }
-  } catch (e) {
-    console.error('Webhook verify error', e);
-    return res.status(401).send('invalid signature');
+app.post("/github/webhook", (req, res) => {
+  if (!verifySignature(req)) {
+    console.log("❌ Webhook: invalid signature");
+    return res.status(401).send("invalid signature");
   }
 
-  const event = req.get('x-github-event');
-  const payload = req.body;
+  console.log("✅ Assinatura verificada com sucesso!");
 
-  if (event === 'release' && payload && payload.action === 'published') {
-    const release = {
+  // Agora podemos converter o raw para JSON
+  const payload = JSON.parse(req.body);
+  const event = req.get("x-github-event");
+
+  if (event === "release" && payload.action === "published") {
+    console.log("🚀 Nova release detectada:", payload.release.tag_name);
+
+    latestRelease = {
       id: payload.release.id,
       tag_name: payload.release.tag_name,
       name: payload.release.name,
       html_url: payload.release.html_url,
       body: payload.release.body,
       published_at: payload.release.published_at,
-      author: payload.release.author
+      author: payload.release.author,
     };
 
-    latestRelease = release;
-
-    // se usar Redis: await redis.del('notify_cache');
-    io.emit('new_release', release);
-
-    console.log('New release published:', release.tag_name);
+    io.emit("new_release", latestRelease);
   }
 
-  return res.status(200).send('ok');
+  res.status(200).send("ok");
 });
 
-// endpoint opcional para frontend pegar latest release
-app.get('/api/releases/latest', (req, res) => {
+// endpoint
+app.get("/api/releases/latest", (req, res) => {
   res.json(latestRelease);
 });
 
-io.on('connection', (socket) => {
-  console.log('client connected', socket.id);
-  if (latestRelease && latestRelease.id) {
-    socket.emit('new_release', latestRelease);
-  }
-});
-
-
-
-
+// socket.io
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
 
 
