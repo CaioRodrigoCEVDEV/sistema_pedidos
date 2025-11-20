@@ -5,11 +5,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!alertEl) return;
 
   if (localStorage.getItem("releaseIDClose") === "true") {
-    alertEl.remove();
+    // deixar sempre mostrando por enquanto// alertEl.remove();
+    localStorage.removeItem("releaseIDClose");
     return;
   }
 
-  // Hide the alert initially and display it after a brief delay with animation
   alertEl.style.display = "none";
   setTimeout(() => {
     alertEl.style.display = "block";
@@ -216,7 +216,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div>
                   ${(r.body && r.body.length > 420) ? `<a href="#" class="readmore small" data-id="${r.id}">Ver mais</a>` : ''}
                 </div>
-                <div class="small text-muted">Publicada em ${new Date(r.published_at || Date.now()).toLocaleString()}</div>
               </div>
             </div>
           </div>

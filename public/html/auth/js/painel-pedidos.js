@@ -177,10 +177,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
               <td class="text-end">${formatarMoeda(preco)}</td>
               <td class="text-end">${formatarMoeda(subtotal)}</td>
               <td class="text-center">
-                <button type="button" class="btn btn-danger btn-sm" onclick="cancelarItem
-                  (${procod}, ${pv})">
-                  <i class="bi bi-trash"></i>
-                </button>
+
               </td>
             </tr>`;
           })
