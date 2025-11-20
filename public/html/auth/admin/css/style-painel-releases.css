@@ -52,7 +52,7 @@
       transition: max-height .22s ease;
       white-space: pre-line;
     }
-    .release-desc.expanded { max-height: 1400px; }
+    .release-desc.expanded { max-height: 3400px; }
 
     .readmore { font-size:.9rem; text-decoration:none; color:var(--accent); cursor:pointer; }
 
