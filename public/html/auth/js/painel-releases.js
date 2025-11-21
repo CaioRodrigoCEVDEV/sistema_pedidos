@@ -253,4 +253,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   updateCacheInfo();
+
+  // Garantir que as releases SEMPRE carreguem quando o modal for aberto
+if (releasesModalEl) {
+  releasesModalEl.addEventListener('shown.bs.modal', () => {
+    loadAndRender();
+  });
+}
+
 })();
