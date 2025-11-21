@@ -108,7 +108,7 @@ exports.editarProduto = async (req, res) => {
   try {
     const result = await pool.query(
       `update pro set prodes = $1, provl = $2, prosemest = $3 where procod = $4 RETURNING *`,
-      [prodes, provl, prosemest,id]
+      [prodes, provl, prosemest, id]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -135,10 +135,11 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `select procod, prodes, provl, tipodes, corcod, case when cornome is null then '' else cornome end as cornome from pro
+      `select procod, prodes, provl, tipodes, corcod, case when cornome is null then '' else cornome end as cornome, procorsemest from pro
         join tipo on tipocod = protipocod
         left join procor on procorprocod = procod
-        left join cores on corcod = procorcorescod where procod  = $1`,
+        left join cores on corcod = procorcorescod 
+        where procod  = $1 `,
       [id]
     );
     res.status(200).json(result.rows);
@@ -154,8 +155,8 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `insert into procor values($1,$2) RETURNING *`,
-      [id, req.query.corescod]
+      `insert into procor values($1,$2,$3) RETURNING *`,
+      [id, req.query.corescod, req.query.procorsemest]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -183,11 +184,17 @@ exports.deletarProdutoCoresDisponiveis = async (req, res) => {
 exports.alterarProdutoCoresDisponiveis = async (req, res) => {
   const { id } = req.params;
   //const { marca, modelo } = req.query;
+  console.log("Alterar cores:", { id, query: req.query });
 
   try {
     const result = await pool.query(
-      `update procor set procorcorescod = $1 where procorprocod = $2 and procorcorescod = $3 RETURNING *`,
-      [req.query.corescodnovo, id, req.query.corescod]
+      `update procor set procorcorescod = $1, procorsemest = $2 where procorprocod = $3 and procorcorescod = $4 RETURNING *`,
+      [
+        req.query.corescodnovo,
+        req.query.procorsemestnovo,
+        id,
+        req.query.corescod,
+      ]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -296,10 +303,10 @@ exports.gravarEstoqueProduto = async (req, res) => {
         [quantidade, id, cor]
       );
     } else {
-      await pool.query(
-        "UPDATE pro SET proqtde = $1 WHERE procod = $2",
-        [quantidade, id]
-      );
+      await pool.query("UPDATE pro SET proqtde = $1 WHERE procod = $2", [
+        quantidade,
+        id,
+      ]);
     }
 
     res.json({ sucesso: true });
