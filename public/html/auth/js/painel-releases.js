@@ -82,45 +82,64 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------- FETCH sempre sem cache ----------
-  async function fetchReleasesFromAPI(forceBypass = false) {
-    let url = '/api/releases';
-    // força bypass de caches intermediários sempre; se quiser, só quando forceBypass
-    const ts = Date.now();
-    url += (url.includes('?') ? '&' : '?') + 't=' + ts;
-    if (forceBypass) url += '&bypass=1';
+// --- FETCH sempre sem cache e compatível com o JSON real ---
+async function fetchReleasesFromAPI() {
+  let url = '/api/releases?t=' + Date.now();
 
-    const controller = new AbortController();
-    const to = setTimeout(() => controller.abort(), 10000); // 10s
+  const opts = {
+    method: 'GET',
+    cache: 'no-store',
+    credentials: 'same-origin',
+    headers: {
+      'Accept': 'application/json',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+    },
+  };
 
-    const opts = {
-      method: 'GET',
-      cache: 'no-store',
-      credentials: 'same-origin',
-      headers: {
-        'Accept': 'application/json',
-        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-      },
-      signal: controller.signal,
-    };
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
-    console.debug('[releases] fetching', url);
-    const res = await fetch(url, opts).catch((e) => {
-      clearTimeout(to);
-      throw e;
-    });
-    clearTimeout(to);
+  const payload = await res.json();
+  // 🔹 Ajuste direto conforme seu retorno real:
+  // { ok: true, fromCache: true, releases: [ {...}, {...} ] }
+  const releases = payload.releases || [];
+  if (!Array.isArray(releases) || releases.length === 0)
+    throw new Error('Nenhuma release encontrada');
 
-    if (!res.ok) {
-      const txt = await res.text().catch(()=>'<no-body>');
-      throw new Error(`${res.status} ${res.statusText} — ${txt.slice(0, 150)}`);
-    }
+  return releases;
+}
 
-    const payload = await res.json().catch(() => { throw new Error('JSON inválido da API de releases'); });
-    const releases = payload.releases || payload.data || payload;
-    if (!Array.isArray(releases)) throw new Error('Formato inesperado do JSON de releases');
-    return releases;
+// --- carrega e renderiza sempre direto da API ---
+async function loadAndRender() {
+  msgEl.innerText = 'Carregando...';
+  listEl.innerHTML = '';
+
+  try {
+    const data = await fetchReleasesFromAPI();
+
+    // 🔹 Normaliza campos, garantindo que o renderList receba estrutura completa
+    releasesData = data.map(r => ({
+      id: r.id,
+      tag_name: r.tag_name || '',
+      name: r.name || '',
+      body: r.body || '',
+      published_at: r.published_at || '',
+    }));
+
+    updateInfoNow();
+    renderList(releasesData);
+    msgEl.innerText = '';
+  } catch (err) {
+    console.error('[releases] erro ao carregar releases', err);
+    msgEl.innerHTML = `<div class="text-danger small">Erro: ${escapeHtml(err.message)}</div>`;
+    listEl.innerHTML = `<div class="empty-state">
+      <i class="bi bi-exclamation-circle" style="font-size:28px"></i>
+      <div class="mt-2">Não foi possível carregar releases.</div>
+    </div>`;
   }
+}
+
 
   async function loadAndRender(force = false) {
     msgEl.innerText = 'Carregando...';
