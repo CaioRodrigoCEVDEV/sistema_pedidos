@@ -48,18 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Evita colapso de layout no Chrome
-  const modalBody = releasesModalEl?.querySelector('.modal-body') || releasesModalEl;
-  if (modalBody) {
-    modalBody.style.maxHeight = '70vh';
-    modalBody.style.overflowY = 'auto';
-  }
-  listEl.style.minHeight = '300px';
-  listEl.style.maxHeight = '65vh';
-  listEl.style.overflowY = 'auto';
-  listEl.style.display = 'block';
-  listEl.style.visibility = 'visible';
-
   if (openBtn) {
     openBtn.addEventListener('click', () => {
       if (releasesModal) releasesModal.show();
@@ -73,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (refreshBtn) refreshBtn.addEventListener('click', () => loadAndRender(true));
 
   function getFavs() {
-    try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch (e) { return []; }
   }
   function setFavs(favs) { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); }
 
@@ -124,14 +112,12 @@ document.addEventListener("DOMContentLoaded", () => {
     clearTimeout(to);
 
     if (!res.ok) {
-      const txt = await res.text().catch(() => '<no-body>');
+      const txt = await res.text().catch(()=>'<no-body>');
       throw new Error(`${res.status} ${res.statusText} — ${txt.slice(0, 150)}`);
     }
 
     const payload = await res.json().catch(() => { throw new Error('JSON inválido da API de releases'); });
-    const payload = await res.json().catch(() => { throw new Error('JSON inválido da API de releases'); });
     const releases = payload.releases || payload.data || payload;
-    if (!Array.isArray(releases)) throw new Error('Formato inesperado do JSON de releases');
     if (!Array.isArray(releases)) throw new Error('Formato inesperado do JSON de releases');
     return releases;
   }
@@ -166,40 +152,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderList(releasesData);
   }
 
-  // ---------- Helpers DOM-safe ----------
-  function setMsg(text, variant = 'muted') {
-    msgEl.replaceChildren();
-    if (!text) return;
-    const div = document.createElement('div');
-    div.className = variant === 'danger' ? 'text-danger small' : 'text-muted small';
-    div.textContent = text;
-    msgEl.appendChild(div);
-  }
-  function setMsgAppend(text, variant = 'muted') {
-    if (!text) return;
-    const div = document.createElement('div');
-    div.className = variant === 'danger' ? 'text-danger small' : 'text-muted small';
-    div.textContent = text;
-    msgEl.appendChild(div);
-  }
-
-  function addTextWithBreaks(el, text) {
-    const parts = String(text || '').split(/\r?\n/);
-    parts.forEach((p, i) => {
-      if (i) el.appendChild(document.createElement('br'));
-      el.appendChild(document.createTextNode(p));
-    });
-  }
-
-  function renderEmpty(text) {
-    listEl.replaceChildren();
-    const wrap = document.createElement('div');
-    wrap.className = 'empty-state';
-    wrap.textContent = text;
-    listEl.appendChild(wrap);
-  }
-
-  // ---------- RENDER LIST (DOM-safe) ----------
   function renderList(releases) {
     updateInfoNow();
 
@@ -221,10 +173,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const favs = getFavs();
-    listEl.replaceChildren();
-    const frag = document.createDocumentFragment();
 
-    list.forEach(r => {
+    listEl.innerHTML = list.map(r => {
       const isFav = !!favs.find(f => f.id === r.id);
       const published = r.published_at ? new Date(r.published_at).toLocaleString() : '—';
       const short = (r.body || '').slice(0, 420);
@@ -265,17 +215,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // handlers
     listEl.querySelectorAll('.favBtn').forEach(b => b.addEventListener('click', e => {
       const id = Number(e.currentTarget.dataset.id);
-      const release = releases.find(rr => rr.id === id);
+      const release = releases.find(r => r.id === id);
       toggleFav(id, release);
     }));
-
 
     listEl.querySelectorAll('.readmore').forEach(a => a.addEventListener('click', ev => {
       ev.preventDefault();
       const id = Number(ev.currentTarget.dataset.id);
       const cardDesc = listEl.querySelector(`.release-desc[data-id="${id}"]`);
       if (!cardDesc) return;
-
 
       const expanded = cardDesc.classList.toggle('expanded');
       ev.currentTarget.innerText = expanded ? 'Ver menos' : 'Ver mais';
@@ -292,7 +240,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }));
   }
 
-  // Mantido para compatibilidade (não usado no DOM-safe)
   function escapeHtml(str) {
     if (!str) return '';
     return String(str)
