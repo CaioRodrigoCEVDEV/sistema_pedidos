@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const res = await fetch(url, opts);
 
     if (!res.ok) {
-      const txt = await res.text().catch(()=>'<no-body>');
+      const txt = await res.text().catch(() => '<no-body>');
       throw new Error(`${res.status} ${res.statusText} — ${txt.slice(0, 150)}`);
     }
 
@@ -164,11 +164,24 @@ document.addEventListener("DOMContentLoaded", () => {
     renderList(cached.data);
   }
 
+  // function renderList(releases) {
+  //   updateCacheInfo();
+  //   if (!Array.isArray(releases) || releases.length === 0) {
+  //     listEl.innerHTML = `<div class="empty-state">Nenhuma release encontrada.</div>`; return;
+  //   }
+  // TESTE
   function renderList(releases) {
     updateCacheInfo();
     if (!Array.isArray(releases) || releases.length === 0) {
-      listEl.innerHTML = `<div class="empty-state">Nenhuma release encontrada.</div>`; return;
+      listEl.textContent = '';
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'Nenhuma release encontrada.';
+      listEl.appendChild(empty);
+      return;
     }
+
+
 
     const q = (filterInput && filterInput.value) ? filterInput.value.trim().toLowerCase() : '';
     let list = releases.filter(r => {
