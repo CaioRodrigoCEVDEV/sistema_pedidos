@@ -81,3 +81,10 @@
       .release-card { padding:.75rem; }
       .releases-header .form-control { min-width: 100%; }
     }
+    #releasesList {
+  min-height: 200px;
+  max-height: 70vh;
+  overflow-y: auto;
+  display: block !important;
+  visibility: visible !important;
+}
