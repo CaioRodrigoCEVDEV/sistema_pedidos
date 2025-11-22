@@ -79,25 +79,44 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --- FETCH sempre sem cache e compatível com o JSON real ---
-  async function fetchReleasesFromAPI() {
-    const url = '/api/releases?t=' + Date.now();
-    const res = await fetch(url, {
-      method: 'GET',
-      cache: 'no-store',
-      credentials: 'same-origin',
-      headers: {
-        'Accept': 'application/json',
-        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-      },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+async function fetchReleasesFromAPI() {
+  const url = '/api/releases?t=' + Date.now();
+  const res = await fetch(url, {
+    method: 'GET',
+    cache: 'no-store',
+    credentials: 'same-origin',
+    headers: {
+      'Accept': 'application/json, text/plain, */*',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+    },
+  });
 
-    const payload = await res.json();
-    const releases = payload.releases || [];
-    if (!Array.isArray(releases)) throw new Error('Formato inesperado do JSON de releases');
-    return releases;
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+
+  // força o parse mesmo que o content-type esteja errado
+  const text = await res.text();
+  let payload;
+  try {
+    payload = JSON.parse(text);
+  } catch (e) {
+    console.error('[releases] JSON inválido recebido:', text.slice(0, 300));
+    throw new Error('Resposta da API não é JSON válido.');
   }
+
+  const releases = Array.isArray(payload.releases)
+    ? payload.releases
+    : Array.isArray(payload.data)
+      ? payload.data
+      : Array.isArray(payload)
+        ? payload
+        : [];
+
+  if (!releases.length) throw new Error('Nenhuma release encontrada.');
+
+  return releases;
+}
+
 
   // --- carrega e renderiza sempre direto da API ---
   async function loadAndRender() {
