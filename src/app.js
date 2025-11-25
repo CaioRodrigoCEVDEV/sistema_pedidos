@@ -83,6 +83,11 @@ app.use(cliRoute);
 const munRoute = require("./routes/munRoutes");
 app.use(munRoute);
 
+app.get('/me/usuario', autenticarToken, (req, res) => {
+  // o middleware colocou o payload em req.token
+  return res.json({ usunome: req.token.usunome });
+});
+
 // Adicionando a nova rota usuarioRoute2 para testar MODELS
 const usuarioRoute2 = require("./routes/usuarioRoute2");
 app.use(usuarioRoute2);
@@ -169,6 +174,12 @@ app.get("/dashboard/modelo/pecas/lista", autenticarToken, (req, res) => {
 app.get("/clientes", autenticarToken, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-clientes.html")
+  );
+});
+
+app.get("/dash", autenticarToken, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-dashboard.html")
   );
 });
 
@@ -401,6 +412,9 @@ app.get('/api/releases', async (req, res) => {
     res.status(500).json({ ok: false, error: 'Erro interno' });
   }
 });
+
+
+
 
 // Inicia o servidor
 (async () => {

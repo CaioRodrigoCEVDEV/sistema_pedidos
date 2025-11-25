@@ -39,10 +39,13 @@ function createHeader() {
               <a class="nav-link" href="index">Inicio</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="painel">Painel</a>
+              <a class="nav-link" href="dash">Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="painel">Produtos</a>
             </li>
             <li class="nav-item" id="clientes">
-              <a class="nav-link" href="clientes">clientes</a>
+              <a class="nav-link" href="clientes">Clientes</a>
             </li>
             <li class="nav-item" id="pedidos">
               <a class="nav-link" href="pedidos">Pedidos</a>

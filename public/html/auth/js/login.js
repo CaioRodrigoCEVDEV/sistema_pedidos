@@ -99,7 +99,7 @@ document.getElementById("formLogin").addEventListener("submit", async (e) => {
         localStorage.removeItem("savedPassword");
       }
       localStorage.setItem("usuarioLogado", usuemail);
-      window.location.href = `${BASE_URL}/painel`;
+      window.location.href = `${BASE_URL}/dash`;
     } else {
       if (response.status === 403) {
         alertPersonalizado(
