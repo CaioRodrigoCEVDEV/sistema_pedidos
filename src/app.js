@@ -80,6 +80,9 @@ app.use(usuarioRoute);
 const cliRoute = require("./routes/cliRoutes");
 app.use(cliRoute);
 
+const munRoute = require("./routes/munRoutes");
+app.use(munRoute);
+
 // Adicionando a nova rota usuarioRoute2 para testar MODELS
 const usuarioRoute2 = require("./routes/usuarioRoute2");
 app.use(usuarioRoute2);
@@ -160,6 +163,12 @@ app.get("/dashboard/modelo/pecas", autenticarToken, (req, res) => {
 app.get("/dashboard/modelo/pecas/lista", autenticarToken, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/lista-pecas.html")
+  );
+});
+
+app.get("/clientes", autenticarToken, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-clientes.html")
   );
 });
 

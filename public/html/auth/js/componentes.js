@@ -41,6 +41,9 @@ function createHeader() {
             <li class="nav-item">
               <a class="nav-link" href="painel">Painel</a>
             </li>
+            <li class="nav-item" id="clientes">
+              <a class="nav-link" href="clientes">clientes</a>
+            </li>
             <li class="nav-item" id="pedidos">
               <a class="nav-link" href="pedidos">Pedidos</a>
             </li>
