@@ -31,7 +31,7 @@ btnProduto.addEventListener('click', () => {
       if (!response.ok) throw new Error('Erro ao buscar modelos');
       const modelos = await response.json();
       const promodcod = document.getElementById('popupProdutoModalModelo');
-      promodcod.innerHTML = '<option value="">Selecione</option>';
+      promodcod.innerHTML = '';
       modelos.forEach(modelo => {
         const option = document.createElement('option');
         option.value = modelo.modcod;
@@ -45,11 +45,11 @@ btnProduto.addEventListener('click', () => {
 
   promarcascod.addEventListener('change', (e) => {
     const marcascod = e.target.value;
-    const promodcod = document.getElementById('popupMarcaModalProduto');
+    const promodcod = document.getElementById('popupProdutoModalModelo');
     if (marcascod) {
       fetchModelos(marcascod);
     } else {
-      promodcod.innerHTML = '<option value="">Selecione</option>';
+      promodcod.innerHTML = '<option value="">Selecione a marca primeiro</option>';
     }
   });
 
@@ -105,6 +105,9 @@ btnProduto.addEventListener('click', () => {
   
   descricaoProduto.value = '';
   provl.value = '';
+  // Limpar seleção de modelos
+  const promodcod = document.getElementById('popupProdutoModalModelo');
+  promodcod.innerHTML = '<option value="">Selecione a marca primeiro</option>';
   produtoModal.show();
 });
 
@@ -112,11 +115,21 @@ btnProduto.addEventListener('click', () => {
 // salvar registro na api
 produtoForm.addEventListener('submit', async (ev) => {
   ev.preventDefault();
+  
+  // Obter todos os modelos selecionados (multi-select)
+  const modeloSelect = document.getElementById('popupProdutoModalModelo');
+  const selectedModelos = Array.from(modeloSelect.selectedOptions).map(opt => parseInt(opt.value, 10));
+  
+  if (selectedModelos.length === 0) {
+    alert('Por favor, selecione pelo menos um modelo.');
+    return;
+  }
+  
   const payload = {
     prodes: descricaoProduto.value.trim(),
     promarcascod: parseInt(document.getElementById('popupMarcaModalProduto').value),
     provl: parseFloat(provl.value),
-    promodcod: parseInt(document.getElementById('popupProdutoModalModelo').value),
+    promodcods: selectedModelos,
     protipocod: parseInt(document.getElementById('popupProdutoModaltipo').value)
   };
 
@@ -147,7 +160,7 @@ produtoForm.addEventListener('submit', async (ev) => {
 
     else if (response.ok) {
         const msg = document.createElement("div");
-        msg.textContent = "Marca cadastrada com sucesso!";
+        msg.textContent = "Peça cadastrada com sucesso!";
         msg.style.position = "fixed";
         msg.style.top = "20px";
         msg.style.left = "50%";
@@ -181,7 +194,7 @@ produtoForm.addEventListener('submit', async (ev) => {
   } catch (error) {
     if (error.message === '403') {
         produtoModal.hide();
-      alertPersonalizado('Sem permissão para criar marcas.', 2000);
+      alertPersonalizado('Sem permissão para criar peças.', 2000);
     } else {
       alert('Erro ao salvar os dados.');
     }

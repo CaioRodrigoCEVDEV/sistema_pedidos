@@ -64,6 +64,26 @@ async function atualizarDB() {
     await pool.query(`ALTER TABLE public.pro ADD if not exists prosemest varchar(1) default 'N';`
 
     )
+
+    // Tabela de relacionamento muitos-para-muitos entre produtos e modelos
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.promod (
+        promodprocod int4 NOT NULL,
+        promodmodcod int4 NOT NULL,
+        CONSTRAINT promod_pkey PRIMARY KEY (promodprocod, promodmodcod),
+        CONSTRAINT promod_procod_fkey FOREIGN KEY (promodprocod) REFERENCES public.pro(procod) ON DELETE CASCADE,
+        CONSTRAINT promod_modcod_fkey FOREIGN KEY (promodmodcod) REFERENCES public.modelo(modcod) ON DELETE CASCADE
+      );
+    `);
+
+    // Migrar dados existentes de promodcod para a tabela promod (se existirem)
+    await pool.query(`
+      INSERT INTO public.promod (promodprocod, promodmodcod)
+      SELECT procod, promodcod FROM public.pro 
+      WHERE promodcod IS NOT NULL
+      ON CONFLICT (promodprocod, promodmodcod) DO NOTHING;
+    `);
+
     // FIM NOVOS CAMPOS
     // ==================================================================================================================================
 

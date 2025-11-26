@@ -515,8 +515,13 @@ function editarProduto(codigo) {
     fetch(`${BASE_URL}/pro/painel/${codigo}`).then((r) => r.json()),
     fetch(`${BASE_URL}/procores`).then((r) => r.json()),
     fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) => r.json()),
+    fetch(`${BASE_URL}/pro/modelos/${codigo}`).then((r) => r.json()),
+    fetch(`${BASE_URL}/modelos`).then((r) => r.json()),
   ])
-    .then(([produto, coresDisponiveis, coresProduto]) => {
+    .then(([produto, coresDisponiveis, coresProduto, modelosProduto, todosModelos]) => {
+      // IDs dos modelos vinculados ao produto
+      const modelosVinculados = modelosProduto.map(m => m.modcod);
+      
       // ------------------------------
       // POPUP
       // ------------------------------
@@ -556,6 +561,28 @@ function editarProduto(codigo) {
                 ${produto.some((p) => p.prosemest === "S") ? "checked" : ""}>
               <label for="editar_prosemest">Sem estoque geral</label>
             </div>
+
+            <details>
+              <summary class="mb-2">📱 Modelos vinculados</summary>
+              <div id="editarProdutoModelos" style="max-height:180px;overflow:auto;padding-right:8px;">
+                ${todosModelos
+                  .map((m) => {
+                    const vinculado = modelosVinculados.includes(m.modcod);
+                    return `
+                    <div class="form-check">
+                      <input type="checkbox" class="form-check-input checkbox-modelo"
+                        value="${m.modcod}" id="editar_modelo_${m.modcod}"
+                        ${vinculado ? "checked" : ""}>
+                      <label class="form-check-label" for="editar_modelo_${m.modcod}">
+                        ${m.moddes}
+                      </label>
+                    </div>
+                  `;
+                  })
+                  .join("")}
+              </div>
+              <div class="form-text">Selecione os modelos compatíveis com esta peça</div>
+            </details>
 
             <details>
               <summary class="mb-2">🎨 Vincule as cores do produto</summary>
@@ -655,6 +682,17 @@ function editarProduto(codigo) {
             ? "S"
             : "N";
 
+          // Obter modelos selecionados
+          const modelosCheckboxes = popup.querySelectorAll(
+            "#editarProdutoModelos .checkbox-modelo:checked"
+          );
+          const promodcods = Array.from(modelosCheckboxes).map((cb) => parseInt(cb.value, 10));
+          
+          if (promodcods.length === 0) {
+            alert("Por favor, selecione pelo menos um modelo.");
+            return;
+          }
+
           // Mapa com estado anterior
           const anterioresMap = {};
           coresProduto.forEach((cp) => {
@@ -680,12 +718,12 @@ function editarProduto(codigo) {
 
           try {
             // ------------------------------
-            // Atualiza dados básicos do produto
+            // Atualiza dados básicos do produto (incluindo modelos)
             // ------------------------------
             await fetch(`${BASE_URL}/pro/${codigo}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ prodes, provl, prosemest }),
+              body: JSON.stringify({ prodes, provl, prosemest, promodcods }),
             });
 
             // ------------------------------

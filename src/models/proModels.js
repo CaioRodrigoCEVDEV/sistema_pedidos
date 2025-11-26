@@ -2,11 +2,16 @@ const pool = require("../config/db");
 
 async function listarProdutosComEstoque() {
   const result = await pool.query(`
-        select 
+        select distinct
         procod,
         prodes,
         marcasdes,
-        moddes,
+        (
+          SELECT string_agg(m.moddes, ', ' ORDER BY m.moddes)
+          FROM promod pm
+          JOIN modelo m ON pm.promodmodcod = m.modcod
+          WHERE pm.promodprocod = pro.procod
+        ) as moddes,
         tipodes,
         coalesce(cornome, 'Sem Cor') as cordes,
         case when procorcorescod is null then proqtde else procorqtde end as qtde,
@@ -16,7 +21,6 @@ async function listarProdutosComEstoque() {
         join tipo on tipocod = protipocod
         left join procor on procod = procorprocod
         left join cores on corcod = procorcorescod
-        join modelo on modcod = promodcod
         where case when procorcorescod is null then proqtde else procorqtde end > 0
         and prosit = 'A'`);
   return result.rows;
@@ -24,11 +28,16 @@ async function listarProdutosComEstoque() {
 
 async function listarProdutosSemEstoque() {
   const result = await pool.query(`
-        select 
+        select distinct
         procod,
         prodes,
         marcasdes,
-        moddes,
+        (
+          SELECT string_agg(m.moddes, ', ' ORDER BY m.moddes)
+          FROM promod pm
+          JOIN modelo m ON pm.promodmodcod = m.modcod
+          WHERE pm.promodprocod = pro.procod
+        ) as moddes,
         tipodes,
         coalesce(cornome, 'Sem Cor') as cordes,
         case when procorcorescod is null then proqtde else procorqtde end as qtde,
@@ -38,7 +47,6 @@ async function listarProdutosSemEstoque() {
         join tipo on tipocod = protipocod
         left join procor on procod = procorprocod
         left join cores on corcod = procorcorescod
-        join modelo on modcod = promodcod
         where case when procorcorescod is null then proqtde else procorqtde end <= 0
         and prosit = 'A'`);
   return result.rows;
@@ -60,17 +68,22 @@ async function listarProdutosComEstoqueItem(marca, modelo) {
   }
   if (modeloValido) {
     params.push(modelo);
-    filtros.push(`promodcod = $${params.length}`);
+    filtros.push(`(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`);
   }
 
   const filtrosExtras = filtros.length ? ` and ${filtros.join(" and ")}` : "";
 
   const query = `
-                select 
+                select distinct
                         procod,
                         prodes,
                         marcasdes,
-                        moddes,
+                        (
+                          SELECT string_agg(m.moddes, ', ' ORDER BY m.moddes)
+                          FROM promod pm
+                          JOIN modelo m ON pm.promodmodcod = m.modcod
+                          WHERE pm.promodprocod = pro.procod
+                        ) as moddes,
                         tipodes,
                         coalesce(cornome, 'Sem Cor') as cordes,
                         case when procorcorescod is null then proqtde else procorqtde end as qtde,
@@ -80,7 +93,6 @@ async function listarProdutosComEstoqueItem(marca, modelo) {
                 join tipo on tipocod = protipocod
                 left join procor on procod = procorprocod
                 left join cores on corcod = procorcorescod
-                join modelo on modcod = promodcod
                 where case when procorcorescod is null then proqtde else procorqtde end > 0
                         and prosit = 'A'
                         ${filtrosExtras}
@@ -104,17 +116,22 @@ async function listarProdutosSemEstoqueItem(marca, modelo) {
   }
   if (modeloValido) {
     params.push(modelo);
-    filtros.push(`promodcod = $${params.length}`);
+    filtros.push(`(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`);
   }
 
   const filtrosExtras = filtros.length ? ` and ${filtros.join(" and ")}` : "";
 
   const query = `
-                select 
+                select distinct
                         procod,
                         prodes,
                         marcasdes,
-                        moddes,
+                        (
+                          SELECT string_agg(m.moddes, ', ' ORDER BY m.moddes)
+                          FROM promod pm
+                          JOIN modelo m ON pm.promodmodcod = m.modcod
+                          WHERE pm.promodprocod = pro.procod
+                        ) as moddes,
                         tipodes,
                         coalesce(cornome, 'Sem Cor') as cordes,
                         case when procorcorescod is null then proqtde else procorqtde end as qtde,
@@ -124,7 +141,6 @@ async function listarProdutosSemEstoqueItem(marca, modelo) {
                 join tipo on tipocod = protipocod
                 left join procor on procod = procorprocod
                 left join cores on corcod = procorcorescod
-                join modelo on modcod = promodcod
                 where case when procorcorescod is null then proqtde else procorqtde end <= 0
                         and prosit = 'A'
                         ${filtrosExtras}
