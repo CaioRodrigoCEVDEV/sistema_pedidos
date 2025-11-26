@@ -57,13 +57,15 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.pro ADD IF NOT exists proqtde int4 DEFAULT 0 NOT NULL;`
     );
-    await pool.query(`ALTER TABLE public.pv ADD if not exists pvdtcad date DEFAULT now() NOT NULL;`
-    )
-    await pool.query(`ALTER TABLE public.pv ADD if not exists pvrcacod int4 NULL;`
-    )
-    await pool.query(`ALTER TABLE public.pro ADD if not exists prosemest varchar(1) default 'N';`
-
-    )
+    await pool.query(
+      `ALTER TABLE public.pv ADD if not exists pvdtcad date DEFAULT now() NOT NULL;`
+    );
+    await pool.query(
+      `ALTER TABLE public.pv ADD if not exists pvrcacod int4 NULL;`
+    );
+    await pool.query(
+      `ALTER TABLE public.pro ADD if not exists prosemest varchar(1) default 'N';`
+    );
 
     // Tabela de relacionamento muitos-para-muitos entre produtos e modelos
     await pool.query(`
@@ -109,11 +111,12 @@ async function atualizarDB() {
       AS SELECT tipo.tipocod,
           tipo.tipodes,
           pro.promarcascod,
-          pro.promodcod,
+          promod.promodmodcod as promodcod,
           tipo.tipoordem
         FROM pro
-          JOIN tipo ON tipo.tipocod = pro.protipocod
-        GROUP BY tipo.tipocod, tipo.tipodes, pro.promarcascod, pro.promodcod;
+          left join promod on promodprocod = pro.procod
+          left JOIN tipo ON tipo.tipocod = pro.protipocod
+        GROUP BY tipo.tipocod, tipo.tipodes, pro.promarcascod, promod.promodmodcod;
 
       -- Permissions
 
@@ -422,8 +425,6 @@ async function atualizarDB() {
 
     `);
 
-
-
     // função de trigger para atualizar saldo no estoque
     await pool.query(`
       CREATE OR REPLACE FUNCTION public.atualizar_saldo()
@@ -488,9 +489,7 @@ async function atualizarDB() {
       execute procedure retornar_saldo()
     `);
 
-
     //fim das triggers
-
 
     //inicio das sequences
 
@@ -502,7 +501,6 @@ async function atualizarDB() {
                       CACHE 1
                       NO CYCLE;`);
     //fim das sequences
-
 
     await pool.query("COMMIT");
     console.log("✅ atualizardb: tabelas e registros padrão garantidos.");

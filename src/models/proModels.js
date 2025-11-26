@@ -47,7 +47,7 @@ async function listarProdutosSemEstoque() {
         join tipo on tipocod = protipocod
         left join procor on procod = procorprocod
         left join cores on corcod = procorcorescod
-        where case when procorcorescod is null then proqtde else procorqtde end <= 0
+        where case when procorcorescod is null then proqtde else coalesce(procorqtde,0) end <= 0
         and prosit = 'A'`);
   return result.rows;
 }
@@ -68,7 +68,9 @@ async function listarProdutosComEstoqueItem(marca, modelo) {
   }
   if (modeloValido) {
     params.push(modelo);
-    filtros.push(`(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`);
+    filtros.push(
+      `(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`
+    );
   }
 
   const filtrosExtras = filtros.length ? ` and ${filtros.join(" and ")}` : "";
@@ -116,7 +118,9 @@ async function listarProdutosSemEstoqueItem(marca, modelo) {
   }
   if (modeloValido) {
     params.push(modelo);
-    filtros.push(`(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`);
+    filtros.push(
+      `(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`
+    );
   }
 
   const filtrosExtras = filtros.length ? ` and ${filtros.join(" and ")}` : "";
@@ -134,14 +138,14 @@ async function listarProdutosSemEstoqueItem(marca, modelo) {
                         ) as moddes,
                         tipodes,
                         coalesce(cornome, 'Sem Cor') as cordes,
-                        case when procorcorescod is null then proqtde else procorqtde end as qtde,
+                        case when procorcorescod is null then proqtde else coalesce(procorqtde,0) end as qtde,
                         procorcorescod
                 from pro
                 join marcas on marcascod = promarcascod 
                 join tipo on tipocod = protipocod
                 left join procor on procod = procorprocod
                 left join cores on corcod = procorcorescod
-                where case when procorcorescod is null then proqtde else procorqtde end <= 0
+                where case when procorcorescod is null then proqtde else coalesce(procorqtde,0) end <= 0
                         and prosit = 'A'
                         ${filtrosExtras}
         `;
