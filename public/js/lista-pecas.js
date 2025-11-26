@@ -239,7 +239,7 @@ window.adicionarAoCarrinho = async function (procod) {
     const response = await fetch(`/proCoresDisponiveis/${procod}`);
     const cores = await response.json();
 
-    // console.log("Cores disponíveis:", cores);
+     console.log("Cores disponíveis:", cores);
 
     if (cores && cores.length > 0 && cores[0].cornome !== "") {
       exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde);
@@ -335,11 +335,14 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       <select id="select-cor">
   ${cores
     .map((cor) => {
+      const idCor = cor.corcod;
+
+      console.log("Cor id:",  idCor);
       const semEstoque = cor.procorsemest === "S";
       const label = `${cor.cornome}${semEstoque ? " (Sem estoque)" : ""}`;
 
       return `
-        <option value="${cor.cornome}" 
+        <option id= ${idCor} value="${cor.cornome}" 
           ${semEstoque ? 'disabled data-semest="S"' : ""}>
           ${label}
         </option>
@@ -381,6 +384,11 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       ].text;
     const idComCor = `${procod}-${corSelecionada}`;
     const nomeComCor = `${nome} (${corSelecionada})`;
+    var idCorSelecionada = document.getElementById("select-cor").options[
+      document.getElementById("select-cor").selectedIndex
+    ].id;
+
+    console.log("ID da cor selecionada:", idCorSelecionada);
 
     adicionarProdutoAoCarrinho(
       idComCor,
@@ -389,7 +397,8 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       marca,
       preco,
       qtde,
-      corSelecionada
+      corSelecionada,
+      idCorSelecionada
     );
 
     modal.remove();
@@ -409,7 +418,8 @@ function adicionarProdutoAoCarrinho(
   marca,
   preco,
   qtde,
-  corSelecionada
+  corSelecionada,
+  idCorSelecionada
 ) {
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
 
@@ -417,7 +427,7 @@ function adicionarProdutoAoCarrinho(
   if (idx > -1) {
     cart[idx].qt += qtde;
   } else {
-    cart.push({ id, nome, tipo, marca, preco, qt: qtde, corSelecionada });
+    cart.push({ id, nome, tipo, marca, preco, qt: qtde, corSelecionada,idCorSelecionada });
   }
 
   localStorage.setItem("cart", JSON.stringify(cart));

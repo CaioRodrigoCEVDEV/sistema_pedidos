@@ -99,6 +99,7 @@ function renderCart() {
     const tipo = item.tipo || " ";
     const marca = item.marca || " ";
     const cor = item.corSelecionada || " ";
+    const corid = item.idCorSelecionada || " ";
     const qtde = item.qt || 0;
     const valor = parseFloat(item.preco) || 0;
     const itemTotal = valor * qtde;
@@ -265,7 +266,7 @@ async function enviarWhatsApp() {
 
   let mensagem = `${caixaEmoji} Pedido de Peças:\n\n`;
   let totalValue = 0;
-
+// detalhamento dos itens do pedido 
   cart.forEach((item) => {
     const nome = item.nome || "---";
     const qtde = item.qt || 0;
@@ -273,10 +274,12 @@ async function enviarWhatsApp() {
     const marca = item.marca || "";
     const tipo = item.tipo || "";
     totalValue += valor * qtde;
+    const cor = item.idCorSelecionada || "";
 
     mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
   });
-
+// fim detalhamento
+// Enviar pedido para o servidor
   const respPedido = await fetch(`${BASE_URL}/pedidos/enviar`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -393,6 +396,7 @@ async function enviarWhatsAppEntrega() {
     const valor = parseFloat(item.preco) || 0;
     const marca = item.marca || "";
     const tipo = item.tipo || "";
+    const cor = item.corid || "";
     totalValue += valor * qtde;
 
     mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
