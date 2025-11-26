@@ -511,14 +511,22 @@ inputPesquisa.addEventListener("input", function () {
 });
 
 function editarProduto(codigo) {
-  Promise.all([
-    fetch(`${BASE_URL}/pro/painel/${codigo}`).then((r) => r.json()),
-    fetch(`${BASE_URL}/procores`).then((r) => r.json()),
-    fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) => r.json()),
-    fetch(`${BASE_URL}/pro/modelos/${codigo}`).then((r) => r.json()),
-    fetch(`${BASE_URL}/modelos`).then((r) => r.json()),
-  ])
-    .then(([produto, coresDisponiveis, coresProduto, modelosProduto, todosModelos]) => {
+  // First fetch the product to get the brand ID
+  fetch(`${BASE_URL}/pro/painel/${codigo}`)
+    .then((r) => r.json())
+    .then((produto) => {
+      const marcaCod = produto[0]?.promarcascod;
+      
+      // Now fetch remaining data including models filtered by brand
+      return Promise.all([
+        Promise.resolve(produto),
+        fetch(`${BASE_URL}/procores`).then((r) => r.json()),
+        fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) => r.json()),
+        fetch(`${BASE_URL}/pro/modelos/${codigo}`).then((r) => r.json()),
+        fetch(`${BASE_URL}/modelo/${marcaCod}`).then((r) => r.json()),
+      ]);
+    })
+    .then(([produto, coresDisponiveis, coresProduto, modelosProduto, modelosDaMarca]) => {
       // IDs dos modelos vinculados ao produto
       const modelosVinculados = modelosProduto.map(m => m.modcod);
       
@@ -565,7 +573,7 @@ function editarProduto(codigo) {
             <details>
               <summary class="mb-2">📱 Modelos vinculados</summary>
               <div id="editarProdutoModelos" style="max-height:180px;overflow:auto;padding-right:8px;">
-                ${todosModelos
+                ${modelosDaMarca
                   .map((m) => {
                     const vinculado = modelosVinculados.includes(m.modcod);
                     return `

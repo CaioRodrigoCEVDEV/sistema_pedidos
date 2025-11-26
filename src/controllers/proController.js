@@ -54,7 +54,8 @@ exports.listarProdutosPainelId = async (req, res) => {
   try {
     const result = await pool.query(
       `select         
-       procod, 
+       procod,
+       promarcascod,
        case when prodes is null then '' else prodes end as prodes,
        case when provl is null then 0 else provl end as provl, 
        case when prosemest is null then 'N' else prosemest end as prosemest from pro where procod = $1`,
