@@ -5,11 +5,16 @@ exports.listarProduto = async (req, res) => {
   const { marca, modelo } = req.query;
 
   try {
+    // Busca produtos que estão vinculados ao modelo pela nova tabela promod
+    // ou pelo campo legado promodcod (para compatibilidade)
     const result = await pool.query(
-      `select procod, prodes, provl,tipodes,prosemest from pro 
+      `select distinct procod, prodes, provl, tipodes, prosemest from pro 
         join tipo on tipocod = protipocod
-         where promarcascod = $1 and promodcod  = $2 and protipocod  = $3
-         order by proordem`,
+        left join promod on promodprocod = procod
+        where promarcascod = $1 
+          and (promodmodcod = $2 OR promodcod = $2)
+          and protipocod = $3
+        order by proordem`,
       [marca, modelo, id]
     );
     res.status(200).json(result.rows);
@@ -27,7 +32,13 @@ exports.listarProdutos = async (req, res) => {
       tipodes,
       marcasdes, 
       case when prodes is null then '' else prodes end as prodes, 
-      case when provl is null then 0 else provl end as provl
+      case when provl is null then 0 else provl end as provl,
+      (
+        SELECT string_agg(m.moddes, ', ' ORDER BY m.moddes)
+        FROM promod pm
+        JOIN modelo m ON pm.promodmodcod = m.modcod
+        WHERE pm.promodprocod = pro.procod
+      ) as modelos
       from pro
       join tipo on tipocod = protipocod
       join marcas on promarcascod = marcascod and marcassit = 'A'
@@ -43,7 +54,8 @@ exports.listarProdutosPainelId = async (req, res) => {
   try {
     const result = await pool.query(
       `select         
-       procod, 
+       procod,
+       promarcascod,
        case when prodes is null then '' else prodes end as prodes,
        case when provl is null then 0 else provl end as provl, 
        case when prosemest is null then 'N' else prosemest end as prosemest from pro where procod = $1`,
@@ -72,16 +84,54 @@ exports.listarProdutoCarrinho = async (req, res) => {
 };
 
 exports.inserirProduto = async (req, res) => {
-  const { prodes, promarcascod, promodcod, protipocod, provl } = req.body;
+  const { prodes, promarcascod, promodcod, promodcods, protipocod, provl } = req.body;
+  
+  // Normalizar modelos: aceitar tanto um único valor quanto um array
+  let modelIds = [];
+  if (promodcods && Array.isArray(promodcods)) {
+    modelIds = promodcods.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+  } else if (promodcod) {
+    // Compatibilidade com formato antigo (único modelo)
+    const singleId = parseInt(promodcod, 10);
+    if (!isNaN(singleId)) {
+      modelIds = [singleId];
+    }
+  }
+  
+  if (modelIds.length === 0) {
+    return res.status(400).json({ error: "É necessário informar pelo menos um modelo" });
+  }
+  
+  const client = await pool.connect();
   try {
-    const result = await pool.query(
+    await client.query('BEGIN');
+    
+    // Inserir o produto com o primeiro modelo como promodcod (para compatibilidade)
+    const result = await client.query(
       `insert into pro (prodes,promarcascod,promodcod,protipocod,provl) values ($1,$2,$3,$4,$5) RETURNING *`,
-      [prodes, promarcascod, promodcod, protipocod, provl]
+      [prodes, promarcascod, modelIds[0], protipocod, provl]
     );
+    
+    const procod = result.rows[0].procod;
+    
+    // Inserir todos os modelos na tabela de relacionamento usando batch insert
+    if (modelIds.length > 0) {
+      const values = modelIds.map((modcod, i) => `($1, $${i + 2})`).join(', ');
+      const params = [procod, ...modelIds];
+      await client.query(
+        `INSERT INTO promod (promodprocod, promodmodcod) VALUES ${values} ON CONFLICT DO NOTHING`,
+        params
+      );
+    }
+    
+    await client.query('COMMIT');
     res.status(200).json(result.rows);
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error(error);
     res.status(500).json({ error: "Erro ao inserir produto" });
+  } finally {
+    client.release();
   }
 };
 
@@ -104,16 +154,72 @@ exports.excluirProduto = async (req, res) => {
 
 exports.editarProduto = async (req, res) => {
   const { id } = req.params;
-  const { prodes, provl, prosemest } = req.body;
+  const { prodes, provl, prosemest, promodcods } = req.body;
+  
+  const client = await pool.connect();
   try {
-    const result = await pool.query(
+    await client.query('BEGIN');
+    
+    // Atualizar dados básicos do produto
+    const result = await client.query(
       `update pro set prodes = $1, provl = $2, prosemest = $3 where procod = $4 RETURNING *`,
       [prodes, provl, prosemest, id]
+    );
+    
+    // Se foram enviados modelos, atualizar a tabela de relacionamento
+    if (promodcods && Array.isArray(promodcods)) {
+      const modelIds = promodcods.map(modId => parseInt(modId, 10)).filter(modId => !isNaN(modId));
+      
+      if (modelIds.length > 0) {
+        // Remover modelos antigos
+        await client.query(
+          `DELETE FROM promod WHERE promodprocod = $1`,
+          [id]
+        );
+        
+        // Inserir novos modelos usando batch insert
+        const values = modelIds.map((modcod, i) => `($1, $${i + 2})`).join(', ');
+        const params = [id, ...modelIds];
+        await client.query(
+          `INSERT INTO promod (promodprocod, promodmodcod) VALUES ${values} ON CONFLICT DO NOTHING`,
+          params
+        );
+        
+        // Atualizar o promodcod no produto (para compatibilidade)
+        await client.query(
+          `UPDATE pro SET promodcod = $1 WHERE procod = $2`,
+          [modelIds[0], id]
+        );
+      }
+    }
+    
+    await client.query('COMMIT');
+    res.status(200).json(result.rows);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error(error);
+    res.status(500).json({ error: "Erro ao editar produto" });
+  } finally {
+    client.release();
+  }
+};
+
+// Listar modelos vinculados a um produto
+exports.listarModelosProduto = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT m.modcod, m.moddes, m.modmarcascod
+       FROM promod pm
+       JOIN modelo m ON pm.promodmodcod = m.modcod
+       WHERE pm.promodprocod = $1
+       ORDER BY m.moddes`,
+      [id]
     );
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Erro ao inserir produto" });
+    res.status(500).json({ error: "Erro ao buscar modelos do produto" });
   }
 };
 
@@ -151,12 +257,12 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
 
 exports.inserirProdutoCoresDisponiveis = async (req, res) => {
   const { id } = req.params;
-  //const { marca, modelo } = req.query;
+  const procorsemest = req.query.procorsemest || 'N';  // Default to 'N' if not provided
 
   try {
     const result = await pool.query(
       `insert into procor values($1,$2,$3) RETURNING *`,
-      [id, req.query.corescod, req.query.procorsemest]
+      [id, req.query.corescod, procorsemest]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -229,11 +335,16 @@ exports.atualizarOrdemProdutos = async (req, res) => {
 exports.listarProdutosComEstoque = async (req, res) => {
   try {
     const result = await pool.query(
-      `select 
+      `select distinct
         procod,
         prodes,
         marcasdes,
-        moddes,
+        (
+          SELECT string_agg(m.moddes, ', ' ORDER BY m.moddes)
+          FROM promod pm
+          JOIN modelo m ON pm.promodmodcod = m.modcod
+          WHERE pm.promodprocod = pro.procod
+        ) as moddes,
         tipodes,
         coalesce(cornome, 'Sem Cor') as cordes,
         case when procorcorescod is null then proqtde else procorqtde end as qtde,
@@ -243,7 +354,6 @@ exports.listarProdutosComEstoque = async (req, res) => {
         join tipo on tipocod = protipocod
         left join procor on procod = procorprocod
         left join cores on corcod = procorcorescod
-        join modelo on modcod = promodcod
         where case when procorcorescod is null then proqtde else procorqtde end > 0
         and prosit = 'A'`
     );
@@ -257,11 +367,16 @@ exports.listarProdutosComEstoque = async (req, res) => {
 exports.listarProdutosSemEstoque = async (req, res) => {
   try {
     const result = await pool.query(
-      `select 
+      `select distinct
         procod,
         prodes,
         marcasdes,
-        moddes,
+        (
+          SELECT string_agg(m.moddes, ', ' ORDER BY m.moddes)
+          FROM promod pm
+          JOIN modelo m ON pm.promodmodcod = m.modcod
+          WHERE pm.promodprocod = pro.procod
+        ) as moddes,
         tipodes,
         coalesce(cornome, 'Sem Cor') as cordes,
         case when procorcorescod is null then proqtde else procorqtde end as qtde,
@@ -271,7 +386,6 @@ exports.listarProdutosSemEstoque = async (req, res) => {
         join tipo on tipocod = protipocod
         left join procor on procod = procorprocod
         left join cores on corcod = procorcorescod
-        join modelo on modcod = promodcod
         where case when procorcorescod is null then proqtde else procorqtde end <= 0
         and prosit = 'A'`
     );

@@ -9,6 +9,7 @@ const requireAdmin = require("../middlewares/adminMiddleware");
 router.get("/pro/:id", proController.listarProduto);
 router.get("/proCores", proController.listarProCor);
 router.get("/pro/painel/:id", proController.listarProdutosPainelId);
+router.get("/pro/modelos/:id", proController.listarModelosProduto);
 router.get("/pros", proController.listarProdutos);
 router.get("/pro/carrinho/:id", proController.listarProdutoCarrinho);
 router.get(
