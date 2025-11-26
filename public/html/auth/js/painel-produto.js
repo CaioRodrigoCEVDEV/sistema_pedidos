@@ -30,13 +30,19 @@ btnProduto.addEventListener('click', () => {
       const response = await fetch(`${BASE_URL}/modelo/${marcascod}`);
       if (!response.ok) throw new Error('Erro ao buscar modelos');
       const modelos = await response.json();
-      const promodcod = document.getElementById('popupProdutoModalModelo');
-      promodcod.innerHTML = '';
+      const modelosHolder = document.getElementById('popupProdutoModalModelo');
+      modelosHolder.innerHTML = '';
       modelos.forEach(modelo => {
-        const option = document.createElement('option');
-        option.value = modelo.modcod;
-        option.textContent = modelo.moddes;
-        promodcod.appendChild(option);
+        const div = document.createElement('div');
+        div.className = 'form-check';
+        div.innerHTML = `
+          <input class="form-check-input checkbox-modelo-cadastro" type="checkbox" 
+                 value="${modelo.modcod}" id="cadastro_modelo_${modelo.modcod}">
+          <label class="form-check-label" for="cadastro_modelo_${modelo.modcod}">
+            ${modelo.moddes}
+          </label>
+        `;
+        modelosHolder.appendChild(div);
       });
     } catch (error) {
       console.error('Erro ao carregar modelos:', error);
@@ -45,11 +51,11 @@ btnProduto.addEventListener('click', () => {
 
   promarcascod.addEventListener('change', (e) => {
     const marcascod = e.target.value;
-    const promodcod = document.getElementById('popupProdutoModalModelo');
+    const modelosHolder = document.getElementById('popupProdutoModalModelo');
     if (marcascod) {
       fetchModelos(marcascod);
     } else {
-      promodcod.innerHTML = '<option value="">Selecione a marca primeiro</option>';
+      modelosHolder.innerHTML = '<div class="text-muted small">Selecione a marca primeiro</div>';
     }
   });
 
@@ -106,8 +112,8 @@ btnProduto.addEventListener('click', () => {
   descricaoProduto.value = '';
   provl.value = '';
   // Limpar seleção de modelos
-  const promodcod = document.getElementById('popupProdutoModalModelo');
-  promodcod.innerHTML = '<option value="">Selecione a marca primeiro</option>';
+  const modelosHolder = document.getElementById('popupProdutoModalModelo');
+  modelosHolder.innerHTML = '<div class="text-muted small">Selecione a marca primeiro</div>';
   produtoModal.show();
 });
 
@@ -116,9 +122,11 @@ btnProduto.addEventListener('click', () => {
 produtoForm.addEventListener('submit', async (ev) => {
   ev.preventDefault();
   
-  // Obter todos os modelos selecionados (multi-select)
-  const modeloSelect = document.getElementById('popupProdutoModalModelo');
-  const selectedModelos = Array.from(modeloSelect.selectedOptions).map(opt => parseInt(opt.value, 10));
+  // Obter todos os modelos selecionados (checkboxes)
+  const modeloCheckboxes = document.querySelectorAll(
+    '#popupProdutoModalModelo .checkbox-modelo-cadastro:checked'
+  );
+  const selectedModelos = Array.from(modeloCheckboxes).map(cb => parseInt(cb.value, 10));
   
   if (selectedModelos.length === 0) {
     alert('Por favor, selecione pelo menos um modelo.');
