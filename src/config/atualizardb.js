@@ -66,6 +66,10 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.pro ADD if not exists prosemest varchar(1) default 'N';`
     );
+    await pool.query(
+      `ALTER TABLE public.pvi ADD if not exists pviprocorid int4 NULL;`
+    );
+    
 
     // Tabela de relacionamento muitos-para-muitos entre produtos e modelos
     await pool.query(`
