@@ -42,13 +42,14 @@ exports.inserirPvi = async (req, res) => {
     const results = [];
 
     for (const item of cart) {
-      const { id: procod, qt, preco } = item;
+      const { id: procod, qt, preco, idCorSelecionada } = item;
+      const pviprocorid = idCorSelecionada || null;
       const codigoInteiro = parseInt(procod.split("-")[0]);
-      console.log("Inserindo item:", { pvcod, codigoInteiro, qt, preco });
+      console.log("Inserindo item:", { pvcod, codigoInteiro, qt, preco,pviprocorid });
 
       const result = await pool.query(
-        "INSERT INTO pvi (pvipvcod, pviprocod, pviqtde, pvivl) VALUES ($1, $2, $3, $4) RETURNING *",
-        [pvcod, codigoInteiro, qt, preco]
+        "INSERT INTO pvi (pvipvcod, pviprocod, pviqtde, pvivl,pviprocorid) VALUES ($1, $2, $3, $4,$5) RETURNING *",
+        [pvcod, codigoInteiro, qt, preco,pviprocorid]
       );
 
       results.push(result.rows[0]);
