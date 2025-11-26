@@ -113,11 +113,13 @@ exports.inserirProduto = async (req, res) => {
     
     const procod = result.rows[0].procod;
     
-    // Inserir todos os modelos na tabela de relacionamento
-    for (const modcod of modelIds) {
+    // Inserir todos os modelos na tabela de relacionamento usando batch insert
+    if (modelIds.length > 0) {
+      const values = modelIds.map((modcod, i) => `($1, $${i + 2})`).join(', ');
+      const params = [procod, ...modelIds];
       await client.query(
-        `INSERT INTO promod (promodprocod, promodmodcod) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-        [procod, modcod]
+        `INSERT INTO promod (promodprocod, promodmodcod) VALUES ${values} ON CONFLICT DO NOTHING`,
+        params
       );
     }
     
@@ -174,13 +176,13 @@ exports.editarProduto = async (req, res) => {
           [id]
         );
         
-        // Inserir novos modelos
-        for (const modcod of modelIds) {
-          await client.query(
-            `INSERT INTO promod (promodprocod, promodmodcod) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-            [id, modcod]
-          );
-        }
+        // Inserir novos modelos usando batch insert
+        const values = modelIds.map((modcod, i) => `($1, $${i + 2})`).join(', ');
+        const params = [id, ...modelIds];
+        await client.query(
+          `INSERT INTO promod (promodprocod, promodmodcod) VALUES ${values} ON CONFLICT DO NOTHING`,
+          params
+        );
         
         // Atualizar o promodcod no produto (para compatibilidade)
         await client.query(
