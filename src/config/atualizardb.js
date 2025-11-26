@@ -69,7 +69,7 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.pvi ADD if not exists pviprocorid int4 NULL;`
     );
-    
+
 
     // Tabela de relacionamento muitos-para-muitos entre produtos e modelos
     await pool.query(`
@@ -432,42 +432,76 @@ async function atualizarDB() {
     // função de trigger para atualizar saldo no estoque
     await pool.query(`
       CREATE OR REPLACE FUNCTION public.atualizar_saldo()
-      RETURNS trigger
-      LANGUAGE plpgsql
-      AS $function$
-      BEGIN
-        IF NEW.pvconfirmado = 'S' THEN
-          UPDATE pro
-            SET proqtde = proqtde - pvi.pviqtde
-            FROM pvi
-          WHERE pvi.pviprocod = pro.procod
-            AND pvi.pvipvcod = NEW.pvcod;
-        END IF;
-
-        RETURN NEW;
-      END;
-      $function$
-      ;  
-    `);
-
-    await pool.query(`
-      CREATE OR REPLACE FUNCTION public.retornar_saldo()
-      RETURNS trigger
-      LANGUAGE plpgsql
-      AS $function$
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $function$
         BEGIN
-          IF NEW.pvsta = 'X'  THEN
-            UPDATE pro
-              SET proqtde = proqtde + pvi.pviqtde
-              FROM pvi
-            WHERE pvi.pviprocod = pro.procod 
-              AND pvi.pvipvcod = NEW.pvcod and NEW.pvconfirmado = 'S';
+          IF NEW.pvconfirmado = 'S' THEN
+
+            -- 1) Itens COM cor -> baixa em procor
+            UPDATE procor pc
+              SET procorqtde = COALESCE(pc.procorqtde, 0) - COALESCE(i.pviqtde, 0)
+              FROM pvi i
+            WHERE i.pvipvcod      = NEW.pvcod
+              AND i.pviprocorid  IS NOT NULL
+              AND i.pviprocorid   = pc.procorcorescod;
+
+            -- 2) Itens SEM cor e produto SEM variações -> baixa em pro
+            UPDATE pro pr
+              SET proqtde = COALESCE(pr.proqtde, 0) - COALESCE(i.pviqtde, 0)
+              FROM pvi i
+            WHERE i.pvipvcod = NEW.pvcod
+              AND i.pviprocod = pr.procod
+              AND i.pviprocorid IS NULL
+              AND NOT EXISTS (
+                    SELECT 1
+                      FROM procor pc
+                      WHERE pc.procorprocod = pr.procod
+                  );
+
           END IF;
 
           RETURN NEW;
         END;
-        $function$
-          ; 
+        $function$;
+  
+    `);
+
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION public.retornar_saldo()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $function$
+        BEGIN
+          IF NEW.pvsta = 'X' AND NEW.pvconfirmado = 'S' THEN
+
+            -- 1) Itens COM cor -> devolve em procor
+            UPDATE procor pc
+              SET procorqtde = COALESCE(pc.procorqtde, 0) + COALESCE(i.pviqtde, 0)
+              FROM pvi i
+            WHERE i.pvipvcod      = NEW.pvcod
+              AND i.pviprocorid  IS NOT NULL
+              AND i.pviprocorid   = pc.procorcorescod;
+
+            -- 2) Itens SEM cor e produto SEM variações -> devolve em pro
+            UPDATE pro pr
+              SET proqtde = COALESCE(pr.proqtde, 0) + COALESCE(i.pviqtde, 0)
+              FROM pvi i
+            WHERE i.pvipvcod = NEW.pvcod
+              AND i.pviprocod = pr.procod
+              AND i.pviprocorid IS NULL
+              AND NOT EXISTS (
+                    SELECT 1
+                      FROM procor pc
+                      WHERE pc.procorprocod = pr.procod
+                  );
+
+          END IF;
+
+          RETURN NEW;
+        END;
+        $function$;
+ 
     `);
 
     // FIM INSERTS CONDICIONAIS
