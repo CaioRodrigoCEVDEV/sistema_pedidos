@@ -257,12 +257,12 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
 
 exports.inserirProdutoCoresDisponiveis = async (req, res) => {
   const { id } = req.params;
-  //const { marca, modelo } = req.query;
+  const procorsemest = req.query.procorsemest || 'N';  // Default to 'N' if not provided
 
   try {
     const result = await pool.query(
       `insert into procor values($1,$2,$3) RETURNING *`,
-      [id, req.query.corescod, req.query.procorsemest]
+      [id, req.query.corescod, procorsemest]
     );
     res.status(200).json(result.rows);
   } catch (error) {

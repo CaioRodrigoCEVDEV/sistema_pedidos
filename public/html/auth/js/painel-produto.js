@@ -190,7 +190,7 @@ produtoForm.addEventListener('submit', async (ev) => {
          // Para cada cor marcada, faz um POST individual
          for (const corcod of corIds) {
            await fetch(
-             `${BASE_URL}/proCoresDisponiveis/${procod}?corescod=${corcod}`,
+             `${BASE_URL}/proCoresDisponiveis/${procod}?corescod=${corcod}&procorsemest=N`,
              {
                method: "POST",
                headers: { "Content-Type": "application/json" },
