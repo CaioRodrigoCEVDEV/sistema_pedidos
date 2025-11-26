@@ -162,7 +162,7 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
     );
 
     if (produtoResult.rows.length > 0) {
-      const proqtde = produtoResult.rows[0].proqtde || 0;
+      const proqtde = produtoResult.rows[0].proqtde ?? 0;
       if (proqtde > 0) {
         return res.status(400).json({
           erro: "Não é permitido adicionar cor enquanto o produto possuir quantidade (proqtde) maior que zero."
@@ -171,7 +171,7 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
     }
 
     const result = await pool.query(
-      `insert into procor values($1,$2) RETURNING *`,
+      `INSERT INTO procor (procorprocod, procorcorescod) VALUES ($1, $2) RETURNING *`,
       [id, req.query.corescod]
     );
     res.status(200).json(result.rows);
@@ -216,7 +216,7 @@ exports.deletarProdutoCoresDisponiveis = async (req, res) => {
         );
 
         if (produtoResult.rows.length > 0) {
-          const proqtde = produtoResult.rows[0].proqtde || 0;
+          const proqtde = produtoResult.rows[0].proqtde ?? 0;
           if (proqtde > 0) {
             return res.status(400).json({
               erro: "Não é permitido desvincular cor enquanto o produto possuir quantidade (proqtde) maior que zero."
