@@ -135,15 +135,23 @@ function renderGrupos(grupos) {
       <td class="text-center text-muted small">${formatDate(grupo.updated_at)}</td>
       <td class="text-center">
         <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-primary" onclick="abrirModalEditar('${grupo.id}', '${escapeHtml(grupo.name)}')" title="Editar">
+          <button class="btn btn-outline-primary btn-edit-group" title="Editar">
             <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn btn-outline-danger" onclick="excluirGrupo('${grupo.id}')" title="Excluir">
+          <button class="btn btn-outline-danger btn-delete-group" title="Excluir">
             <i class="bi bi-trash"></i>
           </button>
         </div>
       </td>
     `;
+
+    // Add event listeners instead of inline onclick (XSS prevention)
+    tr.querySelector('.btn-edit-group').addEventListener('click', () => {
+      abrirModalEditar(grupo.id, grupo.name);
+    });
+    tr.querySelector('.btn-delete-group').addEventListener('click', () => {
+      excluirGrupo(grupo.id);
+    });
 
     tbody.appendChild(tr);
   });
@@ -307,11 +315,15 @@ function renderPecasGrupo(pecas) {
       <td>${escapeHtml(peca.prodes || "-")}</td>
       <td>R$ ${(peca.provl || 0).toFixed(2)}</td>
       <td class="text-center">
-        <button class="btn btn-sm btn-outline-danger" onclick="removerPecaGrupo(${peca.procod})" title="Remover do grupo">
+        <button class="btn btn-sm btn-outline-danger btn-remove-part" title="Remover do grupo">
           <i class="bi bi-x-lg"></i>
         </button>
       </td>
     `;
+    // Add event listener instead of inline onclick (XSS prevention)
+    tr.querySelector('.btn-remove-part').addEventListener('click', () => {
+      removerPecaGrupo(peca.procod);
+    });
     tbody.appendChild(tr);
   });
 }
@@ -461,12 +473,18 @@ function renderPecasDisponiveis(pecas) {
       <td class="text-center">
         ${isInGroup 
           ? '<span class="badge bg-success">No grupo</span>'
-          : `<button class="btn btn-sm btn-primary" onclick="adicionarPecaAoGrupo(${peca.procod})">
+          : `<button class="btn btn-sm btn-primary btn-add-part">
               <i class="bi bi-plus"></i> Adicionar
             </button>`
         }
       </td>
     `;
+    // Add event listener instead of inline onclick (XSS prevention)
+    if (!isInGroup) {
+      tr.querySelector('.btn-add-part').addEventListener('click', () => {
+        adicionarPecaAoGrupo(peca.procod);
+      });
+    }
     tbody.appendChild(tr);
   });
 }

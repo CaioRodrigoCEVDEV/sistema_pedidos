@@ -84,7 +84,7 @@ async function cleanup() {
 // Tests
 async function runTests() {
   console.log('\n🧪 Part Groups Feature Tests\n');
-  console.log('=' .repeat(50));
+  console.log('='.repeat(50));
 
   // Test 1: Create a new group
   await test('Create a new part group', async () => {
