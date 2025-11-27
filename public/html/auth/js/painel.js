@@ -704,7 +704,7 @@ function editarProduto(codigo) {
           // Mapa com estado anterior (ignora cores nulas - produto sem cor vinculada)
           const anterioresMap = {};
           coresProduto.forEach((cp) => {
-            if (cp.corcod != null) {
+            if (cp.corcod !== null && cp.corcod !== undefined) {
               anterioresMap[String(cp.corcod)] =
                 cp.procorsemest === "S" ? "S" : "N";
             }
