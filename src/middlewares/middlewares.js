@@ -18,10 +18,9 @@ function autenticarToken(req, res, next) {
             usupv: decoded.usupv,
             usuest: decoded.usuest,
             empusaest: decoded.empusaest,
-            empusapv: decoded.empusapv,
-            usuviuversao: decoded.usuviuversao
+            empusapv: decoded.empusapv
         }, 'chave-secreta', { expiresIn: '60m' });
-        //console.log('Token renovado para o usuário:', 'usario est',decoded.usuest,'empresa est', decoded.empusaest, 'viu versao', decoded.usuviuversao);
+        //console.log('Token renovado para o usuário:', 'usario est',decoded.usuest,'empresa est', decoded.empusaest);
 
     // gauda o novo token com mais 10m em cookies
         res.cookie('token', novoToken, {

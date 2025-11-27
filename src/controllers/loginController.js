@@ -6,7 +6,7 @@ exports.validarLogin = async (req, res) => {
     const { usucod,usunome,usuemail, ususenha } = req.body;
 
     try {
-        const result = await pool.query('SELECT usucod,usunome,usuemail, ususenha,usuadm ,ususta, usuest, usupv, usuviuversao FROM usu WHERE usuemail = $1', [usuemail]);
+        const result = await pool.query('SELECT usucod,usunome,usuemail, ususenha,usuadm ,ususta, usuest, usupv FROM usu WHERE usuemail = $1', [usuemail]);
 
         const empresaResult = await pool.query('SELECT empusapv, empusaest FROM emp WHERE empcod = 1');
 
@@ -44,15 +44,14 @@ exports.validarLogin = async (req, res) => {
             usuest:   usuario.usuest,
             usupv:    usuario.usupv,
             empusapv: empresa.empusapv,
-            empusaest:empresa.empusaest,
-            usuviuversao:usuario.usuviuversao }, 'chave-secreta', { expiresIn: '60m' });
+            empusaest:empresa.empusaest }, 'chave-secreta', { expiresIn: '60m' });
         res.cookie('token',token,{
             httpOnly: true,
             secure: process.env.HTTPS,
             sameSite: 'Strict',
         });
 
-        res.status(200).json({ mensagem: 'Login bem-sucedido',token, usunome: usuario.usunome, usuemail: usuario.usuemail, usuadm: usuario.usuadm, ususta: usuario.ususta, usuest: usuario.usuest, usupv: usuario.usupv, empusapv: empresa.empusapv, empusaest: empresa.empusaest, usuviuversao: usuario.usuviuversao  });
+        res.status(200).json({ mensagem: 'Login bem-sucedido',token, usunome: usuario.usunome, usuemail: usuario.usuemail, usuadm: usuario.usuadm, ususta: usuario.ususta, usuest: usuario.usuest, usupv: usuario.usupv, empusapv: empresa.empusapv, empusaest: empresa.empusaest  });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao validar login' });

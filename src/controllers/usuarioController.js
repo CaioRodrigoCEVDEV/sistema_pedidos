@@ -166,3 +166,32 @@ exports.listarVendedores = async (req, res) => {
     res.status(500).json({ error: "Erro ao listar usuarios" });
   }
 };
+
+exports.viuVersao = async (req, res) => {
+  const { usucod,viuversao } = req.body;
+
+  try {
+    await pool.query(`UPDATE usu SET usuviuversao = $1 WHERE usucod = $2`, [
+      viuversao,
+      usucod,
+    ]);
+
+    res.status(200).json({ mensagem: "Versão visualizada com sucesso" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao visualizar versão" });
+  }
+};
+
+exports.usuViuVersao = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT usucod,usuviuversao FROM usu WHERE usucod = $1`,
+      [req.token.usucod]
+    );
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao obter viuversao" });
+  }
+};

@@ -1,24 +1,54 @@
-// Controle de exibição do alerta de tutorial na página inicial (inalterado)
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const alertEl = document.getElementById("releaseID");
   const closeBtn = document.getElementById("releaseIDClose");
-  if (!alertEl) return;
 
-  if (localStorage.getItem("releaseIDClose") === "true") {
-    localStorage.removeItem("releaseIDClose");
-    return;
-  }
-
-  alertEl.style.display = "none";
-  setTimeout(() => {
-    alertEl.style.display = "block";
-    alertEl.classList.add("slide-down");
-  }, 1500);
-
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      localStorage.setItem("releaseIDClose", "true");
+  try {
+    const response = await fetch("/usuario/viuversao", {
+      method: "GET",
+      credentials: "include" // envia o cookie HttpOnly
     });
+
+    if (!response.ok) throw new Error("Falha ao obter usuário");
+
+    const data = await response.json();
+    const viuversao = data.usuviuversao || "N";
+    const usucod = data.usucod;
+    
+
+    if (!alertEl) return;
+
+    if (viuversao === "S" && localStorage.getItem("releaseIDClose") === "true") {
+      alertEl.style.display = "none";
+      return;
+    }
+
+    //alertEl.style.display = "none";
+    setTimeout(() => {
+      alertEl.style.display = "block";
+      alertEl.classList.add("slide-down");
+    }, 1500);
+
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        try {
+          fetch(`${BASE_URL}/usuario/viuversao/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            credentials: "include", // envia o cookie HttpOnly
+            body: JSON.stringify({ viuversao: "S",usucod: usucod })
+          });
+        } catch (err) {
+          console.error("Erro ao atualizar viuversao:", err);
+        }
+        alertEl.style.display = "none";
+        localStorage.setItem("releaseIDClose", "true");
+      });
+    }
+
+  } catch (err) {
+    console.error("Erro ao buscar nome do usuário:", err);
   }
 });
 
@@ -79,43 +109,43 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --- FETCH sempre sem cache e compatível com o JSON real ---
-async function fetchReleasesFromAPI() {
-  const url = '/api/releases?t=' + Date.now();
-  const res = await fetch(url, {
-    method: 'GET',
-    cache: 'no-store',
-    credentials: 'same-origin',
-    headers: {
-      'Accept': 'application/json, text/plain, */*',
-      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-      'Pragma': 'no-cache',
-    },
-  });
+  async function fetchReleasesFromAPI() {
+    const url = '/api/releases?t=' + Date.now();
+    const res = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json, text/plain, */*',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+      },
+    });
 
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
-  // força o parse mesmo que o content-type esteja errado
-  const text = await res.text();
-  let payload;
-  try {
-    payload = JSON.parse(text);
-  } catch (e) {
-    console.error('[releases] JSON inválido recebido:', text.slice(0, 300));
-    throw new Error('Resposta da API não é JSON válido.');
+    // força o parse mesmo que o content-type esteja errado
+    const text = await res.text();
+    let payload;
+    try {
+      payload = JSON.parse(text);
+    } catch (e) {
+      console.error('[releases] JSON inválido recebido:', text.slice(0, 300));
+      throw new Error('Resposta da API não é JSON válido.');
+    }
+
+    const releases = Array.isArray(payload.releases)
+      ? payload.releases
+      : Array.isArray(payload.data)
+        ? payload.data
+        : Array.isArray(payload)
+          ? payload
+          : [];
+
+    if (!releases.length) throw new Error('Nenhuma release encontrada.');
+
+    return releases;
   }
-
-  const releases = Array.isArray(payload.releases)
-    ? payload.releases
-    : Array.isArray(payload.data)
-      ? payload.data
-      : Array.isArray(payload)
-        ? payload
-        : [];
-
-  if (!releases.length) throw new Error('Nenhuma release encontrada.');
-
-  return releases;
-}
 
 
   // --- carrega e renderiza sempre direto da API ---

@@ -18,10 +18,9 @@ function requireAdminEst(req, res, next) {
             usupv: decoded.usupv,
             usuest: decoded.usuest,
             empusapv: decoded.empusapv,
-            empusaest: decoded.empusaest,
-            usuviuversao: decoded.usuviuversao
+            empusaest: decoded.empusaest
         }, 'chave-secreta', { expiresIn: '60m' });
-        //console.log('Token renovado para o usuário:', 'usario est',decoded.usuest,'empresa est', decoded.empusaest, 'viu versao', decoded.usuviuversao);
+        //console.log('Token renovado para o usuário:', 'usario est',decoded.usuest,'empresa est', decoded.empusaest);
         // gauda o novo token com mais 10m em cookies
         res.cookie('token', novoToken, {
             httpOnly: true,

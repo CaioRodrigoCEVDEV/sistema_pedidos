@@ -14,6 +14,16 @@ async function atualizarDB() {
 
     //  await pool.query(`ALTER TABLE public.emp ADD IF NOT exists empcod serial4 NOT NULL;`);
 
+
+
+      //temporatrio 
+
+      await pool.query(
+      `update usu set usuviuversao = 'N';`
+    );
+
+      //fim temporatrio
+
     await pool.query(
       `ALTER TABLE public.emp ADD IF NOT exists empcod serial4 NOT NULL;`
     );
