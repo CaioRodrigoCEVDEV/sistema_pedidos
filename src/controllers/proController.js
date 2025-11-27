@@ -148,13 +148,30 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
   }
 };
 
+// Nota: Esta função depende da coluna procor.procorqtde (criada em src/config/atualizardb.js).
+// Se a coluna não existir, a validação de estoque por cor não funcionará corretamente.
 exports.inserirProdutoCoresDisponiveis = async (req, res) => {
   const { id } = req.params;
   //const { marca, modelo } = req.query;
 
   try {
+    // Verifica se o produto tem estoque geral > 0
+    const produtoResult = await pool.query(
+      `SELECT proqtde FROM pro WHERE procod = $1`,
+      [id]
+    );
+
+    if (produtoResult.rows.length > 0) {
+      const proqtde = produtoResult.rows[0].proqtde ?? 0;
+      if (proqtde > 0) {
+        return res.status(400).json({
+          erro: "Não é permitido adicionar cor enquanto o produto possuir quantidade (proqtde) maior que zero."
+        });
+      }
+    }
+
     const result = await pool.query(
-      `insert into procor values($1,$2) RETURNING *`,
+      `INSERT INTO procor (procorprocod, procorcorescod) VALUES ($1, $2) RETURNING *`,
       [id, req.query.corescod]
     );
     res.status(200).json(result.rows);
@@ -164,19 +181,59 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
   }
 };
 
+// Nota: Esta função depende da coluna procor.procorqtde (criada em src/config/atualizardb.js).
+// Lógica de validação:
+// 1. Se procor.procorqtde !== null e > 0, recusar a remoção.
+// 2. Se procor.procorqtde is null, usar pro.proqtde como fallback; se > 0, recusar.
+// 3. Só permitir DELETE quando a quantidade efetiva for 0.
 exports.deletarProdutoCoresDisponiveis = async (req, res) => {
   const { id } = req.params;
-  //const { marca, modelo } = req.query;
+  const corescod = req.query.corescod;
 
   try {
+    // Busca procorqtde da linha específica
+    const procorResult = await pool.query(
+      `SELECT procorqtde FROM procor WHERE procorprocod = $1 AND procorcorescod = $2`,
+      [id, corescod]
+    );
+
+    if (procorResult.rows.length > 0) {
+      const procorqtde = procorResult.rows[0].procorqtde;
+
+      // Se procorqtde não é null, verificar se é > 0
+      if (procorqtde !== null) {
+        if (procorqtde > 0) {
+          return res.status(400).json({
+            erro: "Não é permitido desvincular cor enquanto a quantidade desta cor for maior que zero."
+          });
+        }
+        // procorqtde === 0, pode prosseguir com a remoção
+      } else {
+        // procorqtde é null, usar pro.proqtde como fallback
+        const produtoResult = await pool.query(
+          `SELECT proqtde FROM pro WHERE procod = $1`,
+          [id]
+        );
+
+        if (produtoResult.rows.length > 0) {
+          const proqtde = produtoResult.rows[0].proqtde ?? 0;
+          if (proqtde > 0) {
+            return res.status(400).json({
+              erro: "Não é permitido desvincular cor enquanto o produto possuir quantidade (proqtde) maior que zero."
+            });
+          }
+        }
+      }
+    }
+
     const result = await pool.query(
       `delete from procor where procorprocod = $1 and procorcorescod = $2 RETURNING *`,
-      [id, req.query.corescod]
+      [id, corescod]
     );
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Erro ao inserir cores" });
+    res.status(500).json({ error: "Erro ao deletar cor do produto" });
   }
 };
 
