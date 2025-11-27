@@ -196,7 +196,7 @@ async function abrirEdicao(id) {
         f_parcep.value = data.parcep || "";
         f_parrua.value = data.parrua || "";
         f_parbai.value = data.parbai || "";
-        f_parmuncod.value = data.mundes || "";
+        f_parmuncod.value = data.parmuncod || "";
         f_clibloq.checked = !!data.clibloq;
         f_clilim.value = data.clilim ?? 0;
         f_parsit.value = data.parsit || "";
@@ -223,7 +223,7 @@ cliForm.addEventListener("submit", async (ev) => {
         parrua: (f_parrua.value || "").trim() || null,
         parbai: (f_parbai.value || "").trim() || null,
         parmuncod: Number(
-            municipios.find((m) => `${m.mundes} - ${m.munufsigla}` === f_parmuncod.value)?.muncod || 0
+            municipios.find((m) => `${m.muncod}` === f_parmuncod.value)?.muncod || 0
         ),
         clibloq: !!f_clibloq.checked,
         clilim: Number(f_clilim.value || 0),
