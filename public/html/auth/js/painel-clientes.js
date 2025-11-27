@@ -152,7 +152,7 @@ function renderTabela(lista) {
       <td>${cidadeUF}</td>
       <td>${fmtPhone(r.parfone)}</td>
       <td>${r.paremail || ""}</td>
-      <td>${r.clibloq ? "BLOQ" : "OK"}</td>
+      <td>${r.clibloq ? "S" : "N"}</td>
       <td>${fmtMoney(r.clilim)}</td>
       <td>${r.parsit === "I" ? "Inativo" : "Ativo"}</td>
     `;
