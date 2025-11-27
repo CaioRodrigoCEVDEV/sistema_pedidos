@@ -11,10 +11,10 @@ function createHeaderUser() {
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav">
                         <li class="nav-item active">
-                            <a class="nav-link" href="dash">Inicio</a>
+                            <a class="nav-link" href="index">Inicio</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="painel">Acesso</a>
+                            <a class="nav-link" href="dash">Acesso</a>
                         </li>
                     </ul>
                 </div>
