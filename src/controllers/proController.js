@@ -157,7 +157,7 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
  */
 exports.inserirProdutoCoresDisponiveis = async (req, res) => {
   const { id } = req.params;
-  //const { marca, modelo } = req.query;
+  const { corescod } = req.query;
 
   try {
     // Verificar se o produto possui estoque geral > 0
@@ -180,7 +180,7 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
 
     const result = await pool.query(
       `insert into procor values($1,$2) RETURNING *`,
-      [id, req.query.corescod]
+      [id, corescod]
     );
     res.status(200).json(result.rows);
   } catch (error) {
