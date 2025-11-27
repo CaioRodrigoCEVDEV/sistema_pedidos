@@ -638,30 +638,22 @@ function editarProduto(codigo) {
           // adiciona novas cores
           for (const cor of selecionadas) {
             if (!anteriores.includes(cor)) {
-              const addRes = await fetch(
+              await fetch(
                 `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`,
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                 }
               );
-              if (!addRes.ok) {
-                const errData = await addRes.json().catch(() => ({}));
-                throw new Error(errData.erro || "Erro ao adicionar cor ao produto.");
-              }
             }
           }
           // remove cores desmarcadas
           for (const cor of anteriores) {
             if (!selecionadas.includes(cor)) {
-              const delRes = await fetch(
+              await fetch(
                 `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`,
                 { method: "DELETE" }
               );
-              if (!delRes.ok) {
-                const errData = await delRes.json().catch(() => ({}));
-                throw new Error(errData.erro || "Erro ao remover cor do produto.");
-              }
             }
           }
 
@@ -689,8 +681,7 @@ function editarProduto(codigo) {
             alertPersonalizado("Sem permissão para editar produtos.", 2000);
           } else {
             document.body.removeChild(popup);
-            // Exibe a mensagem de erro retornada pelo backend (se disponível) ou mensagem padrão
-            alertPersonalizado(erro.message || "Erro ao atualizar o produto.", 3000);
+            alertPersonalizado("Erro ao atualizar o produto.", 2000);
           }
         }
       };
