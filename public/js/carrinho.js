@@ -4,7 +4,6 @@ const id = params.get("id");
 const modelo = params.get("modelo");
 const marcascod = params.get("marcascod");
 const qtde = params.get("qtde");
-const codigoVendedor = document.getElementById("codigoVendedor");
 
 function formatarMoeda(valor) {
   return Number(valor).toLocaleString("pt-BR", {
@@ -31,13 +30,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (usuarioLogado && empusapv === "S") {
         buscarVendedores();
-        codigoVendedor.style.display = "inline";
         botaoOrcamento.style.display = "inline";
       } else if (usuarioLogado && empusapv === "N") {
         botaoOrcamento.style.display = "inline";
-        codigoVendedor.style.display = "none";
       } else {
-        codigoVendedor.style.display = "none";
         botaoOrcamento.style.display = "none";
       }
     })
@@ -51,20 +47,25 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-async function buscarVendedores({ keepSearch = true } = {}) {
+async function buscarUsuario() {
   try {
-    const res = await fetch(`${BASE_URL}/vendedor/listar`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const dados = await res.json();
-    const list = Array.isArray(dados) ? dados : [];
-
-    const select = document.getElementById("codigoVendedor");
-    list.forEach((m) => {
-      select.innerHTML += `<option value="${m.usucod}">${m.usunome}</option>`;
+    const response = await fetch(`${BASE_URL}/usuario/viuversao`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
     });
-  } catch (err) {
-    console.error("Failed to refresh users:", err);
-    alert("Erro ao recarregar vendedores. Veja console para mais detalhes.");
+    if (response.ok) {
+      const data = await response.json();
+      return data.usucod;
+    } else {
+      console.error("Erro ao buscar usuário:", response.statusText);
+      return null;
+    }
+  } catch (error) {
+    console.error("Erro na requisição:", error);
+    return null;
   }
 }
 
@@ -266,7 +267,7 @@ async function enviarWhatsApp() {
 
   let mensagem = `${caixaEmoji} Pedido de Peças:\n\n`;
   let totalValue = 0;
-// detalhamento dos itens do pedido 
+  // detalhamento dos itens do pedido
   cart.forEach((item) => {
     const nome = item.nome || "---";
     const qtde = item.qt || 0;
@@ -278,8 +279,8 @@ async function enviarWhatsApp() {
 
     mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
   });
-// fim detalhamento
-// Enviar pedido para o servidor
+  // fim detalhamento
+  // Enviar pedido para o servidor
   const respPedido = await fetch(`${BASE_URL}/pedidos/enviar`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -291,7 +292,7 @@ async function enviarWhatsApp() {
       canal: "BALCAO",
       status: "A",
       confirmado: "N",
-      codigoVendedor: codigoVendedor.value || null,
+      codigoVendedor: (await buscarUsuario()) || null,
     }),
   });
   const data = await respPedido.json();
@@ -413,7 +414,7 @@ async function enviarWhatsAppEntrega() {
       canal: "ENTREGA",
       status: "A",
       confirmado: "N",
-      codigoVendedor: codigoVendedor.value || null,
+      codigoVendedor: (await buscarUsuario()) || null,
     }),
   });
   const data = await respPedido.json();

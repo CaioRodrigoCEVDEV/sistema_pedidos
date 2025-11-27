@@ -38,6 +38,11 @@ router.get(
   proControllerV2.listarProdutosSemEstoque
 );
 router.get(
+  "/v2/proEstoqueAcabando",
+  autenticarToken,
+  proControllerV2.listarProdutosComEstoqueAcabando
+);
+router.get(
   "/v2/proComEstoque/:marca/:modelo",
   autenticarToken,
   proControllerV2.listarProdutosComEstoqueItem
@@ -46,6 +51,11 @@ router.get(
   "/v2/proSemEstoque/:marca/:modelo",
   autenticarToken,
   proControllerV2.listarProdutosSemEstoqueItem
+);
+router.get(
+  "/v2/proEstoqueAcabando/:marca/:modelo",
+  autenticarToken,
+  proControllerV2.listarProdutosComEstoqueAcabandoItem
 );
 // Fim V2 Routes com models
 

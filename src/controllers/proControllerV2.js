@@ -41,3 +41,35 @@ exports.listarProdutosSemEstoqueItem = async (req, res) => {
     res.status(500).json({ error: "Erro ao buscar produto sem estoque" });
   }
 };
+
+exports.listarProdutosComEstoqueAcabando = async (req, res) => {
+  const { marca, modelo } = req.params;
+  try {
+    const result = await proModels.listarProdutosComEstoqueAcabando(
+      marca,
+      modelo
+    );
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ error: "Erro ao buscar produto com estoque acabando" });
+  }
+};
+
+exports.listarProdutosComEstoqueAcabandoItem = async (req, res) => {
+  const { marca, modelo } = req.params;
+  try {
+    const result = await proModels.listarProdutosComEstoqueAcabandoItem(
+      marca,
+      modelo
+    );
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ error: "Erro ao buscar produto com estoque acabando item" });
+  }
+};

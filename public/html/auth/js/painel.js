@@ -516,32 +516,41 @@ function editarProduto(codigo) {
     .then((r) => r.json())
     .then((produto) => {
       const marcaCod = produto[0]?.promarcascod;
-      
+
       // Now fetch remaining data including models filtered by brand
       return Promise.all([
         Promise.resolve(produto),
         fetch(`${BASE_URL}/procores`).then((r) => r.json()),
-        fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) => r.json()),
+        fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) =>
+          r.json()
+        ),
         fetch(`${BASE_URL}/pro/modelos/${codigo}`).then((r) => r.json()),
         fetch(`${BASE_URL}/modelo/${marcaCod}`).then((r) => r.json()),
       ]);
     })
-    .then(([produto, coresDisponiveis, coresProduto, modelosProduto, modelosDaMarca]) => {
-      // IDs dos modelos vinculados ao produto
-      const modelosVinculados = modelosProduto.map(m => m.modcod);
-      
-      // ------------------------------
-      // POPUP
-      // ------------------------------
-      let popup = document.createElement("div");
-      popup.id = "popupEditarProduto";
-      popup.style = `
+    .then(
+      ([
+        produto,
+        coresDisponiveis,
+        coresProduto,
+        modelosProduto,
+        modelosDaMarca,
+      ]) => {
+        // IDs dos modelos vinculados ao produto
+        const modelosVinculados = modelosProduto.map((m) => m.modcod);
+
+        // ------------------------------
+        // POPUP
+        // ------------------------------
+        let popup = document.createElement("div");
+        popup.id = "popupEditarProduto";
+        popup.style = `
         position:fixed;top:0;left:0;width:100vw;height:100vh;
         background:rgba(0,0,0,0.5);display:flex;
         align-items:center;justify-content:center;z-index:9999;
       `;
 
-      popup.innerHTML = `
+        popup.innerHTML = `
         <div style="
           background:#fff;padding:24px;border-radius:8px;
           min-width:300px;width:40vw;max-height:80vh;overflow:auto;
@@ -570,6 +579,13 @@ function editarProduto(codigo) {
               <label for="editar_prosemest">Sem estoque geral</label>
             </div>
 
+            <div class="mb-3">
+              <label class="form-label">📥 Produto acabando</label><br>
+              <input type="checkbox" id="editar_proacabando"
+                ${produto.some((p) => p.proacabando === "S") ? "checked" : ""}>
+              <label for="editar_proacabando">Produto acabando</label>
+            </div>
+
             <details>
               <summary class="mb-2">📱 Modelos vinculados</summary>
               <div id="editarProdutoModelos" style="max-height:180px;overflow:auto;padding-right:8px;">
@@ -581,7 +597,9 @@ function editarProduto(codigo) {
                       <input type="checkbox" class="form-check-input checkbox-modelo"
                         value="${m.modcod}" id="editar_modelo_${m.modcod}"
                         ${vinculado ? "checked" : ""}>
-                      <label class="form-check-label" for="editar_modelo_${m.modcod}">
+                      <label class="form-check-label" for="editar_modelo_${
+                        m.modcod
+                      }">
                         ${m.moddes}
                       </label>
                     </div>
@@ -651,155 +669,172 @@ function editarProduto(codigo) {
         </div>
       `;
 
-      document.body.appendChild(popup);
+        document.body.appendChild(popup);
 
-      document.getElementById("cancelarEditarProduto").onclick = () => {
-        popup.remove();
-      };
+        document.getElementById("cancelarEditarProduto").onclick = () => {
+          popup.remove();
+        };
 
-      // ------------------------------
-      // HABILITA / DESABILITA "sem estoque" por cor
-      // ------------------------------
-      popup.querySelectorAll(".checkbox-cor").forEach((ch) => {
-        ch.addEventListener("change", () => {
-          const cor = ch.value;
-          const semEst = popup.querySelector(`#editar_cor_semest_${cor}`);
-          if (!semEst) return;
+        // ------------------------------
+        // HABILITA / DESABILITA "sem estoque" por cor
+        // ------------------------------
+        popup.querySelectorAll(".checkbox-cor").forEach((ch) => {
+          ch.addEventListener("change", () => {
+            const cor = ch.value;
+            const semEst = popup.querySelector(`#editar_cor_semest_${cor}`);
+            if (!semEst) return;
 
-          if (ch.checked) semEst.disabled = false;
-          else {
-            semEst.checked = false;
-            semEst.disabled = true;
-          }
+            if (ch.checked) semEst.disabled = false;
+            else {
+              semEst.checked = false;
+              semEst.disabled = true;
+            }
+          });
         });
-      });
 
-      // -----------------------------------------
-      // SUBMIT ÚNICO E CORRETO (COM procorsemest)
-      // -----------------------------------------
-      popup
-        .querySelector("#formEditarProduto")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
+        // -----------------------------------------
+        // SUBMIT ÚNICO E CORRETO (COM procorsemest)
+        // -----------------------------------------
+        popup
+          .querySelector("#formEditarProduto")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
 
-          const prodes = document
-            .getElementById("editarDescricao")
-            .value.trim();
-          const provl = document.getElementById("editarValor").value;
-          const prosemest = document.getElementById("editar_prosemest").checked
-            ? "S"
-            : "N";
+            const prodes = document
+              .getElementById("editarDescricao")
+              .value.trim();
+            const provl = document.getElementById("editarValor").value;
+            const prosemest = document.getElementById("editar_prosemest")
+              .checked
+              ? "S"
+              : "N";
+            const proacabando = document.getElementById("editar_proacabando")
+              .checked
+              ? "S"
+              : "N";
 
-          // Obter modelos selecionados
-          const modelosCheckboxes = popup.querySelectorAll(
-            "#editarProdutoModelos .checkbox-modelo:checked"
-          );
-          const promodcods = Array.from(modelosCheckboxes).map((cb) => parseInt(cb.value, 10));
-          
-          if (promodcods.length === 0) {
-            alert("Por favor, selecione pelo menos um modelo.");
-            return;
-          }
+            // Obter modelos selecionados
+            const modelosCheckboxes = popup.querySelectorAll(
+              "#editarProdutoModelos .checkbox-modelo:checked"
+            );
+            const promodcods = Array.from(modelosCheckboxes).map((cb) =>
+              parseInt(cb.value, 10)
+            );
 
-          // Mapa com estado anterior (ignora cores nulas - produto sem cor vinculada)
-          const anterioresMap = {};
-          coresProduto.forEach((cp) => {
-            if (cp.corcod !== null && cp.corcod !== undefined) {
-              anterioresMap[String(cp.corcod)] =
-                cp.procorsemest === "S" ? "S" : "N";
+            if (promodcods.length === 0) {
+              alert("Por favor, selecione pelo menos um modelo.");
+              return;
             }
-          });
 
-          // Estado atual
-          const linhas = popup.querySelectorAll(
-            "#editarProdutoCores .form-check"
-          );
-          const atuais = [];
-          linhas.forEach((l) => {
-            const corCheck = l.querySelector(".checkbox-cor");
-            const semEstCheck = l.querySelector(".checkbox-cor-semest");
-            if (corCheck && corCheck.checked) {
-              atuais.push({
-                corcod: corCheck.value,
-                procorsemest: semEstCheck?.checked ? "S" : "N",
-              });
-            }
-          });
-
-          try {
-            // ------------------------------
-            // Atualiza dados básicos do produto (incluindo modelos)
-            // ------------------------------
-            await fetch(`${BASE_URL}/pro/${codigo}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ prodes, provl, prosemest, promodcods }),
+            // Mapa com estado anterior (ignora cores nulas - produto sem cor vinculada)
+            const anterioresMap = {};
+            coresProduto.forEach((cp) => {
+              if (cp.corcod !== null && cp.corcod !== undefined) {
+                anterioresMap[String(cp.corcod)] =
+                  cp.procorsemest === "S" ? "S" : "N";
+              }
             });
 
-            // ------------------------------
-            // Cores novas ou atualizadas
-            // ------------------------------
-            for (const c of atuais) {
-              if (!anterioresMap[c.corcod]) {
-                // adicionar cor
-                const addResponse = await fetch(
-                  `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${c.corcod}&procorsemest=${c.procorsemest}`,
-                  { method: "POST" }
-                );
-                if (!addResponse.ok) {
-                  const errorData = await addResponse.json();
-                  throw new Error(errorData.erro || "Erro ao adicionar cor");
-                }
-              } else if (anterioresMap[c.corcod] !== c.procorsemest) {
-                // atualizar cor já existente
-                await fetch(
-                  `${BASE_URL}/proCoresDisponiveis/${codigo}?` +
-                    `corescod=${c.corcod}` + // cor atual (no banco)
-                    `&procorsemest=${anterioresMap[c.corcod]}` + // semestre atual (banco)
-                    `&corescodnovo=${c.corcod}` + // nova cor (igual, se não mudar)
-                    `&procorsemestnovo=${c.procorsemest}`, // semestre novo
-                  { method: "PUT" }
-                );
+            // Estado atual
+            const linhas = popup.querySelectorAll(
+              "#editarProdutoCores .form-check"
+            );
+            const atuais = [];
+            linhas.forEach((l) => {
+              const corCheck = l.querySelector(".checkbox-cor");
+              const semEstCheck = l.querySelector(".checkbox-cor-semest");
+              if (corCheck && corCheck.checked) {
+                atuais.push({
+                  corcod: corCheck.value,
+                  procorsemest: semEstCheck?.checked ? "S" : "N",
+                });
               }
-            }
+            });
 
-            // ------------------------------
-            // Remover cores que foram desmarcadas
-            // ------------------------------
-            for (const corAnterior of Object.keys(anterioresMap)) {
-              if (!atuais.some((a) => a.corcod === corAnterior)) {
-                const deleteResponse = await fetch(
-                  `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${corAnterior}`,
-                  { method: "DELETE" }
-                );
-                if (!deleteResponse.ok) {
-                  const errorData = await deleteResponse.json();
-                  throw new Error(errorData.erro || "Erro ao remover cor");
+            try {
+              // ------------------------------
+              // Atualiza dados básicos do produto (incluindo modelos)
+              // ------------------------------
+              await fetch(`${BASE_URL}/pro/${codigo}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  prodes,
+                  provl,
+                  prosemest,
+                  promodcods,
+                  proacabando,
+                }),
+              });
+
+              // ------------------------------
+              // Cores novas ou atualizadas
+              // ------------------------------
+              for (const c of atuais) {
+                if (!anterioresMap[c.corcod]) {
+                  // adicionar cor
+                  const addResponse = await fetch(
+                    `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${c.corcod}&procorsemest=${c.procorsemest}`,
+                    { method: "POST" }
+                  );
+                  if (!addResponse.ok) {
+                    const errorData = await addResponse.json();
+                    throw new Error(errorData.erro || "Erro ao adicionar cor");
+                  }
+                } else if (anterioresMap[c.corcod] !== c.procorsemest) {
+                  // atualizar cor já existente
+                  await fetch(
+                    `${BASE_URL}/proCoresDisponiveis/${codigo}?` +
+                      `corescod=${c.corcod}` + // cor atual (no banco)
+                      `&procorsemest=${anterioresMap[c.corcod]}` + // semestre atual (banco)
+                      `&corescodnovo=${c.corcod}` + // nova cor (igual, se não mudar)
+                      `&procorsemestnovo=${c.procorsemest}`, // semestre novo
+                    { method: "PUT" }
+                  );
                 }
               }
-            }
 
-            // ------------------------------
-            // Aviso de sucesso
-            // ------------------------------
-            const msg = document.createElement("div");
-            msg.textContent = "Produto atualizado com sucesso!";
-            msg.style = `
+              // ------------------------------
+              // Remover cores que foram desmarcadas
+              // ------------------------------
+              for (const corAnterior of Object.keys(anterioresMap)) {
+                if (!atuais.some((a) => a.corcod === corAnterior)) {
+                  const deleteResponse = await fetch(
+                    `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${corAnterior}`,
+                    { method: "DELETE" }
+                  );
+                  if (!deleteResponse.ok) {
+                    const errorData = await deleteResponse.json();
+                    throw new Error(errorData.erro || "Erro ao remover cor");
+                  }
+                }
+              }
+
+              // ------------------------------
+              // Aviso de sucesso
+              // ------------------------------
+              const msg = document.createElement("div");
+              msg.textContent = "Produto atualizado com sucesso!";
+              msg.style = `
             position:fixed;top:20px;left:50%;transform:translateX(-50%);
             background:#28a745;color:#fff;padding:12px 24px;border-radius:6px;
             z-index:10000;box-shadow:0 2px 8px rgba(0,0,0,0.2);
           `;
-            document.body.appendChild(msg);
-            setTimeout(() => msg.remove(), 2000);
+              document.body.appendChild(msg);
+              setTimeout(() => msg.remove(), 2000);
 
-            popup.remove();
-            carregarProPesquisa();
-          } catch (erro) {
-            popup.remove();
-            alertPersonalizado(erro.message || "Erro ao atualizar o produto.", 3000);
-          }
-        });
-    })
+              popup.remove();
+              carregarProPesquisa();
+            } catch (erro) {
+              popup.remove();
+              alertPersonalizado(
+                erro.message || "Erro ao atualizar o produto.",
+                3000
+              );
+            }
+          });
+      }
+    )
     .catch(() => {
       alert("Erro ao buscar dados do produto.");
     });

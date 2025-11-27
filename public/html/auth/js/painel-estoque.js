@@ -247,6 +247,12 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
         : `${BASE_URL}/v2/proSemEstoque`;
       document.getElementById("tituloEstoque").innerText =
         "Peças fora de estoque";
+    } else if (estoque === "3") {
+      isSemEstoque = true;
+      url = temFiltro
+        ? `${BASE_URL}/v2/proEstoqueAcabando/${marcaParam}/${modeloParam}`
+        : `${BASE_URL}/v2/proEstoqueAcabando`;
+      document.getElementById("tituloEstoque").innerText = "Ultimas peças";
     } else {
       tabelaEstoque.innerHTML =
         '<tr><td colspan="7" class="text-center">Selecione um filtro de estoque.</td></tr>';

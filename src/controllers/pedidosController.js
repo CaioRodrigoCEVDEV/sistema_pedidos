@@ -45,11 +45,17 @@ exports.inserirPvi = async (req, res) => {
       const { id: procod, qt, preco, idCorSelecionada } = item;
       const pviprocorid = idCorSelecionada || null;
       const codigoInteiro = parseInt(procod.split("-")[0]);
-      console.log("Inserindo item:", { pvcod, codigoInteiro, qt, preco,pviprocorid });
+      console.log("Inserindo item:", {
+        pvcod,
+        codigoInteiro,
+        qt,
+        preco,
+        pviprocorid,
+      });
 
       const result = await pool.query(
         "INSERT INTO pvi (pvipvcod, pviprocod, pviqtde, pvivl,pviprocorid) VALUES ($1, $2, $3, $4,$5) RETURNING *",
-        [pvcod, codigoInteiro, qt, preco,pviprocorid]
+        [pvcod, codigoInteiro, qt, preco, pviprocorid]
       );
 
       results.push(result.rows[0]);
@@ -160,7 +166,7 @@ exports.listarPvConfirmados = async (req, res) => {
   const usucod = req.token.usucod;
   const usuadm = req.token.usuadm;
   let { dataInicio, dataFim } = req.query || {};
-  
+
   if (!dataInicio) dataInicio = "1900-01-01";
   if (!dataFim) dataFim = "2999-12-31";
 
@@ -203,7 +209,7 @@ exports.listarPvConfirmados = async (req, res) => {
     ORDER BY pv.pvcod DESC;
       
         `,
-      [ usuadm,usucod,dataInicio, dataFim]
+      [usuadm, usucod, dataInicio, dataFim]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -216,7 +222,7 @@ exports.listarPvPendentes = async (req, res) => {
   const usucod = req.token.usucod;
   const usuadm = req.token.usuadm;
   let { dataInicio, dataFim } = req.query || {};
-  
+
   if (!dataInicio) dataInicio = "1900-01-01";
   if (!dataFim) dataFim = "2999-12-31";
 
@@ -259,7 +265,7 @@ exports.listarPvPendentes = async (req, res) => {
     ORDER BY pv.pvcod DESC;
       
         `,
-      [ usuadm,usucod,dataInicio, dataFim]
+      [usuadm, usucod, dataInicio, dataFim]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -275,8 +281,8 @@ exports.confirmarPedido = async (req, res) => {
 
   try {
     const result = await pool.query(
-      "update pv set pvconfirmado = 'S' where pvcod = $1 RETURNING *",
-      [pvcod]
+      "update pv set pvconfirmado = 'S', pvrcacod = $2 where pvcod = $1 RETURNING *",
+      [pvcod, req.body.pvrcacod]
     );
     res.status(200).json(result.rows);
   } catch (error) {

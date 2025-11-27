@@ -58,7 +58,8 @@ exports.listarProdutosPainelId = async (req, res) => {
        promarcascod,
        case when prodes is null then '' else prodes end as prodes,
        case when provl is null then 0 else provl end as provl, 
-       case when prosemest is null then 'N' else prosemest end as prosemest from pro where procod = $1`,
+       case when prosemest is null then 'N' else prosemest end as prosemest,
+       case when proacabando is null then 'N' else proacabando end as proacabando from pro where procod = $1`,
       [req.params.id]
     );
     res.status(200).json(result.rows);
@@ -159,7 +160,7 @@ exports.excluirProduto = async (req, res) => {
 
 exports.editarProduto = async (req, res) => {
   const { id } = req.params;
-  const { prodes, provl, prosemest, promodcods } = req.body;
+  const { prodes, provl, prosemest, promodcods, proacabando } = req.body;
 
   const client = await pool.connect();
   try {
@@ -167,8 +168,8 @@ exports.editarProduto = async (req, res) => {
 
     // Atualizar dados básicos do produto
     const result = await client.query(
-      `update pro set prodes = $1, provl = $2, prosemest = $3 where procod = $4 RETURNING *`,
-      [prodes, provl, prosemest, id]
+      `update pro set prodes = $1, provl = $2, prosemest = $3, proacabando = $4 where procod = $5 RETURNING *`,
+      [prodes, provl, prosemest, proacabando, id]
     );
 
     // Se foram enviados modelos, atualizar a tabela de relacionamento
@@ -263,11 +264,11 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
 
 /**
  * Insere uma cor disponível para um produto.
- * 
+ *
  * NOTA: Esta validação depende da coluna `procor.procorqtde` que é adicionada
  * automaticamente via `src/config/atualizardb.js`. Caso a coluna não exista
  * em produção, a validação de quantidade por cor não funcionará corretamente.
- * 
+ *
  * Regra de negócio: Só permite adicionar cor se pro.proqtde = 0
  */
 exports.inserirProdutoCoresDisponiveis = async (req, res) => {
@@ -288,7 +289,7 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
     const proqtde = produtoResult.rows[0].proqtde || 0;
     if (proqtde > 0) {
       return res.status(400).json({
-        erro: "Não é permitido adicionar cor enquanto o produto possuir quantidade (proqtde) maior que zero"
+        erro: "Não é permitido adicionar cor enquanto o produto possuir quantidade (proqtde) maior que zero",
       });
     }
 
@@ -305,11 +306,11 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
 
 /**
  * Deleta (desvincula) uma cor de um produto.
- * 
+ *
  * NOTA: Esta validação depende da coluna `procor.procorqtde` que é adicionada
  * automaticamente via `src/config/atualizardb.js`. Caso a coluna não exista
  * em produção, a validação utilizará apenas `pro.proqtde` como fallback.
- * 
+ *
  * Regras de negócio:
  * - Se procor.procorqtde não é null e > 0: recusar
  * - Se procor.procorqtde é null, verificar pro.proqtde; se > 0: recusar
@@ -327,7 +328,9 @@ exports.deletarProdutoCoresDisponiveis = async (req, res) => {
     );
 
     if (procorResult.rows.length === 0) {
-      return res.status(404).json({ erro: "Vínculo cor-produto não encontrado" });
+      return res
+        .status(404)
+        .json({ erro: "Vínculo cor-produto não encontrado" });
     }
 
     const procorqtde = procorResult.rows[0].procorqtde;
@@ -335,7 +338,7 @@ exports.deletarProdutoCoresDisponiveis = async (req, res) => {
     // Se procor.procorqtde não é null e > 0, recusar
     if (procorqtde !== null && procorqtde > 0) {
       return res.status(400).json({
-        erro: "Não é permitido desvincular cor enquanto a quantidade desta cor for maior que zero"
+        erro: "Não é permitido desvincular cor enquanto a quantidade desta cor for maior que zero",
       });
     }
 
@@ -353,7 +356,7 @@ exports.deletarProdutoCoresDisponiveis = async (req, res) => {
       const proqtde = produtoResult.rows[0].proqtde || 0;
       if (proqtde > 0) {
         return res.status(400).json({
-          erro: "Não é permitido desvincular cor enquanto o produto possuir quantidade (proqtde) maior que zero"
+          erro: "Não é permitido desvincular cor enquanto o produto possuir quantidade (proqtde) maior que zero",
         });
       }
     }
