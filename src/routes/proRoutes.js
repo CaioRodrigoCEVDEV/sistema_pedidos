@@ -6,6 +6,10 @@ const autenticarToken = require("../middlewares/middlewares");
 const requireAdmin = require("../middlewares/adminMiddleware");
 
 // ==================  GET
+
+router.get("/total/produto/acabando", proController.totalProdutoAcabando);
+router.get("/total/produto/emfalta", proController.totalProdutoEmFalta);
+
 router.get("/pro/:id", proController.listarProduto);
 router.get("/proCores", proController.listarProCor);
 router.get("/pro/painel/:id", proController.listarProdutosPainelId);

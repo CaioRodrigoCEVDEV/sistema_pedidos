@@ -126,10 +126,47 @@ exports.listarPvPendentesCount = async (req, res) => {
   }
 };
 
+exports.listarPvPendentesCountNow = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "select count(*) from pv where pvconfirmado = 'N' and pvsta = 'A' and pvdtcad = 'now()'"
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro buscar pedidos hoje" });
+  }
+};
+
 exports.listarPvBalcao = async (req, res) => {
   try {
     const result = await pool.query(
       "select count(*) from pv where pvcanal = 'BALCAO' and pvsta = 'A' "
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro buscar pedidos" });
+  }
+};
+
+exports.listarPvEntregaNow = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "select count(*) from pv where pvcanal = 'ENTREGA' and pvsta = 'A' and pvdtcad = 'now()'"
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro buscar pedidos" });
+  }
+};
+
+
+exports.listarPvBalcaoNow = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "select count(*) from pv where pvcanal = 'BALCAO' and pvsta = 'A' and pvdtcad = 'now()'"
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -154,6 +191,18 @@ exports.listarTotalPvConfirmados = async (req, res) => {
   try {
     const result = await pool.query(
       "select count(*) from pv where pvconfirmado = 'S' and pvsta = 'A' "
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro buscar pedidos" });
+  }
+};
+
+exports.listarTotalPvConfirmadosNow = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "select count(*) from pv where pvconfirmado = 'S' and pvsta = 'A' and pvdtcad = 'now()'"
     );
     res.status(200).json(result.rows);
   } catch (error) {

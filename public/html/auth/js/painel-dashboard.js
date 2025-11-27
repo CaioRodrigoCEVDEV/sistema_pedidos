@@ -118,15 +118,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function loadDashboard() {
       // KPIs: pedidos
-      const pend = await jget("/pedidos/pendentescount", []);
-      const conf = await jget("/pedidos/total/confirmados", []);
-      const balcao = await jget("/pedidos/balcao", []);
-      const entrega = await jget("/pedidos/entrega", []);
+      const pend = await jget("/pedidos/pendentescountNow", []);
+      const conf = await jget("/pedidos/total/confirmadosNow", []);
+      const balcao = await jget("/pedidos/balcaoNow", []);
+      const entrega = await jget("/pedidos/entregaNow", []);
+      const emfalta = await jget("/total/produto/emfalta", []);
+      const acabando = await jget("/total/produto/acabando", []);
 
       const pendentesCount = toNum(pend?.[0]?.count);
       const confirmadosCount = toNum(conf?.[0]?.count);
       const balcaoCount = toNum(balcao?.[0]?.count);
       const entregaCount = toNum(entrega?.[0]?.count);
+      const emfaltaCount = toNum(emfalta?.[0]?.count);
+      const acabandoCount = toNum(acabando?.[0]?.count);
+
+      setText("kpiEmFalta", emfaltaCount);
+      setText("kpiAcabando", acabandoCount);
 
       setText("kpiPendentes", pendentesCount);
       setText("kpiConfirmados", confirmadosCount);

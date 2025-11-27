@@ -69,6 +69,30 @@ exports.listarProdutosPainelId = async (req, res) => {
   }
 };
 
+exports.totalProdutoAcabando = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `select count(procod)  from pro where proacabando = 'S'`
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao buscar total de produtos acabando" });
+  }
+};
+
+exports.totalProdutoEmFalta = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `select count(procod)  from pro where prosemest  = 'S'`
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao buscar total de produtos acabando" });
+  }
+};
+
 exports.listarProdutoCarrinho = async (req, res) => {
   const { id } = req.params;
 
