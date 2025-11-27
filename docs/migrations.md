@@ -132,6 +132,21 @@ const groupResult = await txClient.query(`
 `, [part.part_group_id]);
 ```
 
+### Database Triggers
+
+The system uses PostgreSQL triggers to automatically update stock on order confirmation/cancellation:
+
+- **`atualizar_saldo`** - Triggered when `pvconfirmado = 'S'` (order confirmed)
+  - Decrements `procor.procorqtde` for items with colors
+  - Decrements `pro.proqtde` for items without colors (legacy)
+  - **NEW:** Decrements `part_groups.stock_quantity` for parts with a group
+  - **NEW:** Creates audit records in `part_group_audit`
+
+- **`retornar_saldo`** - Triggered when `pvsta = 'X'` (order cancelled)
+  - Returns stock to `procor.procorqtde` and `pro.proqtde`
+  - **NEW:** Returns stock to `part_groups.stock_quantity`
+  - **NEW:** Creates audit records for cancellations
+
 ### Audit Trail
 
 All stock changes are recorded in `part_group_audit`:
@@ -159,6 +174,28 @@ DROP TABLE IF EXISTS part_groups;
 ```
 
 **Warning:** Rollback will lose all group configurations. Stock data in `pro.proqtde` is preserved.
+
+## Running Tests
+
+To run the part groups integration tests:
+
+```bash
+# From the project root directory
+node tests/partGroups.test.js
+```
+
+**Prerequisites:**
+- PostgreSQL database running with the schema created
+- Environment variables configured (`.env` file)
+- Migration must have run first (happens automatically on app startup)
+
+**Test Coverage:**
+- Creating groups
+- Listing groups
+- Updating group name and stock
+- Audit record creation
+- Stock decrement with sufficient/insufficient stock
+- Stock increment
 
 ## Future Improvements (TODO)
 

@@ -562,11 +562,14 @@ async function atualizarDB() {
     `);
 
     // função de trigger para atualizar saldo no estoque
+    // Updated to support part_groups (compatibility groups)
     await pool.query(`
       CREATE OR REPLACE FUNCTION public.atualizar_saldo()
         RETURNS trigger
         LANGUAGE plpgsql
         AS $function$
+        DECLARE
+          r RECORD;
         BEGIN
           IF NEW.pvconfirmado = 'S' THEN
 
@@ -578,7 +581,7 @@ async function atualizarDB() {
               AND i.pviprocorid  IS NOT NULL
               AND i.pviprocorid   = pc.procorcorescod;
 
-            -- 2) Itens SEM cor e produto SEM variações -> baixa em pro
+            -- 2) Itens SEM cor e produto SEM variações -> baixa em pro.proqtde (legacy)
             UPDATE pro pr
               SET proqtde = COALESCE(pr.proqtde, 0) - COALESCE(i.pviqtde, 0)
               FROM pvi i
@@ -590,6 +593,29 @@ async function atualizarDB() {
                       FROM procor pc
                       WHERE pc.procorprocod = pr.procod
                   );
+
+            -- 3) NEW: Decrement part_group stock for products with a group
+            -- This is the new compatibility groups feature
+            FOR r IN 
+              SELECT DISTINCT 
+                pr.part_group_id,
+                pr.procod,
+                COALESCE(i.pviqtde, 0) as qty
+              FROM pvi i
+              JOIN pro pr ON pr.procod = i.pviprocod
+              WHERE i.pvipvcod = NEW.pvcod
+                AND pr.part_group_id IS NOT NULL
+            LOOP
+              -- Update group stock
+              UPDATE part_groups 
+              SET stock_quantity = stock_quantity - r.qty,
+                  updated_at = NOW()
+              WHERE id = r.part_group_id;
+              
+              -- Create audit record
+              INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+              VALUES (r.part_group_id, -r.qty, 'sale', NEW.pvcod::text || ':' || r.procod::text);
+            END LOOP;
 
           END IF;
 
@@ -604,6 +630,8 @@ async function atualizarDB() {
         RETURNS trigger
         LANGUAGE plpgsql
         AS $function$
+        DECLARE
+          r RECORD;
         BEGIN
           IF NEW.pvsta = 'X' AND NEW.pvconfirmado = 'S' THEN
 
@@ -615,7 +643,7 @@ async function atualizarDB() {
               AND i.pviprocorid  IS NOT NULL
               AND i.pviprocorid   = pc.procorcorescod;
 
-            -- 2) Itens SEM cor e produto SEM variações -> devolve em pro
+            -- 2) Itens SEM cor e produto SEM variações -> devolve em pro.proqtde (legacy)
             UPDATE pro pr
               SET proqtde = COALESCE(pr.proqtde, 0) + COALESCE(i.pviqtde, 0)
               FROM pvi i
@@ -627,6 +655,28 @@ async function atualizarDB() {
                       FROM procor pc
                       WHERE pc.procorprocod = pr.procod
                   );
+
+            -- 3) NEW: Return stock to part_group for products with a group (order cancellation)
+            FOR r IN 
+              SELECT DISTINCT 
+                pr.part_group_id,
+                pr.procod,
+                COALESCE(i.pviqtde, 0) as qty
+              FROM pvi i
+              JOIN pro pr ON pr.procod = i.pviprocod
+              WHERE i.pvipvcod = NEW.pvcod
+                AND pr.part_group_id IS NOT NULL
+            LOOP
+              -- Return stock to group
+              UPDATE part_groups 
+              SET stock_quantity = stock_quantity + r.qty,
+                  updated_at = NOW()
+              WHERE id = r.part_group_id;
+              
+              -- Create audit record
+              INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+              VALUES (r.part_group_id, r.qty, 'cancellation', NEW.pvcod::text || ':' || r.procod::text);
+            END LOOP;
 
           END IF;
 
