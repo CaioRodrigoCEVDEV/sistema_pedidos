@@ -701,11 +701,13 @@ function editarProduto(codigo) {
             return;
           }
 
-          // Mapa com estado anterior
+          // Mapa com estado anterior (ignora cores nulas - produto sem cor vinculada)
           const anterioresMap = {};
           coresProduto.forEach((cp) => {
-            anterioresMap[String(cp.corcod)] =
-              cp.procorsemest === "S" ? "S" : "N";
+            if (cp.corcod != null) {
+              anterioresMap[String(cp.corcod)] =
+                cp.procorsemest === "S" ? "S" : "N";
+            }
           });
 
           // Estado atual
