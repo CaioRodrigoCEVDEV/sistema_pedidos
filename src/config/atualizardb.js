@@ -46,6 +46,9 @@ async function atualizarDB() {
       `ALTER TABLE public.usu ADD IF NOT exists usurca varchar(1) default 'N';`
     );
     await pool.query(
+      `ALTER TABLE public.usu ADD IF NOT exists usuviuversao varchar(1) default 'N';`
+    );
+    await pool.query(
       `ALTER TABLE public.emp ADD IF NOT exists empusapv varchar(1) default 'N';`
     );
     await pool.query(
