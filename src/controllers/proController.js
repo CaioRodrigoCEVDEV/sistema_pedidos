@@ -261,11 +261,37 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
   }
 };
 
+/**
+ * Insere uma cor disponível para um produto.
+ * 
+ * NOTA: Esta validação depende da coluna `procor.procorqtde` que é adicionada
+ * automaticamente via `src/config/atualizardb.js`. Caso a coluna não exista
+ * em produção, a validação de quantidade por cor não funcionará corretamente.
+ * 
+ * Regra de negócio: Só permite adicionar cor se pro.proqtde = 0
+ */
 exports.inserirProdutoCoresDisponiveis = async (req, res) => {
   const { id } = req.params;
   const procorsemest = req.query.procorsemest || "N"; // Default to 'N' if not provided
 
   try {
+    // Verificar se o produto tem estoque geral > 0
+    const produtoResult = await pool.query(
+      `SELECT proqtde FROM pro WHERE procod = $1`,
+      [id]
+    );
+
+    if (produtoResult.rows.length === 0) {
+      return res.status(404).json({ erro: "Produto não encontrado" });
+    }
+
+    const proqtde = produtoResult.rows[0].proqtde || 0;
+    if (proqtde > 0) {
+      return res.status(400).json({
+        erro: "Não é permitido adicionar cor enquanto o produto possuir quantidade (proqtde) maior que zero"
+      });
+    }
+
     const result = await pool.query(
       `insert into procor (procorprocod,procorcorescod,procorsemest) values($1,$2,$3) RETURNING *`,
       [id, req.query.corescod, procorsemest]
@@ -273,23 +299,73 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Erro ao inserir cores" });
+    res.status(500).json({ erro: "Erro ao inserir cores" });
   }
 };
 
+/**
+ * Deleta (desvincula) uma cor de um produto.
+ * 
+ * NOTA: Esta validação depende da coluna `procor.procorqtde` que é adicionada
+ * automaticamente via `src/config/atualizardb.js`. Caso a coluna não exista
+ * em produção, a validação utilizará apenas `pro.proqtde` como fallback.
+ * 
+ * Regras de negócio:
+ * - Se procor.procorqtde não é null e > 0: recusar
+ * - Se procor.procorqtde é null, verificar pro.proqtde; se > 0: recusar
+ * - Só permite deletar quando quantidade efetiva = 0
+ */
 exports.deletarProdutoCoresDisponiveis = async (req, res) => {
   const { id } = req.params;
-  //const { marca, modelo } = req.query;
+  const corescod = req.query.corescod;
 
   try {
+    // Buscar procor.procorqtde para a combinação (procorprocod = id, procorcorescod = corescod)
+    const procorResult = await pool.query(
+      `SELECT procorqtde FROM procor WHERE procorprocod = $1 AND procorcorescod = $2`,
+      [id, corescod]
+    );
+
+    if (procorResult.rows.length === 0) {
+      return res.status(404).json({ erro: "Vínculo cor-produto não encontrado" });
+    }
+
+    const procorqtde = procorResult.rows[0].procorqtde;
+
+    // Se procor.procorqtde não é null e > 0, recusar
+    if (procorqtde !== null && procorqtde > 0) {
+      return res.status(400).json({
+        erro: "Não é permitido desvincular cor enquanto a quantidade desta cor for maior que zero"
+      });
+    }
+
+    // Se procor.procorqtde é null, verificar pro.proqtde como fallback
+    if (procorqtde === null) {
+      const produtoResult = await pool.query(
+        `SELECT proqtde FROM pro WHERE procod = $1`,
+        [id]
+      );
+
+      if (produtoResult.rows.length === 0) {
+        return res.status(404).json({ erro: "Produto não encontrado" });
+      }
+
+      const proqtde = produtoResult.rows[0].proqtde || 0;
+      if (proqtde > 0) {
+        return res.status(400).json({
+          erro: "Não é permitido desvincular cor enquanto o produto possuir quantidade (proqtde) maior que zero"
+        });
+      }
+    }
+
     const result = await pool.query(
       `delete from procor where procorprocod = $1 and procorcorescod = $2 RETURNING *`,
-      [id, req.query.corescod]
+      [id, corescod]
     );
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Erro ao inserir cores" });
+    res.status(500).json({ erro: "Erro ao remover cor" });
   }
 };
 

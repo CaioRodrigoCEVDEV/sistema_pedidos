@@ -740,10 +740,14 @@ function editarProduto(codigo) {
             for (const c of atuais) {
               if (!anterioresMap[c.corcod]) {
                 // adicionar cor
-                await fetch(
+                const addResponse = await fetch(
                   `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${c.corcod}&procorsemest=${c.procorsemest}`,
                   { method: "POST" }
                 );
+                if (!addResponse.ok) {
+                  const errorData = await addResponse.json();
+                  throw new Error(errorData.erro || "Erro ao adicionar cor");
+                }
               } else if (anterioresMap[c.corcod] !== c.procorsemest) {
                 // atualizar cor já existente
                 await fetch(
@@ -762,10 +766,14 @@ function editarProduto(codigo) {
             // ------------------------------
             for (const corAnterior of Object.keys(anterioresMap)) {
               if (!atuais.some((a) => a.corcod === corAnterior)) {
-                await fetch(
+                const deleteResponse = await fetch(
                   `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${corAnterior}`,
                   { method: "DELETE" }
                 );
+                if (!deleteResponse.ok) {
+                  const errorData = await deleteResponse.json();
+                  throw new Error(errorData.erro || "Erro ao remover cor");
+                }
               }
             }
 
@@ -786,7 +794,7 @@ function editarProduto(codigo) {
             carregarProPesquisa();
           } catch (erro) {
             popup.remove();
-            alertPersonalizado("Erro ao atualizar o produto.", 2000);
+            alertPersonalizado(erro.message || "Erro ao atualizar o produto.", 3000);
           }
         });
     })
