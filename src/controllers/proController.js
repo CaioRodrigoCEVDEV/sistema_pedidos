@@ -148,11 +148,36 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
   }
 };
 
+/**
+ * Insere vínculo de cor a um produto.
+ * Validação: Só permite vincular cor quando pro.proqtde = 0.
+ * Observação: Esta implementação assume a existência da coluna procor.procorqtde
+ * (criada em src/config/atualizardb.js). Caso a coluna não exista em produção,
+ * a validação de quantidade por cor não funcionará.
+ */
 exports.inserirProdutoCoresDisponiveis = async (req, res) => {
   const { id } = req.params;
   //const { marca, modelo } = req.query;
 
   try {
+    // Verificar se o produto possui estoque geral > 0
+    const produtoResult = await pool.query(
+      `SELECT proqtde FROM pro WHERE procod = $1`,
+      [id]
+    );
+
+    if (produtoResult.rows.length === 0) {
+      return res.status(404).json({ erro: "Produto não encontrado" });
+    }
+
+    const proqtde = produtoResult.rows[0].proqtde || 0;
+
+    if (proqtde > 0) {
+      return res.status(400).json({
+        erro: "Não é permitido vincular cor enquanto o produto possuir quantidade (proqtde) maior que zero"
+      });
+    }
+
     const result = await pool.query(
       `insert into procor values($1,$2) RETURNING *`,
       [id, req.query.corescod]
@@ -160,23 +185,60 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Erro ao inserir cores" });
+    res.status(500).json({ erro: "Erro ao inserir cores" });
   }
 };
 
+/**
+ * Deleta vínculo de cor de um produto.
+ * Validação: Só permite desvincular cor quando a quantidade dessa cor (procor.procorqtde) = 0.
+ * Se procor.procorqtde for NULL, usa o estoque geral do produto (pro.proqtde) como fallback.
+ * Observação: Esta implementação assume a existência da coluna procor.procorqtde
+ * (criada em src/config/atualizardb.js). Caso a coluna não exista em produção,
+ * a validação de quantidade por cor não funcionará.
+ */
 exports.deletarProdutoCoresDisponiveis = async (req, res) => {
   const { id } = req.params;
-  //const { marca, modelo } = req.query;
+  const { corescod } = req.query;
 
   try {
+    // Buscar procor.procorqtde e pro.proqtde para a combinação
+    const validationResult = await pool.query(
+      `SELECT procor.procorqtde, pro.proqtde 
+       FROM procor 
+       JOIN pro ON pro.procod = procor.procorprocod 
+       WHERE procorprocod = $1 AND procorcorescod = $2`,
+      [id, corescod]
+    );
+
+    if (validationResult.rows.length === 0) {
+      return res.status(404).json({ erro: "Vínculo de cor não encontrado" });
+    }
+
+    const { procorqtde, proqtde } = validationResult.rows[0];
+
+    // Se procorqtde não é null e > 0, recusar
+    if (procorqtde !== null && procorqtde > 0) {
+      return res.status(400).json({
+        erro: "Não é permitido desvincular cor enquanto a quantidade desta cor for maior que zero"
+      });
+    }
+
+    // Se procorqtde é null, usar proqtde como fallback
+    if (procorqtde === null && (proqtde || 0) > 0) {
+      return res.status(400).json({
+        erro: "Não é permitido desvincular cor enquanto o produto possuir quantidade (proqtde) maior que zero"
+      });
+    }
+
     const result = await pool.query(
       `delete from procor where procorprocod = $1 and procorcorescod = $2 RETURNING *`,
-      [id, req.query.corescod]
+      [id, corescod]
     );
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Erro ao inserir cores" });
+    res.status(500).json({ erro: "Erro ao deletar cores" });
   }
 };
 

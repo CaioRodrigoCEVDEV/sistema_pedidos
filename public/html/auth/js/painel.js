@@ -635,25 +635,33 @@ function editarProduto(codigo) {
             throw new Error("403");
           }
 
-          // adiciona novas cores
+          // adiciona novas cores - tratando erros do servidor
           for (const cor of selecionadas) {
             if (!anteriores.includes(cor)) {
-              await fetch(
+              const addRes = await fetch(
                 `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`,
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                 }
               );
+              if (!addRes.ok) {
+                const errorData = await addRes.json();
+                throw new Error(errorData.erro || "Erro ao vincular cor");
+              }
             }
           }
-          // remove cores desmarcadas
+          // remove cores desmarcadas - tratando erros do servidor
           for (const cor of anteriores) {
             if (!selecionadas.includes(cor)) {
-              await fetch(
+              const delRes = await fetch(
                 `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`,
                 { method: "DELETE" }
               );
+              if (!delRes.ok) {
+                const errorData = await delRes.json();
+                throw new Error(errorData.erro || "Erro ao desvincular cor");
+              }
             }
           }
 
@@ -681,7 +689,7 @@ function editarProduto(codigo) {
             alertPersonalizado("Sem permissão para editar produtos.", 2000);
           } else {
             document.body.removeChild(popup);
-            alertPersonalizado("Erro ao atualizar o produto.", 2000);
+            alertPersonalizado(erro.message || "Erro ao atualizar o produto.", 3000);
           }
         }
       };
