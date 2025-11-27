@@ -83,6 +83,9 @@ app.use(cliRoute);
 const munRoute = require("./routes/munRoutes");
 app.use(munRoute);
 
+const partGroupRoutes = require("./routes/partGroupRoutes");
+app.use(partGroupRoutes);
+
 app.get('/me/usuario', autenticarToken, (req, res) => {
   // o middleware colocou o payload em req.token
   return res.json({ usunome: req.token.usunome });
@@ -174,6 +177,12 @@ app.get("/dashboard/modelo/pecas/lista", autenticarToken, (req, res) => {
 app.get("/clientes", autenticarToken, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-clientes.html")
+  );
+});
+
+app.get("/part-groups", requireAdmin, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-part-groups.html")
   );
 });
 

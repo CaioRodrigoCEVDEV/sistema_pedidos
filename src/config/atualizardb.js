@@ -103,6 +103,125 @@ async function atualizarDB() {
       ON CONFLICT (promodprocod, promodmodcod) DO NOTHING;
     `);
 
+    // ==================================================================================================================================
+    // PART GROUPS - Compatibility groups for shared inventory
+    // ==================================================================================================================================
+
+    // Enable uuid-ossp extension for UUID generation
+    await pool.query(`
+      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    `);
+
+    // Create part_groups table for compatibility groups
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.part_groups (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name TEXT NOT NULL,
+        stock_quantity INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // Add part_group_id foreign key to pro table
+    await pool.query(`
+      ALTER TABLE public.pro ADD IF NOT EXISTS part_group_id UUID NULL;
+    `);
+
+    // Add foreign key constraint if it doesn't exist
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints 
+          WHERE constraint_name = 'fk_pro_part_group' 
+          AND table_name = 'pro'
+        ) THEN
+          ALTER TABLE public.pro 
+            ADD CONSTRAINT fk_pro_part_group 
+            FOREIGN KEY (part_group_id) 
+            REFERENCES public.part_groups(id) 
+            ON DELETE SET NULL;
+        END IF;
+      END$$;
+    `);
+
+    // Create part_group_audit table for stock change tracking
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.part_group_audit (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        part_group_id UUID NOT NULL REFERENCES public.part_groups(id) ON DELETE CASCADE,
+        change INTEGER NOT NULL,
+        reason TEXT,
+        reference_id TEXT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // Create index on part_group_audit for faster lookups
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_part_group_audit_group_id 
+      ON public.part_group_audit(part_group_id);
+    `);
+
+    // Create index on pro.part_group_id for faster lookups
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_pro_part_group_id 
+      ON public.pro(part_group_id);
+    `);
+
+    // Migration: Create individual part_groups for existing parts that don't have a group
+    // This preserves existing behavior - each part gets its own group with its current stock
+    await pool.query(`
+      INSERT INTO public.part_groups (id, name, stock_quantity, created_at, updated_at)
+      SELECT 
+        uuid_generate_v4(),
+        COALESCE(prodes, 'Part ' || procod::text),
+        COALESCE(proqtde, 0),
+        COALESCE(prodtcad, NOW()),
+        NOW()
+      FROM public.pro
+      WHERE part_group_id IS NULL
+      ON CONFLICT DO NOTHING;
+    `);
+
+    // Update parts to reference their newly created groups
+    await pool.query(`
+      UPDATE public.pro p
+      SET part_group_id = pg.id
+      FROM public.part_groups pg
+      WHERE p.part_group_id IS NULL
+        AND pg.name = COALESCE(p.prodes, 'Part ' || p.procod::text)
+        AND pg.stock_quantity = COALESCE(p.proqtde, 0);
+    `);
+
+    // For any remaining parts without groups (edge cases), create groups individually
+    await pool.query(`
+      DO $$
+      DECLARE
+        r RECORD;
+        new_group_id UUID;
+      BEGIN
+        FOR r IN SELECT procod, prodes, proqtde, prodtcad FROM public.pro WHERE part_group_id IS NULL
+        LOOP
+          INSERT INTO public.part_groups (name, stock_quantity, created_at, updated_at)
+          VALUES (
+            COALESCE(r.prodes, 'Part ' || r.procod::text),
+            COALESCE(r.proqtde, 0),
+            COALESCE(r.prodtcad, NOW()),
+            NOW()
+          )
+          RETURNING id INTO new_group_id;
+          
+          UPDATE public.pro SET part_group_id = new_group_id WHERE procod = r.procod;
+        END LOOP;
+      END$$;
+    `);
+
+    // ==================================================================================================================================
+    // END PART GROUPS
+    // ==================================================================================================================================
+
     // FIM NOVOS CAMPOS
     // ==================================================================================================================================
 
@@ -443,11 +562,14 @@ async function atualizarDB() {
     `);
 
     // função de trigger para atualizar saldo no estoque
+    // Updated to support part_groups (compatibility groups)
     await pool.query(`
       CREATE OR REPLACE FUNCTION public.atualizar_saldo()
         RETURNS trigger
         LANGUAGE plpgsql
         AS $function$
+        DECLARE
+          r RECORD;
         BEGIN
           IF NEW.pvconfirmado = 'S' THEN
 
@@ -459,7 +581,7 @@ async function atualizarDB() {
               AND i.pviprocorid  IS NOT NULL
               AND i.pviprocorid   = pc.procorcorescod;
 
-            -- 2) Itens SEM cor e produto SEM variações -> baixa em pro
+            -- 2) Itens SEM cor e produto SEM variações -> baixa em pro.proqtde (legacy)
             UPDATE pro pr
               SET proqtde = COALESCE(pr.proqtde, 0) - COALESCE(i.pviqtde, 0)
               FROM pvi i
@@ -471,6 +593,29 @@ async function atualizarDB() {
                       FROM procor pc
                       WHERE pc.procorprocod = pr.procod
                   );
+
+            -- 3) NEW: Decrement part_group stock for products with a group
+            -- This is the new compatibility groups feature
+            FOR r IN 
+              SELECT DISTINCT 
+                pr.part_group_id,
+                pr.procod,
+                COALESCE(i.pviqtde, 0) as qty
+              FROM pvi i
+              JOIN pro pr ON pr.procod = i.pviprocod
+              WHERE i.pvipvcod = NEW.pvcod
+                AND pr.part_group_id IS NOT NULL
+            LOOP
+              -- Update group stock
+              UPDATE part_groups 
+              SET stock_quantity = stock_quantity - r.qty,
+                  updated_at = NOW()
+              WHERE id = r.part_group_id;
+              
+              -- Create audit record
+              INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+              VALUES (r.part_group_id, -r.qty, 'sale', NEW.pvcod::text || ':' || r.procod::text);
+            END LOOP;
 
           END IF;
 
@@ -485,6 +630,8 @@ async function atualizarDB() {
         RETURNS trigger
         LANGUAGE plpgsql
         AS $function$
+        DECLARE
+          r RECORD;
         BEGIN
           IF NEW.pvsta = 'X' AND NEW.pvconfirmado = 'S' THEN
 
@@ -496,7 +643,7 @@ async function atualizarDB() {
               AND i.pviprocorid  IS NOT NULL
               AND i.pviprocorid   = pc.procorcorescod;
 
-            -- 2) Itens SEM cor e produto SEM variações -> devolve em pro
+            -- 2) Itens SEM cor e produto SEM variações -> devolve em pro.proqtde (legacy)
             UPDATE pro pr
               SET proqtde = COALESCE(pr.proqtde, 0) + COALESCE(i.pviqtde, 0)
               FROM pvi i
@@ -508,6 +655,28 @@ async function atualizarDB() {
                       FROM procor pc
                       WHERE pc.procorprocod = pr.procod
                   );
+
+            -- 3) NEW: Return stock to part_group for products with a group (order cancellation)
+            FOR r IN 
+              SELECT DISTINCT 
+                pr.part_group_id,
+                pr.procod,
+                COALESCE(i.pviqtde, 0) as qty
+              FROM pvi i
+              JOIN pro pr ON pr.procod = i.pviprocod
+              WHERE i.pvipvcod = NEW.pvcod
+                AND pr.part_group_id IS NOT NULL
+            LOOP
+              -- Return stock to group
+              UPDATE part_groups 
+              SET stock_quantity = stock_quantity + r.qty,
+                  updated_at = NOW()
+              WHERE id = r.part_group_id;
+              
+              -- Create audit record
+              INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+              VALUES (r.part_group_id, r.qty, 'cancellation', NEW.pvcod::text || ':' || r.procod::text);
+            END LOOP;
 
           END IF;
 
