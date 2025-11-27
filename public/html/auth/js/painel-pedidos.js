@@ -76,6 +76,29 @@ function formatarMoeda(valor) {
   });
 }
 
+//buscar usuario logado
+async function buscarUsuario() {
+  try {
+    const response = await fetch(`${BASE_URL}/usuario/viuversao`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data.usucod;
+    } else {
+      console.error("Erro ao buscar usuário:", response.statusText);
+      return null;
+    }
+  } catch (error) {
+    console.error("Erro na requisição:", error);
+    return null;
+  }
+}
+
 // Carrega os totais de marcas, modelos, tipos e peças
 // função para atualizar os cards de totais (pode ser chamada após confirmar/cancelar)
 async function atualizarTotaisPedidos() {
@@ -107,6 +130,7 @@ window.atualizarTotaisPedidos = atualizarTotaisPedidos;
 // chama uma vez ao carregar a página
 document.addEventListener("DOMContentLoaded", () => {
   atualizarTotaisPedidos();
+  console.log(localStorage.getItem("usucod"));
 });
 
 async function abriDetalhePedido(pvcod, status = "pendentes") {
@@ -364,6 +388,9 @@ async function confirmarPedido(pvcod) {
       headers: {
         "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        pvrcacod: await buscarUsuario(),
+      }),
     });
   } catch (error) {
     console.error("Erro ao confirmar o pedido:", error);

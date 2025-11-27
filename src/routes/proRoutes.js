@@ -6,9 +6,14 @@ const autenticarToken = require("../middlewares/middlewares");
 const requireAdmin = require("../middlewares/adminMiddleware");
 
 // ==================  GET
+
+router.get("/total/produto/acabando", proController.totalProdutoAcabando);
+router.get("/total/produto/emfalta", proController.totalProdutoEmFalta);
+
 router.get("/pro/:id", proController.listarProduto);
 router.get("/proCores", proController.listarProCor);
 router.get("/pro/painel/:id", proController.listarProdutosPainelId);
+router.get("/pro/modelos/:id", proController.listarModelosProduto);
 router.get("/pros", proController.listarProdutos);
 router.get("/pro/carrinho/:id", proController.listarProdutoCarrinho);
 router.get(
@@ -37,6 +42,11 @@ router.get(
   proControllerV2.listarProdutosSemEstoque
 );
 router.get(
+  "/v2/proEstoqueAcabando",
+  autenticarToken,
+  proControllerV2.listarProdutosComEstoqueAcabando
+);
+router.get(
   "/v2/proComEstoque/:marca/:modelo",
   autenticarToken,
   proControllerV2.listarProdutosComEstoqueItem
@@ -45,6 +55,11 @@ router.get(
   "/v2/proSemEstoque/:marca/:modelo",
   autenticarToken,
   proControllerV2.listarProdutosSemEstoqueItem
+);
+router.get(
+  "/v2/proEstoqueAcabando/:marca/:modelo",
+  autenticarToken,
+  proControllerV2.listarProdutosComEstoqueAcabandoItem
 );
 // Fim V2 Routes com models
 

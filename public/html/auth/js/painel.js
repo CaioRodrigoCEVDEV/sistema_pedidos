@@ -511,195 +511,332 @@ inputPesquisa.addEventListener("input", function () {
 });
 
 function editarProduto(codigo) {
-  Promise.all([
-    fetch(`${BASE_URL}/pro/painel/${codigo}`).then((r) => r.json()),
-    fetch(`${BASE_URL}/procores`).then((r) => r.json()),
-    fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) => r.json()),
-  ])
-    .then(([produto, coresDisponiveis, coresProduto]) => {
-      // Cria o popup
-      let popup = document.createElement("div");
-      popup.id = "popupEditarProduto";
-      popup.style.position = "fixed";
-      popup.style.top = "0";
-      popup.style.left = "0";
-      popup.style.width = "100vw";
-      popup.style.height = "100vh";
-      popup.style.background = "rgba(0,0,0,0.5)";
-      popup.style.display = "flex";
-      popup.style.alignItems = "center";
-      popup.style.justifyContent = "center";
-      popup.style.zIndex = "9999";
+  // First fetch the product to get the brand ID
+  fetch(`${BASE_URL}/pro/painel/${codigo}`)
+    .then((r) => r.json())
+    .then((produto) => {
+      const marcaCod = produto[0]?.promarcascod;
 
-      // Preenche os campos com os dados carregados do produto
-      popup.innerHTML = `
+      // Now fetch remaining data including models filtered by brand
+      return Promise.all([
+        Promise.resolve(produto),
+        fetch(`${BASE_URL}/procores`).then((r) => r.json()),
+        fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) =>
+          r.json()
+        ),
+        fetch(`${BASE_URL}/pro/modelos/${codigo}`).then((r) => r.json()),
+        fetch(`${BASE_URL}/modelo/${marcaCod}`).then((r) => r.json()),
+      ]);
+    })
+    .then(
+      ([
+        produto,
+        coresDisponiveis,
+        coresProduto,
+        modelosProduto,
+        modelosDaMarca,
+      ]) => {
+        // IDs dos modelos vinculados ao produto
+        const modelosVinculados = modelosProduto.map((m) => m.modcod);
+
+        // ------------------------------
+        // POPUP
+        // ------------------------------
+        let popup = document.createElement("div");
+        popup.id = "popupEditarProduto";
+        popup.style = `
+        position:fixed;top:0;left:0;width:100vw;height:100vh;
+        background:rgba(0,0,0,0.5);display:flex;
+        align-items:center;justify-content:center;z-index:9999;
+      `;
+
+        popup.innerHTML = `
         <div style="
-        background:#fff;
-        padding:24px;
-        border-radius:8px;
-        min-width:300px;
-        width:40vw;
-        max-height:80vh;   /* limite de altura do popup */
-        overflow:auto;     /* adiciona barra de rolagem quando necessário */
-        -webkit-overflow-scrolling: touch;
-        box-sizing: border-box;
+          background:#fff;padding:24px;border-radius:8px;
+          min-width:300px;width:40vw;max-height:80vh;overflow:auto;
         ">
           <h5>📦 Editar Produto</h5>
-          <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
+          <hr>
+
           <form id="formEditarProduto">
-        <div class="mb-3">
-          <label for="editarDescricao" class="form-label">📝 Descrição</label>
-          <input type="text" class="form-control" id="editarDescricao" name="prodes" 
-            value="${produto[0].prodes || ""}" required>
-        </div>
-        <div class="mb-3">
-          <label for="editarValor" class="form-label">💰 Valor</label>
-          <input type="number" step="0.01" class="form-control" id="editarValor" name="provl" 
-            value="${Number(produto[0].provl).toFixed(2) || ""}" required>
-        </div>
-        <div>
-          <label for="editarEst" class="form-label">📥 Sem estoque</label>
-          <input class="form-check-input" type="checkbox" name="prosemest" value="${
-            produto.prosemest
-          }" id="editar_prosemest" ${
-        produto.some((pro) => pro.prosemest === "S") ? "checked" : ""
-      }>
-        </div>
-        <div>
-          <details close>
-            <summary class="mb-2">🎨 Vincule as cores disponíveis do produto</summary>
-            <div class="mb-3" id="editarProdutoCores" style="max-height:220px; overflow:auto; padding-right:8px;">
-          <label> </label><br>
-          ${coresDisponiveis
-            .map(
-              (c) => `
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="procor" value="${
-                c.corcod
-              }" id="editar_cor_${c.corcod}" ${
-                coresProduto.some((cp) => cp.corcod == c.corcod)
-                  ? "checked"
-                  : ""
-              }>
-              <label class="form-check-label" for="editar_cor_${c.corcod}">${
-                c.cornome
-              }</label>
+
+            <div class="mb-3">
+              <label class="form-label">📝 Descrição</label>
+              <input type="text" class="form-control" id="editarDescricao" required
+                value="${produto[0]?.prodes || ""}">
             </div>
-          `
-            )
-            .join("")}
+
+            <div class="mb-3">
+              <label class="form-label">💰 Valor</label>
+              <input type="number" step="0.01" class="form-control" id="editarValor" required
+                value="${Number(produto[0]?.provl).toFixed(2) || ""}">
             </div>
-          </details>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <button type="button" class="btn btn-secondary" id="cancelarEditarProduto">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar</button>
-        </div>
+
+            <div class="mb-3">
+              <label class="form-label">📥 Produto sem estoque</label><br>
+              <input type="checkbox" id="editar_prosemest"
+                ${produto.some((p) => p.prosemest === "S") ? "checked" : ""}>
+              <label for="editar_prosemest">Sem estoque geral</label>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">📥 Produto acabando</label><br>
+              <input type="checkbox" id="editar_proacabando"
+                ${produto.some((p) => p.proacabando === "S") ? "checked" : ""}>
+              <label for="editar_proacabando">Produto acabando</label>
+            </div>
+
+            <details>
+              <summary class="mb-2">📱 Modelos vinculados</summary>
+              <div id="editarProdutoModelos" style="max-height:180px;overflow:auto;padding-right:8px;">
+                ${modelosDaMarca
+                  .map((m) => {
+                    const vinculado = modelosVinculados.includes(m.modcod);
+                    return `
+                    <div class="form-check">
+                      <input type="checkbox" class="form-check-input checkbox-modelo"
+                        value="${m.modcod}" id="editar_modelo_${m.modcod}"
+                        ${vinculado ? "checked" : ""}>
+                      <label class="form-check-label" for="editar_modelo_${
+                        m.modcod
+                      }">
+                        ${m.moddes}
+                      </label>
+                    </div>
+                  `;
+                  })
+                  .join("")}
+              </div>
+              <div class="form-text">Selecione os modelos compatíveis com esta peça</div>
+            </details>
+
+            <details>
+              <summary class="mb-2">🎨 Vincule as cores do produto</summary>
+              <div id="editarProdutoCores" style="max-height:220px;overflow:auto;padding-right:8px;">
+                ${coresDisponiveis
+                  .map((c) => {
+                    const ligada = coresProduto.some(
+                      (cp) => cp.corcod == c.corcod
+                    );
+                    const semEst = coresProduto.some(
+                      (cp) => cp.corcod == c.corcod && cp.procorsemest === "S"
+                    );
+
+                    return `
+                    <div class="form-check row align-items-center py-1" data-cor="${
+                      c.corcod
+                    }">
+                      <div class="col-6">
+                        <input type="checkbox" class="form-check-input checkbox-cor"
+                          value="${c.corcod}" id="editar_cor_${c.corcod}"
+                          ${ligada ? "checked" : ""}>
+                        <label class="form-check-label" for="editar_cor_${
+                          c.corcod
+                        }">
+                          ${c.cornome}
+                        </label>
+                      </div>
+
+                      <div class="col-6">
+                        <input type="checkbox" class="form-check-input checkbox-cor-semest"
+                          data-cor-semest="${c.corcod}"
+                          id="editar_cor_semest_${c.corcod}"
+                          ${semEst ? "checked" : ""}
+                          ${!ligada ? "disabled" : ""}>
+                        <label class="form-check-label" for="editar_cor_semest_${
+                          c.corcod
+                        }">
+                          Sem estoque
+                        </label>
+                      </div>
+                    </div>
+                  `;
+                  })
+                  .join("")}
+              </div>
+            </details>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+              <button type="button" class="btn btn-secondary" id="cancelarEditarProduto">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Salvar
+              </button>
+            </div>
+
           </form>
         </div>
       `;
 
-      document.body.appendChild(popup);
+        document.body.appendChild(popup);
 
-      document.getElementById("cancelarEditarProduto").onclick = function () {
-        document.body.removeChild(popup);
-      };
+        document.getElementById("cancelarEditarProduto").onclick = () => {
+          popup.remove();
+        };
 
-      document.getElementById("formEditarProduto").onsubmit = async function (
-        e
-      ) {
-        e.preventDefault();
-        const prodes = document.getElementById("editarDescricao").value.trim();
-        const provl = document.getElementById("editarValor").value;
-        const editar_prosemest =
-          document.getElementById("editar_prosemest").checked;
-        const prosemest = editar_prosemest ? "S" : "N";
-        //console.log(editar_prosemest);
-        const corCheckboxes = popup.querySelectorAll(
-          '#editarProdutoCores input[type="checkbox"]'
-        );
-        const selecionadas = Array.from(corCheckboxes)
-          .filter((cb) => cb.checked)
-          .map((cb) => cb.value);
-        const anteriores = coresProduto
-          .filter((c) => c.corcod != null)
-          .map((c) => String(c.corcod));
+        // ------------------------------
+        // HABILITA / DESABILITA "sem estoque" por cor
+        // ------------------------------
+        popup.querySelectorAll(".checkbox-cor").forEach((ch) => {
+          ch.addEventListener("change", () => {
+            const cor = ch.value;
+            const semEst = popup.querySelector(`#editar_cor_semest_${cor}`);
+            if (!semEst) return;
 
-        try {
-          const res = await fetch(`${BASE_URL}/pro/${codigo}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prodes, provl, prosemest }),
+            if (ch.checked) semEst.disabled = false;
+            else {
+              semEst.checked = false;
+              semEst.disabled = true;
+            }
           });
-          if (res.status === 403) {
-            throw new Error("403");
-          }
-
-          // adiciona novas cores
-          for (const cor of selecionadas) {
-            if (!anteriores.includes(cor)) {
-              await fetch(
-                `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                }
-              );
-            }
-          }
-          // remove cores desmarcadas
-          for (const cor of anteriores) {
-            if (!selecionadas.includes(cor)) {
-              await fetch(
-                `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${cor}`,
-                { method: "DELETE" }
-              );
-            }
-          }
-
-          const msg = document.createElement("div");
-          msg.textContent = "Produto atualizado com sucesso!";
-          msg.style.position = "fixed";
-          msg.style.top = "20px";
-          msg.style.left = "50%";
-          msg.style.transform = "translateX(-50%)";
-          msg.style.background = "#28a745";
-          msg.style.color = "#fff";
-          msg.style.padding = "12px 24px";
-          msg.style.borderRadius = "6px";
-          msg.style.zIndex = "10000";
-          msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-          document.body.appendChild(msg);
-          setTimeout(() => {
-            msg.remove();
-          }, 2000);
-          document.body.removeChild(popup);
-          carregarProPesquisa();
-        } catch (erro) {
-          if (erro.message === "403") {
-            document.body.removeChild(popup);
-            alertPersonalizado("Sem permissão para editar produtos.", 2000);
-          } else {
-            document.body.removeChild(popup);
-            alertPersonalizado("Erro ao atualizar o produto.", 2000);
-          }
-        }
-      };
-
-      const inputValor = document.getElementById("editarValor");
-
-      inputValor.addEventListener("input", function (e) {
-        let value = e.target.value.replace(/\D/g, "");
-        value = (parseInt(value, 10) / 100).toFixed(2);
-        e.target.value = value.toLocaleString("pt-BR", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
         });
-      });
-    })
-    .catch((erro) => {
-      alert("Erro ao buscar os dados do produto.");
-      console.error(erro);
+
+        // -----------------------------------------
+        // SUBMIT ÚNICO E CORRETO (COM procorsemest)
+        // -----------------------------------------
+        popup
+          .querySelector("#formEditarProduto")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const prodes = document
+              .getElementById("editarDescricao")
+              .value.trim();
+            const provl = document.getElementById("editarValor").value;
+            const prosemest = document.getElementById("editar_prosemest")
+              .checked
+              ? "S"
+              : "N";
+            const proacabando = document.getElementById("editar_proacabando")
+              .checked
+              ? "S"
+              : "N";
+
+            // Obter modelos selecionados
+            const modelosCheckboxes = popup.querySelectorAll(
+              "#editarProdutoModelos .checkbox-modelo:checked"
+            );
+            const promodcods = Array.from(modelosCheckboxes).map((cb) =>
+              parseInt(cb.value, 10)
+            );
+
+            if (promodcods.length === 0) {
+              alert("Por favor, selecione pelo menos um modelo.");
+              return;
+            }
+
+            // Mapa com estado anterior (ignora cores nulas - produto sem cor vinculada)
+            const anterioresMap = {};
+            coresProduto.forEach((cp) => {
+              if (cp.corcod !== null && cp.corcod !== undefined) {
+                anterioresMap[String(cp.corcod)] =
+                  cp.procorsemest === "S" ? "S" : "N";
+              }
+            });
+
+            // Estado atual
+            const linhas = popup.querySelectorAll(
+              "#editarProdutoCores .form-check"
+            );
+            const atuais = [];
+            linhas.forEach((l) => {
+              const corCheck = l.querySelector(".checkbox-cor");
+              const semEstCheck = l.querySelector(".checkbox-cor-semest");
+              if (corCheck && corCheck.checked) {
+                atuais.push({
+                  corcod: corCheck.value,
+                  procorsemest: semEstCheck?.checked ? "S" : "N",
+                });
+              }
+            });
+
+            try {
+              // ------------------------------
+              // Atualiza dados básicos do produto (incluindo modelos)
+              // ------------------------------
+              await fetch(`${BASE_URL}/pro/${codigo}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  prodes,
+                  provl,
+                  prosemest,
+                  promodcods,
+                  proacabando,
+                }),
+              });
+
+              // ------------------------------
+              // Cores novas ou atualizadas
+              // ------------------------------
+              for (const c of atuais) {
+                if (!anterioresMap[c.corcod]) {
+                  // adicionar cor
+                  const addResponse = await fetch(
+                    `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${c.corcod}&procorsemest=${c.procorsemest}`,
+                    { method: "POST" }
+                  );
+                  if (!addResponse.ok) {
+                    const errorData = await addResponse.json();
+                    throw new Error(errorData.erro || "Erro ao adicionar cor");
+                  }
+                } else if (anterioresMap[c.corcod] !== c.procorsemest) {
+                  // atualizar cor já existente
+                  await fetch(
+                    `${BASE_URL}/proCoresDisponiveis/${codigo}?` +
+                      `corescod=${c.corcod}` + // cor atual (no banco)
+                      `&procorsemest=${anterioresMap[c.corcod]}` + // semestre atual (banco)
+                      `&corescodnovo=${c.corcod}` + // nova cor (igual, se não mudar)
+                      `&procorsemestnovo=${c.procorsemest}`, // semestre novo
+                    { method: "PUT" }
+                  );
+                }
+              }
+
+              // ------------------------------
+              // Remover cores que foram desmarcadas
+              // ------------------------------
+              for (const corAnterior of Object.keys(anterioresMap)) {
+                if (!atuais.some((a) => a.corcod === corAnterior)) {
+                  const deleteResponse = await fetch(
+                    `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${corAnterior}`,
+                    { method: "DELETE" }
+                  );
+                  if (!deleteResponse.ok) {
+                    const errorData = await deleteResponse.json();
+                    throw new Error(errorData.erro || "Erro ao remover cor");
+                  }
+                }
+              }
+
+              // ------------------------------
+              // Aviso de sucesso
+              // ------------------------------
+              const msg = document.createElement("div");
+              msg.textContent = "Produto atualizado com sucesso!";
+              msg.style = `
+            position:fixed;top:20px;left:50%;transform:translateX(-50%);
+            background:#28a745;color:#fff;padding:12px 24px;border-radius:6px;
+            z-index:10000;box-shadow:0 2px 8px rgba(0,0,0,0.2);
+          `;
+              document.body.appendChild(msg);
+              setTimeout(() => msg.remove(), 2000);
+
+              popup.remove();
+              carregarProPesquisa();
+            } catch (erro) {
+              popup.remove();
+              alertPersonalizado(
+                erro.message || "Erro ao atualizar o produto.",
+                3000
+              );
+            }
+          });
+      }
+    )
+    .catch(() => {
+      alert("Erro ao buscar dados do produto.");
     });
 }
 

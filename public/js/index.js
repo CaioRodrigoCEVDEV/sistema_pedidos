@@ -500,78 +500,103 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
   modal.style.boxShadow = "0 2px 10px rgba(0,0,0,0.3)";
   modal.style.zIndex = "9999";
 
+  // Monta HTML do modal incluindo indicação de cores sem estoque (procorsemest === 'S')
   modal.innerHTML = `
-  <style>
-    #modal-cor-container {
-      max-width: 300px;
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+    <style>
+      #modal-cor-container {
+        max-width: 300px;
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      #modal-cor-container p {
+        font-size: 16px;
+        margin: 0;
+        font-weight: 600;
+        text-align: center;
+      }
+      #modal-cor-container select {
+        width: 100%;
+        padding: 8px;
+        font-size: 14px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+      #modal-cor-botoes {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      #modal-cor-botoes button {
+        padding: 6px 12px;
+        font-size: 14px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      #btn-confirmar-cor {
+        background-color: #28a745;
+        color: white;
+      }
+      #btn-confirmar-cor:hover {
+        background-color: #218838;
+      }
+      #btn-cancelar-cor {
+        background-color: #dc3545;
+        color: white;
+      }
+      #btn-cancelar-cor:hover {
+        background-color: #c82333;
+      }
+      #select-cor option[disabled] {
+        color: #888;
+        background: #f5f5f5;
+        font-style: italic;
+      }
+    </style>
 
-    #modal-cor-container p {
-      font-size: 16px;
-      margin: 0;
-      font-weight: 600;
-      text-align: center;
-    }
+    <div id="modal-cor-container">
+      <p>Escolha a cor do produto:</p>
+      <select id="select-cor">
+  ${cores
+    .map((cor) => {
+      const semEstoque = cor.procorsemest === "S";
+      const label = `${cor.cornome}${semEstoque ? " (Sem estoque)" : ""}`;
 
-    #modal-cor-container select {
-      width: 100%;
-      padding: 8px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-
-    #modal-cor-botoes {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-
-    #modal-cor-botoes button {
-      padding: 6px 12px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-
-    #btn-confirmar-cor {
-      background-color: #28a745;
-      color: white;
-    }
-
-    #btn-confirmar-cor:hover {
-      background-color: #218838;
-    }
-
-    #btn-cancelar-cor {
-      background-color: #dc3545;
-      color: white;
-    }
-
-    #btn-cancelar-cor:hover {
-      background-color: #c82333;
-    }
-  </style>
-
-  <div id="modal-cor-container">
-    <p>Escolha a cor do produto:</p>
-    <select id="select-cor">
-      ${cores
-        .map((cor) => `<option value="${cor.procod}">${cor.cornome}</option>`)
-        .join("")}
-    </select>
-    <div id="modal-cor-botoes">
-      <button id="btn-cancelar-cor">Cancelar</button>
-      <button id="btn-confirmar-cor">Confirmar</button>
+      return `
+        <option value="${cor.cornome}" 
+          ${semEstoque ? 'disabled data-semest="S"' : ""}>
+          ${label}
+        </option>
+      `;
+    })
+    .join("")}
+</select>
+      <div id="modal-cor-botoes">
+        <button id="btn-cancelar-cor">Cancelar</button>
+        <button id="btn-confirmar-cor">Confirmar</button>
+      </div>
     </div>
-  </div>
-`;
+    <script>
+      (function(){
+        const select = document.getElementById('select-cor');
+        const confirmBtn = document.getElementById('btn-confirmar-cor');
+        // Se todas as opções estiverem sem estoque, desabilita confirmar
+        if ([...select.options].every(o => o.disabled)) {
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Indisponível';
+          confirmBtn.style.backgroundColor = '#999';
+          confirmBtn.style.cursor = 'not-allowed';
+        } else {
+          // Seleciona automaticamente a primeira opção disponível
+          const firstAvailable = [...select.options].find(o => !o.disabled);
+          if (firstAvailable) firstAvailable.selected = true;
+        }
+      })();
+    </script>
+  `;
 
   document.body.appendChild(backdrop);
   document.body.appendChild(modal);

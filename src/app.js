@@ -77,6 +77,17 @@ app.use(estoqueRoutes);
 const usuarioRoute = require("./routes/usuarioRoute");
 app.use(usuarioRoute);
 
+const cliRoute = require("./routes/cliRoutes");
+app.use(cliRoute);
+
+const munRoute = require("./routes/munRoutes");
+app.use(munRoute);
+
+app.get('/me/usuario', autenticarToken, (req, res) => {
+  // o middleware colocou o payload em req.token
+  return res.json({ usunome: req.token.usunome });
+});
+
 // Adicionando a nova rota usuarioRoute2 para testar MODELS
 const usuarioRoute2 = require("./routes/usuarioRoute2");
 app.use(usuarioRoute2);
@@ -159,6 +170,150 @@ app.get("/dashboard/modelo/pecas/lista", autenticarToken, (req, res) => {
     path.join(__dirname, "../public/html/auth/admin/html/lista-pecas.html")
   );
 });
+
+app.get("/clientes", autenticarToken, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-clientes.html")
+  );
+});
+
+app.get("/dash", autenticarToken, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-dashboard.html")
+  );
+});
+
+app.get("/backup", autenticarToken, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-backups.html")
+  );
+});
+
+
+
+
+
+
+
+
+
+
+// Caminho onde ficam os backups
+const dirPathBackups = '/home/backup';
+
+
+// 🔹 LISTAR ARQUIVOS E PASTAS
+// 🔹 LISTAR APENAS AS PASTAS DE DIAS DA SEMANA
+app.get('/backups', requireAdminPages, async (req, res) => {
+  try {
+    const entries = await fs.promises.readdir(dirPathBackups, { withFileTypes: true });
+
+    // nomes válidos de pastas de dias da semana
+    const diasSemana = [
+      '1_domingo',
+      '2_segunda',
+      '3_terca',
+      '4_quarta',
+      '5_quinta',
+      '6_sexta',
+      '7_sabado'
+    ];
+
+    const backups = await Promise.all(
+      entries
+        .filter(entry => entry.isDirectory() && diasSemana.includes(entry.name))
+        .map(async (entry) => ({
+          nome: entry.name,
+          tipo: 'pasta',
+          tamanhoKB: '-',
+          url: `/backups/folder/${encodeURIComponent(entry.name)}`
+        }))
+    );
+
+    res.json({ backups });
+  } catch (err) {
+    console.error('Erro ao listar backups:', err.message);
+    res.status(500).json({ erro: 'Erro ao listar backups', detalhe: err.message });
+  }
+});
+
+
+// 🔹 LISTAR CONTEÚDO DE UMA PASTA ESPECÍFICA
+app.get('/backups/folder/:folder', requireAdminPages, async (req, res) => {
+  try {
+    const folderName = path.basename(decodeURIComponent(req.params.folder));
+    const folderPath = path.join(dirPathBackups, folderName);
+
+    const resolvedBase = path.resolve(dirPathBackups) + path.sep;
+    const resolvedTarget = path.resolve(folderPath);
+    if (!resolvedTarget.startsWith(resolvedBase)) {
+      return res.status(400).json({ erro: 'Nome de pasta inválido.' });
+    }
+
+    const entries = await fs.promises.readdir(folderPath, { withFileTypes: true });
+
+    const backups = await Promise.all(
+      entries.map(async (entry) => {
+        const fullPath = path.join(folderPath, entry.name);
+        const stats = await fs.promises.stat(fullPath);
+
+        return {
+          nome: entry.name,
+          tipo: entry.isDirectory() ? 'pasta' : 'arquivo',
+          tamanhoKB: entry.isDirectory() ? '-' : (stats.size / 1024).toFixed(2),
+          url: entry.isDirectory()
+            ? `/backups/folder/${encodeURIComponent(path.join(folderName, entry.name))}`
+            : `/backups/download/${encodeURIComponent(path.join(folderName, entry.name))}`
+        };
+      })
+    );
+
+    res.json({ backups });
+  } catch (err) {
+    console.error('Erro ao listar pasta:', err.message);
+    res.status(500).json({ erro: 'Erro ao listar pasta', detalhe: err.message });
+  }
+});
+
+
+
+// 🔹 DOWNLOAD DE ARQUIVO ESPECÍFICO
+app.get('/backups/download/:dir', requireAdminPages, async (req, res) => {
+  try {
+    const fileName = path.basename(decodeURIComponent(req.params.file)); // evita ../
+    const filePath = path.join(dirPathBackups, fileName);
+
+    // segurança: impede acesso fora da pasta
+    const resolvedBase = path.resolve(dirPathBackups) + path.sep;
+    const resolvedTarget = path.resolve(filePath);
+    if (!resolvedTarget.startsWith(resolvedBase)) {
+      return res.status(400).json({ erro: 'Nome de arquivo inválido.' });
+    }
+
+    // verifica existência
+    await fs.promises.access(filePath, fs.constants.F_OK);
+
+    // envia o arquivo
+    res.download(filePath, fileName, err => {
+      if (err) {
+        console.error('Erro no download:', err.message);
+        res.status(500).json({ erro: 'Falha ao realizar download.' });
+      }
+    });
+  } catch (err) {
+    console.error('Erro ao baixar arquivo:', err.message);
+    res.status(404).json({ erro: 'Arquivo não encontrado.' });
+  }
+});
+
+
+
+
+
+
+
+
+
 
 app.get("/config.js", (req, res) => {
   res.type("application/javascript");
@@ -389,6 +544,9 @@ app.get('/api/releases', async (req, res) => {
     res.status(500).json({ ok: false, error: 'Erro interno' });
   }
 });
+
+
+
 
 // Inicia o servidor
 (async () => {

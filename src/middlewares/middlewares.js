@@ -20,6 +20,7 @@ function autenticarToken(req, res, next) {
             empusaest: decoded.empusaest,
             empusapv: decoded.empusapv
         }, 'chave-secreta', { expiresIn: '60m' });
+        //console.log('Token renovado para o usuário:', 'usario est',decoded.usuest,'empresa est', decoded.empusaest);
 
     // gauda o novo token com mais 10m em cookies
         res.cookie('token', novoToken, {

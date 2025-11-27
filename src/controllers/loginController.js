@@ -44,14 +44,14 @@ exports.validarLogin = async (req, res) => {
             usuest:   usuario.usuest,
             usupv:    usuario.usupv,
             empusapv: empresa.empusapv,
-            empusaest:empresa.empusaest    }, 'chave-secreta', { expiresIn: '60m' });
+            empusaest:empresa.empusaest }, 'chave-secreta', { expiresIn: '60m' });
         res.cookie('token',token,{
             httpOnly: true,
             secure: process.env.HTTPS,
             sameSite: 'Strict',
         });
 
-        res.status(200).json({ mensagem: 'Login bem-sucedido',token, usunome: usuario.usunome, usuemail: usuario.usuemail, usuadm: usuario.usuadm, ususta: usuario.ususta, usuest: usuario.usuest, usupv: usuario.usupv, empusapv: empresa.empusapv, empusaest: empresa.empusaest });
+        res.status(200).json({ mensagem: 'Login bem-sucedido',token, usunome: usuario.usunome, usuemail: usuario.usuemail, usuadm: usuario.usuadm, ususta: usuario.ususta, usuest: usuario.usuest, usupv: usuario.usupv, empusapv: empresa.empusapv, empusaest: empresa.empusaest  });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao validar login' });

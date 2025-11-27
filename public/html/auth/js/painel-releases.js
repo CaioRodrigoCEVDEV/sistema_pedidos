@@ -1,35 +1,63 @@
-// Controle de exibição do alerta de tutorial na página inicial
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const alertEl = document.getElementById("releaseID");
   const closeBtn = document.getElementById("releaseIDClose");
-  if (!alertEl) return;
 
-  if (localStorage.getItem("releaseIDClose") === "true") {
-    // deixar sempre mostrando por enquanto// alertEl.remove();
-    localStorage.removeItem("releaseIDClose");
-    return;
-  }
-
-  alertEl.style.display = "none";
-  setTimeout(() => {
-    alertEl.style.display = "block";
-    alertEl.classList.add("slide-down");
-  }, 1500);
-
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      localStorage.setItem("releaseIDClose", "true");
+  try {
+    const response = await fetch("/usuario/viuversao", {
+      method: "GET",
+      credentials: "include" // envia o cookie HttpOnly
     });
+
+    if (!response.ok) throw new Error("Falha ao obter usuário");
+
+    const data = await response.json();
+    const viuversao = data.usuviuversao || "N";
+    const usucod = data.usucod;
+    
+
+    if (!alertEl) return;
+
+    if (viuversao === "S" && localStorage.getItem("releaseIDClose") === "true") {
+      alertEl.style.display = "none";
+      return;
+    }
+
+    //alertEl.style.display = "none";
+    setTimeout(() => {
+      alertEl.style.display = "block";
+      alertEl.classList.add("slide-down");
+    }, 1500);
+
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        try {
+          fetch(`${BASE_URL}/usuario/viuversao/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            credentials: "include", // envia o cookie HttpOnly
+            body: JSON.stringify({ viuversao: "S",usucod: usucod })
+          });
+        } catch (err) {
+          console.error("Erro ao atualizar viuversao:", err);
+        }
+        alertEl.style.display = "none";
+        localStorage.setItem("releaseIDClose", "true");
+      });
+    }
+
+  } catch (err) {
+    console.error("Erro ao buscar nome do usuário:", err);
   }
 });
-
 
 (function () {
   const OWNER = 'CaioRodrigoCEVDEV';
   const REPO = 'sistema_pedidos';
-  const CACHE_KEY = 'gh_releases_cache_v2';
+
+  // Sem cache de releases
   const FAV_KEY = 'gh_releases_favs_v2';
-  const CACHE_TTL_MIN = 60;
 
   const openBtn = document.getElementById('openReleasesBtn');
   const releasesModalEl = document.getElementById('releasesModal');
@@ -38,8 +66,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const msgEl = document.getElementById('releasesMsg');
   const filterInput = document.getElementById('filterInput');
   const sortSelect = document.getElementById('sortSelect');
-  const cacheInfo = document.getElementById('cacheInfo');
+  const cacheInfo = document.getElementById('cacheInfo'); // mostra "agora"
   const refreshBtn = document.getElementById('refreshBtn');
+
+  let releasesData = [];
 
   if (!listEl || !msgEl) {
     console.warn('Releases: elementos essenciais não encontrados, abortando inicialização.');
@@ -50,124 +80,118 @@ document.addEventListener("DOMContentLoaded", () => {
     openBtn.addEventListener('click', () => {
       if (releasesModal) releasesModal.show();
       setTimeout(() => filterInput && filterInput.focus(), 300);
-      loadAndRender();
+      loadAndRender(); // sempre bate na API
     });
   }
 
-  if (filterInput) filterInput.addEventListener('input', renderFromCache);
-  if (sortSelect) sortSelect.addEventListener('change', renderFromCache);
+  if (filterInput) filterInput.addEventListener('input', renderFromMemory);
+  if (sortSelect) sortSelect.addEventListener('change', renderFromMemory);
   if (refreshBtn) refreshBtn.addEventListener('click', () => loadAndRender(true));
 
   function getFavs() {
-    try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch (e) { return []; }
+    try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch { return []; }
   }
   function setFavs(favs) { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); }
 
   function toggleFav(id, release) {
     const favs = getFavs();
     const exists = favs.find(f => f.id === id);
-    if (exists) {
-      setFavs(favs.filter(f => f.id !== id));
-    } else {
+    if (exists) setFavs(favs.filter(f => f.id !== id));
+    else {
       favs.push({ id, tag_name: release.tag_name, name: release.name, ts: Date.now() });
       setFavs(favs);
     }
-    renderFromCache();
+    renderFromMemory();
   }
 
-  function setCache(data) {
-    const payload = { ts: Date.now(), data };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
-    updateCacheInfo();
-  }
-  function getCache() {
-    try { return JSON.parse(localStorage.getItem(CACHE_KEY)); } catch (e) { return null; }
-  }
-  function isCacheValid(ts) {
-    if (!ts) return false;
-    return ((Date.now() - ts) / (1000 * 60)) < CACHE_TTL_MIN;
-  }
-  function updateCacheInfo() {
-    const c = getCache();
-    if (!c) { if (cacheInfo) cacheInfo.innerText = 'Nenhum'; return; }
-    const mins = Math.round((Date.now() - c.ts) / 60000);
-    if (cacheInfo) cacheInfo.innerText = (mins === 0 ? 'agora' : `${mins} min atrás`);
+  function updateInfoNow() {
+    if (cacheInfo) cacheInfo.innerText = 'agora';
   }
 
-  // ---------- FETCH ajustado para produção ----------
-  async function fetchReleasesFromGitHub(forceBypass = false) {
-    // usa URL relativa: /api/releases (mesmo host) — evita problemas de CORS/proxy
-    let url = '/api/releases';
-    if (forceBypass) url += `?t=${Date.now()}`;
-    // tenta sem cache; credentials same-origin para cookies se necessário
-    const opts = { cache: 'no-store', credentials: 'same-origin', headers: { 'Accept': 'application/json' } };
+  // --- FETCH sempre sem cache e compatível com o JSON real ---
+  async function fetchReleasesFromAPI() {
+    const url = '/api/releases?t=' + Date.now();
+    const res = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json, text/plain, */*',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+      },
+    });
 
-    console.debug('[releases] fetching', url, opts);
-    const res = await fetch(url, opts);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
-    if (!res.ok) {
-      const txt = await res.text().catch(()=>'<no-body>');
-      throw new Error(`${res.status} ${res.statusText} — ${txt.slice(0, 150)}`);
+    // força o parse mesmo que o content-type esteja errado
+    const text = await res.text();
+    let payload;
+    try {
+      payload = JSON.parse(text);
+    } catch (e) {
+      console.error('[releases] JSON inválido recebido:', text.slice(0, 300));
+      throw new Error('Resposta da API não é JSON válido.');
     }
 
-    // tenta parse seguro
-    const payload = await res.json().catch(e => { throw new Error('JSON inválido da API de releases'); });
+    const releases = Array.isArray(payload.releases)
+      ? payload.releases
+      : Array.isArray(payload.data)
+        ? payload.data
+        : Array.isArray(payload)
+          ? payload
+          : [];
 
-    // backend expected format: { ok:true, releases:[...] } ou { releases:[...] }
-    const releases = payload.releases || payload.data || payload;
-    if (!Array.isArray(releases)) {
-      throw new Error('Formato inesperado do JSON de releases');
-    }
+    if (!releases.length) throw new Error('Nenhuma release encontrada.');
+
     return releases;
   }
 
-  async function loadAndRender(force = false) {
-    msgEl.innerText = 'Carregando...'; listEl.innerHTML = '';
-    const cached = getCache();
 
-    // se cache vigente e não for forçar, usa cache
-    if (!force && cached && isCacheValid(cached.ts)) {
-      console.debug('[releases] usando cache válido');
-      renderList(cached.data);
-      msgEl.innerText = '';
-      return;
-    }
+  // --- carrega e renderiza sempre direto da API ---
+  async function loadAndRender() {
+    msgEl.innerText = 'Carregando...';
+    listEl.innerHTML = '';
 
     try {
-      // tenta fetch normal; se falhar por cache intermediário, tentamos com bypass
-      let data;
-      try {
-        data = await fetchReleasesFromGitHub(false);
-      } catch (e) {
-        console.warn('[releases] fetch sem bypass falhou:', e.message, 'Tentando com bypass ?t=');
-        // tenta forçar bypass (evita proxies/CDN cache)
-        data = await fetchReleasesFromGitHub(true);
-      }
-      setCache(data);
-      renderList(data);
+      const data = await fetchReleasesFromAPI();
+      releasesData = data.map(r => ({
+        id: r.id ?? 0,
+        tag_name: r.tag_name || '',
+        name: r.name || '',
+        body: r.body || '',
+        published_at: r.published_at || '',
+      }));
+
+      updateInfoNow();
+      renderList(releasesData);
       msgEl.innerText = '';
     } catch (err) {
       console.error('[releases] erro ao carregar releases', err);
       msgEl.innerHTML = `<div class="text-danger small">Erro: ${escapeHtml(err.message)}</div>`;
-      if (cached && cached.data) {
-        msgEl.innerHTML += `<div class="text-muted small">Usando cache local.</div>`;
-        renderList(cached.data);
-      } else {
-        listEl.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-circle" style="font-size:28px"></i><div class="mt-2">Não foi possível carregar releases.</div></div>`;
-      }
+      listEl.innerHTML = `<div class="empty-state">
+        <i class="bi bi-exclamation-circle" style="font-size:28px"></i>
+        <div class="mt-2">Não foi possível carregar releases.</div>
+      </div>`;
     }
   }
 
-  function renderFromCache() {
-    const cached = getCache();
-    if (!cached) { listEl.innerHTML = ''; return; }
-    renderList(cached.data);
+  function renderFromMemory() {
+    if (!Array.isArray(releasesData)) return;
+    renderList(releasesData);
   }
 
+  // ---------- Renderer DOM-safe (sem innerHTML para conteúdo de API) ----------
   function renderList(releases) {
-    updateCacheInfo();
+    updateInfoNow();
+
     if (!Array.isArray(releases) || releases.length === 0) {
-      listEl.innerHTML = `<div class="empty-state">Nenhuma release encontrada.</div>`; return;
+      listEl.replaceChildren();
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'Nenhuma release encontrada.';
+      listEl.appendChild(empty);
+      return;
     }
 
     const q = (filterInput && filterInput.value) ? filterInput.value.trim().toLowerCase() : '';
@@ -183,66 +207,103 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const favs = getFavs();
+    listEl.replaceChildren();
 
-    listEl.innerHTML = list.map(r => {
+    for (const r of list) {
       const isFav = !!favs.find(f => f.id === r.id);
-      const published = r.published_at ? new Date(r.published_at).toLocaleString() : '—';
-      const short = (r.body || '').slice(0, 420);
-      return `
-          <div class="release-card">
-            <div class="release-meta">
-              <div class="version-badge">${escapeHtml(r.tag_name || r.name || '')}</div>
-              <div class="date-small">${new Date(r.published_at || Date.now()).toLocaleDateString()}</div>
-              <div class="mt-2">
-                <div class="author-avatar">O</div>
-                <div class="small text-muted mt-1">OrderUp</div>
-              </div>
-            </div>
+      const publishedStr = r.published_at ? new Date(r.published_at).toLocaleString() : '—';
+      const fullBody = r.body || '';
+      const isLong = fullBody.length > 420;
+      const shortBody = isLong ? fullBody.slice(0, 420) : fullBody;
 
-            <div class="release-body">
-              <div class="release-title">
-                <div>
-                  <h5>${escapeHtml(r.name || '')}</h5>
-                  <div class="release-sub">${escapeHtml(r.tag_name || '')} • <span class="text-muted">${escapeHtml(published)}</span></div>
-                </div>
-              </div>
+      const card = document.createElement('div');
+      card.className = 'release-card';
 
-              <div class="release-desc" data-id="${r.id}">
-                ${escapeHtml(short)}
-                ${(r.body && r.body.length > 420) ? '…' : ''}
-              </div>
+      const meta = document.createElement('div');
+      meta.className = 'release-meta';
 
-              <div class="d-flex justify-content-between align-items-center mt-2">
-                <div>
-                  ${(r.body && r.body.length > 420) ? `<a href="#" class="readmore small" data-id="${r.id}">Ver mais</a>` : ''}
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-    }).join('');
+      const ver = document.createElement('div');
+      ver.className = 'version-badge';
+      ver.textContent = r.tag_name || r.name || '';
+      meta.appendChild(ver);
 
-    // events
-    listEl.querySelectorAll('.favBtn').forEach(b => b.addEventListener('click', e => {
-      const id = Number(e.currentTarget.dataset.id);
-      const release = releases.find(r => r.id === id);
-      toggleFav(id, release);
-    }));
-    listEl.querySelectorAll('.readmore').forEach(a => a.addEventListener('click', ev => {
-      ev.preventDefault();
-      const id = Number(ev.currentTarget.dataset.id);
-      const cardDesc = listEl.querySelector(`.release-desc[data-id="${id}"]`);
-      if (!cardDesc) return;
-      const expanded = cardDesc.classList.toggle('expanded');
-      ev.currentTarget.innerText = expanded ? 'Ver menos' : 'Ver mais';
-      const cached = getCache();
-      const r = (cached && cached.data) ? cached.data.find(rr => rr.id === id) : null;
-      if (expanded) {
-        if (r) cardDesc.innerHTML = escapeHtml(r.body || '(sem descrição)');
-      } else {
-        if (r) cardDesc.innerHTML = escapeHtml((r.body ? r.body.slice(0, 420) : '').replaceAll('\\n', '\n')) + (r && r.body && r.body.length > 420 ? '…' : '');
+      const dsmall = document.createElement('div');
+      dsmall.className = 'date-small';
+      dsmall.textContent = new Date(r.published_at || Date.now()).toLocaleDateString();
+      meta.appendChild(dsmall);
+
+      const authorWrap = document.createElement('div');
+      authorWrap.className = 'mt-2';
+      const avatar = document.createElement('div');
+      avatar.className = 'author-avatar';
+      avatar.textContent = 'O';
+      const brand = document.createElement('div');
+      brand.className = 'small text-muted mt-1';
+      brand.textContent = 'OrderUp';
+      authorWrap.append(avatar, brand);
+      meta.appendChild(authorWrap);
+
+      const body = document.createElement('div');
+      body.className = 'release-body';
+
+      const titleWrap = document.createElement('div');
+      titleWrap.className = 'release-title';
+      const titleInner = document.createElement('div');
+      const h5 = document.createElement('h5');
+      h5.textContent = r.name || '';
+      const sub = document.createElement('div');
+      sub.className = 'release-sub';
+      sub.appendChild(document.createTextNode((r.tag_name || '') + ' • '));
+      const span = document.createElement('span');
+      span.className = 'text-muted';
+      span.textContent = publishedStr;
+      sub.appendChild(span);
+      titleInner.append(h5, sub);
+      titleWrap.appendChild(titleInner);
+
+      const desc = document.createElement('div');
+      desc.className = 'release-desc';
+      desc.dataset.id = String(r.id || '');
+      insertMultiline(desc, shortBody);
+
+      const footer = document.createElement('div');
+      footer.className = 'd-flex justify-content-between align-items-center mt-2';
+      const left = document.createElement('div');
+
+      if (isLong) {
+        const a = document.createElement('a');
+        a.href = '#';
+        a.className = 'readmore small';
+        a.dataset.id = String(r.id || '');
+        a.textContent = 'Ver mais';
+        a.addEventListener('click', ev => {
+          ev.preventDefault();
+          const expanded = desc.classList.toggle('expanded');
+          a.textContent = expanded ? 'Ver menos' : 'Ver mais';
+          desc.replaceChildren();
+          if (expanded) {
+            insertMultiline(desc, fullBody || '(sem descrição)');
+          } else {
+            insertMultiline(desc, shortBody);
+            if (fullBody.length > 420) desc.appendChild(document.createTextNode('…'));
+          }
+        });
+        left.appendChild(a);
       }
-    }));
+
+      footer.appendChild(left);
+      body.append(titleWrap, desc, footer);
+      card.append(meta, body);
+      listEl.appendChild(card);
+    }
+
+    function insertMultiline(container, text) {
+      const lines = String(text || '').replaceAll('\\n', '\n').split(/\r?\n/);
+      lines.forEach((ln, i) => {
+        container.appendChild(document.createTextNode(ln));
+        if (i < lines.length - 1) container.appendChild(document.createElement('br'));
+      });
+    }
   }
 
   function escapeHtml(str) {
@@ -252,5 +313,5 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
   }
 
-  updateCacheInfo();
+  updateInfoNow();
 })();

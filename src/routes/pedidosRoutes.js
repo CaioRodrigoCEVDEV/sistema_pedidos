@@ -16,6 +16,11 @@ router.get(
   pedidosController.listarPvPendentesCount
 );
 router.get(
+  "/pedidos/pendentescountNow",
+  autenticarToken,
+  pedidosController.listarPvPendentesCountNow
+);
+router.get(
   "/pedidos/balcao",
   autenticarToken,
   pedidosController.listarPvBalcao
@@ -25,10 +30,26 @@ router.get(
   autenticarToken,
   pedidosController.listarPvEntrega
 );
+
+router.get(
+  "/pedidos/balcaoNow",
+  autenticarToken,
+  pedidosController.listarPvBalcaoNow
+);
+router.get(
+  "/pedidos/entregaNow",
+  autenticarToken,
+  pedidosController.listarPvEntregaNow
+);
 router.get(
   "/pedidos/total/confirmados",
   autenticarToken,
   pedidosController.listarTotalPvConfirmados
+);
+router.get(
+  "/pedidos/total/confirmadosNow",
+  autenticarToken,
+  pedidosController.listarTotalPvConfirmadosNow
 );
 router.get(
   "/pedidos/pendentes",

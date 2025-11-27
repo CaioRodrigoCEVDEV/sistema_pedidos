@@ -30,4 +30,18 @@ router.get(
   usuarioController.listarVendedores
 );
 
+// viuversao
+router.post(
+  "/usuario/viuversao/",
+  autenticarToken,
+  usuarioController.viuVersao
+);
+
+router.get(
+  "/usuario/viuversao/",
+  autenticarToken,
+  usuarioController.usuViuVersao
+);
+// fim viuversao
+
 module.exports = router;
