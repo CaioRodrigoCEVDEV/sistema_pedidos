@@ -44,6 +44,9 @@ function createHeader() {
             <li class="nav-item">
               <a class="nav-link" href="painel">Produtos</a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" href="part">Part</a>
+            </li>
             <li class="nav-item" id="clientes">
               <a class="nav-link" href="clientes">Clientes</a>
             </li>
@@ -75,7 +78,6 @@ function createHeader() {
         </div>
       </nav>  
   `;
-
 
   const btnSair = document.getElementById("buttonSair");
   if (btnSair) {

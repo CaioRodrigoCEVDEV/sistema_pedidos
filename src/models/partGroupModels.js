@@ -29,7 +29,8 @@ async function listAllGroups() {
  * Get a single part group by ID with its member parts
  */
 async function getGroupById(groupId) {
-  const groupResult = await pool.query(`
+  const groupResult = await pool.query(
+    `
     SELECT 
       pg.id,
       pg.name,
@@ -38,13 +39,16 @@ async function getGroupById(groupId) {
       pg.updated_at
     FROM part_groups pg
     WHERE pg.id = $1
-  `, [groupId]);
+  `,
+    [groupId]
+  );
 
   if (groupResult.rows.length === 0) {
     return null;
   }
 
-  const partsResult = await pool.query(`
+  const partsResult = await pool.query(
+    `
     SELECT 
       p.procod,
       p.prodes,
@@ -56,11 +60,13 @@ async function getGroupById(groupId) {
     LEFT JOIN tipo t ON t.tipocod = p.protipocod
     WHERE p.part_group_id = $1
     ORDER BY p.prodes
-  `, [groupId]);
+  `,
+    [groupId]
+  );
 
   return {
     ...groupResult.rows[0],
-    parts: partsResult.rows
+    parts: partsResult.rows,
   };
 }
 
@@ -68,7 +74,8 @@ async function getGroupById(groupId) {
  * Get the group for a specific part
  */
 async function getGroupByPartId(partId) {
-  const result = await pool.query(`
+  const result = await pool.query(
+    `
     SELECT 
       pg.id,
       pg.name,
@@ -78,7 +85,9 @@ async function getGroupByPartId(partId) {
     FROM part_groups pg
     JOIN pro p ON p.part_group_id = pg.id
     WHERE p.procod = $1
-  `, [partId]);
+  `,
+    [partId]
+  );
   return result.rows[0] || null;
 }
 
@@ -87,7 +96,8 @@ async function getGroupByPartId(partId) {
  * If part has no group, returns the part's individual stock (proqtde)
  */
 async function getGroupStock(partId) {
-  const result = await pool.query(`
+  const result = await pool.query(
+    `
     SELECT 
       CASE 
         WHEN p.part_group_id IS NOT NULL THEN pg.stock_quantity
@@ -99,8 +109,10 @@ async function getGroupStock(partId) {
     FROM pro p
     LEFT JOIN part_groups pg ON pg.id = p.part_group_id
     WHERE p.procod = $1
-  `, [partId]);
-  
+  `,
+    [partId]
+  );
+
   if (result.rows.length === 0) {
     return null;
   }
@@ -117,93 +129,107 @@ async function getGroupStock(partId) {
  */
 async function decrementGroupStock(partId, qty, client = null) {
   const shouldCommit = !client;
-  const txClient = client || await pool.connect();
-  
+  const txClient = client || (await pool.connect());
+
   try {
-    if (shouldCommit) await txClient.query('BEGIN');
+    if (shouldCommit) await txClient.query("BEGIN");
 
     // Get the part's group with lock
-    const partResult = await txClient.query(`
+    const partResult = await txClient.query(
+      `
       SELECT p.procod, p.part_group_id, p.prodes
       FROM pro p
       WHERE p.procod = $1
       FOR UPDATE
-    `, [partId]);
+    `,
+      [partId]
+    );
 
     if (partResult.rows.length === 0) {
       throw new Error(`Part with ID ${partId} not found`);
     }
 
     const part = partResult.rows[0];
-    
+
     if (!part.part_group_id) {
       // Part has no group, decrement individual stock
-      const updateResult = await txClient.query(`
+      const updateResult = await txClient.query(
+        `
         UPDATE pro 
         SET proqtde = proqtde - $1
         WHERE procod = $2 AND proqtde >= $1
         RETURNING proqtde
-      `, [qty, partId]);
+      `,
+        [qty, partId]
+      );
 
       if (updateResult.rows.length === 0) {
-        throw new Error('Insufficient stock');
+        throw new Error("Insufficient stock");
       }
 
-      if (shouldCommit) await txClient.query('COMMIT');
-      return { 
-        success: true, 
+      if (shouldCommit) await txClient.query("COMMIT");
+      return {
+        success: true,
         newStock: updateResult.rows[0].proqtde,
-        groupId: null
+        groupId: null,
       };
     }
 
     // Lock and update group stock
-    const groupResult = await txClient.query(`
+    const groupResult = await txClient.query(
+      `
       SELECT id, stock_quantity, name
       FROM part_groups
       WHERE id = $1
       FOR UPDATE
-    `, [part.part_group_id]);
+    `,
+      [part.part_group_id]
+    );
 
     if (groupResult.rows.length === 0) {
-      throw new Error('Part group not found');
+      throw new Error("Part group not found");
     }
 
     const group = groupResult.rows[0];
 
     if (group.stock_quantity < qty) {
-      throw new Error('Insufficient group stock');
+      throw new Error("Insufficient group stock");
     }
 
     // Decrement group stock
-    const updateResult = await txClient.query(`
+    const updateResult = await txClient.query(
+      `
       UPDATE part_groups 
       SET stock_quantity = stock_quantity - $1, updated_at = NOW()
       WHERE id = $2 AND stock_quantity >= $1
       RETURNING stock_quantity
-    `, [qty, part.part_group_id]);
+    `,
+      [qty, part.part_group_id]
+    );
 
     if (updateResult.rows.length === 0) {
-      throw new Error('Insufficient group stock');
+      throw new Error("Insufficient group stock");
     }
 
     // Create audit record
-    await txClient.query(`
+    await txClient.query(
+      `
       INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
       VALUES ($1, $2, $3, $4)
-    `, [part.part_group_id, -qty, 'sale', partId.toString()]);
+    `,
+      [part.part_group_id, -qty, "sale", partId.toString()]
+    );
 
-    if (shouldCommit) await txClient.query('COMMIT');
-    
-    return { 
-      success: true, 
+    if (shouldCommit) await txClient.query("COMMIT");
+
+    return {
+      success: true,
       newStock: updateResult.rows[0].stock_quantity,
       groupId: part.part_group_id,
-      groupName: group.name
+      groupName: group.name,
     };
-
   } catch (error) {
-    if (shouldCommit) await txClient.query('ROLLBACK');
+    if (shouldCommit) await txClient.query("ROLLBACK");
     throw error;
   } finally {
     if (shouldCommit) txClient.release();
@@ -218,67 +244,83 @@ async function decrementGroupStock(partId, qty, client = null) {
  * @param {object} client - Transaction client (optional)
  * @returns {object} Result with success status and updated stock
  */
-async function incrementGroupStock(partId, qty, reason = 'manual', client = null) {
+async function incrementGroupStock(
+  partId,
+  qty,
+  reason = "manual",
+  client = null
+) {
   const shouldCommit = !client;
-  const txClient = client || await pool.connect();
-  
+  const txClient = client || (await pool.connect());
+
   try {
-    if (shouldCommit) await txClient.query('BEGIN');
+    if (shouldCommit) await txClient.query("BEGIN");
 
     // Get the part's group
-    const partResult = await txClient.query(`
+    const partResult = await txClient.query(
+      `
       SELECT p.procod, p.part_group_id, p.prodes
       FROM pro p
       WHERE p.procod = $1
-    `, [partId]);
+    `,
+      [partId]
+    );
 
     if (partResult.rows.length === 0) {
       throw new Error(`Part with ID ${partId} not found`);
     }
 
     const part = partResult.rows[0];
-    
+
     if (!part.part_group_id) {
       // Part has no group, increment individual stock
-      const updateResult = await txClient.query(`
+      const updateResult = await txClient.query(
+        `
         UPDATE pro 
         SET proqtde = proqtde + $1
         WHERE procod = $2
         RETURNING proqtde
-      `, [qty, partId]);
+      `,
+        [qty, partId]
+      );
 
-      if (shouldCommit) await txClient.query('COMMIT');
-      return { 
-        success: true, 
+      if (shouldCommit) await txClient.query("COMMIT");
+      return {
+        success: true,
         newStock: updateResult.rows[0].proqtde,
-        groupId: null
+        groupId: null,
       };
     }
 
     // Update group stock
-    const updateResult = await txClient.query(`
+    const updateResult = await txClient.query(
+      `
       UPDATE part_groups 
       SET stock_quantity = stock_quantity + $1, updated_at = NOW()
       WHERE id = $2
       RETURNING stock_quantity
-    `, [qty, part.part_group_id]);
+    `,
+      [qty, part.part_group_id]
+    );
 
     // Create audit record
-    await txClient.query(`
+    await txClient.query(
+      `
       INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
       VALUES ($1, $2, $3, $4)
-    `, [part.part_group_id, qty, reason, partId.toString()]);
+    `,
+      [part.part_group_id, qty, reason, partId.toString()]
+    );
 
-    if (shouldCommit) await txClient.query('COMMIT');
-    
-    return { 
-      success: true, 
+    if (shouldCommit) await txClient.query("COMMIT");
+
+    return {
+      success: true,
       newStock: updateResult.rows[0].stock_quantity,
-      groupId: part.part_group_id
+      groupId: part.part_group_id,
     };
-
   } catch (error) {
-    if (shouldCommit) await txClient.query('ROLLBACK');
+    if (shouldCommit) await txClient.query("ROLLBACK");
     throw error;
   } finally {
     if (shouldCommit) txClient.release();
@@ -289,11 +331,14 @@ async function incrementGroupStock(partId, qty, reason = 'manual', client = null
  * Create a new part group
  */
 async function createGroup(name, stockQuantity = 0) {
-  const result = await pool.query(`
+  const result = await pool.query(
+    `
     INSERT INTO part_groups (name, stock_quantity)
     VALUES ($1, $2)
     RETURNING *
-  `, [name, stockQuantity]);
+  `,
+    [name, stockQuantity]
+  );
   return result.rows[0];
 }
 
@@ -302,7 +347,7 @@ async function createGroup(name, stockQuantity = 0) {
  */
 async function updateGroup(groupId, name, stockQuantity = null) {
   let query, params;
-  
+
   if (stockQuantity !== null) {
     query = `
       UPDATE part_groups 
@@ -320,7 +365,7 @@ async function updateGroup(groupId, name, stockQuantity = null) {
     `;
     params = [name, groupId];
   }
-  
+
   const result = await pool.query(query, params);
   return result.rows[0] || null;
 }
@@ -329,9 +374,12 @@ async function updateGroup(groupId, name, stockQuantity = null) {
  * Delete a part group (parts will have part_group_id set to NULL due to ON DELETE SET NULL)
  */
 async function deleteGroup(groupId) {
-  const result = await pool.query(`
+  const result = await pool.query(
+    `
     DELETE FROM part_groups WHERE id = $1 RETURNING *
-  `, [groupId]);
+  `,
+    [groupId]
+  );
   return result.rows[0] || null;
 }
 
@@ -339,12 +387,15 @@ async function deleteGroup(groupId) {
  * Add a part to a group
  */
 async function addPartToGroup(partId, groupId) {
-  const result = await pool.query(`
+  const result = await pool.query(
+    `
     UPDATE pro 
     SET part_group_id = $1
     WHERE procod = $2
     RETURNING procod, prodes, part_group_id
-  `, [groupId, partId]);
+  `,
+    [groupId, partId]
+  );
   return result.rows[0] || null;
 }
 
@@ -352,12 +403,15 @@ async function addPartToGroup(partId, groupId) {
  * Remove a part from its group (set to NULL)
  */
 async function removePartFromGroup(partId) {
-  const result = await pool.query(`
+  const result = await pool.query(
+    `
     UPDATE pro 
     SET part_group_id = NULL
     WHERE procod = $1
     RETURNING procod, prodes, part_group_id
-  `, [partId]);
+  `,
+    [partId]
+  );
   return result.rows[0] || null;
 }
 
@@ -366,7 +420,7 @@ async function removePartFromGroup(partId) {
  */
 async function getAvailableParts(currentGroupId = null) {
   let query, params;
-  
+
   if (currentGroupId) {
     query = `
       SELECT 
@@ -402,8 +456,31 @@ async function getAvailableParts(currentGroupId = null) {
     `;
     params = [];
   }
-  
+
   const result = await pool.query(query, params);
+  return result.rows;
+}
+
+async function getAvailablePart() {
+  let query;
+
+  query = `
+      SELECT 
+        p.procod,
+        p.prodes,
+        p.provl,
+        p.proqtde,
+        p.part_group_id,
+        m.marcasdes,
+        t.tipodes
+      FROM pro p
+      LEFT JOIN marcas m ON m.marcascod = p.promarcascod
+      LEFT JOIN tipo t ON t.tipocod = p.protipocod
+      ORDER BY p.prodes
+    `;
+  params = [];
+
+  const result = await pool.query(query);
   return result.rows;
 }
 
@@ -411,7 +488,8 @@ async function getAvailableParts(currentGroupId = null) {
  * Get audit history for a group
  */
 async function getGroupAuditHistory(groupId, limit = 50) {
-  const result = await pool.query(`
+  const result = await pool.query(
+    `
     SELECT 
       a.id,
       a.change,
@@ -424,52 +502,66 @@ async function getGroupAuditHistory(groupId, limit = 50) {
     WHERE a.part_group_id = $1
     ORDER BY a.created_at DESC
     LIMIT $2
-  `, [groupId, limit]);
+  `,
+    [groupId, limit]
+  );
   return result.rows;
 }
 
 /**
  * Update group stock directly (for manual adjustments)
  */
-async function updateGroupStock(groupId, newQuantity, reason = 'manual_adjustment') {
+async function updateGroupStock(
+  groupId,
+  newQuantity,
+  reason = "manual_adjustment"
+) {
   const client = await pool.connect();
-  
+
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Get current stock to calculate the change
-    const currentResult = await client.query(`
+    const currentResult = await client.query(
+      `
       SELECT stock_quantity FROM part_groups WHERE id = $1 FOR UPDATE
-    `, [groupId]);
+    `,
+      [groupId]
+    );
 
     if (currentResult.rows.length === 0) {
-      throw new Error('Group not found');
+      throw new Error("Group not found");
     }
 
     const currentStock = currentResult.rows[0].stock_quantity;
     const change = newQuantity - currentStock;
 
     // Update stock
-    const updateResult = await client.query(`
+    const updateResult = await client.query(
+      `
       UPDATE part_groups 
       SET stock_quantity = $1, updated_at = NOW()
       WHERE id = $2
       RETURNING *
-    `, [newQuantity, groupId]);
+    `,
+      [newQuantity, groupId]
+    );
 
     // Create audit record if there was a change
     if (change !== 0) {
-      await client.query(`
+      await client.query(
+        `
         INSERT INTO part_group_audit (part_group_id, change, reason)
         VALUES ($1, $2, $3)
-      `, [groupId, change, reason]);
+      `,
+        [groupId, change, reason]
+      );
     }
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
     return updateResult.rows[0];
-
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
@@ -489,6 +581,7 @@ module.exports = {
   addPartToGroup,
   removePartFromGroup,
   getAvailableParts,
+  getAvailablePart,
   getGroupAuditHistory,
-  updateGroupStock
+  updateGroupStock,
 };

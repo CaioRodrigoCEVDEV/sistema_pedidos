@@ -76,19 +76,21 @@ function formatDate(dateString) {
 // Load all groups
 async function carregarGrupos() {
   const tbody = document.getElementById("tabela-grupos");
-  tbody.innerHTML = '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
+  tbody.innerHTML =
+    '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
 
   try {
     const res = await fetch(`${BASE_URL}/part-groups`, {
       credentials: "include",
     });
     if (!res.ok) throw new Error("Erro ao buscar grupos");
-    
+
     allGroups = await res.json();
     renderGrupos(allGroups);
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar grupos</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar grupos</td></tr>';
   }
 }
 
@@ -98,7 +100,8 @@ function renderGrupos(grupos) {
   tbody.innerHTML = "";
 
   if (!grupos || grupos.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhum grupo cadastrado</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="5" class="text-center text-muted">Nenhum grupo cadastrado</td></tr>';
     return;
   }
 
@@ -127,12 +130,18 @@ function renderGrupos(grupos) {
         </div>
       </td>
       <td class="text-center">
-        <span class="badge rounded-pill bg-secondary-subtle text-secondary">${grupo.parts_count || 0}</span>
+        <span class="badge rounded-pill bg-secondary-subtle text-secondary">${
+          grupo.parts_count || 0
+        }</span>
       </td>
       <td class="text-center">
-        <span class="${stockClass} fw-semibold px-3">${grupo.stock_quantity}</span>
+        <span class="${stockClass} fw-semibold px-3">${
+      grupo.stock_quantity
+    }</span>
       </td>
-      <td class="text-center text-muted small">${formatDate(grupo.updated_at)}</td>
+      <td class="text-center text-muted small">${formatDate(
+        grupo.updated_at
+      )}</td>
       <td class="text-center">
         <div class="btn-group btn-group-sm">
           <button class="btn btn-outline-primary btn-edit-group" title="Editar">
@@ -146,10 +155,10 @@ function renderGrupos(grupos) {
     `;
 
     // Add event listeners instead of inline onclick (XSS prevention)
-    tr.querySelector('.btn-edit-group').addEventListener('click', () => {
+    tr.querySelector(".btn-edit-group").addEventListener("click", () => {
       abrirModalEditar(grupo.id, grupo.name);
     });
-    tr.querySelector('.btn-delete-group').addEventListener('click', () => {
+    tr.querySelector(".btn-delete-group").addEventListener("click", () => {
       excluirGrupo(grupo.id);
     });
 
@@ -167,7 +176,8 @@ function escapeHtml(text) {
 // Create new group
 async function criarGrupo() {
   const nome = document.getElementById("nomeGrupo").value.trim();
-  const estoque = parseInt(document.getElementById("estoqueInicial").value, 10) || 0;
+  const estoque =
+    parseInt(document.getElementById("estoqueInicial").value, 10) || 0;
 
   if (!nome) {
     showToast("Nome do grupo é obrigatório", "error");
@@ -188,7 +198,9 @@ async function criarGrupo() {
     }
 
     showToast("Grupo criado com sucesso!", "success");
-    bootstrap.Modal.getInstance(document.getElementById("modalCriarGrupo")).hide();
+    bootstrap.Modal.getInstance(
+      document.getElementById("modalCriarGrupo")
+    ).hide();
     document.getElementById("formCriarGrupo").reset();
     carregarGrupos();
   } catch (err) {
@@ -228,9 +240,11 @@ async function salvarEdicaoGrupo() {
     }
 
     showToast("Grupo atualizado com sucesso!", "success");
-    bootstrap.Modal.getInstance(document.getElementById("modalEditarGrupo")).hide();
+    bootstrap.Modal.getInstance(
+      document.getElementById("modalEditarGrupo")
+    ).hide();
     carregarGrupos();
-    
+
     // Update details view if open
     if (currentGroupId === id) {
       document.getElementById("nomeGrupoDetalhe").textContent = nome;
@@ -243,7 +257,11 @@ async function salvarEdicaoGrupo() {
 
 // Delete group
 async function excluirGrupo(id) {
-  if (!confirm("Tem certeza que deseja excluir este grupo? As peças serão desvinculadas.")) {
+  if (
+    !confirm(
+      "Tem certeza que deseja excluir este grupo? As peças serão desvinculadas."
+    )
+  ) {
     return;
   }
 
@@ -260,7 +278,7 @@ async function excluirGrupo(id) {
 
     showToast("Grupo excluído com sucesso!", "success");
     carregarGrupos();
-    
+
     if (currentGroupId === id) {
       fecharDetalhes();
     }
@@ -283,9 +301,10 @@ async function abrirDetalhes(id) {
     if (!res.ok) throw new Error("Erro ao buscar detalhes do grupo");
 
     const grupo = await res.json();
-    
+
     document.getElementById("nomeGrupoDetalhe").textContent = grupo.name;
-    document.getElementById("estoqueGrupoDetalhe").textContent = grupo.stock_quantity;
+    document.getElementById("estoqueGrupoDetalhe").textContent =
+      grupo.stock_quantity;
 
     // Render parts
     renderPecasGrupo(grupo.parts || []);
@@ -304,7 +323,8 @@ function renderPecasGrupo(pecas) {
   tbody.innerHTML = "";
 
   if (!pecas || pecas.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nenhuma peça no grupo</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="4" class="text-center text-muted">Nenhuma peça no grupo</td></tr>';
     return;
   }
 
@@ -313,7 +333,7 @@ function renderPecasGrupo(pecas) {
     tr.innerHTML = `
       <td>${peca.procod}</td>
       <td>${escapeHtml(peca.prodes || "-")}</td>
-      <td>R$ ${(peca.provl || 0).toFixed(2)}</td>
+      <td>R$ ${Number(peca.provl || 0).toFixed(2)}</td>
       <td class="text-center">
         <button class="btn btn-sm btn-outline-danger btn-remove-part" title="Remover do grupo">
           <i class="bi bi-x-lg"></i>
@@ -321,7 +341,7 @@ function renderPecasGrupo(pecas) {
       </td>
     `;
     // Add event listener instead of inline onclick (XSS prevention)
-    tr.querySelector('.btn-remove-part').addEventListener('click', () => {
+    tr.querySelector(".btn-remove-part").addEventListener("click", () => {
       removerPecaGrupo(peca.procod);
     });
     tbody.appendChild(tr);
@@ -331,7 +351,8 @@ function renderPecasGrupo(pecas) {
 // Load audit history
 async function carregarHistorico(groupId) {
   const tbody = document.getElementById("tabela-historico");
-  tbody.innerHTML = '<tr><td colspan="4" class="text-center">Carregando...</td></tr>';
+  tbody.innerHTML =
+    '<tr><td colspan="4" class="text-center">Carregando...</td></tr>';
 
   try {
     const res = await fetch(`${BASE_URL}/part-groups/${groupId}/audit`, {
@@ -344,7 +365,8 @@ async function carregarHistorico(groupId) {
     renderHistorico(historico);
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Erro ao carregar histórico</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="4" class="text-center text-muted">Erro ao carregar histórico</td></tr>';
   }
 }
 
@@ -354,7 +376,8 @@ function renderHistorico(historico) {
   tbody.innerHTML = "";
 
   if (!historico || historico.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sem histórico</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="4" class="text-center text-muted">Sem histórico</td></tr>';
     return;
   }
 
@@ -362,10 +385,12 @@ function renderHistorico(historico) {
     const tr = document.createElement("tr");
     const changeClass = item.change > 0 ? "text-success" : "text-danger";
     const changePrefix = item.change > 0 ? "+" : "";
-    
+
     tr.innerHTML = `
       <td class="text-muted small">${formatDate(item.created_at)}</td>
-      <td><span class="${changeClass} fw-semibold">${changePrefix}${item.change}</span></td>
+      <td><span class="${changeClass} fw-semibold">${changePrefix}${
+      item.change
+    }</span></td>
       <td>${escapeHtml(item.reason || "-")}</td>
       <td>${escapeHtml(item.part_name || item.reference_id || "-")}</td>
     `;
@@ -382,11 +407,13 @@ function fecharDetalhes() {
 // Open stock edit modal
 function abrirModalEditarEstoque() {
   if (!currentGroupId) return;
-  
-  const currentStock = document.getElementById("estoqueGrupoDetalhe").textContent;
+
+  const currentStock = document.getElementById(
+    "estoqueGrupoDetalhe"
+  ).textContent;
   document.getElementById("novoEstoque").value = currentStock;
   document.getElementById("motivoEstoque").value = "manual_adjustment";
-  
+
   new bootstrap.Modal(document.getElementById("modalEditarEstoque")).show();
 }
 
@@ -416,8 +443,10 @@ async function salvarEstoque() {
     }
 
     showToast("Estoque atualizado com sucesso!", "success");
-    bootstrap.Modal.getInstance(document.getElementById("modalEditarEstoque")).hide();
-    
+    bootstrap.Modal.getInstance(
+      document.getElementById("modalEditarEstoque")
+    ).hide();
+
     // Refresh details
     abrirDetalhes(currentGroupId);
     carregarGrupos();
@@ -432,12 +461,13 @@ async function abrirModalAdicionarPeca() {
   if (!currentGroupId) return;
 
   const tbody = document.getElementById("tabela-pecas-disponiveis");
-  tbody.innerHTML = '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
-  
+  tbody.innerHTML =
+    '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
+
   new bootstrap.Modal(document.getElementById("modalAdicionarPeca")).show();
 
   try {
-    const res = await fetch(`${BASE_URL}/part-groups/available-parts?groupId=${currentGroupId}`, {
+    const res = await fetch(`${BASE_URL}/part-groups/available-part`, {
       credentials: "include",
     });
 
@@ -447,7 +477,8 @@ async function abrirModalAdicionarPeca() {
     renderPecasDisponiveis(availableParts);
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar peças</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar peças</td></tr>';
   }
 }
 
@@ -457,23 +488,25 @@ function renderPecasDisponiveis(pecas) {
   tbody.innerHTML = "";
 
   if (!pecas || pecas.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhuma peça disponível</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="5" class="text-center text-muted">Nenhuma peça disponível</td></tr>';
     return;
   }
 
   pecas.forEach((peca) => {
     const tr = document.createElement("tr");
     const isInGroup = peca.part_group_id === currentGroupId;
-    
+
     tr.innerHTML = `
       <td>${peca.procod}</td>
       <td>${escapeHtml(peca.prodes || "-")}</td>
       <td>${escapeHtml(peca.marcasdes || "-")}</td>
       <td>${escapeHtml(peca.tipodes || "-")}</td>
       <td class="text-center">
-        ${isInGroup 
-          ? '<span class="badge bg-success">No grupo</span>'
-          : `<button class="btn btn-sm btn-primary btn-add-part">
+        ${
+          isInGroup
+            ? '<span class="badge bg-success">No grupo</span>'
+            : `<button class="btn btn-sm btn-primary btn-add-part">
               <i class="bi bi-plus"></i> Adicionar
             </button>`
         }
@@ -481,7 +514,7 @@ function renderPecasDisponiveis(pecas) {
     `;
     // Add event listener instead of inline onclick (XSS prevention)
     if (!isInGroup) {
-      tr.querySelector('.btn-add-part').addEventListener('click', () => {
+      tr.querySelector(".btn-add-part").addEventListener("click", () => {
         adicionarPecaAoGrupo(peca.procod);
       });
     }
@@ -507,10 +540,10 @@ async function adicionarPecaAoGrupo(partId) {
     }
 
     showToast("Peça adicionada ao grupo!", "success");
-    
+
     // Refresh available parts list
     abrirModalAdicionarPeca();
-    
+
     // Refresh group details
     abrirDetalhes(currentGroupId);
   } catch (err) {
@@ -537,7 +570,7 @@ async function removerPecaGrupo(partId) {
     }
 
     showToast("Peça removida do grupo!", "success");
-    
+
     // Refresh group details
     abrirDetalhes(currentGroupId);
     carregarGrupos();
@@ -548,13 +581,15 @@ async function removerPecaGrupo(partId) {
 }
 
 // Search filter for available parts
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
   const searchInput = document.getElementById("pesquisaPeca");
   if (searchInput) {
-    searchInput.addEventListener("input", function() {
+    searchInput.addEventListener("input", function () {
       const query = this.value.toLowerCase().trim();
       const filtered = availableParts.filter((p) => {
-        const text = `${p.procod} ${p.prodes || ""} ${p.marcasdes || ""} ${p.tipodes || ""}`.toLowerCase();
+        const text = `${p.procod} ${p.prodes || ""} ${p.marcasdes || ""} ${
+          p.tipodes || ""
+        }`.toLowerCase();
         return text.includes(query);
       });
       renderPecasDisponiveis(filtered);
@@ -563,6 +598,6 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // Initialize on page load
-(function() {
+(function () {
   carregarGrupos();
 })();

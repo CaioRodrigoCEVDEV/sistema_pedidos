@@ -86,7 +86,7 @@ app.use(munRoute);
 const partGroupRoutes = require("./routes/partGroupRoutes");
 app.use(partGroupRoutes);
 
-app.get('/me/usuario', autenticarToken, (req, res) => {
+app.get("/me/usuario", autenticarToken, (req, res) => {
   // o middleware colocou o payload em req.token
   return res.json({ usunome: req.token.usunome });
 });
@@ -180,9 +180,12 @@ app.get("/clientes", autenticarToken, (req, res) => {
   );
 });
 
-app.get("/part-groups", requireAdmin, (req, res) => {
+app.get("/part", requireAdmin, (req, res) => {
   res.sendFile(
-    path.join(__dirname, "../public/html/auth/admin/html/painel-part-groups.html")
+    path.join(
+      __dirname,
+      "../public/html/auth/admin/html/painel-part-groups.html"
+    )
   );
 });
 
@@ -198,57 +201,52 @@ app.get("/backup", autenticarToken, (req, res) => {
   );
 });
 
-
-
-
-
-
-
-
-
-
 // Caminho onde ficam os backups
-const dirPathBackups = '/home/backup';
-
+const dirPathBackups = "/home/backup";
 
 // 🔹 LISTAR ARQUIVOS E PASTAS
 // 🔹 LISTAR APENAS AS PASTAS DE DIAS DA SEMANA
-app.get('/backups', requireAdminPages, async (req, res) => {
+app.get("/backups", requireAdminPages, async (req, res) => {
   try {
-    const entries = await fs.promises.readdir(dirPathBackups, { withFileTypes: true });
+    const entries = await fs.promises.readdir(dirPathBackups, {
+      withFileTypes: true,
+    });
 
     // nomes válidos de pastas de dias da semana
     const diasSemana = [
-      '1_domingo',
-      '2_segunda',
-      '3_terca',
-      '4_quarta',
-      '5_quinta',
-      '6_sexta',
-      '7_sabado'
+      "1_domingo",
+      "2_segunda",
+      "3_terca",
+      "4_quarta",
+      "5_quinta",
+      "6_sexta",
+      "7_sabado",
     ];
 
     const backups = await Promise.all(
       entries
-        .filter(entry => entry.isDirectory() && diasSemana.includes(entry.name))
+        .filter(
+          (entry) => entry.isDirectory() && diasSemana.includes(entry.name)
+        )
         .map(async (entry) => ({
           nome: entry.name,
-          tipo: 'pasta',
-          tamanhoKB: '-',
-          url: `/backups/folder/${encodeURIComponent(entry.name)}`
+          tipo: "pasta",
+          tamanhoKB: "-",
+          url: `/backups/folder/${encodeURIComponent(entry.name)}`,
         }))
     );
 
     res.json({ backups });
   } catch (err) {
-    console.error('Erro ao listar backups:', err.message);
-    res.status(500).json({ erro: 'Erro ao listar backups', detalhe: err.message });
+    console.error("Erro ao listar backups:", err.message);
+    res
+      .status(500)
+      .json({ erro: "Erro ao listar backups", detalhe: err.message });
   }
 });
 
-
 // 🔹 LISTAR CONTEÚDO DE UMA PASTA ESPECÍFICA
-app.get('/backups/folder/:folder', requireAdminPages, async (req, res) => {
+app.get("/backups/folder/:folder", requireAdminPages, async (req, res) => {
   try {
     const folderName = path.basename(decodeURIComponent(req.params.folder));
     const folderPath = path.join(dirPathBackups, folderName);
@@ -256,10 +254,12 @@ app.get('/backups/folder/:folder', requireAdminPages, async (req, res) => {
     const resolvedBase = path.resolve(dirPathBackups) + path.sep;
     const resolvedTarget = path.resolve(folderPath);
     if (!resolvedTarget.startsWith(resolvedBase)) {
-      return res.status(400).json({ erro: 'Nome de pasta inválido.' });
+      return res.status(400).json({ erro: "Nome de pasta inválido." });
     }
 
-    const entries = await fs.promises.readdir(folderPath, { withFileTypes: true });
+    const entries = await fs.promises.readdir(folderPath, {
+      withFileTypes: true,
+    });
 
     const backups = await Promise.all(
       entries.map(async (entry) => {
@@ -268,26 +268,30 @@ app.get('/backups/folder/:folder', requireAdminPages, async (req, res) => {
 
         return {
           nome: entry.name,
-          tipo: entry.isDirectory() ? 'pasta' : 'arquivo',
-          tamanhoKB: entry.isDirectory() ? '-' : (stats.size / 1024).toFixed(2),
+          tipo: entry.isDirectory() ? "pasta" : "arquivo",
+          tamanhoKB: entry.isDirectory() ? "-" : (stats.size / 1024).toFixed(2),
           url: entry.isDirectory()
-            ? `/backups/folder/${encodeURIComponent(path.join(folderName, entry.name))}`
-            : `/backups/download/${encodeURIComponent(path.join(folderName, entry.name))}`
+            ? `/backups/folder/${encodeURIComponent(
+                path.join(folderName, entry.name)
+              )}`
+            : `/backups/download/${encodeURIComponent(
+                path.join(folderName, entry.name)
+              )}`,
         };
       })
     );
 
     res.json({ backups });
   } catch (err) {
-    console.error('Erro ao listar pasta:', err.message);
-    res.status(500).json({ erro: 'Erro ao listar pasta', detalhe: err.message });
+    console.error("Erro ao listar pasta:", err.message);
+    res
+      .status(500)
+      .json({ erro: "Erro ao listar pasta", detalhe: err.message });
   }
 });
 
-
-
 // 🔹 DOWNLOAD DE ARQUIVO ESPECÍFICO
-app.get('/backups/download/:dir', requireAdminPages, async (req, res) => {
+app.get("/backups/download/:dir", requireAdminPages, async (req, res) => {
   try {
     const fileName = path.basename(decodeURIComponent(req.params.file)); // evita ../
     const filePath = path.join(dirPathBackups, fileName);
@@ -296,33 +300,24 @@ app.get('/backups/download/:dir', requireAdminPages, async (req, res) => {
     const resolvedBase = path.resolve(dirPathBackups) + path.sep;
     const resolvedTarget = path.resolve(filePath);
     if (!resolvedTarget.startsWith(resolvedBase)) {
-      return res.status(400).json({ erro: 'Nome de arquivo inválido.' });
+      return res.status(400).json({ erro: "Nome de arquivo inválido." });
     }
 
     // verifica existência
     await fs.promises.access(filePath, fs.constants.F_OK);
 
     // envia o arquivo
-    res.download(filePath, fileName, err => {
+    res.download(filePath, fileName, (err) => {
       if (err) {
-        console.error('Erro no download:', err.message);
-        res.status(500).json({ erro: 'Falha ao realizar download.' });
+        console.error("Erro no download:", err.message);
+        res.status(500).json({ erro: "Falha ao realizar download." });
       }
     });
   } catch (err) {
-    console.error('Erro ao baixar arquivo:', err.message);
-    res.status(404).json({ erro: 'Arquivo não encontrado.' });
+    console.error("Erro ao baixar arquivo:", err.message);
+    res.status(404).json({ erro: "Arquivo não encontrado." });
   }
 });
-
-
-
-
-
-
-
-
-
 
 app.get("/config.js", (req, res) => {
   res.type("application/javascript");
@@ -434,18 +429,21 @@ const storageMarca = multer.diskStorage({
     cb(null, `${Date.now()}${ext}`);
   },
 });
-const uploadMarca = multer({ storage: storageMarca, limits: { fileSize: 5 * 1024 * 1024 } }); // limite 5MB
+const uploadMarca = multer({
+  storage: storageMarca,
+  limits: { fileSize: 5 * 1024 * 1024 },
+}); // limite 5MB
 
 // helper: cria slug seguro a partir da descrição
 function slugify(text) {
   return String(text)
-    .normalize("NFKD")                 // remove acentos
-    .replace(/[\u0300-\u036f]/g, "")   // remove marcas diacríticas
+    .normalize("NFKD") // remove acentos
+    .replace(/[\u0300-\u036f]/g, "") // remove marcas diacríticas
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s-]/g, "")      // remove chars inválidos
-    .replace(/\s+/g, "-")              // espaços -> hífen
-    .replace(/-+/g, "-");              // elimina hífens duplicados
+    .replace(/[^a-z0-9\s-]/g, "") // remove chars inválidos
+    .replace(/\s+/g, "-") // espaços -> hífen
+    .replace(/-+/g, "-"); // elimina hífens duplicados
 }
 
 app.post(
@@ -457,15 +455,23 @@ app.post(
       if (!descricaoMarca || descricaoMarca.trim() === "") {
         // se quiser obrigar descrição:
         // limpa arquivo temporário enviado (se houver)
-        if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) {}
+        if (req.file)
+          try {
+            fs.unlinkSync(req.file.path);
+          } catch (e) {}
         return res.status(400).send("Descrição da marca é obrigatória.");
       }
 
       // slug para nome de arquivo
       const slug = slugify(descricaoMarca);
       if (!slug) {
-        if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) {}
-        return res.status(400).send("Descrição inválida para gerar nome de arquivo.");
+        if (req.file)
+          try {
+            fs.unlinkSync(req.file.path);
+          } catch (e) {}
+        return res
+          .status(400)
+          .send("Descrição inválida para gerar nome de arquivo.");
       }
 
       // se não enviou arquivo, só salva os dados da marca (faça sua lógica aqui)
@@ -479,13 +485,17 @@ app.post(
       // valida mimetype
       const allowed = ["image/jpeg", "image/jpg", "image/png"];
       if (!allowed.includes(req.file.mimetype)) {
-        try { fs.unlinkSync(req.file.path); } catch (e) {}
-        return res.status(400).send("Formato de arquivo não suportado. Envie JPG ou PNG.");
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (e) {}
+        return res
+          .status(400)
+          .send("Formato de arquivo não suportado. Envie JPG ou PNG.");
       }
 
       // caminhos finais
       const jpegFilename = `${slug}.jpg`;
-      
+
       const pngFilename = `${slug}.png`;
       const jpegPath = path.join(uploadsDirMarca, jpegFilename);
       const pngPath = path.join(uploadsDirMarca, pngFilename);
@@ -496,7 +506,11 @@ app.post(
       await sharp(req.file.path).png().toFile(pngPath);
 
       // remove arquivo temporário
-      try { fs.unlinkSync(req.file.path); } catch (e) { /* ignore */ }
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {
+        /* ignore */
+      }
 
       // aqui você integra a persistência (exemplo: gravar no banco o nome da logo)
       // await db.updateMarca({ descricao: descricaoMarca, logo_jpg: jpegFilename, logo_png: pngFilename, ... });
@@ -505,7 +519,10 @@ app.post(
     } catch (err) {
       console.error("Erro ao salvar marca/logo:", err);
       // cleanup de segurança
-      if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) {}
+      if (req.file)
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (e) {}
       return res.status(500).send("Erro ao processar marca e logo.");
     }
   }
@@ -515,10 +532,10 @@ app.post(
 let cache = { data: null, expiresAt: 0 };
 const CACHE_TTL_MS = 1000 * 60; // 1 minuto (ajuste conforme precisar)
 
-const OWNER = 'CaioRodrigoCEVDEV';
-const REPO = 'sistema_pedidos';
+const OWNER = "CaioRodrigoCEVDEV";
+const REPO = "sistema_pedidos";
 
-app.get('/api/releases', async (req, res) => {
+app.get("/api/releases", async (req, res) => {
   try {
     if (Date.now() < cache.expiresAt && cache.data) {
       return res.json({ ok: true, fromCache: true, releases: cache.data });
@@ -526,36 +543,37 @@ app.get('/api/releases', async (req, res) => {
 
     const token = process.env.GITHUB_TOKEN;
     const url = `https://api.github.com/repos/${OWNER}/${REPO}/releases`;
-    const headers = token ? { Authorization: `token ${token}`, 'User-Agent': 'orderup' } : { 'User-Agent': 'orderup' };
+    const headers = token
+      ? { Authorization: `token ${token}`, "User-Agent": "orderup" }
+      : { "User-Agent": "orderup" };
 
     const resp = await fetch(url, { headers });
     if (!resp.ok) {
       const body = await resp.text();
-      return res.status(resp.status).json({ ok: false, status: resp.status, body });
+      return res
+        .status(resp.status)
+        .json({ ok: false, status: resp.status, body });
     }
 
     const full = await resp.json();
 
     // filtre apenas os campos que o front realmente precisa (evita enviar dados desnecessários)
-    const releases = full.map(r => ({
+    const releases = full.map((r) => ({
       id: r.id,
       tag_name: r.tag_name,
       name: r.name,
       body: r.body,
-      published_at: r.published_at
+      published_at: r.published_at,
     }));
 
     cache = { data: releases, expiresAt: Date.now() + CACHE_TTL_MS };
 
     res.json({ ok: true, fromCache: false, releases });
   } catch (err) {
-    console.error('Erro /api/releases', err);
-    res.status(500).json({ ok: false, error: 'Erro interno' });
+    console.error("Erro /api/releases", err);
+    res.status(500).json({ ok: false, error: "Erro interno" });
   }
 });
-
-
-
 
 // Inicia o servidor
 (async () => {
