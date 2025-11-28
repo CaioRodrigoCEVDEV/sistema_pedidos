@@ -109,18 +109,45 @@ async function atualizarDB() {
     `);
 
     // ==================================================================================================================================
-    // PART GROUPS - Compatibility groups for shared inventory
+    // GRUPOS DE COMPATIBILIDADE (PART GROUPS) - Grupos para gerenciamento de estoque compartilhado
+    // Simplificado: usa INTEGER como ID (auto increment) ao invés de UUID
     // ==================================================================================================================================
 
-    // Enable uuid-ossp extension for UUID generation
+    // Verifica se a tabela part_groups existe com UUID e precisa de migração
     await pool.query(`
-      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+      DO $$
+      BEGIN
+        -- Se a tabela existe com coluna UUID, faz a migração para INTEGER
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'part_groups' 
+          AND column_name = 'id' 
+          AND data_type = 'uuid'
+        ) THEN
+          -- Remove as constraints antigas
+          ALTER TABLE public.pro DROP CONSTRAINT IF EXISTS fk_pro_part_group;
+          DROP INDEX IF EXISTS idx_pro_part_group_id;
+          DROP INDEX IF EXISTS idx_part_group_audit_group_id;
+          
+          -- Cria tabela temporária para migração dos dados
+          CREATE TEMP TABLE temp_part_groups AS SELECT * FROM public.part_groups;
+          CREATE TEMP TABLE temp_audit AS SELECT * FROM public.part_group_audit;
+          CREATE TEMP TABLE temp_pro_groups AS SELECT procod, part_group_id FROM public.pro WHERE part_group_id IS NOT NULL;
+          
+          -- Remove as tabelas antigas
+          DROP TABLE IF EXISTS public.part_group_audit;
+          DROP TABLE IF EXISTS public.part_groups CASCADE;
+          
+          -- Limpa a coluna part_group_id da tabela pro
+          ALTER TABLE public.pro DROP COLUMN IF EXISTS part_group_id;
+        END IF;
+      END$$;
     `);
 
-    // Create part_groups table for compatibility groups
+    // Cria tabela part_groups com ID INTEGER (auto increment) - mais simples e fácil de entender
     await pool.query(`
       CREATE TABLE IF NOT EXISTS public.part_groups (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
         stock_quantity INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -128,12 +155,12 @@ async function atualizarDB() {
       );
     `);
 
-    // Add part_group_id foreign key to pro table
+    // Adiciona coluna part_group_id na tabela pro (FK para grupos de compatibilidade)
     await pool.query(`
-      ALTER TABLE public.pro ADD IF NOT EXISTS part_group_id UUID NULL;
+      ALTER TABLE public.pro ADD IF NOT EXISTS part_group_id INTEGER NULL;
     `);
 
-    // Add foreign key constraint if it doesn't exist
+    // Adiciona a constraint de chave estrangeira se não existir
     await pool.query(`
       DO $$
       BEGIN
@@ -151,11 +178,11 @@ async function atualizarDB() {
       END$$;
     `);
 
-    // Create part_group_audit table for stock change tracking
+    // Cria tabela de auditoria para histórico de movimentações de estoque do grupo
     await pool.query(`
       CREATE TABLE IF NOT EXISTS public.part_group_audit (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        part_group_id UUID NOT NULL REFERENCES public.part_groups(id) ON DELETE CASCADE,
+        id SERIAL PRIMARY KEY,
+        part_group_id INTEGER NOT NULL REFERENCES public.part_groups(id) ON DELETE CASCADE,
         change INTEGER NOT NULL,
         reason TEXT,
         reference_id TEXT NULL,
@@ -163,68 +190,20 @@ async function atualizarDB() {
       );
     `);
 
-    // Create index on part_group_audit for faster lookups
+    // Índice para buscas rápidas no histórico de auditoria
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_part_group_audit_group_id 
       ON public.part_group_audit(part_group_id);
     `);
 
-    // Create index on pro.part_group_id for faster lookups
+    // Índice para buscas rápidas de peças por grupo
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_pro_part_group_id 
       ON public.pro(part_group_id);
     `);
 
-    // Migration: Create individual part_groups for existing parts that don't have a group
-    // This preserves existing behavior - each part gets its own group with its current stock
-    await pool.query(`
-      INSERT INTO public.part_groups (id, name, stock_quantity, created_at, updated_at)
-      SELECT 
-        uuid_generate_v4(),
-        COALESCE(prodes, 'Part ' || procod::text),
-        COALESCE(proqtde, 0),
-        COALESCE(prodtcad, NOW()),
-        NOW()
-      FROM public.pro
-      WHERE part_group_id IS NULL
-      ON CONFLICT DO NOTHING;
-    `);
-
-    // Update parts to reference their newly created groups
-    await pool.query(`
-      UPDATE public.pro p
-      SET part_group_id = pg.id
-      FROM public.part_groups pg
-      WHERE p.part_group_id IS NULL
-        AND pg.name = COALESCE(p.prodes, 'Part ' || p.procod::text)
-        AND pg.stock_quantity = COALESCE(p.proqtde, 0);
-    `);
-
-    // For any remaining parts without groups (edge cases), create groups individually
-    await pool.query(`
-      DO $$
-      DECLARE
-        r RECORD;
-        new_group_id UUID;
-      BEGIN
-        FOR r IN SELECT procod, prodes, proqtde, prodtcad FROM public.pro WHERE part_group_id IS NULL
-        LOOP
-          INSERT INTO public.part_groups (name, stock_quantity, created_at, updated_at)
-          VALUES (
-            COALESCE(r.prodes, 'Part ' || r.procod::text),
-            COALESCE(r.proqtde, 0),
-            COALESCE(r.prodtcad, NOW()),
-            NOW()
-          )
-          RETURNING id INTO new_group_id;
-          
-          UPDATE public.pro SET part_group_id = new_group_id WHERE procod = r.procod;
-        END LOOP;
-      END$$;
-    `);
-
     // ==================================================================================================================================
-    // END PART GROUPS
+    // FIM GRUPOS DE COMPATIBILIDADE
     // ==================================================================================================================================
 
     // FIM NOVOS CAMPOS
