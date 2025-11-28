@@ -16,14 +16,6 @@ async function atualizarDB() {
 
 
 
-      //temporatrio 
-
-      await pool.query(
-      `update usu set usuviuversao = 'N';`
-    );
-
-      //fim temporatrio
-
     await pool.query(
       `ALTER TABLE public.emp ADD IF NOT exists empcod serial4 NOT NULL;`
     );
@@ -82,6 +74,19 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.pvi ADD if not exists pviprocorid int4 NULL;`
     );
+    await pool.query(
+      `ALTER TABLE public.procor ADD if not exists procorsemest bpchar(1) DEFAULT 'N'::bpchar NULL;`
+    );
+    await pool.query(
+      `ALTER TABLE public.pro ADD if not exists proacabando bpchar(1) DEFAULT 'N'::bpchar NULL;`
+    );
+      //temporatrio 
+
+      await pool.query(
+      `update usu set usuviuversao = 'N';`
+    );
+
+      //fim temporatrio
 
 
     // Tabela de relacionamento muitos-para-muitos entre produtos e modelos

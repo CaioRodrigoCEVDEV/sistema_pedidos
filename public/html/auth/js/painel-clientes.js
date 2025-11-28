@@ -31,6 +31,7 @@ const f_parcep = document.getElementById("parcep");
 const f_parrua = document.getElementById("parrua");
 const f_parbai = document.getElementById("parbai");
 const f_parmuncod = document.getElementById("parmuncod");
+const f_parmuncodcod = document.getElementById("parmuncodcod");
 const f_clibloq = document.getElementById("clibloq");
 const f_clilim = document.getElementById("clilim");
 const f_parsit = document.getElementById("parsit");
@@ -196,11 +197,10 @@ async function abrirEdicao(id) {
         f_parcep.value = data.parcep || "";
         f_parrua.value = data.parrua || "";
         f_parbai.value = data.parbai || "";
-        f_parmuncod.value = data.parmuncod || "";
+        f_parmuncod.value = data.mundes || "";
         f_clibloq.checked = !!data.clibloq;
         f_clilim.value = data.clilim ?? 0;
         f_parsit.value = data.parsit || "";
-
         cliModal.show();
     } catch (err) {
         console.error(err);
@@ -211,6 +211,25 @@ async function abrirEdicao(id) {
 // Salvar (create/update)
 cliForm.addEventListener("submit", async (ev) => {
     ev.preventDefault();
+    
+    
+
+    // determinar código do município a partir do campo de texto ou do campo oculto com código
+    const muniText = (f_parmuncod.value || "").trim();
+    let parmuncod = 0;
+
+    // se há um campo específico com o código, usar primeiro
+    if (f_parmuncodcod && onlyDigits(f_parmuncodcod.value)) {
+        parmuncod = Number(f_parmuncodcod.value);
+    } else if (muniText) {
+        // tentar casar com a lista de municípios carregada
+        const match = municipios.find((m) => {
+            const label = `${m.mundes} - ${m.munufsigla}`.trim();
+            return label.toLowerCase() === muniText.toLowerCase()
+                || (m.mundes || "").toLowerCase() === muniText.toLowerCase();
+        });
+        if (match) parmuncod = Number(match.muncod || 0);
+    }
 
     const payload = {
         pardes: (f_pardes.value || "").trim(),
@@ -222,9 +241,7 @@ cliForm.addEventListener("submit", async (ev) => {
         parcep: (f_parcep.value || "").trim() || null,
         parrua: (f_parrua.value || "").trim() || null,
         parbai: (f_parbai.value || "").trim() || null,
-        parmuncod: Number(
-            municipios.find((m) => `${m.muncod}` === f_parmuncod.value)?.muncod || 0
-        ),
+        parmuncod: parmuncod,
         clibloq: !!f_clibloq.checked,
         clilim: Number(f_clilim.value || 0),
         parsit: f_parsit.value || undefined
