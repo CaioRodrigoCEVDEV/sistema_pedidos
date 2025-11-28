@@ -1,13 +1,29 @@
 /**
- * Part Groups Admin Panel JavaScript
- * Manages compatibility groups for shared inventory
+ * JavaScript do Painel de Grupos de Compatibilidade
+ * 
+ * Este script gerencia a interface administrativa dos grupos de compatibilidade.
+ * Os grupos permitem que múltiplas peças compartilhem o mesmo estoque.
+ * 
+ * Funcionalidades:
+ * - Listar grupos com suas peças e estoque
+ * - Criar, editar e excluir grupos
+ * - Adicionar e remover peças de grupos
+ * - Visualizar histórico de movimentações
+ * - Ajustar estoque do grupo
  */
 
 let currentGroupId = null;
 let allGroups = [];
 let availableParts = [];
 
-// Toast helper (leve, sem dependências)
+// Referência do modal de adicionar peça (para controle de backdrop)
+let modalAdicionarPecaInstance = null;
+
+/**
+ * Função auxiliar para exibir notificações toast
+ * @param {string} message - Mensagem a ser exibida
+ * @param {string} type - Tipo da mensagem ('success', 'error', 'info')
+ */
 function showToast(message, type = "success") {
   let container = document.getElementById("app-toast-container");
   if (!container) {
@@ -60,7 +76,11 @@ function showToast(message, type = "success") {
   }, 2500);
 }
 
-// Format date for display
+/**
+ * Formata data para exibição no padrão brasileiro
+ * @param {string} dateString - Data em formato ISO
+ * @returns {string} Data formatada (ex: 28/11/2025 17:30)
+ */
 function formatDate(dateString) {
   if (!dateString) return "-";
   const date = new Date(dateString);
@@ -73,7 +93,9 @@ function formatDate(dateString) {
   });
 }
 
-// Load all groups
+/**
+ * Carrega todos os grupos de compatibilidade do servidor
+ */
 async function carregarGrupos() {
   const tbody = document.getElementById("tabela-grupos");
   tbody.innerHTML =
@@ -94,7 +116,10 @@ async function carregarGrupos() {
   }
 }
 
-// Render groups table
+/**
+ * Renderiza a tabela de grupos
+ * @param {Array} grupos - Lista de grupos a serem exibidos
+ */
 function renderGrupos(grupos) {
   const tbody = document.getElementById("tabela-grupos");
   tbody.innerHTML = "";
@@ -154,7 +179,7 @@ function renderGrupos(grupos) {
       </td>
     `;
 
-    // Add event listeners instead of inline onclick (XSS prevention)
+    // Adiciona event listeners (evita onclick inline para prevenir XSS)
     tr.querySelector(".btn-edit-group").addEventListener("click", () => {
       abrirModalEditar(grupo.id, grupo.name);
     });
@@ -166,14 +191,20 @@ function renderGrupos(grupos) {
   });
 }
 
-// Escape HTML to prevent XSS
+/**
+ * Escapa HTML para prevenir XSS
+ * @param {string} text - Texto a ser escapado
+ * @returns {string} Texto escapado
+ */
 function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
 }
 
-// Create new group
+/**
+ * Cria um novo grupo de compatibilidade
+ */
 async function criarGrupo() {
   const nome = document.getElementById("nomeGrupo").value.trim();
   const estoque =
@@ -209,14 +240,20 @@ async function criarGrupo() {
   }
 }
 
-// Open edit modal
+/**
+ * Abre o modal de edição de grupo
+ * @param {number} id - ID do grupo
+ * @param {string} nome - Nome atual do grupo
+ */
 function abrirModalEditar(id, nome) {
   document.getElementById("editarGrupoId").value = id;
   document.getElementById("editarNomeGrupo").value = nome;
   new bootstrap.Modal(document.getElementById("modalEditarGrupo")).show();
 }
 
-// Save group edit
+/**
+ * Salva as alterações do grupo editado
+ */
 async function salvarEdicaoGrupo() {
   const id = document.getElementById("editarGrupoId").value;
   const nome = document.getElementById("editarNomeGrupo").value.trim();
@@ -245,7 +282,7 @@ async function salvarEdicaoGrupo() {
     ).hide();
     carregarGrupos();
 
-    // Update details view if open
+    // Atualiza a visualização de detalhes se estiver aberta
     if (currentGroupId === id) {
       document.getElementById("nomeGrupoDetalhe").textContent = nome;
     }
@@ -255,7 +292,10 @@ async function salvarEdicaoGrupo() {
   }
 }
 
-// Delete group
+/**
+ * Exclui um grupo de compatibilidade
+ * @param {number} id - ID do grupo a ser excluído
+ */
 async function excluirGrupo(id) {
   if (
     !confirm(
@@ -288,7 +328,10 @@ async function excluirGrupo(id) {
   }
 }
 
-// Open group details
+/**
+ * Abre o painel de detalhes de um grupo específico
+ * @param {number} id - ID do grupo
+ */
 async function abrirDetalhes(id) {
   currentGroupId = id;
   document.getElementById("detalhesGrupo").style.display = "block";
@@ -306,10 +349,10 @@ async function abrirDetalhes(id) {
     document.getElementById("estoqueGrupoDetalhe").textContent =
       grupo.stock_quantity;
 
-    // Render parts
+    // Renderiza as peças do grupo
     renderPecasGrupo(grupo.parts || []);
 
-    // Load audit history
+    // Carrega o histórico de movimentações
     carregarHistorico(id);
   } catch (err) {
     console.error(err);
@@ -317,7 +360,10 @@ async function abrirDetalhes(id) {
   }
 }
 
-// Render group parts table
+/**
+ * Renderiza a tabela de peças do grupo
+ * @param {Array} pecas - Lista de peças do grupo
+ */
 function renderPecasGrupo(pecas) {
   const tbody = document.getElementById("tabela-pecas-grupo");
   tbody.innerHTML = "";
@@ -340,7 +386,7 @@ function renderPecasGrupo(pecas) {
         </button>
       </td>
     `;
-    // Add event listener instead of inline onclick (XSS prevention)
+    // Adiciona event listener (evita onclick inline para prevenir XSS)
     tr.querySelector(".btn-remove-part").addEventListener("click", () => {
       removerPecaGrupo(peca.procod);
     });
@@ -348,7 +394,10 @@ function renderPecasGrupo(pecas) {
   });
 }
 
-// Load audit history
+/**
+ * Carrega o histórico de movimentações (auditoria) de um grupo
+ * @param {number} groupId - ID do grupo
+ */
 async function carregarHistorico(groupId) {
   const tbody = document.getElementById("tabela-historico");
   tbody.innerHTML =
@@ -370,7 +419,10 @@ async function carregarHistorico(groupId) {
   }
 }
 
-// Render audit history
+/**
+ * Renderiza a tabela de histórico de movimentações
+ * @param {Array} historico - Lista de registros de auditoria
+ */
 function renderHistorico(historico) {
   const tbody = document.getElementById("tabela-historico");
   tbody.innerHTML = "";
@@ -398,13 +450,17 @@ function renderHistorico(historico) {
   });
 }
 
-// Close details view
+/**
+ * Fecha o painel de detalhes do grupo
+ */
 function fecharDetalhes() {
   currentGroupId = null;
   document.getElementById("detalhesGrupo").style.display = "none";
 }
 
-// Open stock edit modal
+/**
+ * Abre o modal de edição de estoque do grupo
+ */
 function abrirModalEditarEstoque() {
   if (!currentGroupId) return;
 
@@ -417,7 +473,9 @@ function abrirModalEditarEstoque() {
   new bootstrap.Modal(document.getElementById("modalEditarEstoque")).show();
 }
 
-// Save stock
+/**
+ * Salva o novo estoque do grupo
+ */
 async function salvarEstoque() {
   if (!currentGroupId) return;
 
@@ -447,7 +505,7 @@ async function salvarEstoque() {
       document.getElementById("modalEditarEstoque")
     ).hide();
 
-    // Refresh details
+    // Atualiza os detalhes do grupo
     abrirDetalhes(currentGroupId);
     carregarGrupos();
   } catch (err) {
@@ -456,7 +514,37 @@ async function salvarEstoque() {
   }
 }
 
-// Open modal to add part to group
+/**
+ * Função segura para fechar modal e limpar backdrop
+ * Remove o backdrop e a classe modal-open do body para evitar tela cinza
+ * @param {string} modalId - ID do elemento modal
+ */
+function fecharModalComSeguranca(modalId) {
+  const modalElement = document.getElementById(modalId);
+  if (!modalElement) return;
+
+  // Tenta fechar usando a instância do Bootstrap
+  const modalInstance = bootstrap.Modal.getInstance(modalElement);
+  if (modalInstance) {
+    modalInstance.hide();
+  }
+
+  // Aguarda um momento e limpa manualmente qualquer backdrop residual
+  setTimeout(() => {
+    // Remove todos os backdrops que possam ter ficado
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    // Remove a classe modal-open do body
+    document.body.classList.remove('modal-open');
+    // Remove o estilo inline de padding/overflow que o Bootstrap adiciona
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+  }, 300);
+}
+
+/**
+ * Abre o modal de adicionar peça ao grupo
+ * Reutiliza a instância do modal para evitar múltiplos backdrops
+ */
 async function abrirModalAdicionarPeca() {
   if (!currentGroupId) return;
 
@@ -464,7 +552,12 @@ async function abrirModalAdicionarPeca() {
   tbody.innerHTML =
     '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
 
-  new bootstrap.Modal(document.getElementById("modalAdicionarPeca")).show();
+  // Reutiliza a instância do modal ou cria uma nova
+  const modalElement = document.getElementById("modalAdicionarPeca");
+  if (!modalAdicionarPecaInstance) {
+    modalAdicionarPecaInstance = new bootstrap.Modal(modalElement);
+  }
+  modalAdicionarPecaInstance.show();
 
   try {
     const res = await fetch(`${BASE_URL}/part-groups/available-part`, {
@@ -482,7 +575,10 @@ async function abrirModalAdicionarPeca() {
   }
 }
 
-// Render available parts
+/**
+ * Renderiza a tabela de peças disponíveis para adicionar ao grupo
+ * @param {Array} pecas - Lista de peças disponíveis
+ */
 function renderPecasDisponiveis(pecas) {
   const tbody = document.getElementById("tabela-pecas-disponiveis");
   tbody.innerHTML = "";
@@ -512,7 +608,7 @@ function renderPecasDisponiveis(pecas) {
         }
       </td>
     `;
-    // Add event listener instead of inline onclick (XSS prevention)
+    // Adiciona event listener (evita onclick inline para prevenir XSS)
     if (!isInGroup) {
       tr.querySelector(".btn-add-part").addEventListener("click", () => {
         adicionarPecaAoGrupo(peca.procod);
@@ -522,7 +618,10 @@ function renderPecasDisponiveis(pecas) {
   });
 }
 
-// Add part to group
+/**
+ * Adiciona uma peça ao grupo atual
+ * @param {number} partId - ID da peça (procod)
+ */
 async function adicionarPecaAoGrupo(partId) {
   if (!currentGroupId) return;
 
@@ -541,10 +640,10 @@ async function adicionarPecaAoGrupo(partId) {
 
     showToast("Peça adicionada ao grupo!", "success");
 
-    // Refresh available parts list
-    abrirModalAdicionarPeca();
+    // Atualiza apenas a lista de peças disponíveis (sem reabrir o modal)
+    await atualizarListaPecasDisponiveis();
 
-    // Refresh group details
+    // Atualiza os detalhes do grupo
     abrirDetalhes(currentGroupId);
   } catch (err) {
     console.error(err);
@@ -552,7 +651,33 @@ async function adicionarPecaAoGrupo(partId) {
   }
 }
 
-// Remove part from group
+/**
+ * Atualiza a lista de peças disponíveis sem reabrir o modal
+ * Evita o problema de múltiplos backdrops
+ */
+async function atualizarListaPecasDisponiveis() {
+  const tbody = document.getElementById("tabela-pecas-disponiveis");
+  
+  try {
+    const res = await fetch(`${BASE_URL}/part-groups/available-part`, {
+      credentials: "include",
+    });
+
+    if (!res.ok) throw new Error("Erro ao buscar peças disponíveis");
+
+    availableParts = await res.json();
+    renderPecasDisponiveis(availableParts);
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML =
+      '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar peças</td></tr>';
+  }
+}
+
+/**
+ * Remove uma peça do grupo atual
+ * @param {number} partId - ID da peça (procod)
+ */
 async function removerPecaGrupo(partId) {
   if (!confirm("Tem certeza que deseja remover esta peça do grupo?")) {
     return;
@@ -571,7 +696,7 @@ async function removerPecaGrupo(partId) {
 
     showToast("Peça removida do grupo!", "success");
 
-    // Refresh group details
+    // Atualiza os detalhes do grupo
     abrirDetalhes(currentGroupId);
     carregarGrupos();
   } catch (err) {
@@ -580,7 +705,10 @@ async function removerPecaGrupo(partId) {
   }
 }
 
-// Search filter for available parts
+/**
+ * Filtro de pesquisa para peças disponíveis
+ * Adiciona evento de input para filtrar a lista em tempo real
+ */
 document.addEventListener("DOMContentLoaded", function () {
   const searchInput = document.getElementById("pesquisaPeca");
   if (searchInput) {
@@ -595,9 +723,23 @@ document.addEventListener("DOMContentLoaded", function () {
       renderPecasDisponiveis(filtered);
     });
   }
+
+  // Adiciona listener para limpar backdrop quando o modal de adicionar peça é fechado
+  const modalAdicionarPeca = document.getElementById("modalAdicionarPeca");
+  if (modalAdicionarPeca) {
+    modalAdicionarPeca.addEventListener("hidden.bs.modal", function () {
+      // Remove qualquer backdrop residual
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+      // Remove a classe modal-open do body
+      document.body.classList.remove('modal-open');
+      // Remove estilos inline
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+    });
+  }
 });
 
-// Initialize on page load
+// Inicialização: carrega os grupos ao carregar a página
 (function () {
   carregarGrupos();
 })();

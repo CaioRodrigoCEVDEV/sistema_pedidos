@@ -1,43 +1,44 @@
 /**
- * Part Groups Feature Tests
+ * Testes da Funcionalidade de Grupos de Compatibilidade
  * 
- * These tests validate the part groups (compatibility groups) functionality.
+ * Estes testes validam a funcionalidade dos grupos de compatibilidade (part groups).
+ * Os grupos permitem que múltiplas peças compartilhem o mesmo estoque.
  * 
- * PREREQUISITES:
- * - PostgreSQL database running with the schema created
- * - Environment variables configured (.env file)
- * - Run migration first: node -e "require('./src/config/atualizardb').atualizarDB()"
+ * PRÉ-REQUISITOS:
+ * - Banco de dados PostgreSQL rodando com o schema criado
+ * - Variáveis de ambiente configuradas (arquivo .env)
+ * - Executar a migração primeiro: node -e "require('./src/config/atualizardb').atualizarDB()"
  * 
- * HOW TO RUN:
+ * COMO EXECUTAR:
  * node tests/partGroups.test.js
  * 
- * NOTE: These are integration tests that require a database connection.
- * For production use, consider setting up a separate test database.
+ * NOTA: Estes são testes de integração que requerem conexão com o banco de dados.
+ * Para uso em produção, considere configurar um banco de dados separado para testes.
  */
 
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-// Simple test framework
+// Framework de testes simples
 let testsRun = 0;
 let testsPassed = 0;
 let testsFailed = 0;
 
 function assert(condition, message) {
   if (!condition) {
-    throw new Error(message || 'Assertion failed');
+    throw new Error(message || 'Assertiva falhou');
   }
 }
 
 function assertEqual(actual, expected, message) {
   if (actual !== expected) {
-    throw new Error(`${message || 'assertEqual failed'}: expected ${expected}, got ${actual}`);
+    throw new Error(`${message || 'assertEqual falhou'}: esperado ${expected}, obtido ${actual}`);
   }
 }
 
 function assertNotNull(value, message) {
   if (value === null || value === undefined) {
-    throw new Error(message || 'Value should not be null');
+    throw new Error(message || 'Valor não deveria ser nulo');
   }
 }
 
@@ -45,16 +46,16 @@ async function test(name, fn) {
   testsRun++;
   try {
     await fn();
-    console.log(`✅ PASS: ${name}`);
+    console.log(`✅ PASSOU: ${name}`);
     testsPassed++;
   } catch (error) {
-    console.log(`❌ FAIL: ${name}`);
-    console.log(`   Error: ${error.message}`);
+    console.log(`❌ FALHOU: ${name}`);
+    console.log(`   Erro: ${error.message}`);
     testsFailed++;
   }
 }
 
-// Load dependencies
+// Carrega as dependências
 let pool;
 let partGroupModels;
 
@@ -62,105 +63,107 @@ try {
   pool = require('../src/config/db');
   partGroupModels = require('../src/models/partGroupModels');
 } catch (error) {
-  console.error('Failed to load dependencies:', error.message);
-  console.log('\nMake sure you have:');
-  console.log('1. Set up the .env file with database credentials');
-  console.log('2. Installed dependencies (npm install)');
-  console.log('3. Run this from the project root directory');
+  console.error('Falha ao carregar dependências:', error.message);
+  console.log('\nVerifique se você:');
+  console.log('1. Configurou o arquivo .env com as credenciais do banco de dados');
+  console.log('2. Instalou as dependências (npm install)');
+  console.log('3. Está executando a partir do diretório raiz do projeto');
   process.exit(1);
 }
 
-// Test data cleanup
+// Limpeza dos dados de teste
 async function cleanup() {
   try {
-    // Clean up test data
+    // Limpa dados de teste
     await pool.query("DELETE FROM part_group_audit WHERE reason LIKE 'test_%'");
     await pool.query("DELETE FROM part_groups WHERE name LIKE 'Test Group%'");
   } catch (error) {
-    console.log('Cleanup warning:', error.message);
+    console.log('Aviso de limpeza:', error.message);
   }
 }
 
-// Tests
+// Testes
 async function runTests() {
-  console.log('\n🧪 Part Groups Feature Tests\n');
+  console.log('\n🧪 Testes da Funcionalidade de Grupos de Compatibilidade\n');
   console.log('='.repeat(50));
 
-  // Test 1: Create a new group
-  await test('Create a new part group', async () => {
+  // Teste 1: Criar um novo grupo
+  await test('Criar um novo grupo de compatibilidade', async () => {
     const group = await partGroupModels.createGroup('Test Group 1', 100);
-    assertNotNull(group, 'Group should be created');
-    assertNotNull(group.id, 'Group should have an ID');
-    assertEqual(group.name, 'Test Group 1', 'Group name should match');
-    assertEqual(group.stock_quantity, 100, 'Stock quantity should match');
+    assertNotNull(group, 'Grupo deve ser criado');
+    assertNotNull(group.id, 'Grupo deve ter um ID');
+    // Verifica que o ID é um INTEGER (não UUID)
+    assert(typeof group.id === 'number', 'ID do grupo deve ser um número inteiro');
+    assertEqual(group.name, 'Test Group 1', 'Nome do grupo deve corresponder');
+    assertEqual(group.stock_quantity, 100, 'Quantidade de estoque deve corresponder');
   });
 
-  // Test 2: List groups
-  await test('List all groups', async () => {
+  // Teste 2: Listar grupos
+  await test('Listar todos os grupos', async () => {
     const groups = await partGroupModels.listAllGroups();
-    assert(Array.isArray(groups), 'Should return an array');
-    assert(groups.length > 0, 'Should have at least one group');
+    assert(Array.isArray(groups), 'Deve retornar um array');
+    assert(groups.length > 0, 'Deve ter pelo menos um grupo');
   });
 
-  // Test 3: Get group by ID
-  await test('Get group by ID', async () => {
-    // First create a group
+  // Teste 3: Buscar grupo por ID
+  await test('Buscar grupo por ID', async () => {
+    // Primeiro cria um grupo
     const created = await partGroupModels.createGroup('Test Group 2', 50);
     
-    // Then get it by ID
+    // Depois busca pelo ID
     const group = await partGroupModels.getGroupById(created.id);
-    assertNotNull(group, 'Should find the group');
-    assertEqual(group.name, 'Test Group 2', 'Name should match');
-    assert(Array.isArray(group.parts), 'Should have parts array');
+    assertNotNull(group, 'Deve encontrar o grupo');
+    assertEqual(group.name, 'Test Group 2', 'Nome deve corresponder');
+    assert(Array.isArray(group.parts), 'Deve ter array de peças');
   });
 
-  // Test 4: Update group
-  await test('Update group name', async () => {
+  // Teste 4: Atualizar grupo
+  await test('Atualizar nome do grupo', async () => {
     const created = await partGroupModels.createGroup('Test Group 3', 25);
-    const updated = await partGroupModels.updateGroup(created.id, 'Test Group 3 Updated');
+    const updated = await partGroupModels.updateGroup(created.id, 'Test Group 3 Atualizado');
     
-    assertNotNull(updated, 'Should return updated group');
-    assertEqual(updated.name, 'Test Group 3 Updated', 'Name should be updated');
+    assertNotNull(updated, 'Deve retornar grupo atualizado');
+    assertEqual(updated.name, 'Test Group 3 Atualizado', 'Nome deve estar atualizado');
   });
 
-  // Test 5: Update group stock with audit
-  await test('Update group stock creates audit record', async () => {
-    const created = await partGroupModels.createGroup('Test Group Stock', 10);
+  // Teste 5: Atualizar estoque do grupo com auditoria
+  await test('Atualizar estoque do grupo cria registro de auditoria', async () => {
+    const created = await partGroupModels.createGroup('Test Group Estoque', 10);
     
-    // Update stock
+    // Atualiza o estoque
     await partGroupModels.updateGroupStock(created.id, 25, 'test_adjustment');
     
-    // Check stock was updated
+    // Verifica se o estoque foi atualizado
     const updated = await partGroupModels.getGroupById(created.id);
-    assertEqual(updated.stock_quantity, 25, 'Stock should be updated');
+    assertEqual(updated.stock_quantity, 25, 'Estoque deve estar atualizado');
     
-    // Check audit record exists
+    // Verifica se o registro de auditoria existe
     const history = await partGroupModels.getGroupAuditHistory(created.id);
-    assert(history.length > 0, 'Should have audit history');
-    assertEqual(history[0].change, 15, 'Audit should show change of +15');
-    assertEqual(history[0].reason, 'test_adjustment', 'Audit reason should match');
+    assert(history.length > 0, 'Deve ter histórico de auditoria');
+    assertEqual(history[0].change, 15, 'Auditoria deve mostrar alteração de +15');
+    assertEqual(history[0].reason, 'test_adjustment', 'Motivo da auditoria deve corresponder');
   });
 
-  // Test 6: Delete group
-  await test('Delete group', async () => {
-    const created = await partGroupModels.createGroup('Test Group Delete', 0);
+  // Teste 6: Excluir grupo
+  await test('Excluir grupo', async () => {
+    const created = await partGroupModels.createGroup('Test Group Excluir', 0);
     const deleted = await partGroupModels.deleteGroup(created.id);
     
-    assertNotNull(deleted, 'Should return deleted group');
+    assertNotNull(deleted, 'Deve retornar grupo excluído');
     
-    // Verify it's gone
+    // Verifica que foi removido
     const found = await partGroupModels.getGroupById(created.id);
-    assertEqual(found, null, 'Group should no longer exist');
+    assertEqual(found, null, 'Grupo não deve mais existir');
   });
 
-  // Test 7: Concurrency safety (basic check)
-  await test('Stock decrement with insufficient stock fails', async () => {
-    const created = await partGroupModels.createGroup('Test Group Concurrency', 5);
+  // Teste 7: Verificação básica de concorrência
+  await test('Decremento de estoque com quantidade insuficiente deve falhar', async () => {
+    const created = await partGroupModels.createGroup('Test Group Concorrência', 5);
     
-    // Create a test part linked to this group
+    // Cria uma peça de teste vinculada a este grupo
     const partResult = await pool.query(`
       INSERT INTO pro (prodes, promarcascod, protipocod, provl, part_group_id)
-      SELECT 'Test Part Concurrency', 
+      SELECT 'Peça Teste Concorrência', 
              (SELECT marcascod FROM marcas LIMIT 1),
              (SELECT tipocod FROM tipo LIMIT 1),
              100,
@@ -171,28 +174,28 @@ async function runTests() {
     const partId = partResult.rows[0].procod;
     
     try {
-      // Try to decrement more than available
+      // Tenta decrementar mais do que disponível
       await partGroupModels.decrementGroupStock(partId, 10);
-      throw new Error('Should have thrown insufficient stock error');
+      throw new Error('Deveria ter lançado erro de estoque insuficiente');
     } catch (error) {
       assert(
-        error.message.includes('Insufficient') || error.message.includes('insufficient'),
-        'Should throw insufficient stock error'
+        error.message.includes('insuficiente') || error.message.includes('Insufficient'),
+        'Deve lançar erro de estoque insuficiente'
       );
     }
     
-    // Cleanup test part
+    // Limpa a peça de teste
     await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
   });
 
-  // Test 8: Stock decrement success
-  await test('Stock decrement succeeds with sufficient stock', async () => {
-    const created = await partGroupModels.createGroup('Test Group Decrement', 20);
+  // Teste 8: Sucesso no decremento de estoque
+  await test('Decremento de estoque funciona com quantidade suficiente', async () => {
+    const created = await partGroupModels.createGroup('Test Group Decremento', 20);
     
-    // Create a test part linked to this group
+    // Cria uma peça de teste vinculada a este grupo
     const partResult = await pool.query(`
       INSERT INTO pro (prodes, promarcascod, protipocod, provl, part_group_id)
-      SELECT 'Test Part Decrement', 
+      SELECT 'Peça Teste Decremento', 
              (SELECT marcascod FROM marcas LIMIT 1),
              (SELECT tipocod FROM tipo LIMIT 1),
              100,
@@ -202,30 +205,30 @@ async function runTests() {
     
     const partId = partResult.rows[0].procod;
     
-    // Decrement stock
+    // Decrementa o estoque
     const result = await partGroupModels.decrementGroupStock(partId, 5);
     
-    assertEqual(result.success, true, 'Decrement should succeed');
-    assertEqual(result.newStock, 15, 'New stock should be 15');
+    assertEqual(result.success, true, 'Decremento deve ter sucesso');
+    assertEqual(result.newStock, 15, 'Novo estoque deve ser 15');
     
-    // Verify audit record
+    // Verifica o registro de auditoria
     const history = await partGroupModels.getGroupAuditHistory(created.id);
     const saleAudit = history.find(h => h.reason === 'sale');
-    assertNotNull(saleAudit, 'Should have sale audit record');
-    assertEqual(saleAudit.change, -5, 'Audit should show -5 change');
+    assertNotNull(saleAudit, 'Deve ter registro de auditoria de venda');
+    assertEqual(saleAudit.change, -5, 'Auditoria deve mostrar alteração de -5');
     
-    // Cleanup test part
+    // Limpa a peça de teste
     await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
   });
 
-  // Test 9: Stock increment
-  await test('Stock increment works correctly', async () => {
-    const created = await partGroupModels.createGroup('Test Group Increment', 10);
+  // Teste 9: Incremento de estoque
+  await test('Incremento de estoque funciona corretamente', async () => {
+    const created = await partGroupModels.createGroup('Test Group Incremento', 10);
     
-    // Create a test part linked to this group
+    // Cria uma peça de teste vinculada a este grupo
     const partResult = await pool.query(`
       INSERT INTO pro (prodes, promarcascod, protipocod, provl, part_group_id)
-      SELECT 'Test Part Increment', 
+      SELECT 'Peça Teste Incremento', 
              (SELECT marcascod FROM marcas LIMIT 1),
              (SELECT tipocod FROM tipo LIMIT 1),
              100,
@@ -235,38 +238,38 @@ async function runTests() {
     
     const partId = partResult.rows[0].procod;
     
-    // Increment stock
+    // Incrementa o estoque
     const result = await partGroupModels.incrementGroupStock(partId, 5, 'test_return');
     
-    assertEqual(result.success, true, 'Increment should succeed');
-    assertEqual(result.newStock, 15, 'New stock should be 15');
+    assertEqual(result.success, true, 'Incremento deve ter sucesso');
+    assertEqual(result.newStock, 15, 'Novo estoque deve ser 15');
     
-    // Cleanup test part
+    // Limpa a peça de teste
     await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
   });
 
-  // Cleanup
+  // Limpeza
   await cleanup();
 
-  // Summary
+  // Resumo
   console.log('\n' + '='.repeat(50));
-  console.log(`\n📊 Test Results: ${testsPassed}/${testsRun} passed`);
+  console.log(`\n📊 Resultado dos Testes: ${testsPassed}/${testsRun} passaram`);
   
   if (testsFailed > 0) {
-    console.log(`❌ ${testsFailed} test(s) failed\n`);
+    console.log(`❌ ${testsFailed} teste(s) falharam\n`);
     process.exit(1);
   } else {
-    console.log('✅ All tests passed!\n');
+    console.log('✅ Todos os testes passaram!\n');
     process.exit(0);
   }
 }
 
-// Run tests
+// Executa os testes
 runTests().catch(error => {
-  console.error('Test runner error:', error);
+  console.error('Erro no executor de testes:', error);
   process.exit(1);
 }).finally(() => {
-  // Close pool after tests
+  // Fecha a pool após os testes
   setTimeout(() => {
     pool.end();
   }, 1000);
