@@ -26,7 +26,7 @@ let testsFailed = 0;
 
 function assert(condition, message) {
   if (!condition) {
-    throw new Error(message || 'Asserção falhou');
+    throw new Error(message || 'Assertiva falhou');
   }
 }
 
