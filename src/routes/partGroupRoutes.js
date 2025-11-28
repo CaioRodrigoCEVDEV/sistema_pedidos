@@ -4,71 +4,87 @@ const partGroupController = require("../controllers/partGroupController");
 const requireAdmin = require("../middlewares/adminMiddleware");
 
 /**
- * Part Group Routes
- * All routes require admin authentication
+ * Rotas de Grupos de Peças (Grupos de Compatibilidade)
+ * 
+ * Todas as rotas requerem autenticação de administrador.
+ * 
+ * Endpoints disponíveis:
+ * - GET    /part-groups                  Lista todos os grupos
+ * - GET    /part-groups/available-parts  Busca peças disponíveis para agrupamento
+ * - GET    /part-groups/available-part   Busca todas as peças
+ * - GET    /part-groups/:id              Busca um grupo pelo ID com suas peças
+ * - GET    /part-groups/:id/audit        Busca histórico de movimentações do grupo
+ * - GET    /part-groups/part/:partId/stock Busca estoque do grupo de uma peça
+ * - POST   /part-groups                  Cria um novo grupo
+ * - PUT    /part-groups/:id              Atualiza um grupo
+ * - PUT    /part-groups/:id/stock        Atualiza o estoque de um grupo
+ * - POST   /part-groups/:id/parts        Adiciona uma peça ao grupo
+ * - DELETE /part-groups/parts/:partId    Remove uma peça do grupo
+ * - DELETE /part-groups/:id              Exclui um grupo
  */
 
-// List all part groups
+// Lista todos os grupos de peças
 router.get("/part-groups", requireAdmin, partGroupController.listGroups);
 
-// Get available parts for grouping
+// Busca peças disponíveis para agrupamento (não estão em nenhum grupo)
 router.get(
   "/part-groups/available-parts",
   requireAdmin,
   partGroupController.getAvailableParts
 );
 
+// Busca todas as peças (para listagem completa no modal)
 router.get(
   "/part-groups/available-part",
   requireAdmin,
   partGroupController.getAvailablePart
 );
 
-// Get a single group by ID with its parts
+// Busca um grupo pelo ID com suas peças associadas
 router.get("/part-groups/:id", requireAdmin, partGroupController.getGroup);
 
-// Get audit history for a group
+// Busca o histórico de auditoria (movimentações) de um grupo
 router.get(
   "/part-groups/:id/audit",
   requireAdmin,
   partGroupController.getGroupAuditHistory
 );
 
-// Get stock for a specific part's group
+// Busca o estoque do grupo de uma peça específica
 router.get(
   "/part-groups/part/:partId/stock",
   requireAdmin,
   partGroupController.getPartGroupStock
 );
 
-// Create a new part group
+// Cria um novo grupo de peças
 router.post("/part-groups", requireAdmin, partGroupController.createGroup);
 
-// Update a part group
+// Atualiza um grupo de peças
 router.put("/part-groups/:id", requireAdmin, partGroupController.updateGroup);
 
-// Update group stock directly
+// Atualiza o estoque de um grupo diretamente (ajuste manual)
 router.put(
   "/part-groups/:id/stock",
   requireAdmin,
   partGroupController.updateGroupStock
 );
 
-// Add a part to a group
+// Adiciona uma peça a um grupo
 router.post(
   "/part-groups/:id/parts",
   requireAdmin,
   partGroupController.addPartToGroup
 );
 
-// Remove a part from its group
+// Remove uma peça do seu grupo
 router.delete(
   "/part-groups/parts/:partId",
   requireAdmin,
   partGroupController.removePartFromGroup
 );
 
-// Delete a part group
+// Exclui um grupo de peças
 router.delete(
   "/part-groups/:id",
   requireAdmin,

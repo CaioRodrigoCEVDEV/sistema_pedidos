@@ -1,129 +1,129 @@
-# Migration Notes - Part Groups (Compatibility Groups)
+# Notas de Migração - Grupos de Peças (Grupos de Compatibilidade)
 
-## Overview
+## Visão Geral
 
-This migration adds support for **Part Groups** (compatibility groups), which allow multiple parts to share a single inventory stock. This is useful when different part variants (e.g., different suppliers, descriptions, or prices) are physically the same part and should decrement from a shared stock pool.
+Esta migração adiciona suporte para **Grupos de Peças** (grupos de compatibilidade), que permitem que múltiplas peças compartilhem um único estoque. Isso é útil quando diferentes variantes de peças (ex: fornecedores diferentes, descrições ou preços diferentes) são fisicamente a mesma peça e devem decrementar de um pool de estoque compartilhado.
 
-## Database Changes
+## Alterações no Banco de Dados
 
-### New Tables
+### Novas Tabelas
 
 #### `part_groups`
-- `id` (UUID, Primary Key) - Unique identifier
-- `name` (TEXT, NOT NULL) - Display name for the group
-- `stock_quantity` (INTEGER, NOT NULL, DEFAULT 0) - Shared stock quantity
-- `created_at` (TIMESTAMPTZ) - Creation timestamp
-- `updated_at` (TIMESTAMPTZ) - Last update timestamp
+- `id` (INTEGER, Chave Primária, SERIAL/IDENTITY) - Identificador único simples (inteiro auto-incrementado)
+- `name` (TEXT, NOT NULL) - Nome de exibição do grupo
+- `stock_quantity` (INTEGER, NOT NULL, DEFAULT 0) - Quantidade de estoque compartilhado
+- `created_at` (TIMESTAMPTZ) - Data/hora de criação
+- `updated_at` (TIMESTAMPTZ) - Data/hora da última atualização
 
 #### `part_group_audit`
-- `id` (UUID, Primary Key) - Unique identifier  
-- `part_group_id` (UUID, FK to part_groups) - Reference to the group
-- `change` (INTEGER) - Stock change amount (positive = increase, negative = decrease)
-- `reason` (TEXT) - Reason for the change (e.g., "sale", "manual_adjustment")
-- `reference_id` (TEXT, NULLABLE) - Reference to related entity (e.g., part ID)
-- `created_at` (TIMESTAMPTZ) - Timestamp of the change
+- `id` (INTEGER, Chave Primária, SERIAL/IDENTITY) - Identificador único  
+- `part_group_id` (INTEGER, FK para part_groups) - Referência ao grupo
+- `change` (INTEGER) - Quantidade alterada no estoque (positivo = aumento, negativo = diminuição)
+- `reason` (TEXT) - Motivo da alteração (ex: "sale", "manual_adjustment")
+- `reference_id` (TEXT, NULLABLE) - Referência a entidade relacionada (ex: ID da peça)
+- `created_at` (TIMESTAMPTZ) - Data/hora da alteração
 
-### Table Modifications
+### Modificações em Tabelas
 
-#### `pro` (parts table)
-- Added `part_group_id` (UUID, NULLABLE, FK to part_groups) - Links part to its compatibility group
+#### `pro` (tabela de peças/produtos)
+- Adicionada coluna `part_group_id` (INTEGER, NULLABLE, FK para part_groups) - Vincula a peça ao seu grupo de compatibilidade
 
-### Indexes
-- `idx_part_group_audit_group_id` on `part_group_audit(part_group_id)`
-- `idx_pro_part_group_id` on `pro(part_group_id)`
+### Índices
+- `idx_part_group_audit_group_id` em `part_group_audit(part_group_id)`
+- `idx_pro_part_group_id` em `pro(part_group_id)`
 
-## Migration Behavior
+## Comportamento da Migração
 
-### Automatic Migration for Existing Parts
+### Migração Automática para Peças Existentes
 
-When the migration runs, it will:
+Quando a migração é executada, ela irá:
 
-1. **Create individual groups for each existing part** - Each part gets its own group with the part's current stock quantity (`proqtde`)
-2. **Link parts to their groups** - The `part_group_id` foreign key is set
-3. **Preserve existing behavior** - Since each part initially has its own group, stock behavior remains unchanged until groups are consolidated
+1. **Criar grupos individuais para cada peça existente** - Cada peça recebe seu próprio grupo com a quantidade de estoque atual da peça (`proqtde`)
+2. **Vincular peças aos seus grupos** - A chave estrangeira `part_group_id` é definida
+3. **Preservar o comportamento existente** - Como cada peça inicialmente tem seu próprio grupo, o comportamento de estoque permanece inalterado até que os grupos sejam consolidados
 
-### Important Notes
+### Notas Importantes
 
-- The `pro.proqtde` column is **preserved** and remains in the database
-- New code reads/writes stock from `part_groups.stock_quantity`
-- The migration is **non-destructive** - no data is lost
-- Groups can be consolidated later by admin users through the admin UI
+- A coluna `pro.proqtde` é **preservada** e permanece no banco de dados
+- O novo código lê/escreve estoque de `part_groups.stock_quantity`
+- A migração é **não-destrutiva** - nenhum dado é perdido
+- Grupos podem ser consolidados posteriormente por administradores através da interface administrativa
 
-## Verification Steps
+## Passos de Verificação
 
-After running the migration, verify the following:
+Após executar a migração, verifique o seguinte:
 
-1. **Check tables exist:**
+1. **Verificar se as tabelas existem:**
    ```sql
    SELECT COUNT(*) FROM part_groups;
    SELECT COUNT(*) FROM part_group_audit;
    ```
 
-2. **Check all parts have groups:**
+2. **Verificar se todas as peças têm grupos:**
    ```sql
    SELECT COUNT(*) FROM pro WHERE part_group_id IS NULL;
-   -- Should return 0
+   -- Deve retornar 0
    ```
 
-3. **Check stock was migrated correctly:**
+3. **Verificar se o estoque foi migrado corretamente:**
    ```sql
-   SELECT p.procod, p.prodes, p.proqtde as old_stock, pg.stock_quantity as group_stock
+   SELECT p.procod, p.prodes, p.proqtde as estoque_antigo, pg.stock_quantity as estoque_grupo
    FROM pro p
    JOIN part_groups pg ON pg.id = p.part_group_id
    WHERE p.proqtde != pg.stock_quantity;
-   -- Should return 0 rows (stocks should match)
+   -- Deve retornar 0 linhas (estoques devem coincidir)
    ```
 
-## How to Use
+## Como Usar
 
-### Admin UI
+### Interface Administrativa
 
-Navigate to `/part-groups` (requires admin authentication) to:
+Navegue até `/part-groups` (requer autenticação de administrador) para:
 
-- View all compatibility groups
-- Create new groups
-- Add/remove parts from groups
-- Adjust group stock quantities
-- View stock change history (audit trail)
+- Visualizar todos os grupos de compatibilidade
+- Criar novos grupos
+- Adicionar/remover peças dos grupos
+- Ajustar quantidades de estoque do grupo
+- Visualizar histórico de alterações de estoque (auditoria)
 
-### API Endpoints (Admin Only)
+### Endpoints da API (Apenas Admin)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/part-groups` | List all groups |
-| GET | `/part-groups/:id` | Get group details with parts |
-| GET | `/part-groups/:id/audit` | Get audit history |
-| POST | `/part-groups` | Create new group |
-| PUT | `/part-groups/:id` | Update group name |
-| PUT | `/part-groups/:id/stock` | Update group stock |
-| POST | `/part-groups/:id/parts` | Add part to group |
-| DELETE | `/part-groups/parts/:partId` | Remove part from group |
-| DELETE | `/part-groups/:id` | Delete group |
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/part-groups` | Lista todos os grupos |
+| GET | `/part-groups/:id` | Busca detalhes do grupo com peças |
+| GET | `/part-groups/:id/audit` | Busca histórico de auditoria |
+| POST | `/part-groups` | Cria novo grupo |
+| PUT | `/part-groups/:id` | Atualiza nome do grupo |
+| PUT | `/part-groups/:id/stock` | Atualiza estoque do grupo |
+| POST | `/part-groups/:id/parts` | Adiciona peça ao grupo |
+| DELETE | `/part-groups/parts/:partId` | Remove peça do grupo |
+| DELETE | `/part-groups/:id` | Exclui grupo |
 
-### Consolidating Groups (TODO)
+### Consolidando Grupos (TODO)
 
-After migration, admins should:
+Após a migração, os administradores devem:
 
-1. Identify parts that should share inventory
-2. Create a new group (or use an existing one)
-3. Move compatible parts into the same group
-4. Set the combined stock quantity
+1. Identificar peças que devem compartilhar estoque
+2. Criar um novo grupo (ou usar um existente)
+3. Mover peças compatíveis para o mesmo grupo
+4. Definir a quantidade de estoque combinada
 
-**Example workflow:**
-- Part A (Samsung A50 Screen - Supplier 1) has stock 10
-- Part B (Samsung A50 Screen - Supplier 2) has stock 5
-- Create group "Samsung A50 Screen Compatible"
-- Add both parts to the group
-- Set group stock to 15 (combined)
+**Exemplo de fluxo de trabalho:**
+- Peça A (Tela Samsung A50 - Fornecedor 1) tem estoque 10
+- Peça B (Tela Samsung A50 - Fornecedor 2) tem estoque 5
+- Criar grupo "Tela Samsung A50 Compatível"
+- Adicionar ambas as peças ao grupo
+- Definir estoque do grupo para 15 (combinado)
 
-## Technical Notes
+## Notas Técnicas
 
-### Concurrency Safety
+### Segurança de Concorrência
 
-Stock decrement operations use `SELECT ... FOR UPDATE` to prevent race conditions:
+Operações de decremento de estoque usam `SELECT ... FOR UPDATE` para prevenir condições de corrida:
 
 ```javascript
-// In partGroupModels.js
+// Em partGroupModels.js
 const groupResult = await txClient.query(`
   SELECT id, stock_quantity, name
   FROM part_groups
@@ -132,74 +132,74 @@ const groupResult = await txClient.query(`
 `, [part.part_group_id]);
 ```
 
-### Database Triggers
+### Triggers do Banco de Dados
 
-The system uses PostgreSQL triggers to automatically update stock on order confirmation/cancellation:
+O sistema usa triggers do PostgreSQL para atualizar automaticamente o estoque na confirmação/cancelamento de pedidos:
 
-- **`atualizar_saldo`** - Triggered when `pvconfirmado = 'S'` (order confirmed)
-  - Decrements `procor.procorqtde` for items with colors
-  - Decrements `pro.proqtde` for items without colors (legacy)
-  - **NEW:** Decrements `part_groups.stock_quantity` for parts with a group
-  - **NEW:** Creates audit records in `part_group_audit`
+- **`atualizar_saldo`** - Disparado quando `pvconfirmado = 'S'` (pedido confirmado)
+  - Decrementa `procor.procorqtde` para itens com cores
+  - Decrementa `pro.proqtde` para itens sem cores (legado)
+  - **NOVO:** Decrementa `part_groups.stock_quantity` para peças com grupo
+  - **NOVO:** Cria registros de auditoria em `part_group_audit`
 
-- **`retornar_saldo`** - Triggered when `pvsta = 'X'` (order cancelled)
-  - Returns stock to `procor.procorqtde` and `pro.proqtde`
-  - **NEW:** Returns stock to `part_groups.stock_quantity`
-  - **NEW:** Creates audit records for cancellations
+- **`retornar_saldo`** - Disparado quando `pvsta = 'X'` (pedido cancelado)
+  - Retorna estoque para `procor.procorqtde` e `pro.proqtde`
+  - **NOVO:** Retorna estoque para `part_groups.stock_quantity`
+  - **NOVO:** Cria registros de auditoria para cancelamentos
 
-### Audit Trail
+### Trilha de Auditoria
 
-All stock changes are recorded in `part_group_audit`:
+Todas as alterações de estoque são registradas em `part_group_audit`:
 
-- Sales automatically create audit entries with reason "sale"
-- Manual adjustments create entries with the selected reason
-- The `reference_id` field links to the part involved (if applicable)
+- Vendas criam entradas de auditoria automaticamente com motivo "sale"
+- Ajustes manuais criam entradas com o motivo selecionado
+- O campo `reference_id` vincula à peça envolvida (se aplicável)
 
 ## Rollback
 
-To rollback this migration (if needed):
+Para reverter esta migração (se necessário):
 
 ```sql
--- Remove foreign key from pro
+-- Remove a chave estrangeira de pro
 ALTER TABLE pro DROP CONSTRAINT IF EXISTS fk_pro_part_group;
 ALTER TABLE pro DROP COLUMN IF EXISTS part_group_id;
 
--- Drop indexes
+-- Remove índices
 DROP INDEX IF EXISTS idx_part_group_audit_group_id;
 DROP INDEX IF EXISTS idx_pro_part_group_id;
 
--- Drop tables
+-- Remove tabelas
 DROP TABLE IF EXISTS part_group_audit;
 DROP TABLE IF EXISTS part_groups;
 ```
 
-**Warning:** Rollback will lose all group configurations. Stock data in `pro.proqtde` is preserved.
+**Aviso:** O rollback perderá todas as configurações de grupo. Os dados de estoque em `pro.proqtde` são preservados.
 
-## Running Tests
+## Executando Testes
 
-To run the part groups integration tests:
+Para executar os testes de integração dos grupos de peças:
 
 ```bash
-# From the project root directory
+# A partir do diretório raiz do projeto
 node tests/partGroups.test.js
 ```
 
-**Prerequisites:**
-- PostgreSQL database running with the schema created
-- Environment variables configured (`.env` file)
-- Migration must have run first (happens automatically on app startup)
+**Pré-requisitos:**
+- Banco de dados PostgreSQL rodando com o schema criado
+- Variáveis de ambiente configuradas (arquivo `.env`)
+- Migração deve ter sido executada primeiro (acontece automaticamente na inicialização do app)
 
-**Test Coverage:**
-- Creating groups
-- Listing groups
-- Updating group name and stock
-- Audit record creation
-- Stock decrement with sufficient/insufficient stock
-- Stock increment
+**Cobertura de Testes:**
+- Criação de grupos
+- Listagem de grupos
+- Atualização de nome e estoque do grupo
+- Criação de registro de auditoria
+- Decremento de estoque com estoque suficiente/insuficiente
+- Incremento de estoque
 
-## Future Improvements (TODO)
+## Melhorias Futuras (TODO)
 
-- [ ] Consolidate groups tool (batch merge multiple groups)
-- [ ] Low stock alerts per group
-- [ ] Stock transfer between groups
-- [ ] Import/export group configurations
+- [ ] Ferramenta para consolidar grupos (mesclar múltiplos grupos em lote)
+- [ ] Alertas de estoque baixo por grupo
+- [ ] Transferência de estoque entre grupos
+- [ ] Importação/exportação de configurações de grupos

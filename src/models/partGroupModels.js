@@ -1,12 +1,21 @@
 const pool = require("../config/db");
 
 /**
- * Part Group Model/DAO
- * Handles compatibility groups for shared inventory management
+ * Modelo/DAO de Grupos de Peças (Grupos de Compatibilidade)
+ * 
+ * Este módulo gerencia os grupos de compatibilidade para estoque compartilhado.
+ * Peças no mesmo grupo compartilham a mesma quantidade de estoque, útil quando
+ * diferentes variantes de peças (ex: fornecedores diferentes) são fisicamente iguais.
+ * 
+ * Tabelas utilizadas:
+ * - part_groups: Armazena os grupos com id (INTEGER), nome e quantidade de estoque
+ * - part_group_audit: Histórico de movimentações de estoque por grupo
+ * - pro: Tabela de produtos/peças, com part_group_id referenciando o grupo
  */
 
 /**
- * Get all part groups with their member parts count
+ * Lista todos os grupos de peças com contagem de peças associadas
+ * @returns {Promise<Array>} Lista de grupos com informações resumidas
  */
 async function listAllGroups() {
   const result = await pool.query(`
@@ -26,7 +35,9 @@ async function listAllGroups() {
 }
 
 /**
- * Get a single part group by ID with its member parts
+ * Busca um grupo de peças pelo ID, incluindo as peças associadas
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @returns {Promise<Object|null>} Dados do grupo com array de peças ou null se não encontrado
  */
 async function getGroupById(groupId) {
   const groupResult = await pool.query(
@@ -71,7 +82,9 @@ async function getGroupById(groupId) {
 }
 
 /**
- * Get the group for a specific part
+ * Busca o grupo ao qual uma peça pertence
+ * @param {number} partId - ID da peça (procod)
+ * @returns {Promise<Object|null>} Dados do grupo ou null se a peça não pertence a nenhum grupo
  */
 async function getGroupByPartId(partId) {
   const result = await pool.query(
@@ -92,8 +105,11 @@ async function getGroupByPartId(partId) {
 }
 
 /**
- * Get the stock quantity for a part's group
- * If part has no group, returns the part's individual stock (proqtde)
+ * Obtém a quantidade de estoque para uma peça
+ * Se a peça pertence a um grupo, retorna o estoque do grupo
+ * Se não pertence a nenhum grupo, retorna o estoque individual da peça (proqtde)
+ * @param {number} partId - ID da peça (procod)
+ * @returns {Promise<Object|null>} Informações de estoque ou null se não encontrado
  */
 async function getGroupStock(partId) {
   const result = await pool.query(
@@ -120,12 +136,12 @@ async function getGroupStock(partId) {
 }
 
 /**
- * Decrement stock for a part's group with transaction locking
- * Uses SELECT ... FOR UPDATE to prevent race conditions
- * @param {number} partId - The part ID
- * @param {number} qty - Quantity to decrement
- * @param {object} client - Transaction client (optional, creates new transaction if not provided)
- * @returns {object} Result with success status and updated stock
+ * Decrementa o estoque do grupo de uma peça com bloqueio de transação
+ * Usa SELECT ... FOR UPDATE para prevenir condições de corrida
+ * @param {number} partId - ID da peça (procod)
+ * @param {number} qty - Quantidade a decrementar
+ * @param {object} client - Cliente de transação (opcional, cria nova transação se não fornecido)
+ * @returns {Promise<Object>} Resultado com status de sucesso e estoque atualizado
  */
 async function decrementGroupStock(partId, qty, client = null) {
   const shouldCommit = !client;
@@ -134,7 +150,7 @@ async function decrementGroupStock(partId, qty, client = null) {
   try {
     if (shouldCommit) await txClient.query("BEGIN");
 
-    // Get the part's group with lock
+    // Busca a peça e seu grupo com bloqueio para evitar corrida
     const partResult = await txClient.query(
       `
       SELECT p.procod, p.part_group_id, p.prodes
@@ -146,13 +162,13 @@ async function decrementGroupStock(partId, qty, client = null) {
     );
 
     if (partResult.rows.length === 0) {
-      throw new Error(`Part with ID ${partId} not found`);
+      throw new Error(`Peça com ID ${partId} não encontrada`);
     }
 
     const part = partResult.rows[0];
 
     if (!part.part_group_id) {
-      // Part has no group, decrement individual stock
+      // Peça não pertence a um grupo, decrementa estoque individual
       const updateResult = await txClient.query(
         `
         UPDATE pro 
@@ -164,7 +180,7 @@ async function decrementGroupStock(partId, qty, client = null) {
       );
 
       if (updateResult.rows.length === 0) {
-        throw new Error("Insufficient stock");
+        throw new Error("Estoque insuficiente");
       }
 
       if (shouldCommit) await txClient.query("COMMIT");
@@ -175,7 +191,7 @@ async function decrementGroupStock(partId, qty, client = null) {
       };
     }
 
-    // Lock and update group stock
+    // Bloqueia e atualiza o estoque do grupo
     const groupResult = await txClient.query(
       `
       SELECT id, stock_quantity, name
@@ -187,16 +203,16 @@ async function decrementGroupStock(partId, qty, client = null) {
     );
 
     if (groupResult.rows.length === 0) {
-      throw new Error("Part group not found");
+      throw new Error("Grupo de peças não encontrado");
     }
 
     const group = groupResult.rows[0];
 
     if (group.stock_quantity < qty) {
-      throw new Error("Insufficient group stock");
+      throw new Error("Estoque do grupo insuficiente");
     }
 
-    // Decrement group stock
+    // Decrementa o estoque do grupo
     const updateResult = await txClient.query(
       `
       UPDATE part_groups 
@@ -208,10 +224,10 @@ async function decrementGroupStock(partId, qty, client = null) {
     );
 
     if (updateResult.rows.length === 0) {
-      throw new Error("Insufficient group stock");
+      throw new Error("Estoque do grupo insuficiente");
     }
 
-    // Create audit record
+    // Cria registro de auditoria
     await txClient.query(
       `
       INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
@@ -237,12 +253,12 @@ async function decrementGroupStock(partId, qty, client = null) {
 }
 
 /**
- * Increment stock for a part's group with transaction locking
- * @param {number} partId - The part ID
- * @param {number} qty - Quantity to increment
- * @param {string} reason - Reason for the stock increase
- * @param {object} client - Transaction client (optional)
- * @returns {object} Result with success status and updated stock
+ * Incrementa o estoque do grupo de uma peça com bloqueio de transação
+ * @param {number} partId - ID da peça (procod)
+ * @param {number} qty - Quantidade a incrementar
+ * @param {string} reason - Motivo do aumento de estoque
+ * @param {object} client - Cliente de transação (opcional)
+ * @returns {Promise<Object>} Resultado com status de sucesso e estoque atualizado
  */
 async function incrementGroupStock(
   partId,
@@ -256,7 +272,7 @@ async function incrementGroupStock(
   try {
     if (shouldCommit) await txClient.query("BEGIN");
 
-    // Get the part's group
+    // Busca a peça e seu grupo
     const partResult = await txClient.query(
       `
       SELECT p.procod, p.part_group_id, p.prodes
@@ -267,13 +283,13 @@ async function incrementGroupStock(
     );
 
     if (partResult.rows.length === 0) {
-      throw new Error(`Part with ID ${partId} not found`);
+      throw new Error(`Peça com ID ${partId} não encontrada`);
     }
 
     const part = partResult.rows[0];
 
     if (!part.part_group_id) {
-      // Part has no group, increment individual stock
+      // Peça não pertence a um grupo, incrementa estoque individual
       const updateResult = await txClient.query(
         `
         UPDATE pro 
@@ -292,7 +308,7 @@ async function incrementGroupStock(
       };
     }
 
-    // Update group stock
+    // Atualiza o estoque do grupo
     const updateResult = await txClient.query(
       `
       UPDATE part_groups 
@@ -303,7 +319,7 @@ async function incrementGroupStock(
       [qty, part.part_group_id]
     );
 
-    // Create audit record
+    // Cria registro de auditoria
     await txClient.query(
       `
       INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
@@ -328,7 +344,10 @@ async function incrementGroupStock(
 }
 
 /**
- * Create a new part group
+ * Cria um novo grupo de peças
+ * @param {string} name - Nome do grupo
+ * @param {number} stockQuantity - Quantidade inicial de estoque (padrão: 0)
+ * @returns {Promise<Object>} Dados do grupo criado
  */
 async function createGroup(name, stockQuantity = 0) {
   const result = await pool.query(
@@ -343,7 +362,11 @@ async function createGroup(name, stockQuantity = 0) {
 }
 
 /**
- * Update a part group
+ * Atualiza um grupo de peças
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @param {string} name - Novo nome do grupo
+ * @param {number|null} stockQuantity - Nova quantidade de estoque (opcional)
+ * @returns {Promise<Object|null>} Dados do grupo atualizado ou null se não encontrado
  */
 async function updateGroup(groupId, name, stockQuantity = null) {
   let query, params;
@@ -371,7 +394,10 @@ async function updateGroup(groupId, name, stockQuantity = null) {
 }
 
 /**
- * Delete a part group (parts will have part_group_id set to NULL due to ON DELETE SET NULL)
+ * Exclui um grupo de peças
+ * As peças associadas terão part_group_id definido como NULL (ON DELETE SET NULL)
+ * @param {number} groupId - ID do grupo a ser excluído (INTEGER)
+ * @returns {Promise<Object|null>} Dados do grupo excluído ou null se não encontrado
  */
 async function deleteGroup(groupId) {
   const result = await pool.query(
@@ -384,7 +410,10 @@ async function deleteGroup(groupId) {
 }
 
 /**
- * Add a part to a group
+ * Adiciona uma peça a um grupo de compatibilidade
+ * @param {number} partId - ID da peça (procod)
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @returns {Promise<Object|null>} Dados da peça atualizada ou null se não encontrada
  */
 async function addPartToGroup(partId, groupId) {
   const result = await pool.query(
@@ -400,7 +429,9 @@ async function addPartToGroup(partId, groupId) {
 }
 
 /**
- * Remove a part from its group (set to NULL)
+ * Remove uma peça do seu grupo (define part_group_id como NULL)
+ * @param {number} partId - ID da peça (procod)
+ * @returns {Promise<Object|null>} Dados da peça atualizada ou null se não encontrada
  */
 async function removePartFromGroup(partId) {
   const result = await pool.query(
@@ -416,7 +447,10 @@ async function removePartFromGroup(partId) {
 }
 
 /**
- * Get parts that are available for grouping (not in any group or in the specified group)
+ * Busca peças disponíveis para adicionar a um grupo
+ * Retorna peças que não pertencem a nenhum grupo ou que já estão no grupo especificado
+ * @param {number|null} currentGroupId - ID do grupo atual (para mostrar peças já no grupo)
+ * @returns {Promise<Array>} Lista de peças disponíveis
  */
 async function getAvailableParts(currentGroupId = null) {
   let query, params;
@@ -461,10 +495,12 @@ async function getAvailableParts(currentGroupId = null) {
   return result.rows;
 }
 
+/**
+ * Busca todas as peças (para listagem completa no modal de adicionar)
+ * @returns {Promise<Array>} Lista de todas as peças
+ */
 async function getAvailablePart() {
-  let query;
-
-  query = `
+  const query = `
       SELECT 
         p.procod,
         p.prodes,
@@ -478,14 +514,16 @@ async function getAvailablePart() {
       LEFT JOIN tipo t ON t.tipocod = p.protipocod
       ORDER BY p.prodes
     `;
-  params = [];
 
   const result = await pool.query(query);
   return result.rows;
 }
 
 /**
- * Get audit history for a group
+ * Busca o histórico de auditoria (movimentações) de um grupo
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @param {number} limit - Limite de registros a retornar (padrão: 50)
+ * @returns {Promise<Array>} Lista de movimentações do grupo
  */
 async function getGroupAuditHistory(groupId, limit = 50) {
   const result = await pool.query(
@@ -509,7 +547,11 @@ async function getGroupAuditHistory(groupId, limit = 50) {
 }
 
 /**
- * Update group stock directly (for manual adjustments)
+ * Atualiza o estoque de um grupo diretamente (para ajustes manuais)
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @param {number} newQuantity - Nova quantidade de estoque
+ * @param {string} reason - Motivo do ajuste (padrão: "manual_adjustment")
+ * @returns {Promise<Object>} Dados do grupo atualizado
  */
 async function updateGroupStock(
   groupId,
@@ -521,7 +563,7 @@ async function updateGroupStock(
   try {
     await client.query("BEGIN");
 
-    // Get current stock to calculate the change
+    // Busca o estoque atual para calcular a diferença
     const currentResult = await client.query(
       `
       SELECT stock_quantity FROM part_groups WHERE id = $1 FOR UPDATE
@@ -530,13 +572,13 @@ async function updateGroupStock(
     );
 
     if (currentResult.rows.length === 0) {
-      throw new Error("Group not found");
+      throw new Error("Grupo não encontrado");
     }
 
     const currentStock = currentResult.rows[0].stock_quantity;
     const change = newQuantity - currentStock;
 
-    // Update stock
+    // Atualiza o estoque
     const updateResult = await client.query(
       `
       UPDATE part_groups 
@@ -547,7 +589,7 @@ async function updateGroupStock(
       [newQuantity, groupId]
     );
 
-    // Create audit record if there was a change
+    // Cria registro de auditoria se houve alteração
     if (change !== 0) {
       await client.query(
         `

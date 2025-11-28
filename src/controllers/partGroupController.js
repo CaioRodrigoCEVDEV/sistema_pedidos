@@ -1,22 +1,29 @@
 const partGroupModels = require("../models/partGroupModels");
 
 /**
- * Part Group Controller
- * Admin-only endpoints for managing compatibility groups
+ * Controlador de Grupos de Peças (Grupos de Compatibilidade)
+ * 
+ * Este controlador gerencia os endpoints administrativos para:
+ * - Listar, criar, editar e excluir grupos de compatibilidade
+ * - Adicionar e remover peças dos grupos
+ * - Gerenciar estoque compartilhado entre peças do mesmo grupo
+ * - Consultar histórico de movimentações (auditoria)
+ * 
+ * Todos os endpoints requerem autenticação de administrador.
  */
 
-// List all part groups
+// Lista todos os grupos de peças
 exports.listGroups = async (req, res) => {
   try {
     const groups = await partGroupModels.listAllGroups();
     res.status(200).json(groups);
   } catch (error) {
-    console.error("Error listing part groups:", error);
+    console.error("Erro ao listar grupos de peças:", error);
     res.status(500).json({ error: "Erro ao listar grupos de peças" });
   }
 };
 
-// Get a single group by ID with its member parts
+// Busca um grupo pelo ID com suas peças associadas
 exports.getGroup = async (req, res) => {
   const { id } = req.params;
 
@@ -27,12 +34,12 @@ exports.getGroup = async (req, res) => {
     }
     res.status(200).json(group);
   } catch (error) {
-    console.error("Error getting part group:", error);
+    console.error("Erro ao buscar grupo de peças:", error);
     res.status(500).json({ error: "Erro ao buscar grupo de peças" });
   }
 };
 
-// Get stock for a specific part's group
+// Busca o estoque do grupo de uma peça específica
 exports.getPartGroupStock = async (req, res) => {
   const { partId } = req.params;
 
@@ -43,12 +50,12 @@ exports.getPartGroupStock = async (req, res) => {
     }
     res.status(200).json(stockInfo);
   } catch (error) {
-    console.error("Error getting part group stock:", error);
+    console.error("Erro ao buscar estoque do grupo:", error);
     res.status(500).json({ error: "Erro ao buscar estoque do grupo" });
   }
 };
 
-// Create a new part group
+// Cria um novo grupo de peças
 exports.createGroup = async (req, res) => {
   const { name, stock_quantity = 0 } = req.body;
 
@@ -63,12 +70,12 @@ exports.createGroup = async (req, res) => {
     );
     res.status(201).json(group);
   } catch (error) {
-    console.error("Error creating part group:", error);
+    console.error("Erro ao criar grupo de peças:", error);
     res.status(500).json({ error: "Erro ao criar grupo de peças" });
   }
 };
 
-// Update a part group
+// Atualiza um grupo de peças
 exports.updateGroup = async (req, res) => {
   const { id } = req.params;
   const { name, stock_quantity } = req.body;
@@ -88,12 +95,12 @@ exports.updateGroup = async (req, res) => {
     }
     res.status(200).json(group);
   } catch (error) {
-    console.error("Error updating part group:", error);
+    console.error("Erro ao atualizar grupo de peças:", error);
     res.status(500).json({ error: "Erro ao atualizar grupo de peças" });
   }
 };
 
-// Update group stock directly
+// Atualiza o estoque de um grupo diretamente (ajuste manual)
 exports.updateGroupStock = async (req, res) => {
   const { id } = req.params;
   const { stock_quantity, reason = "manual_adjustment" } = req.body;
@@ -117,12 +124,12 @@ exports.updateGroupStock = async (req, res) => {
     }
     res.status(200).json(group);
   } catch (error) {
-    console.error("Error updating group stock:", error);
+    console.error("Erro ao atualizar estoque do grupo:", error);
     res.status(500).json({ error: "Erro ao atualizar estoque do grupo" });
   }
 };
 
-// Delete a part group
+// Exclui um grupo de peças
 exports.deleteGroup = async (req, res) => {
   const { id } = req.params;
 
@@ -133,12 +140,12 @@ exports.deleteGroup = async (req, res) => {
     }
     res.status(200).json({ message: "Grupo excluído com sucesso", group });
   } catch (error) {
-    console.error("Error deleting part group:", error);
+    console.error("Erro ao excluir grupo de peças:", error);
     res.status(500).json({ error: "Erro ao excluir grupo de peças" });
   }
 };
 
-// Add a part to a group
+// Adiciona uma peça a um grupo
 exports.addPartToGroup = async (req, res) => {
   const { id } = req.params;
   const { partId } = req.body;
@@ -154,12 +161,12 @@ exports.addPartToGroup = async (req, res) => {
     }
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error adding part to group:", error);
+    console.error("Erro ao adicionar peça ao grupo:", error);
     res.status(500).json({ error: "Erro ao adicionar peça ao grupo" });
   }
 };
 
-// Remove a part from its group
+// Remove uma peça do seu grupo
 exports.removePartFromGroup = async (req, res) => {
   const { partId } = req.params;
 
@@ -170,12 +177,12 @@ exports.removePartFromGroup = async (req, res) => {
     }
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error removing part from group:", error);
+    console.error("Erro ao remover peça do grupo:", error);
     res.status(500).json({ error: "Erro ao remover peça do grupo" });
   }
 };
 
-// Get available parts for grouping
+// Busca peças disponíveis para agrupamento
 exports.getAvailableParts = async (req, res) => {
   const { groupId } = req.query;
 
@@ -183,22 +190,23 @@ exports.getAvailableParts = async (req, res) => {
     const parts = await partGroupModels.getAvailableParts(groupId || null);
     res.status(200).json(parts);
   } catch (error) {
-    console.error("Error getting available parts:", error);
+    console.error("Erro ao buscar peças disponíveis:", error);
     res.status(500).json({ error: "Erro ao buscar peças disponíveis" });
   }
 };
 
+// Busca todas as peças (para listagem completa)
 exports.getAvailablePart = async (req, res) => {
   try {
     const parts = await partGroupModels.getAvailablePart();
     res.status(200).json(parts);
   } catch (error) {
-    console.error("Error getting available parts:", error);
+    console.error("Erro ao buscar peças disponíveis:", error);
     res.status(500).json({ error: "Erro ao buscar peças disponíveis" });
   }
 };
 
-// Get audit history for a group
+// Busca o histórico de auditoria (movimentações) de um grupo
 exports.getGroupAuditHistory = async (req, res) => {
   const { id } = req.params;
   const { limit = 50 } = req.query;
@@ -210,7 +218,7 @@ exports.getGroupAuditHistory = async (req, res) => {
     );
     res.status(200).json(history);
   } catch (error) {
-    console.error("Error getting group audit history:", error);
+    console.error("Erro ao buscar histórico do grupo:", error);
     res.status(500).json({ error: "Erro ao buscar histórico do grupo" });
   }
 };
