@@ -3,6 +3,7 @@ const router = express.Router();
 const pedidosControllerV2 = require("../controllers/pedidosControllerV2");
 //const autenticarToken = require("../middlewares/middlewares");
 
+router.get("/v2/pedidos/total/anual", pedidosControllerV2.totalVendasAnual);
 router.get("/v2/pedidos/total/dia", pedidosControllerV2.totalVendasDia);
 router.get("/v2/pedidos/total", pedidosControllerV2.totalVendas);
 router.get("/v2/pedidos/listar", pedidosControllerV2.listarPv);

@@ -15,7 +15,16 @@ exports.totalVendasDia = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Erro buscar total vendas" });
+    res.status(500).json({ error: "Erro buscar total vendas dia" });
+  }
+}
+exports.totalVendasAnual = async (req, res) => {
+  try {
+    const result = await pedidoModels.totalVendasAnual();
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro buscar total vendas anual" });
   }
 }
 exports.listarPv = async (req, res) => {
