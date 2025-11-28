@@ -14,6 +14,29 @@ async function totalVendas() {
   return result.rows;
 }
 
+async function totalVendasDia() {
+  const result = await pool.query(`select
+            count(pvcod) as total_pedido_dia,
+            pvconfirmado,
+            pvcanal,
+            sum(pvvl) as vl_total_dia 
+            from pv where pvdtcad = 'now'
+            group by pv.pvconfirmado ,pv.pvcanal 
+            order by pv.pvcanal`);
+  return result.rows;
+}
+
+async function totalVendasAnual() {
+  const result = await pool.query(`select		extract(month from pvdtcad ) as mes,
+            count(pvcod) as total_pedido_mes,
+            pvconfirmado,
+            pvcanal,
+            sum(pvvl) as vl_total_mes
+            from pv where  extract(year from pvdtcad) = extract(year from current_date)
+            group by pv.pvconfirmado ,pv.pvcanal,extract(month from pvdtcad )
+            order by extract(month from pvdtcad ),pv.pvcanal`);
+  return result.rows;
+}
 async function listarPv() {
   const result = await pool.query(
     `select 
@@ -55,4 +78,4 @@ async function cancelarPedido(req, res) {
   return result.rows;
 }
 
-module.exports = { totalVendas, listarPv, cancelarPedido };
+module.exports = { totalVendas,totalVendasDia,totalVendasAnual, listarPv, cancelarPedido };

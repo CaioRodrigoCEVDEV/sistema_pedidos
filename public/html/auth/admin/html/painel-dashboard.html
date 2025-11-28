@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset=" TF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -26,10 +27,23 @@
 
   <style>
     /* Ajustes sutis para harmonizar com as cards existentes */
-    .dashboard-card h3 { font-weight: 700; }
-    .chart-card { min-height: 420px; }
-    .chart-card canvas { width: 100% !important; height: 320px !important; }
-    .subtle { color: #6c757d; font-size: .82rem; }
+    .dashboard-card h3 {
+      font-weight: 700;
+    }
+
+    .chart-card {
+      min-height: 420px;
+    }
+
+    .chart-card canvas {
+      width: 100% !important;
+      height: 320px !important;
+    }
+
+    .subtle {
+      color: #6c757d;
+      font-size: .82rem;
+    }
   </style>
 </head>
 
@@ -38,7 +52,7 @@
     <header id="header-admin"><!-- header injetado pelo seu JS --></header>
 
     <main class="bg-light p-3">
-       <div class="container">
+      <div class="container">
         <div class="alert alert-dismissible fade show shadow p-3 m-auto bg-white rounded" id="releaseID"
           style="max-width: 800px; margin: auto; display: none;" role="alert">
           <strong>Veja o que há de novo?</strong> melhorias, correções e novidades para deixar o sistema ainda melhor.
@@ -49,7 +63,7 @@
               </i>Ver atualizações
               </i></button></p>
         </div>
-      </div>
+      </div><br>
 
       <!-- Modal -->
       <div class="modal fade" id="releasesModal" tabindex="-1" aria-labelledby="releasesModalLabel" aria-hidden="true">
@@ -66,7 +80,8 @@
             <div class="modal-body">
               <!-- header controls -->
               <div class="releases-header mb-3">
-                <input id="filterInput" class="form-control" placeholder="Pesquisar por título ou descrição..." style="display: none;" />
+                <input id="filterInput" class="form-control" placeholder="Pesquisar por título ou descrição..."
+                  style="display: none;" />
                 <select id="sortSelect" class="form-select" style="max-width:180px; display: none;">
                   <option value="date_desc" selected>Mais recentes</option>
                   <option value="date_asc">Mais antigas</option>
@@ -108,9 +123,21 @@
                 </div>
               </div>
             </div>
-            
+
           </div>
         </div>
+        <!-- NOVO: Venda Anual (barras verticais) -->
+        <div class="col-12">
+          <div class="card border-0 shadow-sm chart-card h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Venda Anual — por Mês e Canal</h5>
+              </div>
+              <canvas id="chartFaturamentoAnual"></canvas>
+              <div id="resumoFaturamentoAnual" class="subtle mt-2"></div>
+            </div>
+          </div>
+        </div><br>
 
         <!-- Linha 1: KPIs principais -->
         <div class="row row-cols-1 row-cols-md-4 g-4 text-start">
@@ -145,52 +172,6 @@
           <div class="col">
             <div class="card dashboard-card border-0 shadow-sm h-100">
               <div class="card-body d-flex align-items-center gap-3">
-                <div class="icon-circle bg-grad-3"><i class="bi bi-people-fill"></i></div>
-                <div class="flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-baseline">
-                    <h6 class="mb-1">Carteira de Clientes</h6>
-                  </div>
-                  <h3 id="kpiClientes" class="mb-1">0</h3>
-                  <div class="card-sub">Total</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col">
-            <div class="card dashboard-card border-0 shadow-sm h-100">
-              <div class="card-body d-flex align-items-center gap-3">
-                <div class="icon-circle bg-grad-4"><i class="bi bi-person-badge"></i></div>
-                <div class="flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-baseline">
-                    <h6 class="mb-1">Vendedores</h6>
-                  </div>
-                  <h3 id="kpiVendedores" class="mb-1">0</h3>
-                  <div class="card-sub">Total</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Linha 2: KPIs secundários -->
-        <div class="row row-cols-1 row-cols-md-3 g-4 text-start mt-1">
-          <div class="col">
-            <div class="card dashboard-card border-0 shadow-sm h-100">
-              <div class="card-body d-flex align-items-center gap-3">
-                <div class="icon-circle bg-grad-1"><i class="bi bi-tags-fill"></i></div>
-                <div class="flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-baseline">
-                    <h6 class="mb-1">Marcas</h6>
-                  </div>
-                  <h3 id="kpiMarcas" class="mb-1">0</h3>
-                  <div class="card-sub">Marcas ativas</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col">
-            <div class="card dashboard-card border-0 shadow-sm h-100">
-              <div class="card-body d-flex align-items-center gap-3">
                 <div class="icon-circle bg-grad-2"><i class="bi bi-collection"></i></div>
                 <div class="flex-grow-1">
                   <div class="d-flex justify-content-between align-items-baseline">
@@ -216,6 +197,68 @@
               </div>
             </div>
           </div>
+        </div><br>
+
+        <!-- NOVO GRÁFICO: Vendas Do dia -->
+        <div class="col-12">
+          <div class="card border-0 shadow-sm chart-card h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Vendas do dia</h5>
+              </div>
+              <canvas id="chartFaturamentoDia"></canvas>
+              <div id="chartFaturamentoDiaResumo" class="subtle mt-2"></div>
+            </div>
+          </div>
+        </div>
+
+
+
+        <!-- Linha 2: KPIs secundários -->
+        <div class="row row-cols-1 row-cols-md-3 g-4 text-start mt-1">
+          <div class="col">
+            <div class="card dashboard-card border-0 shadow-sm h-100">
+              <div class="card-body d-flex align-items-center gap-3">
+                <div class="icon-circle bg-grad-1"><i class="bi bi-tags-fill"></i></div>
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-baseline">
+                    <h6 class="mb-1">Marcas</h6>
+                  </div>
+                  <h3 id="kpiMarcas" class="mb-1">0</h3>
+                  <div class="card-sub">Marcas ativas</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card dashboard-card border-0 shadow-sm h-100">
+              <div class="card-body d-flex align-items-center gap-3">
+                <div class="icon-circle bg-grad-3"><i class="bi bi-people-fill"></i></div>
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-baseline">
+                    <h6 class="mb-1">Carteira de Clientes</h6>
+                  </div>
+                  <h3 id="kpiClientes" class="mb-1">0</h3>
+                  <div class="card-sub">Total</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card dashboard-card border-0 shadow-sm h-100">
+              <div class="card-body d-flex align-items-center gap-3">
+                <div class="icon-circle bg-grad-4"><i class="bi bi-person-badge"></i></div>
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-baseline">
+                    <h6 class="mb-1">Vendedores</h6>
+                  </div>
+                  <h3 id="kpiVendedores" class="mb-1">0</h3>
+                  <div class="card-sub">Total</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Linha 3: Gráficos -->

@@ -26,6 +26,219 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     console.error("Erro ao buscar nome do usuário:", err);
   }
+   // -- Helpers globais, com proteção para evitar redefinir --
+    window.prepareHiDPICanvas ||= function (canvas, cssHeightPx = 360) {
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const rect = canvas.getBoundingClientRect();
+      canvas.style.width = rect.width + "px";
+      canvas.style.height = cssHeightPx + "px";
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(cssHeightPx * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return ctx;
+    };
+
+    window.throttleDash ||= function (fn, wait = 150) {
+      let t = 0;
+      return (...args) => {
+        const now = Date.now();
+        if (now - t > wait) { t = now; fn(...args); }
+      };
+    };
+
+    window.brl ||= function (v) {
+      return (isNaN(v) ? 0 : v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    };
+
+    let chartFaturamentoAnual;
+
+    async function carregarFaturamentoAnualVertical() {
+      const canvas = document.getElementById("chartFaturamentoAnual");
+      const resumo = document.getElementById("resumoFaturamentoAnual");
+      if (!canvas) return;
+
+      const resp = await fetch(`${BASE_URL}/v2/pedidos/total/anual`, { credentials: "include" });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+
+      const MESES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+      const balcao = Array(12).fill(0);
+      const entrega = Array(12).fill(0);
+
+      (data || []).forEach(r => {
+        const m = Math.max(1, Math.min(12, parseInt(r.mes, 10))) - 1;
+        const canal = String(r.pvcanal || "").trim().toUpperCase();
+        const v = parseFloat(r.vl_total_mes) || 0;
+        if (canal === "BALCAO" || canal === "BALCÃO") balcao[m] += v;
+        else if (canal === "ENTREGA") entrega[m] += v;
+      });
+
+      const totalAno = [...balcao, ...entrega].reduce((a, b) => a + b, 0);
+
+      if (chartFaturamentoAnual) chartFaturamentoAnual.destroy();
+      const ctx = prepareHiDPICanvas(canvas, 360);
+
+      chartFaturamentoAnual = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: MESES,
+          datasets: [
+            {
+              label: "BALCÃO",
+              data: balcao,
+              backgroundColor: "#1E88E5", // troque cores se quiser
+              borderColor: "#1565C0",
+              borderWidth: 1,
+              borderRadius: 6,
+              borderSkipped: false
+            },
+            {
+              label: "ENTREGA",
+              data: entrega,
+              backgroundColor: "#43A047",
+              borderColor: "#2E7D32",
+              borderWidth: 1,
+              borderRadius: 6,
+              borderSkipped: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => brl(v) },
+              title: { display: true, text: "Venda em (R$)" },
+              grid: { drawBorder: false }
+            },
+            x: { grid: { display: false }, title: { display: true, text: "Meses" } }
+          },
+          plugins: {
+            legend: { position: "top" },
+            tooltip: { callbacks: { label: c => `${c.dataset.label}: ${brl(c.parsed.y)}` } }
+          },
+          categoryPercentage: 0.7,
+          barPercentage: 0.85
+        }
+      });
+
+      if (resumo) resumo.textContent = `Total do ano: ${brl(totalAno)}`;
+    }
+
+    // init + resize
+    const initAnual = () => carregarFaturamentoAnualVertical().catch(e => {
+      console.error("Erro anual:", e);
+      const r = document.getElementById("resumoFaturamentoAnual");
+      if (r) { r.textContent = "Erro ao carregar faturamento anual."; r.classList.add("text-danger"); }
+    });
+
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initAnual);
+    else initAnual();
+
+    window.addEventListener("resize", throttleDash(initAnual, 200));
+
+  // Deixa o canvas nítido em monitores HiDPI/Retina
+    function prepareHiDPICanvas(canvas, cssHeightPx = 340) {
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const rect = canvas.getBoundingClientRect();
+
+      // define o tamanho CSS (em px lógicos)
+      canvas.style.width = rect.width + "px";
+      canvas.style.height = cssHeightPx + "px";
+
+      // define o tamanho real do buffer do canvas (em px físicos)
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(cssHeightPx * dpr);
+
+      // escala o contexto para não “estourar” os elementos
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return ctx;
+    }
+
+    // Throttle simples para resize
+    function throttle(fn, wait = 150) {
+      let t = 0;
+      return (...args) => {
+        const now = Date.now();
+        if (now - t > wait) { t = now; fn(...args); }
+      };
+    }
+
+    let chartFaturamentoDia; // referência para destruir/recriar no resize
+    
+
+    async function carregarFaturamentoDiarioNitido() {
+      const canvas = document.getElementById("chartFaturamentoDia");
+      const resumo = document.getElementById("chartFaturamentoDiaResumo");
+      if (!canvas) return;
+
+      // fetch (mesmo do código anterior)
+      const resp = await fetch(`${BASE_URL}/v2/pedidos/total/dia`, { credentials: "include" });
+      const data = await resp.json();
+
+      const agrupado = {};
+      (data || []).forEach(i => {
+        const canal = (i.pvcanal || "").trim() || "—";
+        const v = parseFloat(i.vl_total_dia) || 0;
+        agrupado[canal] = (agrupado[canal] || 0) + v;
+      });
+
+      const labels = Object.keys(agrupado);
+      const valores = Object.values(agrupado);
+      const total = valores.reduce((a, b) => a + b, 0);
+      const brl = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+      // destrói chart antigo se existir
+      if (chartFaturamentoDia) chartFaturamentoDia.destroy();
+
+      // prepara canvas HiDPI e cria chart
+      const ctx = prepareHiDPICanvas(canvas, 340);
+      chartFaturamentoDia = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            backgroundColor: ["#3949ab", "#00acc1"],
+            borderColor: "#fff",
+            borderWidth: 1,
+            label: "Venda (R$)",
+            data: valores,
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 5,
+            borderRadius: 6,
+            borderSkipped: false // cantos arredondados
+            // sem cores custom pra respeitar seu tema
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+
+      if (resumo) resumo.textContent = `Total do dia: ${brl(total)}`;
+    }
+
+    // carrega e re-renderiza com nitidez no resize
+    const iniciarFaturamentoDia = () => carregarFaturamentoDiarioNitido();
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", iniciarFaturamentoDia);
+    } else {
+      iniciarFaturamentoDia();
+    }
+    window.addEventListener("resize", throttle(() => {
+      // Recria o gráfico ajustando o buffer do canvas ao novo tamanho
+      carregarFaturamentoDiarioNitido();
+    }, 200));
+
+
 });
 
     async function jget(path, fallback = null) {
