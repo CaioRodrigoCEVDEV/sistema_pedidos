@@ -14,6 +14,18 @@ async function totalVendas() {
   return result.rows;
 }
 
+async function totalVendasDia() {
+  const result = await pool.query(`select
+            count(pvcod) as total_pedido_dia,
+            pvconfirmado,
+            pvcanal,
+            sum(pvvl) as vl_total_dia 
+            from pv where pvdtcad = 'now'
+            group by pv.pvconfirmado ,pv.pvcanal 
+            order by pv.pvcanal`);
+  return result.rows;
+}
+
 async function listarPv() {
   const result = await pool.query(
     `select 
@@ -55,4 +67,4 @@ async function cancelarPedido(req, res) {
   return result.rows;
 }
 
-module.exports = { totalVendas, listarPv, cancelarPedido };
+module.exports = { totalVendas,totalVendasDia, listarPv, cancelarPedido };
