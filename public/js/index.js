@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     asus: { icon: "asus", domain: "asus.com" },
     tecnospark: { icon: null, domain: "www.tecno-mobile.com" },
     itel: { icon: null, domain: "itel-mobile.com" },
-    acessorios: { icon: null, domain: "gear.google.com" },
+    acessorios: { icon: null, domain: "www.orderup.com.br" },
     oppo: { icon: "oppo", domain: "oppo.com" },
     caio: { icon: null, domain: "xvideos.com" },
     huawei: { icon: "huawei", domain: "huawei.com" },
