@@ -27,6 +27,15 @@ exports.totalVendasAnual = async (req, res) => {
     res.status(500).json({ error: "Erro buscar total vendas anual" });
   }
 }
+exports.topMarcasMes = async (req, res) => {
+  try {
+    const result = await pedidoModels.topMarcasMes();
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro buscar top marcas do mês" });
+  }
+}
 exports.topProdutosMes = async (req, res) => {
   try {
     const result = await pedidoModels.topProdutosMes();

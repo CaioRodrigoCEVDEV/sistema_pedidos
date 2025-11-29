@@ -2,6 +2,25 @@ const pool = require("../config/db");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 
+async function topMarcasMes() {
+  const result = await pool.query(`
+    select 
+    marcasdes,
+    sum(pvivl*pviqtde) as valor
+    from pvi 
+    join pv on pvcod = pvipvcod 
+    join pro on pviprocod = procod
+    join modelo on modcod = promodcod
+    join tipo on tipocod = protipocod 
+    join marcas on marcascod = promarcascod
+    where  pvsta = 'A'
+    and pvdtcad >= CURRENT_DATE - interval '29 days'
+    group by marcasdes 
+    order by marcasdes asc
+    limit 10`);
+  return result.rows;
+}
+
 async function topProdutosMes() {
   const result = await pool.query(`
     select 
@@ -98,4 +117,4 @@ async function cancelarPedido(req, res) {
   return result.rows;
 }
 
-module.exports = { topProdutosMes,totalVendas,totalVendasDia,totalVendasAnual, listarPv, cancelarPedido };
+module.exports = { topMarcasMes,topProdutosMes,totalVendas,totalVendasDia,totalVendasAnual, listarPv, cancelarPedido };
