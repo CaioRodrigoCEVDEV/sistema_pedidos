@@ -130,7 +130,7 @@ window.atualizarTotaisPedidos = atualizarTotaisPedidos;
 // chama uma vez ao carregar a página
 document.addEventListener("DOMContentLoaded", () => {
   atualizarTotaisPedidos();
-  console.log(localStorage.getItem("usucod"));
+  //console.log(localStorage.getItem("usucod"));
 });
 
 async function abriDetalhePedido(pvcod, status = "pendentes") {
@@ -268,7 +268,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
           // // pega todas as linhas de itens
           const linhas = modalEl.querySelectorAll("tbody tr");
           const itens = [];
-          console.log("Linhas de itens:", linhas);
+          //console.log("Linhas de itens:", linhas);
           linhas.forEach((tr) => {
             const cellProcod = tr.querySelector("[data-procod]");
             const inputQtd = tr.querySelector(".qtd-input");
@@ -411,7 +411,7 @@ async function confirmarItensPedido(pvcod, pviqtde, procod) {
       }
     );
     if (response.ok) {
-      console.log("Item confirmado com sucesso!  procod:", procod);
+      //console.log("Item confirmado com sucesso!  procod:", procod);
       // alert("Pedido confirmado com sucesso!");
       // Atualize a interface do usuário conforme necessário
     } else {
