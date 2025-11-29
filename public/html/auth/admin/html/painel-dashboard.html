@@ -133,22 +133,48 @@
         <div class="col-12">
           <div class="card border-0 shadow-sm chart-card h-100">
             <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0">Top Produtos — Ultimos 30 dias</h5>
+              <div class="d-flex align-items-center mb-2">
+                <h5 class="mb-0 p-2">Top 10 Produtos — Últimos 30 dias</h5>
+                <span class="badge bg-info text-dark">Por Quantidate</span>
               </div>
               <canvas id="chartTopProdutosMes"></canvas>
               <div id="resumoTopProdutosMes" class="subtle mt-2"></div>
             </div>
           </div>
         </div><br>
-
-
+        <!-- NOVO: Top Marcas — Mês -->
+        <div class="col-12">
+          <div class="card border-0 shadow-sm chart-card h-100">
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-2">
+                <h5 class="mb-0 p-2">Top 10 Marcas — Últimos 30 dias</h5>
+                <span class="badge bg-info text-dark">Por Valor</span>
+              </div>
+              <canvas id="chartTopMarcasMes"></canvas>
+              <div id="resumoTopMarcasMes" class="subtle mt-2"></div>
+            </div>
+          </div>
+        </div><br>
+        <!-- NOVO GRÁFICO: Vendas Do dia -->
+        <div class="col-12">
+          <div class="card border-0 shadow-sm chart-card h-100">
+            <div class="card-body">
+              <div class="d-flex  align-items-center mb-2">
+                <h5 class="mb-0 p-2">Vendas do dia</h5>
+                <span class="badge bg-info text-dark">Por Valor</span>
+              </div>
+              <canvas id="chartFaturamentoDia"></canvas>
+              <div id="chartFaturamentoDiaResumo" class="subtle mt-2"></div>
+            </div>
+          </div>
+        </div> <br>
         <!-- NOVO: Venda Anual (barras verticais) -->
         <div class="col-12">
           <div class="card border-0 shadow-sm chart-card h-100">
             <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0">Venda Anual — por Mês e Canal</h5>
+              <div class="d-flex align-items-center mb-2">
+                <h5 class="mb-0 p-2">Venda Anual — por Mês e Canal</h5>
+                <span class="badge bg-info text-dark">Por Valor</span>
               </div>
               <canvas id="chartFaturamentoAnual"></canvas>
               <div id="resumoFaturamentoAnual" class="subtle mt-2"></div>
@@ -216,18 +242,7 @@
           </div>
         </div><br>
 
-        <!-- NOVO GRÁFICO: Vendas Do dia -->
-        <div class="col-12">
-          <div class="card border-0 shadow-sm chart-card h-100">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0">Vendas do dia</h5>
-              </div>
-              <canvas id="chartFaturamentoDia"></canvas>
-              <div id="chartFaturamentoDiaResumo" class="subtle mt-2"></div>
-            </div>
-          </div>
-        </div>
+
 
 
 
@@ -337,121 +352,6 @@
   <script src="html/auth/js/componentes.js"></script>
   <script src="html/auth/js/painel-dashboard.js"></script>
   <script src="html/auth/js/painel-releases.js"></script>
-
-  <script>
-    let chartTopProdutosMes;
-
-    async function carregarTopProdutosMes() {
-      const canvas = document.getElementById("chartTopProdutosMes");
-      const resumo = document.getElementById("resumoTopProdutosMes");
-      if (!canvas) return;
-
-      // 1) Buscar dados
-      const resp = await fetch(`${BASE_URL}/v2/top/produtos/mes`, { credentials: "include" });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-
-      // 2) Normalizar -> ordenar por qtde desc -> pegar TOP 10
-      const rows = (data || [])
-        .map(r => ({
-          procod: r.procod,
-          produto: String(r.produto || "").trim(),
-          qtde: Number(r.qtde) || 0
-        }))
-        .sort((a, b) => b.qtde - a.qtde)
-        .slice(0, 10);
-
-      if (rows.length === 0) {
-        if (resumo) resumo.textContent = "Sem vendas no mês.";
-        return;
-      }
-
-      const labels = rows.map(r => r.produto.length > 45 ? r.produto.slice(0, 45) + "…" : r.produto);
-      const valores = rows.map(r => r.qtde);
-      const totalItens = valores.reduce((a, b) => a + b, 0);
-
-      // 3) (Re)criar gráfico HiDPI
-      if (chartTopProdutosMes) chartTopProdutosMes.destroy();
-      const ctx = prepareHiDPICanvas(canvas, 420);
-
-      // Paleta sólida alternada
-      const cores = valores.map((_, i) => i % 2 === 0 ? "#0d6efd" : "#198754"); // Azul + Verde
-      const coresBorder = valores.map((_, i) => i % 2 === 0 ? "#0b5ed7" : "#146c43");
-
-      chartTopProdutosMes = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{
-            label: "Qtd. vendida",
-            data: valores,
-            backgroundColor: cores,
-            borderColor: coresBorder,
-            borderWidth: 1,
-            borderRadius: 6,
-            borderSkipped: false
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              beginAtZero: true,
-              ticks: {
-                precision: 0, // evita casas decimais
-                stepSize: 1
-              },
-              title: { display: true, text: "Quantidade vendida" },
-              grid: { drawBorder: false }
-            },
-            y: {
-              grid: { display: false },
-              ticks: { autoSkip: false }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                title: (items) => rows[items[0].dataIndex].produto,
-                label: (ctx) => `Qtde: ${ctx.parsed.x}`
-              }
-            },
-            datalabels: {
-              anchor: "end",
-              align: "right",
-              formatter: v => v,
-              color: "#212529",
-              font: { weight: "bold", size: 11 }
-            }
-          },
-          animation: false,
-          categoryPercentage: 0.6,
-          barPercentage: 0.8
-        },
-        plugins: [ChartDataLabels] // precisa do plugin
-      });
-
-      if (resumo)
-        resumo.textContent = `Top ${rows.length} produtos — Total itens vendidos: ${totalItens}`;
-    }
-
-
-    // init + resize
-    const initTopProdutosMes = () => carregarTopProdutosMes().catch(e => {
-      console.error("Erro Top Produtos Mês:", e);
-      const r = document.getElementById("resumoTopProdutosMes");
-      if (r) { r.textContent = "Erro ao carregar Top Produtos."; r.classList.add("text-danger"); }
-    });
-
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initTopProdutosMes);
-    else initTopProdutosMes();
-
-    window.addEventListener("resize", throttleDash(initTopProdutosMes, 200));
-  </script>
-
 
 </body>
 
