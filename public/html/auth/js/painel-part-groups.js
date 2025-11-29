@@ -1,15 +1,10 @@
 /**
  * JavaScript do Painel de Grupos de Compatibilidade
  * 
- * Este script gerencia a interface administrativa dos grupos de compatibilidade.
+ * Gerencia a interface administrativa dos grupos de compatibilidade.
  * Os grupos permitem que múltiplas peças compartilhem o mesmo estoque.
  * 
- * Funcionalidades:
- * - Listar grupos com suas peças e estoque
- * - Criar, editar e excluir grupos
- * - Adicionar e remover peças de grupos
- * - Visualizar histórico de movimentações
- * - Ajustar estoque do grupo
+ * IMPORTANTE: O ID dos grupos é INTEGER simples, não criptografado.
  */
 
 let currentGroupId = null;
@@ -21,6 +16,7 @@ let modalAdicionarPecaInstance = null;
 
 /**
  * Função auxiliar para exibir notificações toast
+ * Exibe uma mensagem temporária no canto superior direito da tela
  * @param {string} message - Mensagem a ser exibida
  * @param {string} type - Tipo da mensagem ('success', 'error', 'info')
  */
@@ -516,7 +512,8 @@ async function salvarEstoque() {
 
 /**
  * Função segura para fechar modal e limpar backdrop
- * Remove o backdrop e a classe modal-open do body para evitar tela cinza
+ * Remove o backdrop (overlay cinza) e a classe modal-open do body
+ * Corrige o problema onde a tela de fundo fica cinza após fechar o modal
  * @param {string} modalId - ID do elemento modal
  */
 function fecharModalComSeguranca(modalId) {
@@ -529,21 +526,32 @@ function fecharModalComSeguranca(modalId) {
     modalInstance.hide();
   }
 
-  // Aguarda um momento e limpa manualmente qualquer backdrop residual
+  // Limpa imediatamente qualquer backdrop residual
+  limparBackdropResidual();
+  
+  // Aguarda a animação de fechamento e limpa novamente para garantir
   setTimeout(() => {
-    // Remove todos os backdrops que possam ter ficado
-    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-    // Remove a classe modal-open do body
-    document.body.classList.remove('modal-open');
-    // Remove o estilo inline de padding/overflow que o Bootstrap adiciona
-    document.body.style.removeProperty('overflow');
-    document.body.style.removeProperty('padding-right');
-  }, 300);
+    limparBackdropResidual();
+  }, 350);
+}
+
+/**
+ * Remove todos os backdrops residuais e restaura o estado do body
+ * Função utilitária para garantir que o overlay cinza seja removido
+ */
+function limparBackdropResidual() {
+  // Remove todos os backdrops que possam ter ficado
+  document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+  // Remove a classe modal-open do body
+  document.body.classList.remove('modal-open');
+  // Remove o estilo inline de padding/overflow que o Bootstrap adiciona
+  document.body.style.removeProperty('overflow');
+  document.body.style.removeProperty('padding-right');
 }
 
 /**
  * Abre o modal de adicionar peça ao grupo
- * Reutiliza a instância do modal para evitar múltiplos backdrops
+ * Reutiliza a instância do modal para evitar múltiplos backdrops (overlay cinza)
  */
 async function abrirModalAdicionarPeca() {
   if (!currentGroupId) return;
@@ -551,6 +559,9 @@ async function abrirModalAdicionarPeca() {
   const tbody = document.getElementById("tabela-pecas-disponiveis");
   tbody.innerHTML =
     '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
+
+  // Limpa qualquer backdrop residual antes de abrir o modal
+  limparBackdropResidual();
 
   // Reutiliza a instância do modal ou cria uma nova
   const modalElement = document.getElementById("modalAdicionarPeca");
@@ -620,6 +631,7 @@ function renderPecasDisponiveis(pecas) {
 
 /**
  * Adiciona uma peça ao grupo atual
+ * Atualiza a lista de peças sem fechar o modal para evitar problemas de backdrop
  * @param {number} partId - ID da peça (procod)
  */
 async function adicionarPecaAoGrupo(partId) {
@@ -640,10 +652,10 @@ async function adicionarPecaAoGrupo(partId) {
 
     showToast("Peça adicionada ao grupo!", "success");
 
-    // Atualiza apenas a lista de peças disponíveis (sem reabrir o modal)
+    // Atualiza apenas a lista de peças disponíveis (mantém o modal aberto)
     await atualizarListaPecasDisponiveis();
 
-    // Atualiza os detalhes do grupo
+    // Atualiza os detalhes do grupo em segundo plano
     abrirDetalhes(currentGroupId);
   } catch (err) {
     console.error(err);
@@ -653,7 +665,7 @@ async function adicionarPecaAoGrupo(partId) {
 
 /**
  * Atualiza a lista de peças disponíveis sem reabrir o modal
- * Evita o problema de múltiplos backdrops
+ * Previne o problema de múltiplos backdrops (overlay cinza)
  */
 async function atualizarListaPecasDisponiveis() {
   const tbody = document.getElementById("tabela-pecas-disponiveis");
@@ -724,19 +736,29 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Adiciona listener para limpar backdrop quando o modal de adicionar peça é fechado
+  // Listener para limpar backdrop quando o modal de adicionar peça é fechado
+  // Corrige o problema do overlay cinza que permanece após fechar o modal
   const modalAdicionarPeca = document.getElementById("modalAdicionarPeca");
   if (modalAdicionarPeca) {
+    // Evento disparado quando o modal termina de ser escondido
     modalAdicionarPeca.addEventListener("hidden.bs.modal", function () {
-      // Remove qualquer backdrop residual
-      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-      // Remove a classe modal-open do body
-      document.body.classList.remove('modal-open');
-      // Remove estilos inline
-      document.body.style.removeProperty('overflow');
-      document.body.style.removeProperty('padding-right');
+      limparBackdropResidual();
+    });
+    
+    // Evento disparado quando o modal está sendo escondido (backup)
+    modalAdicionarPeca.addEventListener("hide.bs.modal", function () {
+      // Agenda limpeza para após a animação
+      setTimeout(limparBackdropResidual, 350);
     });
   }
+  
+  // Adiciona listeners para todos os outros modais também
+  const todosModais = document.querySelectorAll('.modal');
+  todosModais.forEach(modal => {
+    modal.addEventListener("hidden.bs.modal", function () {
+      limparBackdropResidual();
+    });
+  });
 });
 
 // Inicialização: carrega os grupos ao carregar a página

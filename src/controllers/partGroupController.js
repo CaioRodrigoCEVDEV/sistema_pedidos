@@ -3,17 +3,11 @@ const partGroupModels = require("../models/partGroupModels");
 /**
  * Controlador de Grupos de Compatibilidade
  * 
- * Gerencia os endpoints para administração dos grupos de compatibilidade.
+ * Gerencia os endpoints da API para administração dos grupos de compatibilidade.
  * Todos os endpoints requerem autenticação de administrador.
  * 
- * Funcionalidades:
- * - Listar todos os grupos
- * - Buscar grupo por ID
- * - Criar novo grupo
- * - Atualizar grupo
- * - Excluir grupo
- * - Adicionar/remover peças do grupo
- * - Atualizar estoque do grupo
+ * Estrutura JSON de resposta dos grupos:
+ * { id: number, name: string, stock_quantity: number, parts: [...], ... }
  */
 
 // Lista todos os grupos de compatibilidade

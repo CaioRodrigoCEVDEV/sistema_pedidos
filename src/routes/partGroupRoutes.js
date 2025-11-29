@@ -7,17 +7,18 @@ const requireAdmin = require("../middlewares/adminMiddleware");
  * Rotas de Grupos de Compatibilidade
  * 
  * Todas as rotas requerem autenticação de administrador.
+ * O ID dos grupos é INTEGER simples (auto increment), não criptografado.
  * 
- * Estrutura de endpoints:
+ * Endpoints disponíveis:
  * GET    /part-groups                     - Lista todos os grupos
- * GET    /part-groups/available-parts     - Lista peças disponíveis para agrupamento (com filtro)
- * GET    /part-groups/available-part      - Lista todas as peças disponíveis
+ * GET    /part-groups/available-parts     - Peças disponíveis (com filtro)
+ * GET    /part-groups/available-part      - Todas as peças
  * GET    /part-groups/:id                 - Busca grupo por ID
- * GET    /part-groups/:id/audit           - Busca histórico de movimentações do grupo
- * GET    /part-groups/part/:partId/stock  - Busca estoque por ID da peça
+ * GET    /part-groups/:id/audit           - Histórico de movimentações
+ * GET    /part-groups/part/:partId/stock  - Estoque por ID da peça
  * POST   /part-groups                     - Cria novo grupo
  * PUT    /part-groups/:id                 - Atualiza grupo
- * PUT    /part-groups/:id/stock           - Atualiza estoque do grupo
+ * PUT    /part-groups/:id/stock           - Atualiza estoque
  * POST   /part-groups/:id/parts           - Adiciona peça ao grupo
  * DELETE /part-groups/parts/:partId       - Remove peça do grupo
  * DELETE /part-groups/:id                 - Exclui grupo
