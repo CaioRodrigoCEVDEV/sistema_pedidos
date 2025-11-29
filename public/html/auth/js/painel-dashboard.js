@@ -411,3 +411,234 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     document.addEventListener("DOMContentLoaded", loadDashboard);
+
+let chartTopProdutosMes;
+
+    async function carregarTopProdutosMes() {
+      const canvas = document.getElementById("chartTopProdutosMes");
+      const resumo = document.getElementById("resumoTopProdutosMes");
+      if (!canvas) return;
+
+      // 1) Buscar dados
+      const resp = await fetch(`${BASE_URL}/v2/top/produtos/mes`, { credentials: "include" });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+
+      // 2) Normalizar -> ordenar por qtde desc -> pegar TOP 10
+      const rows = (data || [])
+        .map(r => ({
+          procod: r.procod,
+          produto: String(r.produto || "").trim(),
+          qtde: Number(r.qtde) || 0
+        }))
+        .sort((a, b) => b.qtde - a.qtde)
+        .slice(0, 10);
+
+      if (rows.length === 0) {
+        if (resumo) resumo.textContent = "Sem vendas no mês.";
+        return;
+      }
+
+      const labels = rows.map(r => r.produto.length > 45 ? r.produto.slice(0, 45) + "…" : r.produto);
+      const valores = rows.map(r => r.qtde);
+      const totalItens = valores.reduce((a, b) => a + b, 0);
+
+      // 3) (Re)criar gráfico HiDPI
+      if (chartTopProdutosMes) chartTopProdutosMes.destroy();
+      const ctx = prepareHiDPICanvas(canvas, 420);
+
+      // Paleta sólida alternada
+      const cores = valores.map((_, i) => i % 2 === 0 ? "#0d6efd" : "#198754"); // Azul + Verde
+      const coresBorder = valores.map((_, i) => i % 2 === 0 ? "#0b5ed7" : "#146c43");
+
+      chartTopProdutosMes = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Qtd. vendida",
+            data: valores,
+            backgroundColor: cores,
+            borderColor: coresBorder,
+            borderWidth: 1,
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0, // evita casas decimais
+                stepSize: 1
+              },
+              title: { display: true, text: "Quantidade vendida" },
+              grid: { drawBorder: false }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { autoSkip: false }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => rows[items[0].dataIndex].produto,
+                label: (ctx) => `Qtde: ${ctx.parsed.x}`
+              }
+            },
+            datalabels: {
+              anchor: "end",
+              align: "right",
+              formatter: v => v,
+              color: "#212529",
+              font: { weight: "bold", size: 11 }
+            }
+          },
+          animation: false,
+          categoryPercentage: 0.6,
+          barPercentage: 0.8
+        },
+        plugins: [ChartDataLabels] // precisa do plugin
+      });
+
+      if (resumo)
+        resumo.textContent = `Top ${rows.length} produtos — Total itens vendidos: ${totalItens}`;
+    }
+
+
+    // init + resize
+    const initTopProdutosMes = () => carregarTopProdutosMes().catch(e => {
+      console.error("Erro Top Produtos Mês:", e);
+      const r = document.getElementById("resumoTopProdutosMes");
+      if (r) { r.textContent = "Erro ao carregar Top Produtos."; r.classList.add("text-danger"); }
+    });
+
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initTopProdutosMes);
+    else initTopProdutosMes();
+
+
+
+  let chartTopMarcasMes;
+
+    async function carregarTopMarcasMes() {
+      const canvas = document.getElementById("chartTopMarcasMes");
+      const resumo = document.getElementById("resumoTopMarcasMes");
+      if (!canvas) return;
+
+      // Fetch
+      const resp = await fetch(`${BASE_URL}/v2/top/marcas/mes`, { credentials: "include" });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+
+      // Normaliza, ordena desc por valor (R$)
+      const rows = (data || [])
+        .map(r => ({
+          marca: String(r.marcasdes || "").trim(),
+          valor: parseFloat(String(r.valor || "0").replace(",", "."))
+        }))
+        .filter(r => r.valor > 0)
+        .sort((a, b) => b.valor - a.valor);
+
+      if (rows.length === 0) {
+        if (resumo) resumo.textContent = "Sem faturamento por marca no mês.";
+        return;
+      }
+
+      // Labels e valores
+      const labels = rows.map(r => r.marca.toUpperCase());
+      const valores = rows.map(r => r.valor);
+      const total = valores.reduce((a, b) => a + b, 0);
+
+      // Cores sólidas por marca (ajuste à vontade)
+      const corMarca = (m) => {
+        const x = m.toUpperCase();
+        if (x.includes("IPHONE") || x.includes("APPLE")) return "#0d6efd"; // azul
+        if (x.includes("SAMSUNG")) return "#198754"; // verde
+        if (x.includes("MOTOROLA")) return "#ff9800"; // laranja
+        if (x.includes("XIAOMI")) return "#e53935"; // vermelho
+        if (x.includes("REALME")) return "#6f42c1"; // roxo
+        if (x.includes("NOKIA")) return "#00acc1"; // ciano
+        if (x.includes("LG")) return "#d63384"; // magenta
+        return "#6c757d"; // fallback
+      };
+      const bg = labels.map(corMarca);
+      const border = labels.map(() => "#ffffff");
+
+      // (Re)cria HiDPI
+      if (chartTopMarcasMes) chartTopMarcasMes.destroy();
+      const ctx = prepareHiDPICanvas(canvas, 360);
+
+      chartTopMarcasMes = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Venda (R$)",
+            data: valores,
+            backgroundColor: bg,
+            borderColor: border,
+            borderWidth: 1,
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => brl(v) },
+              title: { display: true, text: "Venda (R$)" },
+              grid: { drawBorder: false }
+            },
+            x: {
+              grid: { display: false },
+              title: { display: true, text: "Marcas" }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${brl(ctx.parsed.y)}`,
+                afterLabel: (ctx) => {
+                  const v = ctx.parsed.y || 0;
+                  const pct = total ? ((v / total) * 100) : 0;
+                  return `Participação: ${pct.toFixed(1)}%`;
+                }
+              }
+            }
+          },
+          categoryPercentage: 0.7,
+          barPercentage: 0.85
+        }
+      });
+
+      if (resumo) {
+        const top = rows[0];
+        const pctTop = total ? (top.valor / total * 100).toFixed(1) : "0.0";
+        resumo.textContent = `Total do mês: ${brl(total)} — Top: ${top.marca} (${brl(top.valor)} • ${pctTop}%)`;
+      }
+    }
+
+    // init + resize
+    const initTopMarcasMes = () => carregarTopMarcasMes().catch(e => {
+      console.error("Erro Top Marcas:", e);
+      const r = document.getElementById("resumoTopMarcasMes");
+      if (r) { r.textContent = "Erro ao carregar Top Marcas."; r.classList.add("text-danger"); }
+    });
+
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initTopMarcasMes);
+    else initTopMarcasMes();
+
+    window.addEventListener("resize", throttleDash(initTopProdutosMes, 200));
+  
+
