@@ -753,11 +753,15 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   
   // Adiciona listeners para todos os outros modais também
+  // Usa atributo data para evitar adicionar listeners duplicados
   const todosModais = document.querySelectorAll('.modal');
   todosModais.forEach(modal => {
-    modal.addEventListener("hidden.bs.modal", function () {
-      limparBackdropResidual();
-    });
+    if (!modal.hasAttribute('data-backdrop-cleanup')) {
+      modal.setAttribute('data-backdrop-cleanup', 'true');
+      modal.addEventListener("hidden.bs.modal", function () {
+        limparBackdropResidual();
+      });
+    }
   });
 });
 

@@ -411,12 +411,13 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
   }
 
   // Fecha o modal ao clicar no backdrop (overlay cinza)
-  backdrop.onclick = function () {
+  backdrop.addEventListener("click", function () {
     fecharModalCores();
-  };
+  });
 
-  // Handler do botão Confirmar
-  document.getElementById("btn-confirmar-cor").onclick = function () {
+  // Handler do botão Confirmar - usa addEventListener para consistência
+  const btnConfirmar = document.getElementById("btn-confirmar-cor");
+  btnConfirmar.addEventListener("click", function () {
     const corSelecionada =
       document.getElementById("select-cor").options[
         document.getElementById("select-cor").selectedIndex
@@ -441,12 +442,13 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
     );
 
     fecharModalCores();
-  };
+  });
 
-  // Handler do botão Cancelar
-  document.getElementById("btn-cancelar-cor").onclick = function () {
+  // Handler do botão Cancelar - usa addEventListener para consistência
+  const btnCancelar = document.getElementById("btn-cancelar-cor");
+  btnCancelar.addEventListener("click", function () {
     fecharModalCores();
-  };
+  });
 }
 
 /**
