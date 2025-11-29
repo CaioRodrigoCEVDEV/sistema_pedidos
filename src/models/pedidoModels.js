@@ -2,6 +2,26 @@ const pool = require("../config/db");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 
+async function topProdutosMes() {
+  const result = await pool.query(`
+    select 
+    pviprocod as procod,
+    marcasdes || ' - ' || tipodes || ' - ' || prodes as produto,
+    count(pviprocod*pviqtde) as qtde
+    from pvi 
+    join pv on pvcod = pvipvcod 
+    join pro on pviprocod = procod
+    join modelo on modcod = promodcod
+    join tipo on tipocod = protipocod 
+    join marcas on marcascod = promarcascod
+    where  pvsta = 'A'
+    and pvdtcad >= CURRENT_DATE - interval '29 days'
+    group by pviprocod,prodes,tipodes,marcasdes 
+    order by count(pviprocod*pviqtde) desc
+    limit 10`);
+  return result.rows;
+}
+
 async function totalVendas() {
   const result = await pool.query(`select
             count(pvcod) as total_pedido,
@@ -78,4 +98,4 @@ async function cancelarPedido(req, res) {
   return result.rows;
 }
 
-module.exports = { totalVendas,totalVendasDia,totalVendasAnual, listarPv, cancelarPedido };
+module.exports = { topProdutosMes,totalVendas,totalVendasDia,totalVendasAnual, listarPv, cancelarPedido };
