@@ -3,13 +3,15 @@ const pool = require("../config/db");
 /**
  * Modelo de Grupos de Compatibilidade (Part Groups)
  * 
- * Este módulo gerencia os grupos de compatibilidade para estoque compartilhado.
+ * Gerencia os grupos de compatibilidade para estoque compartilhado.
  * Peças no mesmo grupo compartilham a mesma quantidade de estoque.
  * 
  * Estrutura das tabelas:
  * - part_groups: Tabela principal dos grupos (id INTEGER, name, stock_quantity)
  * - part_group_audit: Histórico de movimentações de estoque
  * - pro.part_group_id: Coluna FK que vincula uma peça a um grupo
+ * 
+ * IMPORTANTE: O campo id usa INTEGER simples (auto increment), não UUID.
  */
 
 /**

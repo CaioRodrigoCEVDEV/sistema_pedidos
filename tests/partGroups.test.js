@@ -1,8 +1,10 @@
 /**
  * Testes da Funcionalidade de Grupos de Compatibilidade
  * 
- * Estes testes validam a funcionalidade dos grupos de compatibilidade (part groups).
+ * Valida a funcionalidade dos grupos de compatibilidade (part groups).
  * Os grupos permitem que múltiplas peças compartilhem o mesmo estoque.
+ * 
+ * IMPORTANTE: O ID dos grupos é INTEGER simples (auto increment), não UUID.
  * 
  * PRÉ-REQUISITOS:
  * - Banco de dados PostgreSQL rodando com o schema criado
@@ -13,7 +15,6 @@
  * node tests/partGroups.test.js
  * 
  * NOTA: Estes são testes de integração que requerem conexão com o banco de dados.
- * Para uso em produção, considere configurar um banco de dados separado para testes.
  */
 
 const path = require('path');

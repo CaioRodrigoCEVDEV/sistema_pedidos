@@ -4,6 +4,11 @@ const id = params.get("id");
 const modelo = params.get("modelo");
 const marcascod = params.get("marcascod");
 
+/**
+ * Formata um valor numérico para moeda brasileira (BRL)
+ * @param {number} valor - Valor a ser formatado
+ * @returns {string} Valor formatado (ex: R$ 10,00)
+ */
 function formatarMoeda(valor) {
   return Number(valor).toLocaleString("pt-BR", {
     style: "currency",
@@ -11,7 +16,7 @@ function formatarMoeda(valor) {
   });
 }
 
-//Busca o nome do modelo pelo id usando fetch e exibe no elemento com id 'modeloTitulo'
+// Busca o nome do modelo pelo id e exibe no elemento com id 'modeloTitulo'
 fetch(`${BASE_URL}/mod/${modelo}`)
   .then((res) => res.json())
   .then((modelo) => {
@@ -24,7 +29,7 @@ fetch(`${BASE_URL}/mod/${modelo}`)
     document.getElementById("modeloTitulo").textContent = "";
   });
 
-//popular o tipo da peça
+// Popula o tipo da peça no breadcrumb
 fetch(`${BASE_URL}/modtipo/${id}?modelo=${modelo}`)
   .then((res) => res.json())
   .then((modtipo) => {
@@ -252,8 +257,21 @@ window.adicionarAoCarrinho = async function (procod) {
   }
 };
 
+/**
+ * Exibe um modal para seleção de cor do produto
+ * Cria um backdrop (overlay cinza) e um modal customizado para selecionar a cor
+ * @param {Array} cores - Lista de cores disponíveis
+ * @param {number} procod - Código do produto
+ * @param {string} nome - Nome do produto
+ * @param {string} tipo - Tipo do produto
+ * @param {string} marca - Marca do produto
+ * @param {number} preco - Preço do produto
+ * @param {number} qtde - Quantidade a adicionar
+ */
 function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
+  // Cria o backdrop (overlay cinza de fundo)
   const backdrop = document.createElement("div");
+  backdrop.id = "modal-cor-backdrop";
   backdrop.style.position = "fixed";
   backdrop.style.top = "0";
   backdrop.style.left = "0";
@@ -262,7 +280,9 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
   backdrop.style.backgroundColor = "rgba(0, 0, 0, 0.4)";
   backdrop.style.zIndex = "9998";
 
+  // Cria o modal
   const modal = document.createElement("div");
+  modal.id = "modal-cor-selecao";
   modal.style.position = "fixed";
   modal.style.top = "50%";
   modal.style.left = "50%";
@@ -273,7 +293,7 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
   modal.style.boxShadow = "0 2px 10px rgba(0,0,0,0.3)";
   modal.style.zIndex = "9999";
 
-  // Monta HTML do modal incluindo indicação de cores sem estoque (procorsemest === 'S')
+  // Monta HTML do modal com indicação de cores sem estoque
   modal.innerHTML = `
     <style>
       #modal-cor-container {
@@ -377,7 +397,27 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
   document.body.appendChild(backdrop);
   document.body.appendChild(modal);
 
-  document.getElementById("btn-confirmar-cor").onclick = function () {
+  /**
+   * Função para fechar o modal e remover o backdrop
+   * Garante que o overlay cinza seja removido corretamente
+   */
+  function fecharModalCores() {
+    if (modal && modal.parentNode) {
+      modal.remove();
+    }
+    if (backdrop && backdrop.parentNode) {
+      backdrop.remove();
+    }
+  }
+
+  // Fecha o modal ao clicar no backdrop (overlay cinza)
+  backdrop.addEventListener("click", function () {
+    fecharModalCores();
+  });
+
+  // Handler do botão Confirmar - usa addEventListener para consistência
+  const btnConfirmar = document.getElementById("btn-confirmar-cor");
+  btnConfirmar.addEventListener("click", function () {
     const corSelecionada =
       document.getElementById("select-cor").options[
         document.getElementById("select-cor").selectedIndex
@@ -401,16 +441,27 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       idCorSelecionada
     );
 
-    modal.remove();
-    backdrop.remove();
-  };
+    fecharModalCores();
+  });
 
-  document.getElementById("btn-cancelar-cor").onclick = function () {
-    modal.remove();
-    backdrop.remove();
-  };
+  // Handler do botão Cancelar - usa addEventListener para consistência
+  const btnCancelar = document.getElementById("btn-cancelar-cor");
+  btnCancelar.addEventListener("click", function () {
+    fecharModalCores();
+  });
 }
 
+/**
+ * Adiciona um produto ao carrinho do localStorage
+ * @param {string} id - Identificador único do produto (pode incluir cor)
+ * @param {string} nome - Nome do produto
+ * @param {string} tipo - Tipo do produto
+ * @param {string} marca - Marca do produto
+ * @param {number} preco - Preço do produto
+ * @param {number} qtde - Quantidade a adicionar
+ * @param {string} corSelecionada - Cor selecionada (opcional)
+ * @param {string} idCorSelecionada - ID da cor selecionada (opcional)
+ */
 function adicionarProdutoAoCarrinho(
   id,
   nome,
