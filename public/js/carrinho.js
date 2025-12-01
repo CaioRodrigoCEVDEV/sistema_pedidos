@@ -351,6 +351,8 @@ async function enviarWhatsApp() {
     })
     .catch((error) => {
       console.error("Erro ao buscar número do WhatsApp:", error);
+      // Notifica o usuário que houve um problema ao buscar o número
+      alert("Pedido criado com sucesso! Não foi possível obter o número do WhatsApp. Você será redirecionado para selecionar um contato.");
       const whatsappNumber1 = ""; // Fallback caso a API falhe
       const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
         mensagem
@@ -501,6 +503,8 @@ async function enviarWhatsAppEntrega() {
       })
       .catch((error) => {
         console.error("Erro ao buscar número do WhatsApp:", error);
+        // Notifica o usuário que houve um problema ao buscar o número
+        alert("Pedido criado com sucesso! Não foi possível obter o número do WhatsApp. Você será redirecionado para selecionar um contato.");
         const whatsappNumber2 = ""; // Fallback caso a API falhe
         const whatsappUrl2 = `https://api.whatsapp.com/send?phone=${whatsappNumber2}&text=${encodeURIComponent(
           mensagem

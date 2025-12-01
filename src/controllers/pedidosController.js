@@ -32,17 +32,26 @@ exports.validarEDecrementarEstoque = async (req, res, next) => {
 
   try {
     // Prepara a lista de itens para venda
-    const itensParaVenda = cart.map((item) => {
+    const itensParaVenda = [];
+    for (const item of cart) {
       const procod = item.id;
       // O ID pode vir no formato "123-cor" ou apenas "123"
-      const codigoInteiro = parseInt(String(procod).split("-")[0]);
-      const quantidade = parseInt(item.qt) || 1;
+      const codigoInteiro = parseInt(String(procod).split("-")[0], 10);
+      const quantidade = parseInt(item.qt, 10) || 1;
 
-      return {
+      // Valida que o ID da peça é um número válido
+      if (isNaN(codigoInteiro) || codigoInteiro <= 0) {
+        return res.status(400).json({
+          error: `ID de peça inválido: ${procod}`,
+          tipo: "item_invalido",
+        });
+      }
+
+      itensParaVenda.push({
         partId: codigoInteiro,
         quantidade: quantidade,
-      };
-    });
+      });
+    }
 
     // Tenta decrementar o estoque de todos os itens em uma única transação
     const resultado = await partGroupModels.venderItens(

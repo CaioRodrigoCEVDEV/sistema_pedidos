@@ -635,6 +635,15 @@ async function venderItens(itens, referenceId = null) {
     throw new Error("Lista de itens vazia ou inválida");
   }
 
+  // Sanitiza o referenceId - apenas caracteres alfanuméricos, hífen e underscore são permitidos
+  let sanitizedReferenceId = null;
+  if (referenceId !== null && referenceId !== undefined) {
+    sanitizedReferenceId = String(referenceId).replace(/[^a-zA-Z0-9_-]/g, "");
+    if (sanitizedReferenceId.length > 100) {
+      sanitizedReferenceId = sanitizedReferenceId.substring(0, 100);
+    }
+  }
+
   const client = await pool.connect();
 
   try {
@@ -775,7 +784,7 @@ async function venderItens(itens, referenceId = null) {
           INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
           VALUES ($1, $2, $3, $4)
         `,
-          [groupId, -quantidadeTotal, "sale", referenceId || "manual"]
+          [groupId, -quantidadeTotal, "sale", sanitizedReferenceId || "manual"]
         );
 
         for (const itemGrupo of itensDoGrupo) {
