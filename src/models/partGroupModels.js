@@ -778,16 +778,17 @@ async function venderItens(itens, referenceId = null) {
           [novoEstoqueGrupo, groupId]
         );
 
-        // Cria registro de auditoria
-        await client.query(
-          `
-          INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
-          VALUES ($1, $2, $3, $4)
-        `,
-          [groupId, -quantidadeTotal, "sale", sanitizedReferenceId || "manual"]
-        );
-
+        // Cria registros de auditoria para cada peça vendida
+        // reference_id deve ser o código do produto (procod) para identificar a peça no histórico
         for (const itemGrupo of itensDoGrupo) {
+          await client.query(
+            `
+            INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+            VALUES ($1, $2, $3, $4)
+          `,
+            [groupId, -itemGrupo.quantidade, "sale", String(itemGrupo.partId)]
+          );
+
           resultados.push({
             partId: itemGrupo.partId,
             partName: itemGrupo.partName,
@@ -801,50 +802,89 @@ async function venderItens(itens, referenceId = null) {
         }
       } else {
         // CASO 2b: Grupo NÃO tem stock_quantity definido (nulo)
-        // Valida e decrementa cada peça do grupo individualmente
+        // Distribui a retirada entre as peças do grupo, preferindo peças com maior estoque
 
-        // Busca todas as peças do grupo com bloqueio
+        // Busca todas as peças do grupo com bloqueio, ordenadas por estoque DESC, id ASC
         const pecasGrupoResult = await client.query(
           `
           SELECT procod, prodes, proqtde
           FROM pro
           WHERE part_group_id = $1
+          ORDER BY proqtde DESC, procod ASC
           FOR UPDATE
         `,
           [groupId]
         );
 
-        // Valida que todas as peças têm estoque suficiente
+        // Calcula o estoque total disponível no grupo
+        const estoqueTotal = pecasGrupoResult.rows.reduce(
+          (sum, p) => sum + (p.proqtde || 0),
+          0
+        );
+
+        // Valida que o estoque total do grupo é suficiente
+        if (estoqueTotal < quantidadeTotal) {
+          throw new Error(
+            `Estoque insuficiente no grupo "${group.name}". ` +
+            `Disponível (soma das peças): ${estoqueTotal}, Solicitado: ${quantidadeTotal}`
+          );
+        }
+
+        // Distribui a retirada entre as peças, começando pelas de maior estoque
+        let restanteATirar = quantidadeTotal;
+        const pecasAfetadas = [];
+
         for (const pecaGrupo of pecasGrupoResult.rows) {
-          if (pecaGrupo.proqtde < quantidadeTotal) {
-            throw new Error(
-              `Estoque insuficiente em uma das peças do grupo "${group.name}". ` +
-              `Peça "${pecaGrupo.prodes}" (ID: ${pecaGrupo.procod}) tem apenas ${pecaGrupo.proqtde} unidades, ` +
-              `mas a venda requer ${quantidadeTotal} unidades de cada peça do grupo.`
+          if (restanteATirar <= 0) break;
+
+          const estoqueAtual = pecaGrupo.proqtde || 0;
+          const tirarDestaPeca = Math.min(estoqueAtual, restanteATirar);
+
+          if (tirarDestaPeca > 0) {
+            // Atualiza o estoque desta peça
+            await client.query(
+              `
+              UPDATE pro 
+              SET proqtde = proqtde - $1
+              WHERE procod = $2
+            `,
+              [tirarDestaPeca, pecaGrupo.procod]
             );
+
+            pecasAfetadas.push({
+              procod: pecaGrupo.procod,
+              prodes: pecaGrupo.prodes,
+              quantidadeRetirada: tirarDestaPeca,
+              novoEstoque: estoqueAtual - tirarDestaPeca,
+            });
+
+            restanteATirar -= tirarDestaPeca;
           }
         }
 
-        // Decrementa o estoque de todas as peças do grupo
-        await client.query(
-          `
-          UPDATE pro 
-          SET proqtde = proqtde - $1
-          WHERE part_group_id = $2
-        `,
-          [quantidadeTotal, groupId]
-        );
+        // Cria registros de auditoria para cada peça afetada
+        // reference_id é o código do produto (procod) para identificar a peça no histórico
+        for (const pecaAfetada of pecasAfetadas) {
+          await client.query(
+            `
+            INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+            VALUES ($1, $2, $3, $4)
+          `,
+            [groupId, -pecaAfetada.quantidadeRetirada, "sale", String(pecaAfetada.procod)]
+          );
+        }
 
         for (const itemGrupo of itensDoGrupo) {
           resultados.push({
             partId: itemGrupo.partId,
             partName: itemGrupo.partName,
             quantidadeVendida: itemGrupo.quantidade,
-            novoEstoque: null, // Cada peça pode ter estoque diferente
+            novoEstoque: null, // Cada peça pode ter estoque diferente após a distribuição
             grupoPertence: true,
             grupoId: groupId,
             grupoNome: group.name,
             estoqueGrupoUsado: false,
+            pecasAfetadas: pecasAfetadas,
           });
         }
       }
