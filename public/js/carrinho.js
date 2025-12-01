@@ -253,17 +253,39 @@ async function enviarWhatsApp() {
     console.error("Failed", error);
   }
 
-  const respSeq = await fetch("/pedidos/sequencia");
-  const seqData = await respSeq.json();
-  const pvcod = seqData.nextval;
-
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
   const observacoes = document.getElementById("observacoes").value.trim();
 
   if (cart.length === 0) {
     alert("Seu carrinho está vazio!");
+    reabilitarBotaoFinalizar();
     return;
   }
+
+  // Validar estoque antes de prosseguir (suporta grupos de peças)
+  try {
+    const validacaoResp = await fetch(`${BASE_URL}/validar-estoque`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cart }),
+    });
+    const validacao = await validacaoResp.json();
+    
+    if (!validacao.valido) {
+      alert(validacao.erro || "Estoque insuficiente para um ou mais itens.");
+      reabilitarBotaoFinalizar();
+      return;
+    }
+  } catch (error) {
+    console.error("Erro ao validar estoque:", error);
+    alert("Erro ao validar estoque. Por favor, tente novamente.");
+    reabilitarBotaoFinalizar();
+    return;
+  }
+
+  const respSeq = await fetch("/pedidos/sequencia");
+  const seqData = await respSeq.json();
+  const pvcod = seqData.nextval;
 
   let mensagem = `${caixaEmoji} Pedido de Peças:\n\n`;
   let totalValue = 0;
@@ -366,6 +388,16 @@ async function enviarWhatsApp() {
     });
 }
 
+// Função auxiliar para reabilitar o botão de finalizar após erro
+function reabilitarBotaoFinalizar() {
+  const disabledDiv = document.getElementById("divFinalizar");
+  if (disabledDiv) {
+    disabledDiv.style.pointerEvents = "auto";
+    disabledDiv.style.opacity = "1";
+    disabledDiv.style.userSelect = "auto";
+  }
+}
+
 // quando clicar lá no botão de entrega, abrir um popup com nome completo e endereço
 async function enviarWhatsAppEntrega() {
   const disabledDiv = document.getElementById("divFinalizar");
@@ -377,16 +409,38 @@ async function enviarWhatsAppEntrega() {
     console.error("Failed", error);
   }
 
-  const respSeq = await fetch("/pedidos/sequencia");
-  const seqData = await respSeq.json();
-  const pvcod = seqData.nextval;
-
   const cart = JSON.parse(localStorage.getItem("cart") || "[]");
   const observacoes = document.getElementById("observacoes").value.trim();
   if (cart.length === 0) {
     alert("Seu carrinho está vazio!");
+    reabilitarBotaoFinalizar();
     return;
   }
+
+  // Validar estoque antes de prosseguir (suporta grupos de peças)
+  try {
+    const validacaoResp = await fetch(`${BASE_URL}/validar-estoque`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cart }),
+    });
+    const validacao = await validacaoResp.json();
+    
+    if (!validacao.valido) {
+      alert(validacao.erro || "Estoque insuficiente para um ou mais itens.");
+      reabilitarBotaoFinalizar();
+      return;
+    }
+  } catch (error) {
+    console.error("Erro ao validar estoque:", error);
+    alert("Erro ao validar estoque. Por favor, tente novamente.");
+    reabilitarBotaoFinalizar();
+    return;
+  }
+
+  const respSeq = await fetch("/pedidos/sequencia");
+  const seqData = await respSeq.json();
+  const pvcod = seqData.nextval;
 
   let mensagem = `${caixaEmoji} Pedido de Peças:\n\n`;
   let totalValue = 0;

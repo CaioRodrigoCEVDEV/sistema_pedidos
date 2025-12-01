@@ -88,6 +88,25 @@ async function atualizarDB() {
 
       //fim temporatrio
 
+    // Tabela de grupos de peças (part_grups) para sincronização de estoque
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.part_grups (
+        grupcod SERIAL PRIMARY KEY,
+        grupdes VARCHAR(120) NOT NULL,
+        estoque INT NULL,
+        grupsit CHAR(1) DEFAULT 'A' NOT NULL
+      );
+    `);
+
+    // Adicionar campo de grupo na tabela de produtos
+    await pool.query(
+      `ALTER TABLE public.pro ADD IF NOT EXISTS progrupcod INT NULL REFERENCES public.part_grups(grupcod) ON DELETE SET NULL;`
+    );
+
+    // Índice para otimizar buscas por grupo
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_pro_progrupcod ON public.pro(progrupcod);`
+    );
 
     // Tabela de relacionamento muitos-para-muitos entre produtos e modelos
     await pool.query(`
@@ -448,11 +467,16 @@ async function atualizarDB() {
     `);
 
     // função de trigger para atualizar saldo no estoque
+    // Suporta sincronização de estoque de grupos de peças
     await pool.query(`
       CREATE OR REPLACE FUNCTION public.atualizar_saldo()
         RETURNS trigger
         LANGUAGE plpgsql
         AS $function$
+        DECLARE
+          item RECORD;
+          grupo_rec RECORD;
+          total_qtde_grupo INT;
         BEGIN
           IF NEW.pvconfirmado = 'S' THEN
 
@@ -464,18 +488,56 @@ async function atualizarDB() {
               AND i.pviprocorid  IS NOT NULL
               AND i.pviprocorid   = pc.procorcorescod;
 
-            -- 2) Itens SEM cor e produto SEM variações -> baixa em pro
-            UPDATE pro pr
-              SET proqtde = COALESCE(pr.proqtde, 0) - COALESCE(i.pviqtde, 0)
+            -- 2) Itens SEM cor -> processa com lógica de grupos
+            FOR item IN 
+              SELECT i.pviprocod, i.pviqtde, pr.progrupcod
               FROM pvi i
-            WHERE i.pvipvcod = NEW.pvcod
-              AND i.pviprocod = pr.procod
-              AND i.pviprocorid IS NULL
-              AND NOT EXISTS (
-                    SELECT 1
-                      FROM procor pc
-                      WHERE pc.procorprocod = pr.procod
-                  );
+              JOIN pro pr ON pr.procod = i.pviprocod
+              WHERE i.pvipvcod = NEW.pvcod
+                AND i.pviprocorid IS NULL
+                AND NOT EXISTS (
+                      SELECT 1
+                        FROM procor pc
+                        WHERE pc.procorprocod = pr.procod
+                    )
+            LOOP
+              -- Se o produto pertence a um grupo
+              IF item.progrupcod IS NOT NULL THEN
+                SELECT grupcod, estoque INTO grupo_rec
+                FROM part_grups
+                WHERE grupcod = item.progrupcod;
+                
+                IF FOUND THEN
+                  -- Caso 2a: Grupo tem estoque definido (não nulo)
+                  IF grupo_rec.estoque IS NOT NULL THEN
+                    -- Decrementar estoque do grupo
+                    UPDATE part_grups 
+                    SET estoque = estoque - COALESCE(item.pviqtde, 0)
+                    WHERE grupcod = item.progrupcod;
+                    
+                    -- Sincronizar todas as peças do grupo com o novo valor do grupo
+                    UPDATE pro 
+                    SET proqtde = (SELECT estoque FROM part_grups WHERE grupcod = item.progrupcod)
+                    WHERE progrupcod = item.progrupcod;
+                  ELSE
+                    -- Caso 2b: Grupo NÃO tem estoque definido -> decrementar todas as peças do grupo
+                    UPDATE pro 
+                    SET proqtde = COALESCE(proqtde, 0) - COALESCE(item.pviqtde, 0)
+                    WHERE progrupcod = item.progrupcod;
+                  END IF;
+                ELSE
+                  -- Grupo não encontrado, comportamento padrão
+                  UPDATE pro 
+                  SET proqtde = COALESCE(proqtde, 0) - COALESCE(item.pviqtde, 0)
+                  WHERE procod = item.pviprocod;
+                END IF;
+              ELSE
+                -- Caso 1: Produto SEM grupo -> comportamento inalterado
+                UPDATE pro 
+                SET proqtde = COALESCE(proqtde, 0) - COALESCE(item.pviqtde, 0)
+                WHERE procod = item.pviprocod;
+              END IF;
+            END LOOP;
 
           END IF;
 
@@ -490,6 +552,9 @@ async function atualizarDB() {
         RETURNS trigger
         LANGUAGE plpgsql
         AS $function$
+        DECLARE
+          item RECORD;
+          grupo_rec RECORD;
         BEGIN
           IF NEW.pvsta = 'X' AND NEW.pvconfirmado = 'S' THEN
 
@@ -501,18 +566,56 @@ async function atualizarDB() {
               AND i.pviprocorid  IS NOT NULL
               AND i.pviprocorid   = pc.procorcorescod;
 
-            -- 2) Itens SEM cor e produto SEM variações -> devolve em pro
-            UPDATE pro pr
-              SET proqtde = COALESCE(pr.proqtde, 0) + COALESCE(i.pviqtde, 0)
+            -- 2) Itens SEM cor -> processa com lógica de grupos
+            FOR item IN 
+              SELECT i.pviprocod, i.pviqtde, pr.progrupcod
               FROM pvi i
-            WHERE i.pvipvcod = NEW.pvcod
-              AND i.pviprocod = pr.procod
-              AND i.pviprocorid IS NULL
-              AND NOT EXISTS (
-                    SELECT 1
-                      FROM procor pc
-                      WHERE pc.procorprocod = pr.procod
-                  );
+              JOIN pro pr ON pr.procod = i.pviprocod
+              WHERE i.pvipvcod = NEW.pvcod
+                AND i.pviprocorid IS NULL
+                AND NOT EXISTS (
+                      SELECT 1
+                        FROM procor pc
+                        WHERE pc.procorprocod = pr.procod
+                    )
+            LOOP
+              -- Se o produto pertence a um grupo
+              IF item.progrupcod IS NOT NULL THEN
+                SELECT grupcod, estoque INTO grupo_rec
+                FROM part_grups
+                WHERE grupcod = item.progrupcod;
+                
+                IF FOUND THEN
+                  -- Caso 2a: Grupo tem estoque definido (não nulo)
+                  IF grupo_rec.estoque IS NOT NULL THEN
+                    -- Incrementar estoque do grupo
+                    UPDATE part_grups 
+                    SET estoque = estoque + COALESCE(item.pviqtde, 0)
+                    WHERE grupcod = item.progrupcod;
+                    
+                    -- Sincronizar todas as peças do grupo com o novo valor do grupo
+                    UPDATE pro 
+                    SET proqtde = (SELECT estoque FROM part_grups WHERE grupcod = item.progrupcod)
+                    WHERE progrupcod = item.progrupcod;
+                  ELSE
+                    -- Caso 2b: Grupo NÃO tem estoque definido -> incrementar todas as peças do grupo
+                    UPDATE pro 
+                    SET proqtde = COALESCE(proqtde, 0) + COALESCE(item.pviqtde, 0)
+                    WHERE progrupcod = item.progrupcod;
+                  END IF;
+                ELSE
+                  -- Grupo não encontrado, comportamento padrão
+                  UPDATE pro 
+                  SET proqtde = COALESCE(proqtde, 0) + COALESCE(item.pviqtde, 0)
+                  WHERE procod = item.pviprocod;
+                END IF;
+              ELSE
+                -- Caso 1: Produto SEM grupo -> comportamento inalterado
+                UPDATE pro 
+                SET proqtde = COALESCE(proqtde, 0) + COALESCE(item.pviqtde, 0)
+                WHERE procod = item.pviprocod;
+              END IF;
+            END LOOP;
 
           END IF;
 

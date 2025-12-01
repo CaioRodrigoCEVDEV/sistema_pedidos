@@ -83,6 +83,9 @@ app.use(cliRoute);
 const munRoute = require("./routes/munRoutes");
 app.use(munRoute);
 
+const gruposRoutes = require("./routes/gruposRoutes");
+app.use(gruposRoutes);
+
 app.get('/me/usuario', autenticarToken, (req, res) => {
   // o middleware colocou o payload em req.token
   return res.json({ usunome: req.token.usunome });
