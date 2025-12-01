@@ -615,6 +615,256 @@ async function updateGroupStock(
   }
 }
 
+/**
+ * Valida e decrementa estoque para múltiplos itens de venda em uma única transação atômica.
+ * 
+ * Esta função implementa a lógica de sincronização de estoque entre grupos:
+ * - Para peças sem grupo: decrementa apenas o estoque individual (proqtde)
+ * - Para peças com grupo:
+ *   a) Se o grupo tem stock_quantity definido (não nulo): usa esse campo como fonte da verdade
+ *      e sincroniza todas as peças do grupo para o mesmo valor
+ *   b) Se o grupo NÃO tem stock_quantity definido: valida e decrementa cada peça individualmente
+ * 
+ * @param {Array<{partId: number, quantidade: number}>} itens - Lista de itens a vender
+ * @param {string} referenceId - ID de referência para auditoria (ex: pvcod)
+ * @returns {Object} Resultado com status de sucesso e detalhes
+ * @throws {Error} Se estoque insuficiente ou qualquer erro de validação
+ */
+async function venderItens(itens, referenceId = null) {
+  if (!Array.isArray(itens) || itens.length === 0) {
+    throw new Error("Lista de itens vazia ou inválida");
+  }
+
+  // Sanitiza o referenceId - apenas caracteres alfanuméricos, hífen e underscore são permitidos
+  let sanitizedReferenceId = null;
+  if (referenceId !== null && referenceId !== undefined) {
+    sanitizedReferenceId = String(referenceId).replace(/[^a-zA-Z0-9_-]/g, "");
+    if (sanitizedReferenceId.length > 100) {
+      sanitizedReferenceId = sanitizedReferenceId.substring(0, 100);
+    }
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const resultados = [];
+    const gruposProcessados = new Map(); // Para evitar processar o mesmo grupo múltiplas vezes
+
+    for (const item of itens) {
+      const { partId, quantidade } = item;
+
+      if (!partId || !quantidade || quantidade <= 0) {
+        throw new Error(`Item inválido: partId=${partId}, quantidade=${quantidade}`);
+      }
+
+      // Busca a peça com bloqueio para atualização
+      const partResult = await client.query(
+        `
+        SELECT p.procod, p.prodes, p.part_group_id, p.proqtde
+        FROM pro p
+        WHERE p.procod = $1
+        FOR UPDATE
+      `,
+        [partId]
+      );
+
+      if (partResult.rows.length === 0) {
+        throw new Error(`Peça com ID ${partId} não encontrada`);
+      }
+
+      const part = partResult.rows[0];
+
+      // CASO 1: Peça não pertence a nenhum grupo
+      if (!part.part_group_id) {
+        // Verifica estoque individual
+        if (part.proqtde < quantidade) {
+          throw new Error(
+            `Estoque insuficiente para a peça "${part.prodes}" (ID: ${partId}). ` +
+            `Disponível: ${part.proqtde}, Solicitado: ${quantidade}`
+          );
+        }
+
+        // Decrementa estoque individual
+        const updateResult = await client.query(
+          `
+          UPDATE pro 
+          SET proqtde = proqtde - $1
+          WHERE procod = $2
+          RETURNING proqtde
+        `,
+          [quantidade, partId]
+        );
+
+        resultados.push({
+          partId,
+          partName: part.prodes,
+          quantidadeVendida: quantidade,
+          novoEstoque: updateResult.rows[0].proqtde,
+          grupoPertence: false,
+        });
+
+        continue;
+      }
+
+      // CASO 2: Peça pertence a um grupo
+      const groupId = part.part_group_id;
+
+      // Verifica se já processamos este grupo (para itens do mesmo grupo no carrinho)
+      if (gruposProcessados.has(groupId)) {
+        // Acumula a quantidade adicional para o mesmo grupo
+        gruposProcessados.get(groupId).quantidadeTotal += quantidade;
+        gruposProcessados.get(groupId).itens.push({ partId, partName: part.prodes, quantidade });
+        continue;
+      }
+
+      // Marca o grupo como em processamento
+      gruposProcessados.set(groupId, {
+        quantidadeTotal: quantidade,
+        itens: [{ partId, partName: part.prodes, quantidade }],
+      });
+    }
+
+    // Processa cada grupo acumulado
+    for (const [groupId, grupoInfo] of gruposProcessados) {
+      const { quantidadeTotal, itens: itensDoGrupo } = grupoInfo;
+
+      // Busca e bloqueia o grupo para atualização
+      const groupResult = await client.query(
+        `
+        SELECT id, name, stock_quantity
+        FROM part_groups
+        WHERE id = $1
+        FOR UPDATE
+      `,
+        [groupId]
+      );
+
+      if (groupResult.rows.length === 0) {
+        throw new Error(`Grupo de compatibilidade (ID: ${groupId}) não encontrado`);
+      }
+
+      const group = groupResult.rows[0];
+
+      // CASO 2a: Grupo TEM stock_quantity definido (não nulo)
+      if (group.stock_quantity !== null) {
+        if (group.stock_quantity < quantidadeTotal) {
+          throw new Error(
+            `Estoque do grupo "${group.name}" insuficiente. ` +
+            `Disponível: ${group.stock_quantity}, Solicitado: ${quantidadeTotal}`
+          );
+        }
+
+        const novoEstoqueGrupo = group.stock_quantity - quantidadeTotal;
+
+        // Atualiza o estoque do grupo
+        await client.query(
+          `
+          UPDATE part_groups 
+          SET stock_quantity = $1, updated_at = NOW()
+          WHERE id = $2
+        `,
+          [novoEstoqueGrupo, groupId]
+        );
+
+        // Sincroniza todas as peças do grupo para o mesmo valor de estoque
+        await client.query(
+          `
+          UPDATE pro 
+          SET proqtde = $1
+          WHERE part_group_id = $2
+        `,
+          [novoEstoqueGrupo, groupId]
+        );
+
+        // Cria registro de auditoria
+        await client.query(
+          `
+          INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+          VALUES ($1, $2, $3, $4)
+        `,
+          [groupId, -quantidadeTotal, "sale", sanitizedReferenceId || "manual"]
+        );
+
+        for (const itemGrupo of itensDoGrupo) {
+          resultados.push({
+            partId: itemGrupo.partId,
+            partName: itemGrupo.partName,
+            quantidadeVendida: itemGrupo.quantidade,
+            novoEstoque: novoEstoqueGrupo,
+            grupoPertence: true,
+            grupoId: groupId,
+            grupoNome: group.name,
+            estoqueGrupoUsado: true,
+          });
+        }
+      } else {
+        // CASO 2b: Grupo NÃO tem stock_quantity definido (nulo)
+        // Valida e decrementa cada peça do grupo individualmente
+
+        // Busca todas as peças do grupo com bloqueio
+        const pecasGrupoResult = await client.query(
+          `
+          SELECT procod, prodes, proqtde
+          FROM pro
+          WHERE part_group_id = $1
+          FOR UPDATE
+        `,
+          [groupId]
+        );
+
+        // Valida que todas as peças têm estoque suficiente
+        for (const pecaGrupo of pecasGrupoResult.rows) {
+          if (pecaGrupo.proqtde < quantidadeTotal) {
+            throw new Error(
+              `Estoque insuficiente em uma das peças do grupo "${group.name}". ` +
+              `Peça "${pecaGrupo.prodes}" (ID: ${pecaGrupo.procod}) tem apenas ${pecaGrupo.proqtde} unidades, ` +
+              `mas a venda requer ${quantidadeTotal} unidades de cada peça do grupo.`
+            );
+          }
+        }
+
+        // Decrementa o estoque de todas as peças do grupo
+        await client.query(
+          `
+          UPDATE pro 
+          SET proqtde = proqtde - $1
+          WHERE part_group_id = $2
+        `,
+          [quantidadeTotal, groupId]
+        );
+
+        for (const itemGrupo of itensDoGrupo) {
+          resultados.push({
+            partId: itemGrupo.partId,
+            partName: itemGrupo.partName,
+            quantidadeVendida: itemGrupo.quantidade,
+            novoEstoque: null, // Cada peça pode ter estoque diferente
+            grupoPertence: true,
+            grupoId: groupId,
+            grupoNome: group.name,
+            estoqueGrupoUsado: false,
+          });
+        }
+      }
+    }
+
+    await client.query("COMMIT");
+
+    return {
+      success: true,
+      itensProcessados: resultados,
+      totalItens: itens.length,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   listAllGroups,
   getGroupById,
@@ -631,4 +881,5 @@ module.exports = {
   getAvailablePart,
   getGroupAuditHistory,
   updateGroupStock,
+  venderItens,
 };

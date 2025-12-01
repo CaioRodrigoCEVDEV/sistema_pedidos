@@ -6,6 +6,7 @@ const autenticarToken = require("../middlewares/middlewares");
 router.get("/pedidos/sequencia", pedidosController.sequencia);
 router.post(
   "/pedidos/enviar",
+  pedidosController.validarEDecrementarEstoque,
   pedidosController.inserirPv,
   pedidosController.inserirPvi
 );
