@@ -596,9 +596,9 @@ async function atualizarDB() {
                   updated_at = NOW()
               WHERE id = r.part_group_id;
               
-              -- Create audit record
+              -- Create audit record with reference_id = product code (procod) for frontend display
               INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
-              VALUES (r.part_group_id, -r.qty, 'sale', NEW.pvcod::text || ':' || r.procod::text);
+              VALUES (r.part_group_id, -r.qty, 'sale', r.procod::text);
             END LOOP;
 
           END IF;
@@ -657,9 +657,9 @@ async function atualizarDB() {
                   updated_at = NOW()
               WHERE id = r.part_group_id;
               
-              -- Create audit record
+              -- Create audit record with reference_id = product code (procod) for frontend display
               INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
-              VALUES (r.part_group_id, r.qty, 'cancellation', NEW.pvcod::text || ':' || r.procod::text);
+              VALUES (r.part_group_id, r.qty, 'cancellation', r.procod::text);
             END LOOP;
 
           END IF;
