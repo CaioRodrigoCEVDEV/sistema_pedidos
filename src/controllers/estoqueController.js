@@ -78,9 +78,15 @@ exports.validarEstoqueCarrinho = async (req, res) => {
     await client.query("BEGIN");
 
     for (const item of cart) {
-      const procod = parseInt(String(item.id).split("-")[0]);
+      // O item.id pode vir no formato "procod-corid" quando há cor selecionada
+      // ou apenas "procod" quando não há cor. Extraímos apenas o procod (primeira parte).
+      const procod = parseInt(String(item.id).split("-")[0], 10);
       const quantidade = item.qt || 1;
-      const idCorSelecionada = item.idCorSelecionada || null;
+      
+      // Usar comparação estrita para verificar se há cor selecionada
+      const idCorSelecionada = (item.idCorSelecionada !== null && item.idCorSelecionada !== undefined) 
+        ? item.idCorSelecionada 
+        : null;
 
       // Se tem cor selecionada, valida o estoque da cor
       if (idCorSelecionada !== null) {

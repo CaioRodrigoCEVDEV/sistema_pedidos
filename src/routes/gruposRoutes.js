@@ -3,7 +3,7 @@ const router = express.Router();
 const gruposController = require("../controllers/gruposController");
 const autenticarToken = require("../middlewares/middlewares");
 
-// Rotas públicas (se necessário adicionar autenticação, basta adicionar autenticarToken)
+// Todas as rotas de grupos requerem autenticação
 router.get("/grupos", autenticarToken, gruposController.listarGrupos);
 router.get("/grupos/:id", autenticarToken, gruposController.buscarGrupo);
 router.get("/grupos/:id/pecas", autenticarToken, gruposController.listarPecasGrupo);

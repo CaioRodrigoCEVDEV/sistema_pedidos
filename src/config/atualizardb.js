@@ -476,7 +476,6 @@ async function atualizarDB() {
         DECLARE
           item RECORD;
           grupo_rec RECORD;
-          total_qtde_grupo INT;
         BEGIN
           IF NEW.pvconfirmado = 'S' THEN
 
