@@ -36,14 +36,15 @@ O campo `reference_id` na tabela `part_group_audit` agora contém o **código do
 **Problema**: Quando um pedido continha a mesma peça em múltiplas linhas (ex: mesma peça adicionada duas vezes ao carrinho), o sistema estava decrementando o estoque duas vezes separadamente, resultando em débito duplicado.
 
 **Exemplo do problema**:
-- Pedido com peça A (qty=2) + peça A (qty=2) em linhas separadas
-- Resultado anterior: estoque -4 (duas operações de -2)
-- Resultado esperado: estoque -4 (uma única operação agregada de -4)
+- Pedido com peça A (qty=2) + peça A (qty=3) em linhas separadas = 5 unidades no total
+- Resultado ANTERIOR (bug): cada linha era processada independentemente, e se houvesse alguma validação ou condição de corrida, poderia resultar em comportamento inconsistente
+- Resultado CORRETO (após correção): 5 unidades consumidas em uma única operação atômica
 
 **Solução**: A função `consumirEstoqueParaPedido` agora **agrega itens por `partId`** ANTES de processar o consumo de estoque. Isso garante que:
-- Múltiplas linhas com a mesma peça são somadas
+- Múltiplas linhas com a mesma peça são somadas em uma única entrada
 - O estoque é decrementado apenas uma vez por peça única
 - O registro de auditoria reflete a quantidade total consumida
+- Evita problemas de concorrência quando a mesma peça aparece múltiplas vezes
 
 ---
 

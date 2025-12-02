@@ -273,13 +273,14 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
     for (const item of itens) {
       const { partId, quantidade } = item;
 
-      if (!partId || !quantidade || quantidade <= 0) {
+      if (partId == null || !quantidade || quantidade <= 0) {
         throw new Error(`Item inválido: partId=${partId}, quantidade=${quantidade}`);
       }
 
       if (itensAgregados.has(partId)) {
-        itensAgregados.get(partId).quantidade += quantidade;
-        itensAgregados.get(partId).linhasOriginais++;
+        const existingItem = itensAgregados.get(partId);
+        existingItem.quantidade += quantidade;
+        existingItem.linhasOriginais++;
       } else {
         itensAgregados.set(partId, {
           partId,
