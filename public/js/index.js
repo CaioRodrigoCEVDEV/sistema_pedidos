@@ -475,7 +475,7 @@ window.adicionarAoCarrinho = async function (procod) {
     }
   } catch (error) {
     console.error("Erro ao buscar cores:", error);
-    alert("Erro ao verificar cores do produto.");
+    showToast("Erro ao verificar cores do produto.", "error");
   }
 };
 
