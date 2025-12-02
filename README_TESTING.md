@@ -35,7 +35,7 @@ O campo `reference_id` na tabela `part_group_audit` agora contém o **código do
 
 ## 🧪 Cenários de Teste
 
-### Cenário 1: Vender peça de grupo COM estoque definido
+### Cenário 1: Criar pedido e confirmar peça de grupo COM estoque definido
 
 **Configuração SQL:**
 ```sql
@@ -50,18 +50,30 @@ UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo T
 1. Acessar o sistema como usuário
 2. Adicionar ao carrinho 2 unidades de uma peça do grupo
 3. Finalizar pedido (Retirada Balcão ou Entrega)
-4. Verificar resultado
+4. **Verificar que o estoque NÃO foi alterado** (pedido fica pendente)
+5. Acessar o painel administrativo de pedidos
+6. Localizar o pedido pendente e clicar em "Confirmar Pedido"
+7. Verificar resultado após confirmação
 
-**Resultado esperado:**
-- ✅ Todas as peças do grupo têm estoque decrementado em 2 unidades
-- ✅ `part_groups.stock_quantity` = MIN(estoque das peças) = 8
+**Resultado esperado (após criar pedido):**
+- ✅ Pedido criado com status pendente (pvconfirmado = 'N')
+- ✅ **Estoque NÃO foi movimentado**
+- ✅ WhatsApp abre normalmente
+
+**Resultado esperado (após confirmar pedido):**
+- ✅ Estoque das peças do grupo decrementado
+- ✅ `part_groups.stock_quantity` = MIN(estoque das peças)
 - ✅ Registro de auditoria criado em `part_group_audit` com `reference_id` = código do produto
-- ✅ Mensagem de sucesso via **toast** (não alert)
-- ✅ WhatsApp abre apenas após commit bem-sucedido
+- ✅ Mensagem de sucesso via **toast**: "Pedido confirmado com sucesso!"
 
 **Verificação SQL:**
 ```sql
--- Verificar estoque das peças do grupo
+-- ANTES da confirmação: verificar que estoque não mudou
+SELECT procod, prodes, proqtde 
+FROM pro 
+WHERE part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 1');
+
+-- APÓS confirmação: verificar estoque decrementado
 SELECT procod, prodes, proqtde 
 FROM pro 
 WHERE part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 1');
@@ -79,7 +91,7 @@ ORDER BY a.created_at DESC;
 
 ---
 
-### Cenário 2: Vender peça de grupo SEM estoque definido (NULL)
+### Cenário 2: Confirmar pedido com peça de grupo SEM estoque definido (NULL)
 
 **Configuração SQL:**
 ```sql
@@ -94,9 +106,10 @@ UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo T
 **Passos:**
 1. Acessar o sistema como usuário
 2. Adicionar ao carrinho 6 unidades de uma peça do grupo
-3. Finalizar pedido
+3. Finalizar pedido (cria pedido pendente, sem movimentar estoque)
+4. Acessar o painel administrativo e confirmar o pedido
 
-**Resultado esperado:**
+**Resultado esperado (após confirmação):**
 - ✅ Estoque é consumido das peças, começando pela de maior estoque
 - ✅ Peça com 5 unidades fica com 0 (retirou 5)
 - ✅ Peça com 3 unidades fica com 2 (retirou 1)
@@ -105,29 +118,32 @@ UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo T
 
 ---
 
-### Cenário 3: Estoque insuficiente
+### Cenário 3: Estoque insuficiente na confirmação
 
 **Passos:**
 1. Usar um grupo com estoque baixo (ex: 8 unidades)
 2. Adicionar ao carrinho 100 unidades de uma peça do grupo
-3. Tentar finalizar pedido
+3. Finalizar pedido (cria pedido pendente normalmente)
+4. Acessar o painel administrativo e tentar confirmar o pedido
 
 **Resultado esperado:**
-- ❌ Pedido NÃO é criado
+- ✅ Pedido é criado com status pendente (criação funciona normalmente)
+- ❌ Confirmação FALHA devido a estoque insuficiente
 - ✅ Toast de erro exibe: "Estoque insuficiente no grupo..."
 - ✅ Nenhuma alteração no banco de dados (ROLLBACK completo)
-- ✅ Botões são reabilitados para nova tentativa
+- ✅ Pedido permanece com status pendente
 
 ---
 
-### Cenário 4: Peça sem grupo (estoque individual)
+### Cenário 4: Confirmar pedido com peça sem grupo (estoque individual)
 
 **Passos:**
 1. Selecionar uma peça que NÃO pertence a nenhum grupo
 2. Verificar que `part_group_id` é NULL
-3. Adicionar ao carrinho e finalizar pedido
+3. Adicionar ao carrinho e finalizar pedido (cria pedido pendente)
+4. Acessar o painel administrativo e confirmar o pedido
 
-**Resultado esperado:**
+**Resultado esperado (após confirmação):**
 - ✅ Apenas o estoque individual da peça (`proqtde`) é decrementado
 - ✅ Nenhum registro em `part_group_audit` é criado
 
@@ -161,22 +177,44 @@ Os toasts são exibidos no canto superior direito e fecham automaticamente após
 
 ---
 
-## 🔄 Fluxo de Confirmação de Pedido
+## 🔄 Fluxo de Criação e Confirmação de Pedido
 
-O fluxo atualizado garante a ordem correta de operações:
+O fluxo atualizado garante que o estoque seja movimentado **SOMENTE** na confirmação do pedido:
+
+### Criação do Pedido (Carrinho → Retirada Balcão / Entrega)
 
 ```
-1. Validar carrinho
-2. Preparar itens para venda
-3. [TRANSAÇÃO] Consumir estoque via stockService.consumirEstoqueParaPedido()
-   - Bloquear registros com FOR UPDATE
-   - Distribuir consumo entre peças do grupo
-   - Atualizar part_groups.stock_quantity
-   - Registrar auditoria
-4. [COMMIT] Persistir alterações
-5. Criar registro do pedido (pv, pvi)
-6. Redirecionar para WhatsApp (após commit bem-sucedido)
+1. Validar carrinho (itens e quantidades)
+2. Criar registro do pedido (pv) com status = pendente (pvconfirmado = 'N')
+3. Criar itens do pedido (pvi)
+4. Redirecionar para WhatsApp
+⚠️ ESTOQUE NÃO É MOVIMENTADO NESTE MOMENTO
 ```
+
+### Confirmação do Pedido (Painel de Pedidos)
+
+```
+1. Usuário clica em "Confirmar Pedido" no painel administrativo
+2. [TRANSAÇÃO] Inicia transação no banco
+3. Bloqueia o pedido com FOR UPDATE
+4. Carrega os itens do pedido (pvi)
+5. [ESTOQUE] Consome estoque via consumirEstoqueComClient()
+   - Para peças sem grupo: decrementa estoque individual
+   - Para peças com grupo: distribui consumo entre peças (maior estoque primeiro)
+   - Atualiza part_groups.stock_quantity = MIN(estoques)
+   - Registra auditoria em part_group_audit (reference_id = código do produto)
+6. Atualiza pedido: pvconfirmado = 'S', pvdtconfirmado = NOW()
+7. [COMMIT] Persiste todas as alterações
+8. Retorna sucesso para o frontend (exibe toast de sucesso)
+```
+
+### Tratamento de Erros
+
+Se houver estoque insuficiente durante a confirmação:
+- Toda a transação é revertida (ROLLBACK)
+- Nenhum estoque é movimentado
+- Toast de erro é exibido: "Estoque insuficiente no grupo..."
+- Pedido permanece com status pendente
 
 ---
 
