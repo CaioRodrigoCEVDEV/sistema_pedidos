@@ -13,26 +13,32 @@ exports.sequencia = async (req, res) => {
 };
 
 /**
- * Middleware que valida o carrinho antes de criar o pedido.
+ * Middleware que valida e decrementa o estoque antes de criar o pedido.
  * 
- * IMPORTANTE: O estoque NÃO é movimentado neste momento.
- * A movimentação de estoque ocorre SOMENTE na confirmação do pedido
- * (ver função confirmarPedido).
+ * Esta função implementa a sincronização de estoque entre grupos:
+ * - Para peças sem grupo: decrementa apenas o estoque individual
+ * - Para peças com grupo: sincroniza o estoque entre todas as peças do grupo
  * 
- * Esta função apenas:
- * - Valida que o carrinho não está vazio
- * - Valida que os IDs das peças são válidos
- * - Passa o controle para a criação do pedido com status pendente
+ * IMPORTANTE: O decremento ocorre ANTES do pedido ser criado, garantindo que:
+ * - A validação de estoque é atômica (com locks FOR UPDATE)
+ * - O WhatsApp só é enviado após o commit bem-sucedido
+ * - Em caso de falha, nenhuma alteração é persistida
+ * 
+ * Utiliza o serviço de estoque (src/services/stock.js) para:
+ * - Consumir estoque das peças do grupo quando a peça pertence a um grupo
+ * - Atualizar part_groups.estoque = MIN(estoque das peças) quando aplicável
+ * - Gravar auditoria em part_group_audit com reference_id = código do produto
  */
 exports.validarEDecrementarEstoque = async (req, res, next) => {
-  const { cart } = req.body;
+  const { cart, pvcod } = req.body;
 
   if (!Array.isArray(cart) || cart.length === 0) {
     return res.status(400).json({ error: "Carrinho vazio ou inválido" });
   }
 
   try {
-    // Valida os itens do carrinho (sem movimentar estoque)
+    // Prepara a lista de itens para venda
+    const itensParaVenda = [];
     for (const item of cart) {
       const procod = item.id;
       // O ID pode vir no formato "123-cor" ou apenas "123"
@@ -47,28 +53,42 @@ exports.validarEDecrementarEstoque = async (req, res, next) => {
         });
       }
 
-      // Valida que a quantidade é válida
-      if (quantidade <= 0) {
-        return res.status(400).json({
-          error: `Quantidade inválida para peça ${procod}`,
-          tipo: "quantidade_invalida",
-        });
-      }
+      itensParaVenda.push({
+        partId: codigoInteiro,
+        quantidade: quantidade,
+      });
     }
 
-    console.log(
-      `[Pedidos] Carrinho validado com sucesso. Itens: ${cart.length}. ` +
-      `Estoque será movimentado apenas na confirmação do pedido.`
+    // Tenta decrementar o estoque de todos os itens em uma única transação
+    // usando o serviço de estoque que implementa a lógica de grupos
+    const resultado = await stockService.consumirEstoqueParaPedido(
+      itensParaVenda,
+      "sale",
+      pvcod ? String(pvcod) : null
     );
 
-    // Continua para a criação do pedido (com status pendente)
+    // Armazena o resultado para uso posterior (opcional, para logging)
+    req.estoqueResultado = resultado;
+
+    console.log(
+      `[Pedidos] Estoque decrementado com sucesso para pedido ${pvcod}:`,
+      resultado.itensProcessados.length,
+      "itens processados"
+    );
+
+    // Continua para a criação do pedido
     next();
   } catch (error) {
-    console.error("[Pedidos] Erro ao validar carrinho:", error);
+    console.error("[Pedidos] Erro ao validar/decrementar estoque:", error);
+
+    // Retorna erro amigável para o frontend
+    const mensagemErro = error.message.includes("insuficiente")
+      ? error.message
+      : "Erro ao processar estoque. Por favor, tente novamente.";
 
     return res.status(400).json({
-      error: "Erro ao validar carrinho. Por favor, tente novamente.",
-      tipo: "erro_validacao",
+      error: mensagemErro,
+      tipo: "estoque_insuficiente",
     });
   }
 };
@@ -386,153 +406,20 @@ exports.listarPvPendentes = async (req, res) => {
   }
 };
 
-/**
- * Confirma um pedido e movimenta o estoque.
- * 
- * IMPORTANTE: Esta é a ÚNICA função onde o estoque é movimentado.
- * O fluxo é:
- * 1. Abre uma transação
- * 2. Carrega os itens do pedido (pvi)
- * 3. Consome o estoque usando stockService.consumirEstoqueParaPedido
- * 4. Marca o pedido como confirmado (pvconfirmado = 'S', pvdtconfirmado = NOW())
- * 5. Commit da transação
- * 6. APÓS o commit, envia resposta de sucesso (WhatsApp/notificações ocorrem no frontend)
- * 
- * Em caso de erro (ex: estoque insuficiente), faz rollback e retorna erro.
- */
 exports.confirmarPedido = async (req, res) => {
   const pvcod = req.params.pvcod;
-  const pvrcacod = req.body.pvrcacod;
 
-  console.debug(`[Pedidos] ========================================`);
-  console.debug(`[Pedidos] Iniciando confirmação do pedido ${pvcod}`);
-  console.debug(`[Pedidos] pvrcacod (vendedor): ${pvrcacod}`);
-
-  const client = await pool.connect();
+  console.log(pvcod);
 
   try {
-    await client.query("BEGIN");
-    console.debug(`[Pedidos] Transação iniciada para pedido ${pvcod}`);
-
-    // 1. Verifica se o pedido existe e não está confirmado
-    // Usa FOR UPDATE para bloquear a linha e garantir idempotência
-    console.debug(`[Pedidos] Buscando pedido ${pvcod} com SELECT ... FOR UPDATE`);
-    const pedidoResult = await client.query(
-      `SELECT pvcod, pvconfirmado, pvsta 
-       FROM pv 
-       WHERE pvcod = $1 
-       FOR UPDATE`,
-      [pvcod]
+    const result = await pool.query(
+      "update pv set pvconfirmado = 'S', pvrcacod = $2 where pvcod = $1 RETURNING *",
+      [pvcod, req.body.pvrcacod]
     );
-
-    if (pedidoResult.rows.length === 0) {
-      await client.query("ROLLBACK");
-      console.debug(`[Pedidos] Pedido ${pvcod} não encontrado`);
-      return res.status(404).json({ error: "Pedido não encontrado" });
-    }
-
-    const pedido = pedidoResult.rows[0];
-    console.debug(`[Pedidos] Pedido encontrado: pvconfirmado=${pedido.pvconfirmado}, pvsta=${pedido.pvsta}`);
-
-    // Idempotência: se o pedido já está confirmado, retornar sucesso sem reprocessar
-    if (pedido.pvconfirmado === "S") {
-      await client.query("ROLLBACK");
-      console.debug(`[Pedidos] Pedido ${pvcod} já está confirmado. Retornando sucesso (idempotência).`);
-      return res.status(200).json({
-        success: true,
-        message: "Pedido já está confirmado.",
-        pedido: pedido,
-        idempotente: true
-      });
-    }
-
-    if (pedido.pvsta === "X") {
-      await client.query("ROLLBACK");
-      console.debug(`[Pedidos] Pedido ${pvcod} está cancelado (pvsta=X)`);
-      return res.status(400).json({ error: "Pedido está cancelado" });
-    }
-
-    // 2. Carrega os itens do pedido
-    console.debug(`[Pedidos] Carregando itens do pedido ${pvcod}...`);
-    const itensResult = await client.query(
-      `SELECT pviprocod as procod, pviqtde as quantidade 
-       FROM pvi 
-       WHERE pvipvcod = $1 AND pviqtde > 0`,
-      [pvcod]
-    );
-
-    console.debug(`[Pedidos] Itens carregados: ${itensResult.rows.length} item(s)`);
-    console.debug(`[Pedidos] Detalhes dos itens:`, JSON.stringify(itensResult.rows));
-
-    if (itensResult.rows.length === 0) {
-      await client.query("ROLLBACK");
-      console.debug(`[Pedidos] Pedido ${pvcod} não possui itens válidos`);
-      return res.status(400).json({ error: "Pedido não possui itens válidos" });
-    }
-
-    // 3. Prepara lista de itens para consumo de estoque
-    // Normaliza partId e quantidade para inteiros para evitar erros de tipo
-    const itensParaConsumo = itensResult.rows.map(item => ({
-      partId: parseInt(item.procod, 10),
-      quantidade: Math.round(Number(item.quantidade))
-    }));
-
-    console.debug(`[Pedidos] Itens normalizados para consumo:`, JSON.stringify(itensParaConsumo));
-    console.debug(`[Pedidos] Consumindo estoque para ${itensParaConsumo.length} itens do pedido ${pvcod}...`);
-
-    // 4. Consome o estoque usando o serviço de estoque (passando o client externo)
-    // IMPORTANTE: Toda a movimentação de estoque ocorre SOMENTE aqui, na confirmação do pedido
-    const resultadoEstoque = await stockService.consumirEstoqueParaPedido(
-      itensParaConsumo,
-      "sale",
-      String(pvcod),
-      client  // Passa o client externo para usar a mesma transação
-    );
-
-    console.debug(`[Pedidos] Estoque consumido com sucesso:`, JSON.stringify(resultadoEstoque));
-
-    // 5. Marca o pedido como confirmado
-    console.debug(`[Pedidos] Atualizando status do pedido ${pvcod} para 'confirmado'...`);
-    const updateResult = await client.query(
-      `UPDATE pv 
-       SET pvconfirmado = 'S', pvrcacod = $2, pvdtconfirmado = NOW()
-       WHERE pvcod = $1 
-       RETURNING *`,
-      [pvcod, pvrcacod]
-    );
-
-    // 6. Commit da transação
-    await client.query("COMMIT");
-
-    console.debug(`[Pedidos] ========================================`);
-    console.debug(`[Pedidos] Pedido ${pvcod} confirmado com sucesso!`);
-    console.debug(`[Pedidos] Itens processados: ${itensParaConsumo.length}`);
-    console.debug(`[Pedidos] ========================================`);
-
-    // IMPORTANTE: Notificações/APIs externas ocorrem APÓS COMMIT
-    res.status(200).json({
-      success: true,
-      message: "Pedido confirmado com sucesso!",
-      pedido: updateResult.rows[0],
-      itensProcessados: itensParaConsumo.length
-    });
-
+    res.status(200).json(result.rows);
   } catch (error) {
-    await client.query("ROLLBACK");
-    console.error(`[Pedidos] Erro ao confirmar pedido ${pvcod}:`, error.message);
-    console.debug(`[Pedidos] Stack trace:`, error.stack);
-
-    // Retorna erro amigável para o frontend
-    const mensagemErro = error.message.includes("insuficiente")
-      ? error.message
-      : "Erro ao confirmar pedido. Por favor, tente novamente.";
-
-    res.status(400).json({ 
-      error: mensagemErro,
-      tipo: error.message.includes("insuficiente") ? "estoque_insuficiente" : "erro_confirmacao"
-    });
-  } finally {
-    client.release();
+    console.error(error);
+    res.status(500).json({ error: "erro ao confirmar pedido" });
   }
 };
 
