@@ -404,14 +404,19 @@ exports.confirmarPedido = async (req, res) => {
   const pvcod = req.params.pvcod;
   const pvrcacod = req.body.pvrcacod;
 
-  console.log(`[Pedidos] Confirmando pedido ${pvcod}...`);
+  console.debug(`[Pedidos] ========================================`);
+  console.debug(`[Pedidos] Iniciando confirmação do pedido ${pvcod}`);
+  console.debug(`[Pedidos] pvrcacod (vendedor): ${pvrcacod}`);
 
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
+    console.debug(`[Pedidos] Transação iniciada para pedido ${pvcod}`);
 
     // 1. Verifica se o pedido existe e não está confirmado
+    // Usa FOR UPDATE para bloquear a linha e garantir idempotência
+    console.debug(`[Pedidos] Buscando pedido ${pvcod} com SELECT ... FOR UPDATE`);
     const pedidoResult = await client.query(
       `SELECT pvcod, pvconfirmado, pvsta 
        FROM pv 
@@ -422,15 +427,17 @@ exports.confirmarPedido = async (req, res) => {
 
     if (pedidoResult.rows.length === 0) {
       await client.query("ROLLBACK");
+      console.debug(`[Pedidos] Pedido ${pvcod} não encontrado`);
       return res.status(404).json({ error: "Pedido não encontrado" });
     }
 
     const pedido = pedidoResult.rows[0];
+    console.debug(`[Pedidos] Pedido encontrado: pvconfirmado=${pedido.pvconfirmado}, pvsta=${pedido.pvsta}`);
 
     // Idempotência: se o pedido já está confirmado, retornar sucesso sem reprocessar
     if (pedido.pvconfirmado === "S") {
       await client.query("ROLLBACK");
-      console.log(`[Pedidos] Pedido ${pvcod} já está confirmado. Retornando sucesso (idempotência).`);
+      console.debug(`[Pedidos] Pedido ${pvcod} já está confirmado. Retornando sucesso (idempotência).`);
       return res.status(200).json({
         success: true,
         message: "Pedido já está confirmado.",
@@ -441,10 +448,12 @@ exports.confirmarPedido = async (req, res) => {
 
     if (pedido.pvsta === "X") {
       await client.query("ROLLBACK");
+      console.debug(`[Pedidos] Pedido ${pvcod} está cancelado (pvsta=X)`);
       return res.status(400).json({ error: "Pedido está cancelado" });
     }
 
     // 2. Carrega os itens do pedido
+    console.debug(`[Pedidos] Carregando itens do pedido ${pvcod}...`);
     const itensResult = await client.query(
       `SELECT pviprocod as procod, pviqtde as quantidade 
        FROM pvi 
@@ -452,8 +461,12 @@ exports.confirmarPedido = async (req, res) => {
       [pvcod]
     );
 
+    console.debug(`[Pedidos] Itens carregados: ${itensResult.rows.length} item(s)`);
+    console.debug(`[Pedidos] Detalhes dos itens:`, JSON.stringify(itensResult.rows));
+
     if (itensResult.rows.length === 0) {
       await client.query("ROLLBACK");
+      console.debug(`[Pedidos] Pedido ${pvcod} não possui itens válidos`);
       return res.status(400).json({ error: "Pedido não possui itens válidos" });
     }
 
@@ -463,17 +476,21 @@ exports.confirmarPedido = async (req, res) => {
       quantidade: item.quantidade
     }));
 
-    console.log(`[Pedidos] Consumindo estoque para ${itensParaConsumo.length} itens do pedido ${pvcod}`);
+    console.debug(`[Pedidos] Consumindo estoque para ${itensParaConsumo.length} itens do pedido ${pvcod}...`);
 
     // 4. Consome o estoque usando o serviço de estoque (passando o client externo)
-    await stockService.consumirEstoqueParaPedido(
+    // IMPORTANTE: Toda a movimentação de estoque ocorre SOMENTE aqui, na confirmação do pedido
+    const resultadoEstoque = await stockService.consumirEstoqueParaPedido(
       itensParaConsumo,
       "sale",
       String(pvcod),
       client  // Passa o client externo para usar a mesma transação
     );
 
+    console.debug(`[Pedidos] Estoque consumido com sucesso:`, JSON.stringify(resultadoEstoque));
+
     // 5. Marca o pedido como confirmado
+    console.debug(`[Pedidos] Atualizando status do pedido ${pvcod} para 'confirmado'...`);
     const updateResult = await client.query(
       `UPDATE pv 
        SET pvconfirmado = 'S', pvrcacod = $2, pvdtconfirmado = NOW()
@@ -485,8 +502,12 @@ exports.confirmarPedido = async (req, res) => {
     // 6. Commit da transação
     await client.query("COMMIT");
 
-    console.log(`[Pedidos] Pedido ${pvcod} confirmado com sucesso!`);
+    console.debug(`[Pedidos] ========================================`);
+    console.debug(`[Pedidos] Pedido ${pvcod} confirmado com sucesso!`);
+    console.debug(`[Pedidos] Itens processados: ${itensParaConsumo.length}`);
+    console.debug(`[Pedidos] ========================================`);
 
+    // IMPORTANTE: Notificações/APIs externas ocorrem APÓS COMMIT
     res.status(200).json({
       success: true,
       message: "Pedido confirmado com sucesso!",
@@ -496,7 +517,8 @@ exports.confirmarPedido = async (req, res) => {
 
   } catch (error) {
     await client.query("ROLLBACK");
-    console.error(`[Pedidos] Erro ao confirmar pedido ${pvcod}:`, error);
+    console.error(`[Pedidos] Erro ao confirmar pedido ${pvcod}:`, error.message);
+    console.debug(`[Pedidos] Stack trace:`, error.stack);
 
     // Retorna erro amigável para o frontend
     const mensagemErro = error.message.includes("insuficiente")
