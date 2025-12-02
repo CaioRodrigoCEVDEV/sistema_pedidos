@@ -54,7 +54,7 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
         p.prodes, 
         p.part_group_id, 
         p.proqtde,
-        COALESCE(p.procod::text, '') as reference_code
+        p.procod::text as reference_code
       FROM pro p
       WHERE p.procod = $1
       FOR UPDATE`,
@@ -66,7 +66,7 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
     }
 
     const part = partResult.rows[0];
-    const referenceId = part.reference_code || String(partId);
+    const referenceId = part.reference_code;
 
     // CASO 1: Peça SEM grupo - decrementa apenas o estoque individual
     if (!part.part_group_id) {
@@ -124,7 +124,7 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
     // Busca todas as peças do grupo com bloqueio, ordenadas por estoque DESC
     const pecasGrupoResult = await txClient.query(
       `SELECT procod, prodes, proqtde,
-              COALESCE(procod::text, '') as reference_code
+              procod::text as reference_code
        FROM pro
        WHERE part_group_id = $1
        ORDER BY proqtde DESC, procod ASC
@@ -172,7 +172,7 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
           prodes: pecaGrupo.prodes,
           quantidadeRetirada: tirarDestaPeca,
           novoEstoque: estoqueAtual - tirarDestaPeca,
-          referenceCode: pecaGrupo.reference_code || String(pecaGrupo.procod)
+          referenceCode: pecaGrupo.reference_code
         });
 
         restanteATirar -= tirarDestaPeca;
@@ -224,7 +224,11 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
 
   } catch (error) {
     if (!useExternalTransaction) {
-      await txClient.query("ROLLBACK");
+      try {
+        await txClient.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("[Stock Service] Erro ao fazer rollback:", rollbackError.message);
+      }
     }
     throw error;
   } finally {
@@ -330,7 +334,11 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
     };
 
   } catch (error) {
-    await client.query("ROLLBACK");
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("[Stock Service] Erro ao fazer rollback:", rollbackError.message);
+    }
     console.error("[Stock Service] Erro ao consumir estoque:", error.message);
     throw error;
   } finally {
