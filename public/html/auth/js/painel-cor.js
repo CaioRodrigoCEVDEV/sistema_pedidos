@@ -55,7 +55,7 @@ corForm.addEventListener('submit', async (ev) => {
         corModal.hide();
       alertPersonalizado('Sem permissão para criar Cor.', 2000);
     } else {
-      alert('Erro ao salvar os dados.');
+      showToast('Erro ao salvar os dados.', 'error');
     }
     console.error(error);
   }
