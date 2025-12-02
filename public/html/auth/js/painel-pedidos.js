@@ -286,16 +286,8 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             await confirmarItensPedido(pvcod, item.qtd, item.procod);
           }
 
-          // 2. Registra a saída de estoque - se falhar, aborta a confirmação
-          try {
-            await registrarSaidaEstoque(pvcod, itens);
-          } catch (estoqueError) {
-            console.error("Erro ao registrar saída de estoque:", estoqueError);
-            alert("Erro ao registrar saída de estoque. A confirmação do pedido foi abortada. Por favor, tente novamente ou contate o suporte se o problema persistir.");
-            return; // Aborta a confirmação se a saída de estoque falhar
-          }
-
-          // 3. Confirma o pedido somente após sucesso na saída de estoque
+          // 2. Confirma o pedido - a saída de estoque é processada automaticamente
+          // pelo trigger de banco de dados (public.atualizar_saldo)
           await confirmarPedido(pvcod);
 
           // 4. Fecha o modal ao fim
@@ -433,55 +425,6 @@ async function confirmarItensPedido(pvcod, pviqtde, procod) {
     alert("Erro ao confirmar itens do pedido pedido.");
   }
 }
-
-/**
- * Registra a saída de estoque para os itens de um pedido.
- * Esta função é responsável por comunicar o backend sobre a dedução do estoque.
- * 
- * IMPORTANTE: Esta função deve ser chamada SOMENTE durante o fluxo de confirmação
- * do pedido (após confirmarItensPedido e antes de confirmarPedido).
- * NÃO deve ser chamada nos handlers de botões de canal (Entrega/Balcão).
- * 
- * @param {number|string} pvcod - Código do pedido
- * @param {Array<{procod: number, qtd: number}>} itens - Lista de itens com código do produto e quantidade
- * @returns {Promise<void>} - Resolve se a saída foi registrada com sucesso, rejeita em caso de falha
- * @throws {Error} - Se a requisição falhar ou o backend retornar erro
- * 
- * NOTA: O endpoint POST ${BASE_URL}/pedidos/saida-estoque/${pvcod} pode precisar ser
- * ajustado para o endpoint real existente no backend. Caso o endpoint não exista,
- * ele deve ser criado no backend para processar a saída de estoque.
- */
-async function registrarSaidaEstoque(pvcod, itens) {
-  try {
-    const response = await fetch(
-      `${BASE_URL}/pedidos/saida-estoque/${pvcod}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ itens }),
-      }
-    );
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.error || errorData.message || "Erro ao registrar saída de estoque";
-      throw new Error(errorMessage);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error("Erro ao registrar saída de estoque:", error);
-    throw error;
-  }
-}
-
-// Expõe a função para reutilização futura em outros módulos que possam precisar registrar saídas de estoque.
-// ATENÇÃO: Esta função é destinada para uso interno do sistema de pedidos.
-// O uso recomendado é através do painel-pedidos.js durante o fluxo de confirmação do pedido.
-window.registrarSaidaEstoque = registrarSaidaEstoque;
 
 async function cancelarPedido(pvcod) {
   try {
