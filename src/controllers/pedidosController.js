@@ -427,9 +427,16 @@ exports.confirmarPedido = async (req, res) => {
 
     const pedido = pedidoResult.rows[0];
 
+    // Idempotência: se o pedido já está confirmado, retornar sucesso sem reprocessar
     if (pedido.pvconfirmado === "S") {
       await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Pedido já está confirmado" });
+      console.log(`[Pedidos] Pedido ${pvcod} já está confirmado. Retornando sucesso (idempotência).`);
+      return res.status(200).json({
+        success: true,
+        message: "Pedido já está confirmado.",
+        pedido: pedido,
+        idempotente: true
+      });
     }
 
     if (pedido.pvsta === "X") {
