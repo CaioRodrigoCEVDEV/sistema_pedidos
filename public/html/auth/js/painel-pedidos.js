@@ -291,7 +291,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             await registrarSaidaEstoque(pvcod, itens);
           } catch (estoqueError) {
             console.error("Erro ao registrar saída de estoque:", estoqueError);
-            alert("Erro ao registrar saída de estoque. A confirmação do pedido foi abortada.");
+            alert("Erro ao registrar saída de estoque. A confirmação do pedido foi abortada. Por favor, tente novamente ou contate o suporte se o problema persistir.");
             return; // Aborta a confirmação se a saída de estoque falhar
           }
 
@@ -478,9 +478,9 @@ async function registrarSaidaEstoque(pvcod, itens) {
   }
 }
 
-// Expõe a função para reutilização futura.
-// ATENÇÃO: Esta função deve ser usada SOMENTE pelo painel-pedidos.js
-// durante o fluxo de confirmação do pedido.
+// Expõe a função para reutilização futura em outros módulos que possam precisar registrar saídas de estoque.
+// ATENÇÃO: Esta função é destinada para uso interno do sistema de pedidos.
+// O uso recomendado é através do painel-pedidos.js durante o fluxo de confirmação do pedido.
 window.registrarSaidaEstoque = registrarSaidaEstoque;
 
 async function cancelarPedido(pvcod) {
