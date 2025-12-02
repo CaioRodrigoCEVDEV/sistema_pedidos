@@ -27,6 +27,11 @@
 
 const pool = require("../config/db");
 
+// Constante que define o modo de consumo de estoque para grupos
+// 'each' = debita de CADA peça do grupo
+// 'pool' = distribui entre as peças (alternativa, não ativa)
+const CONSUMPTION_MODE = "each";
+
 /**
  * Consome estoque para um único item (peça) usando o modo 'each'.
  * 
@@ -230,10 +235,11 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
     // ============================================================
     // Grava registros de auditoria para CADA peça afetada
     // ============================================================
+    // Nota: created_at usa o default do banco de dados para garantir consistência
     for (const pecaAfetada of pecasAfetadas) {
       await txClient.query(
-        `INSERT INTO part_group_audit (part_group_id, change, reason, reference_id, created_at)
-         VALUES ($1, $2, $3, $4, NOW())`,
+        `INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+         VALUES ($1, $2, $3, $4)`,
         [groupId, -pecaAfetada.quantidadeRetirada, reason, pecaAfetada.referenceCode]
       );
     }
@@ -252,7 +258,7 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
       grupoPertence: true,
       grupoId: groupId,
       grupoNome: group.name,
-      modoConsumo: "each", // Indica o modo de consumo utilizado
+      modoConsumo: CONSUMPTION_MODE, // Indica o modo de consumo utilizado
       pecasAfetadas
     };
 
@@ -469,7 +475,7 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
       itensProcessados: resultados,
       totalLinhasOriginais: itens.length,
       totalPecasUnicas: itensAgregados.size,
-      modoConsumoGrupo: "each", // Documenta o modo utilizado
+      modoConsumoGrupo: CONSUMPTION_MODE, // Documenta o modo utilizado
       referenceId
     };
 
