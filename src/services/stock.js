@@ -64,8 +64,8 @@ const CONSUMPTION_MODE = "each";
  */
 async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", client = null) {
   // Normaliza partId para inteiro - aceita string ou número
-  const normalizedPartId = parseInt(String(partId), 10);
-  // Normaliza quantidade para inteiro - arredonda se necessário
+  const normalizedPartId = parseInt(partId, 10);
+  // Normaliza quantidade para inteiro - arredonda para o mais próximo
   const normalizedQuantidade = Math.round(Number(quantidade));
 
   // Determina se está usando transação externa ou deve criar uma própria
@@ -389,10 +389,10 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
       // Normaliza partId para inteiro - aceita string ou número
       // Exemplo: "123" -> 123, 123.0 -> 123
       const rawPartId = item.partId;
-      const partId = parseInt(String(rawPartId), 10);
+      const partId = parseInt(rawPartId, 10);
       
-      // Normaliza quantidade para inteiro - arredonda se necessário
-      // Exemplo: "1.0000" -> 1, 2.5 -> 3 (arredonda para cima)
+      // Normaliza quantidade para inteiro - arredonda para o inteiro mais próximo
+      // Exemplo: "1.0000" -> 1, 2.4 -> 2, 2.5 -> 3
       const rawQuantidade = item.quantidade;
       const quantidade = Math.round(Number(rawQuantidade));
 
