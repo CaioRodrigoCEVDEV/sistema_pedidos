@@ -55,7 +55,7 @@ tipoForm.addEventListener('submit', async (ev) => {
         tipoModal.hide();
       alertPersonalizado('Sem permissão para criar marcas.', 2000);
     } else {
-      showToast('Erro ao salvar os dados.', 'error');
+      alert('Erro ao salvar os dados.');
     }
     console.error(error);
   }

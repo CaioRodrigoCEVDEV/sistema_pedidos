@@ -129,7 +129,7 @@ produtoForm.addEventListener('submit', async (ev) => {
   const selectedModelos = Array.from(modeloCheckboxes).map(cb => parseInt(cb.value, 10));
   
   if (selectedModelos.length === 0) {
-    showToast('Por favor, selecione pelo menos um modelo.', 'warning');
+    alert('Por favor, selecione pelo menos um modelo.');
     return;
   }
   
@@ -204,7 +204,7 @@ produtoForm.addEventListener('submit', async (ev) => {
         produtoModal.hide();
       alertPersonalizado('Sem permissão para criar peças.', 2000);
     } else {
-      showToast('Erro ao salvar os dados.', 'error');
+      alert('Erro ao salvar os dados.');
     }
     console.error(error);
   }

@@ -23,7 +23,7 @@ document.getElementById("formPerfil").addEventListener("submit", async (e) => {
   const confirmSenha = document.getElementById("confirmarSenha").value;
 
   if (ususenha !== confirmSenha) {
-    showToast("As senhas não coincidem.", "error");
+    alert("As senhas não coincidem.");
     return;
   }
   try {
@@ -35,17 +35,15 @@ document.getElementById("formPerfil").addEventListener("submit", async (e) => {
     });
     const data = await response.json();
     if (response.ok) {
-      showToast("Dados atualizados com sucesso!", "success");
+      alert("Dados atualizados com sucesso!");
       document.getElementById("senha").value = "";
       document.getElementById("confirmarSenha").value = "";
-      setTimeout(() => {
-        window.location.href = `${BASE_URL}/painel`;
-      }, 1500);
+      window.location.href = `${BASE_URL}/painel`;
     } else {
-      showToast(data.error || data.mensagem || "Erro ao atualizar dados", "error");
+      alert(data.error || data.mensagem || "Erro ao atualizar dados");
     }
   } catch (err) {
     console.error("Erro ao atualizar dados", err);
-    showToast("Erro ao atualizar dados", "error");
+    alert("Erro ao atualizar dados");
   }
 });

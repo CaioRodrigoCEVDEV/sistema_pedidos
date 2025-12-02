@@ -65,12 +65,12 @@ document
     })
       .then((res) => res.json())
       .then((resposta) => {
-        showToast("Dados salvos com sucesso!", "success");
+        alert("Dados salvos com sucesso!");
         console.log(resposta);
         location.reload(); // Atualiza a página após gravar
       })
       .catch((erro) => {
-        showToast("Erro ao salvar os dados.", "error");
+        alert("Erro ao salvar os dados.");
         console.error(erro);
       });
   });

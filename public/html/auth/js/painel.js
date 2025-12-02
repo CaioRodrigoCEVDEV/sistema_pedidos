@@ -722,7 +722,7 @@ function editarProduto(codigo) {
             );
 
             if (promodcods.length === 0) {
-              showToast("Por favor, selecione pelo menos um modelo.", "warning");
+              alert("Por favor, selecione pelo menos um modelo.");
               return;
             }
 
@@ -836,7 +836,7 @@ function editarProduto(codigo) {
       }
     )
     .catch(() => {
-      showToast("Erro ao buscar dados do produto.", "error");
+      alert("Erro ao buscar dados do produto.");
     });
 }
 
@@ -934,7 +934,7 @@ async function excluirProduto(id) {
 
       document.body.removeChild(popup);
     } catch (e) {
-      showToast("Erro ao excluir produto", "error");
+      alert("Erro ao excluir produto");
       document.body.removeChild(popup);
     }
   };
@@ -1143,7 +1143,7 @@ function editarMarca(id, nome) {
       popup.remove();
       carregarMarcas();
     } catch (err) {
-      showToast("Erro ao atualizar a marca!", "error");
+      alert("Erro ao atualizar a marca!");
       console.error(err);
       popup.remove();
     }
@@ -1159,7 +1159,7 @@ async function excluirMarca(id) {
       modelosVinculados = await res.json();
     }
   } catch (e) {
-    showToast("Erro ao verificar modelos vinculados.", "error");
+    alert("Erro ao verificar modelos vinculados.");
     return;
   }
 
@@ -1238,7 +1238,7 @@ async function excluirMarca(id) {
           2000
         );
       } else {
-        showToast("Erro ao excluir a marca.", "error");
+        alert("Erro ao excluir a marca.");
       }
       console.error("Erro ao excluir marca:", error);
     }
@@ -1390,7 +1390,7 @@ function editarModelo(id, nome, marca) {
             2000
           );
         } else {
-          showToast("Erro ao atualizar modelo", "error");
+          alert("Erro ao atualizar modelo");
         }
         document.body.removeChild(popup);
       });
@@ -1472,7 +1472,7 @@ async function excluirModelo(id) {
             3000
           );
         } else {
-          showToast("Erro ao excluir modelo", "error");
+          alert("Erro ao excluir modelo");
         }
         document.body.removeChild(popup);
       }
@@ -1601,7 +1601,7 @@ function editarTipo(id, nome) {
         if (error.message === "403") {
           alertPersonalizado("Sem permissão para editar tipos.", 2000);
         } else {
-          showToast("Erro ao atualizar tipo", "error");
+          alert("Erro ao atualizar tipo");
         }
       });
   };
@@ -1679,7 +1679,7 @@ async function excluirTipo(id) {
           3000
         );
       } else {
-        showToast("Erro ao excluir tipo", "error");
+        alert("Erro ao excluir tipo");
       }
       document.body.removeChild(popup);
     }
@@ -1805,9 +1805,9 @@ function editarCor(id, nome) {
             2000
           );
         } else if (error.message === "200") {
-          showToast("Cor atualizada com sucesso!", "success");
+          alert("OK");
         } else {
-          showToast("Erro ao atualizar cor", "error");
+          alert("Erro ao atualizar cor");
         }
         document.body.removeChild(popup);
       });
@@ -1875,7 +1875,7 @@ async function excluirCor(id) {
           2000
         );
       } else {
-        showToast("Erro ao excluir cor", "error");
+        alert("Erro ao excluir cor");
       }
       document.body.removeChild(popup);
     }
@@ -2007,7 +2007,7 @@ async function excluirPro(id) {
       if (erro.message === "403") {
         alertPersonalizado("Sem permissão para excluir produtos.", 2000);
       } else {
-        showToast("Erro ao criar produto.", "error");
+        alert("Erro ao criar produto.");
       }
       console.error(erro);
     }
@@ -2255,10 +2255,7 @@ function toggleOrdemMarca() {
 // 4️⃣ Toggle Ordem: Popup completo
 // ==========================
 function toggleOrdemModelo() {
-  if (!marcasCache.length) {
-    showToast("Nenhuma marca carregada ainda!", "warning");
-    return;
-  }
+  if (!marcasCache.length) return alert("Nenhuma marca carregada ainda!");
 
   const overlay = criarOverlay();
   const popup = criarPopup("Gerenciar Ordem dos Modelos");
@@ -2282,10 +2279,7 @@ function toggleOrdemModelo() {
     .querySelector("#btnBuscarModelosOrdem")
     .addEventListener("click", () => {
       const marcaId = popup.querySelector("#marcaSelectOrdem").value;
-      if (!marcaId) {
-        showToast("Selecione uma marca!", "warning");
-        return;
-      }
+      if (!marcaId) return alert("Selecione uma marca!");
 
       fetch(`${BASE_URL}/modelo/${marcaId}`)
         .then((r) => r.json())
@@ -2384,15 +2378,9 @@ function criarPopupPeca(titulo) {
 // 4️⃣ Toggle Ordem: Popup completo
 // ==========================
 function toggleOrdemPeca() {
-  if (!marcasCache.length) {
-    showToast("Nenhuma marca carregada ainda!", "warning");
-    return;
-  }
+  if (!marcasCache.length) return alert("Nenhuma marca carregada ainda!");
   //if (!modelosCache.length) return alert("Nenhum modelo carregado ainda!");
-  if (!tiposCache.length) {
-    showToast("Nenhum tipo carregado ainda!", "warning");
-    return;
-  }
+  if (!tiposCache.length) return alert("Nenhum tipo carregado ainda!");
 
   const overlay = criarOverlay();
   const popup = criarPopup("Gerenciar Ordem Tipos");
@@ -2477,18 +2465,9 @@ function toggleOrdemPeca() {
     const marcaId = popup.querySelector("#marcaSelectOrdem").value;
     const modeloId = popup.querySelector("#modelosSelectOrdem").value;
     const tipoId = popup.querySelector("#tiposSelectOrdem").value;
-    if (!marcaId) {
-      showToast("Selecione uma marca!", "warning");
-      return;
-    }
-    if (!modeloId) {
-      showToast("Selecione um modelo!", "warning");
-      return;
-    }
-    if (!tipoId) {
-      showToast("Selecione um tipo!", "warning");
-      return;
-    }
+    if (!marcaId) return alert("Selecione uma marca!");
+    if (!modeloId) return alert("Selecione um modelo!");
+    if (!tipoId) return alert("Selecione um tipo!");
 
     fetch(`${BASE_URL}/pro/${tipoId}?marca=${marcaId}&modelo=${modeloId}`)
       .then((r) => r.json())
@@ -2614,14 +2593,8 @@ function toggleOrdemTipoPeca() {
     .addEventListener("click", () => {
       const marcaId = popup.querySelector("#marcaSelectOrdem").value;
       const modeloId = popup.querySelector("#modelosSelectOrdem").value;
-      if (!marcaId) {
-        showToast("Selecione uma marca!", "warning");
-        return;
-      }
-      if (!modeloId) {
-        showToast("Selecione um modelo!", "warning");
-        return;
-      }
+      if (!marcaId) return alert("Selecione uma marca!");
+      if (!modeloId) return alert("Selecione um modelo!");
 
       fetch(`${BASE_URL}/tipo/${modeloId}?marca=${marcaId}`)
         .then((r) => r.json())

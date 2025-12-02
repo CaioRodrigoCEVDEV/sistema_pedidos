@@ -292,7 +292,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
           await confirmarPedido(pvcod);
         } catch (err) {
           console.error("Erro ao confirmar via modal:", err);
-          showToast("Erro ao confirmar pedido.", "error");
+          alert("Erro ao confirmar pedido.");
         } finally {
           window.location.reload();
         }
@@ -310,7 +310,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
           m.hide();
         } catch (err) {
           console.error("Erro ao cancelar via modal:", err);
-          showToast("Erro ao cancelar pedido.", "error");
+          alert("Erro ao cancelar pedido.");
         }
       });
     }
@@ -327,7 +327,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
     }
   } catch (err) {
     console.error("Erro ao abrir detalhe do pedido:", err);
-    showToast("Não foi possível carregar os detalhes do pedido.", "error");
+    alert("Não foi possível carregar os detalhes do pedido.");
   }
 }
 
@@ -345,15 +345,15 @@ async function cancelarItem(procod, pvcod) {
       }
     );
     if (response.ok) {
-      showToast("Item cancelado com sucesso!", "success");
+      alert("Item cancelado com sucesso!");
       location.reload();
       // Atualize a interface do usuário conforme necessário
     } else {
-      showToast("Erro ao cancelar o item.", "error");
+      alert("Erro ao cancelar o item.");
     }
   } catch (error) {
     console.error("Erro ao cancelar o item:", error);
-    showToast("Erro ao cancelar o item.", "error");
+    alert("Erro ao cancelar o item.");
   }
 }
 
@@ -368,15 +368,15 @@ async function cancelarPv(pvcod) {
       body: JSON.stringify({ pvcod: pvcod }),
     });
     if (response.ok) {
-      showToast("Pedido cancelado com sucesso!", "success");
+      alert("Pedido cancelado com sucesso!");
       location.reload();
       // Atualize a interface do usuário conforme necessário
     } else {
-      showToast("Erro ao cancelar o Pedido.", "error");
+      alert("Erro ao cancelar o Pedido.");
     }
   } catch (error) {
     console.error("Erro ao cancelar o Pedido:", error);
-    showToast("Erro ao cancelar o Pedido.", "error");
+    alert("Erro ao cancelar o Pedido.");
   }
 }
 
@@ -394,7 +394,7 @@ async function confirmarPedido(pvcod) {
     });
   } catch (error) {
     console.error("Erro ao confirmar o pedido:", error);
-    showToast("Erro ao confirmar o pedido.", "error");
+    alert("Erro ao confirmar o pedido.");
   }
 }
 
@@ -419,7 +419,7 @@ async function confirmarItensPedido(pvcod, pviqtde, procod) {
     }
   } catch (error) {
     console.error("Erro ao confirmar itens do pedido pedido:", error);
-    showToast("Erro ao confirmar itens do pedido.", "error");
+    alert("Erro ao confirmar itens do pedido pedido.");
   }
 }
 
@@ -464,7 +464,7 @@ async function cancelarPedido(pvcod) {
     }
   } catch (error) {
     console.error("Erro ao cancelar o pedido:", error);
-    showToast("Erro ao cancelar o pedido.", "error");
+    alert("Erro ao cancelar o pedido.");
   }
 }
 

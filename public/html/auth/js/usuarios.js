@@ -30,7 +30,7 @@ async function refreshUsers({ keepSearch = true } = {}) {
     doSearch(termo);
   } catch (err) {
     console.error("Failed to refresh users:", err);
-    showToast("Erro ao recarregar usuários. Veja console para mais detalhes.", "error");
+    alert("Erro ao recarregar usuários. Veja console para mais detalhes.");
   }
 }
 
@@ -180,7 +180,7 @@ userForm.addEventListener("submit", async (ev) => {
     userModal.hide();
   } catch (error) {
     console.error("Failed to save user to API:", error);
-    showToast(error.message || "Erro ao salvar usuário. Veja console.", "error");
+    alert(error.message || "Erro ao salvar usuário. Veja console.");
   }
 });
 
@@ -210,7 +210,7 @@ btnDelete.addEventListener("click", async () => {
     userModal.hide();
   } catch (error) {
     console.error("Failed to delete user:", error);
-    showToast(error.message || "Erro ao excluir usuário", "error");
+    alert(error.message || "Erro ao excluir usuário");
   }
 });
 
