@@ -63,12 +63,17 @@ const CONSUMPTION_MODE = "each";
  * @throws {Error} Se estoque insuficiente ou peça não encontrada
  */
 async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", client = null) {
+  // Normaliza partId para inteiro - aceita string ou número
+  const normalizedPartId = parseInt(partId, 10);
+  // Normaliza quantidade para inteiro - arredonda para o mais próximo
+  const normalizedQuantidade = Math.round(Number(quantidade));
+
   // Determina se está usando transação externa ou deve criar uma própria
   const useExternalTransaction = !!client;
   const txClient = client || await pool.connect();
 
   // Log de debug para facilitar diagnóstico (pode ser desativado em produção)
-  console.debug(`[Stock Service] consumirEstoqueParaItem: partId=${partId}, quantidade=${quantidade}, reason=${reason}`);
+  console.debug(`[Stock Service] consumirEstoqueParaItem: partId=${partId}->${normalizedPartId}, quantidade=${quantidade}->${normalizedQuantidade}, reason=${reason}`);
 
   try {
     // Inicia transação se não estiver usando externa
@@ -77,9 +82,12 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
       console.debug("[Stock Service] Transação iniciada (própria)");
     }
 
-    // Valida parâmetros de entrada
-    if (!partId || quantidade <= 0) {
-      throw new Error(`Parâmetros inválidos: partId=${partId}, quantidade=${quantidade}`);
+    // Valida parâmetros de entrada (após normalização)
+    if (isNaN(normalizedPartId) || normalizedPartId <= 0) {
+      throw new Error(`Parâmetros inválidos: partId=${partId} não é um inteiro válido`);
+    }
+    if (isNaN(normalizedQuantidade) || normalizedQuantidade <= 0) {
+      throw new Error(`Parâmetros inválidos: quantidade=${quantidade} não é um número válido`);
     }
 
     // Busca a peça com bloqueio FOR UPDATE para evitar condição de corrida
@@ -93,12 +101,12 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
       FROM pro p
       WHERE p.procod = $1
       FOR UPDATE`,
-      [partId]
+      [normalizedPartId]
     );
 
     // Verifica se a peça existe
     if (partResult.rows.length === 0) {
-      throw new Error(`Peça com ID ${partId} não encontrada`);
+      throw new Error(`Peça com ID ${normalizedPartId} não encontrada`);
     }
 
     const part = partResult.rows[0];
@@ -111,23 +119,23 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
     // ============================================================
     if (!part.part_group_id) {
       const estoqueAtual = part.proqtde || 0;
-      console.debug(`[Stock Service] Peça SEM grupo - estoque atual: ${estoqueAtual}, a decrementar: ${quantidade}`);
+      console.debug(`[Stock Service] Peça SEM grupo - estoque atual: ${estoqueAtual}, a decrementar: ${normalizedQuantidade}`);
 
       // Valida estoque suficiente
-      if (estoqueAtual < quantidade) {
+      if (estoqueAtual < normalizedQuantidade) {
         throw new Error(
-          `Estoque insuficiente para a peça "${part.prodes}" (ID: ${partId}). ` +
-          `Disponível: ${estoqueAtual}, Solicitado: ${quantidade}`
+          `Estoque insuficiente para a peça "${part.prodes}" (ID: ${normalizedPartId}). ` +
+          `Disponível: ${estoqueAtual}, Solicitado: ${normalizedQuantidade}`
         );
       }
 
-      // Decrementa estoque individual
+      // Decrementa estoque individual (usando valor inteiro)
       const updateResult = await txClient.query(
         `UPDATE pro 
          SET proqtde = proqtde - $1
          WHERE procod = $2
          RETURNING proqtde`,
-        [quantidade, partId]
+        [normalizedQuantidade, normalizedPartId]
       );
 
       // Commit se transação própria
@@ -139,9 +147,9 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
       // Retorna resultado para peça sem grupo
       return {
         success: true,
-        partId,
+        partId: normalizedPartId,
         partName: part.prodes,
-        quantidadeConsumida: quantidade,
+        quantidadeConsumida: normalizedQuantidade,
         novoEstoque: updateResult.rows[0].proqtde,
         grupoPertence: false,
         grupoId: null
@@ -185,7 +193,7 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
 
     const pecasDoGrupo = pecasGrupoResult.rows;
 
-    console.debug(`[Stock Service] Modo 'each' - ${pecasDoGrupo.length} peça(s) no grupo. Cada uma receberá -${quantidade}`);
+    console.debug(`[Stock Service] Modo 'each' - ${pecasDoGrupo.length} peça(s) no grupo. Cada uma receberá -${normalizedQuantidade}`);
 
     // Lista para armazenar peças afetadas
     const pecasAfetadas = [];
@@ -198,31 +206,31 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
       const estoqueAtual = pecaGrupo.proqtde || 0;
 
       // Valida estoque suficiente para ESTA peça
-      if (estoqueAtual < quantidade) {
+      if (estoqueAtual < normalizedQuantidade) {
         throw new Error(
           `Estoque insuficiente para a peça "${pecaGrupo.prodes}" (ID: ${pecaGrupo.procod}) ` +
-          `no grupo "${group.name}". Disponível: ${estoqueAtual}, Solicitado: ${quantidade}`
+          `no grupo "${group.name}". Disponível: ${estoqueAtual}, Solicitado: ${normalizedQuantidade}`
         );
       }
 
-      // Atualiza o estoque DESTA peça (debita a quantidade completa)
+      // Atualiza o estoque DESTA peça (debita a quantidade completa - valor inteiro)
       await txClient.query(
         `UPDATE pro 
          SET proqtde = proqtde - $1
          WHERE procod = $2`,
-        [quantidade, pecaGrupo.procod]
+        [normalizedQuantidade, pecaGrupo.procod]
       );
 
       // Adiciona à lista de peças afetadas
       pecasAfetadas.push({
         procod: pecaGrupo.procod,
         prodes: pecaGrupo.prodes,
-        quantidadeRetirada: quantidade,
-        novoEstoque: estoqueAtual - quantidade,
+        quantidadeRetirada: normalizedQuantidade,
+        novoEstoque: estoqueAtual - normalizedQuantidade,
         referenceCode: pecaGrupo.reference_code
       });
 
-      console.debug(`[Stock Service] Peça ${pecaGrupo.procod} ("${pecaGrupo.prodes}"): estoque ${estoqueAtual} -> ${estoqueAtual - quantidade}`);
+      console.debug(`[Stock Service] Peça ${pecaGrupo.procod} ("${pecaGrupo.prodes}"): estoque ${estoqueAtual} -> ${estoqueAtual - normalizedQuantidade}`);
     }
 
     // ============================================================
@@ -269,9 +277,9 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
     // Retorna resultado detalhado
     return {
       success: true,
-      partId,
+      partId: normalizedPartId,
       partName: part.prodes,
-      quantidadeConsumida: quantidade,
+      quantidadeConsumida: normalizedQuantidade,
       grupoPertence: true,
       grupoId: groupId,
       grupoNome: group.name,
@@ -378,12 +386,25 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
     // o estoque será debitado apenas uma vez com a quantidade total
     const itensAgregados = new Map();
     for (const item of itens) {
-      const { partId, quantidade } = item;
+      // Normaliza partId para inteiro - aceita string ou número
+      // Exemplo: "123" -> 123, 123.0 -> 123
+      const rawPartId = item.partId;
+      const partId = parseInt(rawPartId, 10);
+      
+      // Normaliza quantidade para inteiro - arredonda para o inteiro mais próximo
+      // Exemplo: "1.0000" -> 1, 2.4 -> 2, 2.5 -> 3
+      const rawQuantidade = item.quantidade;
+      const quantidade = Math.round(Number(rawQuantidade));
 
-      // Valida cada item
-      if (partId == null || !quantidade || quantidade <= 0) {
-        throw new Error(`Item inválido: partId=${partId}, quantidade=${quantidade}`);
+      // Valida cada item após normalização
+      if (isNaN(partId) || partId <= 0) {
+        throw new Error(`Item inválido: partId=${rawPartId} não é um inteiro válido`);
       }
+      if (isNaN(quantidade) || quantidade <= 0) {
+        throw new Error(`Item inválido: quantidade=${rawQuantidade} não é um número válido`);
+      }
+
+      console.debug(`[Stock Service] Item normalizado: partId=${rawPartId}->${partId}, quantidade=${rawQuantidade}->${quantidade}`);
 
       // Agrega: se já existe, soma a quantidade
       if (itensAgregados.has(partId)) {

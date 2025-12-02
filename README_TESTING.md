@@ -373,6 +373,7 @@ npm run dev
 ### Arquivos Principais
 - `src/services/stock.js` - Serviço de gestão de estoque (modo 'each')
 - `src/controllers/pedidosController.js` - Confirmação idempotente com consumo de estoque
+- `scripts/fix_part_group_audit_reference.sql` - Script de correção de dados históricos
 - `README_TESTING.md` - Documentação de testes
 
 ### Regras de Negócio Implementadas
@@ -382,3 +383,79 @@ npm run dev
 4. Endpoint de confirmação idempotente
 5. Auditoria completa em `part_group_audit`
 6. Carrinho/validação NÃO movimenta estoque
+7. `part_id` e quantidades normalizados para inteiros (evita erro `invalid input syntax for integer`)
+
+---
+
+## 🔧 Scripts de Manutenção
+
+### Script de Correção de Dados Históricos
+
+O arquivo `scripts/fix_part_group_audit_reference.sql` é um script idempotente para corrigir registros históricos na tabela `part_group_audit`.
+
+**Como executar:**
+
+```bash
+# 1. Primeiro, execute em HOMOLOGAÇÃO para validar
+psql -d nome_do_banco_homologacao -f scripts/fix_part_group_audit_reference.sql
+
+# 2. Verifique os resultados com as queries do script
+# 3. Após validação, execute em PRODUÇÃO
+psql -d nome_do_banco_producao -f scripts/fix_part_group_audit_reference.sql
+```
+
+**O que o script faz:**
+- Atualiza `reference_id` de registros que têm `procod` válido
+- Para grupos com apenas uma peça, infere o `reference_id` automaticamente
+- Mantém um log de quantos registros foram atualizados
+- É seguro executar múltiplas vezes (idempotente)
+
+---
+
+## ✅ Critérios de Aceitação
+
+| Cenário | Esperado | Como Verificar |
+|---------|----------|----------------|
+| Pedido com produto em grupo (2 peças), qty=1 | Cada peça do grupo recebe -1 no estoque | `SELECT proqtde FROM pro WHERE part_group_id = X` |
+| Auditoria | 2 entradas em part_group_audit com reference_id = código de cada peça | `SELECT * FROM part_group_audit WHERE part_group_id = X ORDER BY created_at DESC` |
+| Quantidades com decimais ("1.0000") | Convertidas para inteiro sem erro | Log mostra normalização |
+| Confirmação duplicada | Retorna sucesso com `idempotente: true` | Segunda chamada não debita estoque |
+| pvdtcad em outras queries | Mantido sem alteração | Código não modifica pvdtcad |
+
+---
+
+## 🔒 Normalização de Tipos
+
+O sistema normaliza automaticamente:
+
+| Entrada | Normalizado para |
+|---------|-----------------|
+| `partId: "123"` | `123` (inteiro) |
+| `partId: 123.0` | `123` (inteiro) |
+| `quantidade: "1.0000"` | `1` (inteiro) |
+| `quantidade: 2.5` | `3` (inteiro, arredondado) |
+
+Isso evita erros como `invalid input syntax for integer: "1.0000"` que podem ocorrer quando valores numéricos vêm do banco ou do frontend como strings.
+
+---
+
+## 📋 Instruções para Abrir PR
+
+```bash
+# 1. Criar branch a partir de release
+git checkout release
+git pull origin release
+git checkout -b feature/sync-group-stock
+
+# 2. Fazer alterações e commitar
+git add .
+git commit -m "Debitar de cada peça do grupo ao confirmar pedido (sem duplicidade)"
+
+# 3. Enviar para o repositório remoto
+git push origin feature/sync-group-stock
+
+# 4. Abrir PR no GitHub
+# - Base branch: release
+# - Título: "Debitar de cada peça do grupo ao confirmar pedido (sem duplicidade)"
+# - Descrição: incluir cenários testados e referências às imagens
+```

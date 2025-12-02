@@ -471,11 +471,13 @@ exports.confirmarPedido = async (req, res) => {
     }
 
     // 3. Prepara lista de itens para consumo de estoque
+    // Normaliza partId e quantidade para inteiros para evitar erros de tipo
     const itensParaConsumo = itensResult.rows.map(item => ({
-      partId: item.procod,
-      quantidade: item.quantidade
+      partId: parseInt(item.procod, 10),
+      quantidade: Math.round(Number(item.quantidade))
     }));
 
+    console.debug(`[Pedidos] Itens normalizados para consumo:`, JSON.stringify(itensParaConsumo));
     console.debug(`[Pedidos] Consumindo estoque para ${itensParaConsumo.length} itens do pedido ${pvcod}...`);
 
     // 4. Consome o estoque usando o serviço de estoque (passando o client externo)
