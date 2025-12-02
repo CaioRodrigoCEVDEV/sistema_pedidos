@@ -394,7 +394,7 @@ exports.listarPvPendentes = async (req, res) => {
  * 1. Abre uma transação
  * 2. Carrega os itens do pedido (pvi)
  * 3. Consome o estoque usando stockService.consumirEstoqueParaPedido
- * 4. Marca o pedido como confirmado (pvconfirmado = 'S', confirmed_at = NOW())
+ * 4. Marca o pedido como confirmado (pvconfirmado = 'S', pvdtconfirmado = NOW())
  * 5. Commit da transação
  * 6. APÓS o commit, envia resposta de sucesso (WhatsApp/notificações ocorrem no frontend)
  * 

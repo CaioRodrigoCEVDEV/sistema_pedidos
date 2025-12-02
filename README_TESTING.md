@@ -198,7 +198,7 @@ O fluxo atualizado garante que o estoque seja movimentado **SOMENTE** na confirm
 2. [TRANSAÇÃO] Inicia transação no banco
 3. Bloqueia o pedido com FOR UPDATE
 4. Carrega os itens do pedido (pvi)
-5. [ESTOQUE] Consome estoque via consumirEstoqueComClient()
+5. [ESTOQUE] Consome estoque via stockService.consumirEstoqueParaPedido()
    - Para peças sem grupo: decrementa estoque individual
    - Para peças com grupo: distribui consumo entre peças (maior estoque primeiro)
    - Atualiza part_groups.stock_quantity = MIN(estoques)
