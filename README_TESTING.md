@@ -15,7 +15,7 @@ Este documento descreve os passos para testar manualmente a funcionalidade de si
 O serviço de estoque implementa a lógica de consumo conforme especificado:
 
 - **`consumirEstoqueParaItem(partId, quantidade, reason, client?)`**: Consome estoque para um único item
-- **`consumirEstoqueParaPedido(itens, reason, referenceId?)`**: Processa múltiplos itens em uma transação
+- **`consumirEstoqueParaPedido(itens, reason, referenceId?, client?)`**: Processa múltiplos itens em uma transação
 
 ### Modo de Consumo: 'each' (ATIVO)
 
@@ -64,6 +64,101 @@ O endpoint de confirmação (`PUT /pedidos/confirmar/:pvcod`) é **idempotente**
 - Usa `SELECT ... FOR UPDATE` para bloquear a linha do pedido
 - Se o pedido já está confirmado (`pvconfirmado = 'S'`), retorna sucesso sem reprocessar
 - Evita débito duplicado de estoque em caso de requisições repetidas
+
+### Fluxo do Carrinho (Retirada/Entrega)
+
+**IMPORTANTE**: O fluxo de carrinho (validarEDecrementarEstoque) **NÃO movimenta estoque**.
+- A função apenas valida os itens do carrinho (IDs e quantidades válidas)
+- O estoque é movimentado **SOMENTE** na confirmação do pedido (função `confirmarPedido`)
+
+---
+
+## 🔍 Comandos SQL para Inspeção Direta no Banco
+
+Use estes comandos para inspecionar o estado do banco de dados durante os testes:
+
+### Ver todos os grupos e suas peças:
+```sql
+-- Listar grupos com contagem de peças
+SELECT 
+  pg.id,
+  pg.name,
+  pg.stock_quantity,
+  COUNT(p.procod) as total_pecas
+FROM part_groups pg
+LEFT JOIN pro p ON p.part_group_id = pg.id
+GROUP BY pg.id, pg.name, pg.stock_quantity
+ORDER BY pg.name;
+
+-- Ver peças de um grupo específico (substituir X pelo ID do grupo)
+SELECT procod, prodes, proqtde, part_group_id
+FROM pro
+WHERE part_group_id = X
+ORDER BY procod;
+```
+
+### Verificar histórico de auditoria:
+```sql
+-- Ver últimos 20 registros de auditoria com nome da peça
+SELECT 
+  a.id,
+  a.part_group_id,
+  pg.name as grupo_nome,
+  a.change,
+  a.reason,
+  a.reference_id,
+  p.prodes as peca_nome,
+  a.created_at
+FROM part_group_audit a
+LEFT JOIN part_groups pg ON pg.id = a.part_group_id
+LEFT JOIN pro p ON p.procod::text = a.reference_id
+ORDER BY a.created_at DESC
+LIMIT 20;
+
+-- Ver auditoria de um grupo específico (substituir X pelo ID do grupo)
+SELECT a.*, p.prodes 
+FROM part_group_audit a
+LEFT JOIN pro p ON p.procod::text = a.reference_id
+WHERE a.part_group_id = X
+ORDER BY a.created_at DESC;
+```
+
+### Verificar pedidos pendentes e confirmados:
+```sql
+-- Pedidos pendentes
+SELECT pvcod, pvvl, pvobs, pvcanal, pvsta, pvconfirmado, pvdtcad
+FROM pv
+WHERE pvconfirmado = 'N' AND pvsta = 'A'
+ORDER BY pvcod DESC
+LIMIT 10;
+
+-- Itens de um pedido específico (substituir Y pelo pvcod)
+SELECT 
+  pvi.pvipvcod,
+  pvi.pviprocod,
+  pvi.pviqtde,
+  pvi.pvivl,
+  pro.prodes,
+  pro.part_group_id
+FROM pvi
+JOIN pro ON pro.procod = pvi.pviprocod
+WHERE pvi.pvipvcod = Y;
+```
+
+### Resetar estoque para testes:
+```sql
+-- Resetar estoque de peças de um grupo para 10
+UPDATE pro 
+SET proqtde = 10 
+WHERE part_group_id = X;
+
+-- Atualizar stock_quantity do grupo
+UPDATE part_groups
+SET stock_quantity = (
+  SELECT COALESCE(MIN(proqtde), 0) FROM pro WHERE part_group_id = X
+)
+WHERE id = X;
+```
 
 ---
 
@@ -200,6 +295,29 @@ UPDATE pro SET proqtde = 10 WHERE procod = 2;
 
 ---
 
+### Cenário 7: Itens diferentes no mesmo grupo
+
+**Objetivo**: Verificar que múltiplas peças do mesmo grupo no pedido são tratadas corretamente.
+
+**Configuração SQL:**
+```sql
+-- Grupo com 2 peças, ambas no pedido
+-- (usar o grupo já criado nos cenários anteriores)
+```
+
+**Passos:**
+1. Adicionar ao carrinho: 1 unidade de peça A (procod=1) do grupo
+2. Adicionar ao carrinho: 1 unidade de peça B (procod=2) do mesmo grupo
+3. Finalizar e confirmar pedido
+
+**Resultado esperado (modo 'each'):**
+- ✅ O sistema agrega as quantidades por grupo: total = 2
+- ✅ Peça A: estoque -2 (de 10 para 8)
+- ✅ Peça B: estoque -2 (de 10 para 8)
+- ✅ `part_group_audit`: **2 linhas** com `change = -2` cada (uma por peça)
+
+---
+
 ## 📝 Comandos Git
 
 ```bash
@@ -219,6 +337,37 @@ npm run dev
 
 ---
 
+## 🐛 Logs de Debug
+
+O sistema inclui logs de debug (`console.debug`) para facilitar diagnóstico:
+
+- **[Pedidos]**: Logs do controlador de pedidos
+- **[Stock Service]**: Logs do serviço de estoque
+
+Para ver os logs de debug durante testes:
+```bash
+# Iniciar servidor em modo desenvolvimento
+npm run dev
+
+# Os logs aparecerão no terminal conforme pedidos são confirmados
+```
+
+### Exemplos de logs:
+```
+[Pedidos] ========================================
+[Pedidos] Iniciando confirmação do pedido 12345
+[Pedidos] Carregando itens do pedido 12345...
+[Pedidos] Itens carregados: 2 item(s)
+[Stock Service] consumirEstoqueParaPedido: 2 item(s), reason="sale"
+[Stock Service] Itens agregados por partId: 2 linhas -> 1 peças únicas
+[Stock Service] Modo 'each' - 2 peça(s) no grupo. Cada uma receberá -2
+[Stock Service] Peça 1 ("Peça Teste A"): estoque 10 -> 8
+[Stock Service] Peça 2 ("Peça Teste B"): estoque 10 -> 8
+[Pedidos] Pedido 12345 confirmado com sucesso!
+```
+
+---
+
 ## 📦 Arquivos Modificados
 
 ### Arquivos Principais
@@ -232,3 +381,4 @@ npm run dev
 3. Agregação de itens por `part_id` antes do processamento
 4. Endpoint de confirmação idempotente
 5. Auditoria completa em `part_group_audit`
+6. Carrinho/validação NÃO movimenta estoque

@@ -67,10 +67,14 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
   const useExternalTransaction = !!client;
   const txClient = client || await pool.connect();
 
+  // Log de debug para facilitar diagnóstico (pode ser desativado em produção)
+  console.debug(`[Stock Service] consumirEstoqueParaItem: partId=${partId}, quantidade=${quantidade}, reason=${reason}`);
+
   try {
     // Inicia transação se não estiver usando externa
     if (!useExternalTransaction) {
       await txClient.query("BEGIN");
+      console.debug("[Stock Service] Transação iniciada (própria)");
     }
 
     // Valida parâmetros de entrada
@@ -100,11 +104,14 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
     const part = partResult.rows[0];
     const referenceId = part.reference_code;
 
+    console.debug(`[Stock Service] Peça encontrada: procod=${part.procod}, prodes="${part.prodes}", part_group_id=${part.part_group_id || 'null'}, proqtde=${part.proqtde}`);
+
     // ============================================================
     // CASO 1: Peça SEM grupo - decrementa apenas o estoque individual
     // ============================================================
     if (!part.part_group_id) {
       const estoqueAtual = part.proqtde || 0;
+      console.debug(`[Stock Service] Peça SEM grupo - estoque atual: ${estoqueAtual}, a decrementar: ${quantidade}`);
 
       // Valida estoque suficiente
       if (estoqueAtual < quantidade) {
@@ -126,6 +133,7 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
       // Commit se transação própria
       if (!useExternalTransaction) {
         await txClient.query("COMMIT");
+        console.debug(`[Stock Service] Peça SEM grupo - estoque decrementado com sucesso. Novo estoque: ${updateResult.rows[0].proqtde}`);
       }
 
       // Retorna resultado para peça sem grupo
@@ -161,6 +169,8 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
 
     const group = groupResult.rows[0];
 
+    console.debug(`[Stock Service] Grupo encontrado: id=${group.id}, name="${group.name}", stock_quantity=${group.stock_quantity}`);
+
     // Busca TODAS as peças do grupo com bloqueio FOR UPDATE
     // Ordenação por procod para consistência
     const pecasGrupoResult = await txClient.query(
@@ -174,6 +184,8 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
     );
 
     const pecasDoGrupo = pecasGrupoResult.rows;
+
+    console.debug(`[Stock Service] Modo 'each' - ${pecasDoGrupo.length} peça(s) no grupo. Cada uma receberá -${quantidade}`);
 
     // Lista para armazenar peças afetadas
     const pecasAfetadas = [];
@@ -209,6 +221,8 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
         novoEstoque: estoqueAtual - quantidade,
         referenceCode: pecaGrupo.reference_code
       });
+
+      console.debug(`[Stock Service] Peça ${pecaGrupo.procod} ("${pecaGrupo.prodes}"): estoque ${estoqueAtual} -> ${estoqueAtual - quantidade}`);
     }
 
     // ============================================================
@@ -224,6 +238,8 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
 
       const novoEstoqueGrupo = minEstoqueResult.rows[0].min_estoque;
 
+      console.debug(`[Stock Service] Atualizando part_groups.stock_quantity: ${group.stock_quantity} -> ${novoEstoqueGrupo} (MIN das peças)`);
+
       await txClient.query(
         `UPDATE part_groups 
          SET stock_quantity = $1, updated_at = NOW()
@@ -236,6 +252,7 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
     // Grava registros de auditoria para CADA peça afetada
     // ============================================================
     // Nota: created_at usa o default do banco de dados para garantir consistência
+    console.debug(`[Stock Service] Gravando ${pecasAfetadas.length} registro(s) de auditoria em part_group_audit`);
     for (const pecaAfetada of pecasAfetadas) {
       await txClient.query(
         `INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
@@ -339,6 +356,10 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
     throw new Error("Lista de itens vazia ou inválida");
   }
 
+  // Log de debug inicial com todos os itens recebidos
+  console.debug(`[Stock Service] consumirEstoqueParaPedido: ${itens.length} item(s), reason="${reason}", referenceId="${referenceId}"`);
+  console.debug(`[Stock Service] Itens recebidos:`, JSON.stringify(itens));
+
   // Determina se está usando transação externa
   const useExternalTransaction = !!externalClient;
   const client = externalClient || await pool.connect();
@@ -347,6 +368,7 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
     // Inicia transação se não estiver usando externa
     if (!useExternalTransaction) {
       await client.query("BEGIN");
+      console.debug("[Stock Service] Transação iniciada (própria)");
     }
 
     // ============================================================
@@ -368,6 +390,7 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
         const existingItem = itensAgregados.get(partId);
         existingItem.quantidade += quantidade;
         existingItem.linhasOriginais++;
+        console.debug(`[Stock Service] Agregando: partId=${partId} já existe, nova quantidade total=${existingItem.quantidade}`);
       } else {
         itensAgregados.set(partId, {
           partId,
@@ -378,7 +401,7 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
     }
 
     // Log para debug/auditoria
-    console.log(
+    console.debug(
       `[Stock Service] Itens agregados por partId: ${itens.length} linhas -> ${itensAgregados.size} peças únicas`
     );
 
@@ -439,7 +462,7 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
     for (const [groupId, grupoInfo] of gruposProcessados) {
       const { quantidadeTotal, primeiroItem } = grupoInfo;
       
-      console.log(
+      console.debug(
         `[Stock Service] Processando grupo ${groupId}: quantidade total = ${quantidadeTotal} ` +
         `(modo 'each' - debitará de cada peça do grupo)`
       );
@@ -461,10 +484,11 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
     // Commit se transação própria
     if (!useExternalTransaction) {
       await client.query("COMMIT");
+      console.debug("[Stock Service] Transação COMMIT com sucesso");
     }
 
     // Log final de sucesso
-    console.log(
+    console.debug(
       `[Stock Service] Estoque consumido com sucesso para ${resultados.length} item(s) (${itens.length} linhas originais).`,
       referenceId ? `Referência: ${referenceId}` : ""
     );
