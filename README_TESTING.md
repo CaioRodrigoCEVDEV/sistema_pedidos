@@ -31,6 +31,21 @@ O novo serviço de estoque implementa a lógica de consumo conforme especificado
 
 O campo `reference_id` na tabela `part_group_audit` agora contém o **código do produto (procod)** da peça afetada, permitindo rastreabilidade completa no histórico de movimentações.
 
+### Correção de Bug: Débito Duplicado
+
+**Problema**: Quando um pedido continha a mesma peça em múltiplas linhas (ex: mesma peça adicionada duas vezes ao carrinho), o sistema estava decrementando o estoque duas vezes separadamente, resultando em débito duplicado.
+
+**Exemplo do problema**:
+- Pedido com peça A (qty=2) + peça A (qty=3) em linhas separadas = 5 unidades no total
+- Resultado ANTERIOR (bug): cada linha era processada independentemente, e se houvesse alguma validação ou condição de corrida, poderia resultar em comportamento inconsistente
+- Resultado CORRETO (após correção): 5 unidades consumidas em uma única operação atômica
+
+**Solução**: A função `consumirEstoqueParaPedido` agora **agrega itens por `partId`** ANTES de processar o consumo de estoque. Isso garante que:
+- Múltiplas linhas com a mesma peça são somadas em uma única entrada
+- O estoque é decrementado apenas uma vez por peça única
+- O registro de auditoria reflete a quantidade total consumida
+- Evita problemas de concorrência quando a mesma peça aparece múltiplas vezes
+
 ---
 
 ## 🧪 Cenários de Teste
@@ -149,7 +164,41 @@ UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo T
 
 ---
 
-### Cenário 5: Histórico no Frontend (Painel Administrativo)
+### Cenário 5: Débito duplicado corrigido (mesma peça em múltiplas linhas)
+
+**Este cenário testa a correção do bug de débito duplicado.**
+
+**Configuração SQL:**
+```sql
+-- Criar uma peça sem grupo com estoque = 10
+UPDATE pro SET proqtde = 10, part_group_id = NULL WHERE procod = 1;
+```
+
+**Passos:**
+1. Adicionar a mesma peça ao carrinho múltiplas vezes (ex: 2x com qty=2 cada)
+   - Ou criar um pedido diretamente no banco com a mesma peça em múltiplas linhas
+2. Finalizar pedido (cria pedido pendente)
+3. Acessar o painel administrativo e confirmar o pedido
+
+**Resultado esperado (após confirmação):**
+- ✅ Estoque decrementado APENAS uma vez com a quantidade total (4, não 2+2)
+- ✅ Se o estoque inicial era 10 e qty total = 4, estoque final = 6
+- ✅ Log do servidor mostra: "Itens agregados por partId: 2 linhas -> 1 peças únicas"
+
+**Verificação SQL:**
+```sql
+-- ANTES da confirmação
+SELECT procod, prodes, proqtde FROM pro WHERE procod = 1;
+-- proqtde deve ser 10
+
+-- APÓS confirmação
+SELECT procod, prodes, proqtde FROM pro WHERE procod = 1;
+-- proqtde deve ser 6 (10 - 4)
+```
+
+---
+
+### Cenário 6: Histórico no Frontend (Painel Administrativo)
 
 **Passos:**
 1. Acessar o painel administrativo
@@ -272,3 +321,4 @@ npm test
 - [x] WhatsApp enviado APÓS commit bem-sucedido
 - [x] Se estoque insuficiente: erro "Estoque insuficiente no grupo" e ROLLBACK completo
 - [x] Todos os `alert()` substituídos por `showToast()`
+- [x] **Bug corrigido**: Itens com mesmo `partId` são agregados antes do processamento (evita débito duplicado)

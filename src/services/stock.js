@@ -241,6 +241,9 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
 /**
  * Consome estoque para múltiplos itens em uma única transação.
  * 
+ * CORREÇÃO IMPORTANTE: Agrega itens por partId antes de processar para evitar
+ * débito duplicado quando a mesma peça aparece em múltiplas linhas do pedido.
+ * 
  * Processa uma lista de itens, consumindo o estoque de cada um em sequência.
  * Se qualquer item falhar (ex: estoque insuficiente), toda a transação é revertida.
  * 
@@ -264,17 +267,41 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
       await client.query("BEGIN");
     }
 
-    const resultados = [];
-    const gruposProcessados = new Map();
-
+    // CORREÇÃO: Agregar itens por partId ANTES de processar
+    // Isso evita débito duplicado quando a mesma peça aparece em múltiplas linhas
+    const itensAgregados = new Map();
     for (const item of itens) {
       const { partId, quantidade } = item;
 
-      if (!partId || !quantidade || quantidade <= 0) {
+      if (partId == null || !quantidade || quantidade <= 0) {
         throw new Error(`Item inválido: partId=${partId}, quantidade=${quantidade}`);
       }
 
-      // Verifica se esta peça pertence a um grupo já processado
+      if (itensAgregados.has(partId)) {
+        const existingItem = itensAgregados.get(partId);
+        existingItem.quantidade += quantidade;
+        existingItem.linhasOriginais++;
+      } else {
+        itensAgregados.set(partId, {
+          partId,
+          quantidade,
+          linhasOriginais: 1
+        });
+      }
+    }
+
+    console.log(
+      `[Stock Service] Itens agregados por partId: ${itens.length} linhas -> ${itensAgregados.size} peças únicas`
+    );
+
+    const resultados = [];
+    const gruposProcessados = new Map();
+
+    // Processa itens agregados
+    for (const [partId, itemAgregado] of itensAgregados) {
+      const { quantidade, linhasOriginais } = itemAgregado;
+
+      // Verifica se esta peça pertence a um grupo
       const partResult = await client.query(
         `SELECT procod, part_group_id FROM pro WHERE procod = $1`,
         [partId]
@@ -289,7 +316,7 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
       // Se pertence a um grupo já processado, acumula a quantidade
       if (groupId && gruposProcessados.has(groupId)) {
         gruposProcessados.get(groupId).quantidadeTotal += quantidade;
-        gruposProcessados.get(groupId).itens.push({ partId, quantidade });
+        gruposProcessados.get(groupId).itens.push({ partId, quantidade, linhasOriginais });
         continue;
       }
 
@@ -297,13 +324,16 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
       if (groupId) {
         gruposProcessados.set(groupId, {
           quantidadeTotal: quantidade,
-          itens: [{ partId, quantidade }],
-          primeiroItem: item
+          itens: [{ partId, quantidade, linhasOriginais }],
+          primeiroItem: { partId, quantidade }
         });
       } else {
         // Peça sem grupo, processa imediatamente
         const resultado = await consumirEstoqueParaItem(partId, quantidade, reason, client);
-        resultados.push(resultado);
+        resultados.push({
+          ...resultado,
+          linhasOriginais
+        });
       }
     }
 
@@ -328,14 +358,15 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
     }
 
     console.log(
-      `[Stock Service] Estoque consumido com sucesso para ${resultados.length} item(s).`,
+      `[Stock Service] Estoque consumido com sucesso para ${resultados.length} item(s) (${itens.length} linhas originais).`,
       referenceId ? `Referência: ${referenceId}` : ""
     );
 
     return {
       success: true,
       itensProcessados: resultados,
-      totalItens: itens.length,
+      totalLinhasOriginais: itens.length,
+      totalPecasUnicas: itensAgregados.size,
       referenceId
     };
 
