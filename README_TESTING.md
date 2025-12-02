@@ -12,313 +12,223 @@ Este documento descreve os passos para testar manualmente a funcionalidade de si
 
 ### Serviço de Estoque (`src/services/stock.js`)
 
-O novo serviço de estoque implementa a lógica de consumo conforme especificado:
+O serviço de estoque implementa a lógica de consumo conforme especificado:
 
 - **`consumirEstoqueParaItem(partId, quantidade, reason, client?)`**: Consome estoque para um único item
 - **`consumirEstoqueParaPedido(itens, reason, referenceId?)`**: Processa múltiplos itens em uma transação
 
+### Modo de Consumo: 'each' (ATIVO)
+
+**IMPORTANTE**: O sistema utiliza o modo 'each' para consumo de estoque de grupos.
+
+**Regra do modo 'each':**
+- Ao confirmar um pedido contendo uma peça que pertence a um grupo, **debita a quantidade vendida de CADA peça do grupo**.
+- Exemplo: Grupo com peças A e B, venda qty=2 → A recebe -2 **E** B recebe -2.
+- Cada peça afetada gera uma linha na tabela `part_group_audit`.
+
+**Alternativa não ativa (modo 'pool'):**
+- Distribui a retirada entre as peças do grupo, começando pelas de maior estoque.
+- Este modo está documentado/comentado no código para uso futuro se necessário.
+
 ### Lógica de Funcionamento
 
 1. **Peças SEM grupo**: Decrementa apenas o estoque individual (`proqtde`)
-2. **Peças COM grupo**:
-   - Distribui a retirada entre as peças do grupo (ordenadas por estoque DESC)
+2. **Peças COM grupo (modo 'each')**:
+   - Debita a quantidade de CADA peça do grupo
    - Usa `FOR UPDATE` para evitar condições de corrida
-   - Não permite estoque negativo
+   - Valida estoque suficiente em TODAS as peças antes de debitar
    - Quando o grupo tem `stock_quantity` definido, atualiza para `MIN(estoque das peças)`
-3. **Auditoria**: Grava em `part_group_audit` com `reference_id` = código do produto
+3. **Auditoria**: Grava em `part_group_audit` com:
+   - `part_group_id`: ID do grupo
+   - `change`: valor negativo da quantidade
+   - `reason`: 'sale'
+   - `reference_id`: código do produto (procod)
+   - `created_at`: timestamp da operação
 
 ### Mudança Importante: reference_id
 
-O campo `reference_id` na tabela `part_group_audit` agora contém o **código do produto (procod)** da peça afetada, permitindo rastreabilidade completa no histórico de movimentações.
+O campo `reference_id` na tabela `part_group_audit` contém o **código do produto (procod)** da peça afetada, permitindo rastreabilidade completa no histórico de movimentações.
 
 ### Correção de Bug: Débito Duplicado
 
-**Problema**: Quando um pedido continha a mesma peça em múltiplas linhas (ex: mesma peça adicionada duas vezes ao carrinho), o sistema estava decrementando o estoque duas vezes separadamente, resultando em débito duplicado.
+**Problema**: Quando um pedido continha a mesma peça em múltiplas linhas, o sistema poderia processar a mesma peça duas vezes.
 
-**Exemplo do problema**:
-- Pedido com peça A (qty=2) + peça A (qty=3) em linhas separadas = 5 unidades no total
-- Resultado ANTERIOR (bug): cada linha era processada independentemente, e se houvesse alguma validação ou condição de corrida, poderia resultar em comportamento inconsistente
-- Resultado CORRETO (após correção): 5 unidades consumidas em uma única operação atômica
-
-**Solução**: A função `consumirEstoqueParaPedido` agora **agrega itens por `partId`** ANTES de processar o consumo de estoque. Isso garante que:
+**Solução**: A função `consumirEstoqueParaPedido` agora **agrega itens por `partId`** ANTES de processar:
 - Múltiplas linhas com a mesma peça são somadas em uma única entrada
 - O estoque é decrementado apenas uma vez por peça única
 - O registro de auditoria reflete a quantidade total consumida
-- Evita problemas de concorrência quando a mesma peça aparece múltiplas vezes
+
+### Idempotência na Confirmação
+
+O endpoint de confirmação (`PUT /pedidos/confirmar/:pvcod`) é **idempotente**:
+- Usa `SELECT ... FOR UPDATE` para bloquear a linha do pedido
+- Se o pedido já está confirmado (`pvconfirmado = 'S'`), retorna sucesso sem reprocessar
+- Evita débito duplicado de estoque em caso de requisições repetidas
 
 ---
 
 ## 🧪 Cenários de Teste
 
-### Cenário 1: Criar pedido e confirmar peça de grupo COM estoque definido
+### Cenário 1: Peça de grupo com qty=1 (modo 'each')
 
 **Configuração SQL:**
 ```sql
--- Criar um grupo com estoque definido
-INSERT INTO part_groups (name, stock_quantity) VALUES ('Grupo Teste 1', 10);
+-- Criar um grupo com 2 peças
+INSERT INTO part_groups (name, stock_quantity) VALUES ('Grupo Teste Each', 10);
 
--- Vincular peças ao grupo (ajustar os IDs conforme seu banco)
-UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 1'), proqtde = 10 WHERE procod IN (1, 2, 3);
+-- Vincular 2 peças ao grupo, cada uma com estoque 10
+UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste Each'), proqtde = 10 WHERE procod = 1;
+UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste Each'), proqtde = 10 WHERE procod = 2;
 ```
 
 **Passos:**
-1. Acessar o sistema como usuário
-2. Adicionar ao carrinho 2 unidades de uma peça do grupo
-3. Finalizar pedido (Retirada Balcão ou Entrega)
-4. **Verificar que o estoque NÃO foi alterado** (pedido fica pendente)
-5. Acessar o painel administrativo de pedidos
-6. Localizar o pedido pendente e clicar em "Confirmar Pedido"
-7. Verificar resultado após confirmação
+1. Adicionar ao carrinho 1 unidade de uma peça do grupo (procod=1)
+2. Finalizar pedido (Retirada Balcão)
+3. Confirmar o pedido no painel administrativo
 
-**Resultado esperado (após criar pedido):**
-- ✅ Pedido criado com status pendente (pvconfirmado = 'N')
-- ✅ **Estoque NÃO foi movimentado**
-- ✅ WhatsApp abre normalmente
-
-**Resultado esperado (após confirmar pedido):**
-- ✅ Estoque das peças do grupo decrementado
-- ✅ `part_groups.stock_quantity` = MIN(estoque das peças)
-- ✅ Registro de auditoria criado em `part_group_audit` com `reference_id` = código do produto
-- ✅ Mensagem de sucesso via **toast**: "Pedido confirmado com sucesso!"
+**Resultado esperado (modo 'each'):**
+- ✅ Peça A (procod=1): estoque vai de 10 para **9** (-1)
+- ✅ Peça B (procod=2): estoque vai de 10 para **9** (-1)
+- ✅ `part_group_audit`: **2 linhas** com `change = -1` cada
+- ✅ `part_groups.stock_quantity` = 9 (MIN das peças)
 
 **Verificação SQL:**
 ```sql
--- ANTES da confirmação: verificar que estoque não mudou
+-- Verificar estoque das peças
 SELECT procod, prodes, proqtde 
 FROM pro 
-WHERE part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 1');
+WHERE part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste Each');
+-- Esperado: ambas com proqtde = 9
 
--- APÓS confirmação: verificar estoque decrementado
-SELECT procod, prodes, proqtde 
-FROM pro 
-WHERE part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 1');
-
--- Verificar estoque do grupo
-SELECT * FROM part_groups WHERE name = 'Grupo Teste 1';
-
--- Verificar auditoria (reference_id deve conter o código do produto)
+-- Verificar auditoria (deve ter 2 linhas)
 SELECT a.*, p.prodes 
 FROM part_group_audit a
 LEFT JOIN pro p ON p.procod::text = a.reference_id
-WHERE a.part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 1') 
+WHERE a.part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste Each') 
 ORDER BY a.created_at DESC;
+-- Esperado: 2 linhas com change = -1
 ```
 
 ---
 
-### Cenário 2: Confirmar pedido com peça de grupo SEM estoque definido (NULL)
+### Cenário 2: Peça de grupo com qty=2 (modo 'each')
+
+**Configuração**: Mesmo grupo do Cenário 1 (resetar estoque para 10 se necessário)
+
+**Passos:**
+1. Adicionar ao carrinho 2 unidades de uma peça do grupo
+2. Finalizar e confirmar pedido
+
+**Resultado esperado (modo 'each'):**
+- ✅ Peça A: estoque -2 (de 10 para 8)
+- ✅ Peça B: estoque -2 (de 10 para 8)
+- ✅ `part_group_audit`: **2 linhas** com `change = -2` cada
+
+---
+
+### Cenário 3: Mesma peça em múltiplas linhas (correção de duplicidade)
+
+**Objetivo**: Verificar que itens duplicados são agregados corretamente.
 
 **Configuração SQL:**
 ```sql
--- Criar um grupo sem estoque definido
-INSERT INTO part_groups (name, stock_quantity) VALUES ('Grupo Teste 2', NULL);
+-- Criar pedido diretamente no banco com mesma peça em 2 linhas
+INSERT INTO pv (pvcod, pvvl, pvobs, pvcanal, pvsta, pvconfirmado) 
+VALUES (99999, 100, 'Teste duplicidade', 'BALCAO', 'A', 'N');
 
--- Vincular peças ao grupo com estoques diferentes
-UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 2'), proqtde = 5 WHERE procod = 4;
-UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 2'), proqtde = 3 WHERE procod = 5;
+-- Mesma peça (procod=1) em 2 linhas: qty=1 + qty=1
+INSERT INTO pvi (pvipvcod, pviprocod, pviqtde, pvivl) VALUES (99999, 1, 1, 50);
+INSERT INTO pvi (pvipvcod, pviprocod, pviqtde, pvivl) VALUES (99999, 1, 1, 50);
 ```
 
 **Passos:**
-1. Acessar o sistema como usuário
-2. Adicionar ao carrinho 6 unidades de uma peça do grupo
-3. Finalizar pedido (cria pedido pendente, sem movimentar estoque)
-4. Acessar o painel administrativo e confirmar o pedido
-
-**Resultado esperado (após confirmação):**
-- ✅ Estoque é consumido das peças, começando pela de maior estoque
-- ✅ Peça com 5 unidades fica com 0 (retirou 5)
-- ✅ Peça com 3 unidades fica com 2 (retirou 1)
-- ✅ Registros de auditoria criados para cada peça afetada
-- ✅ `part_groups.stock_quantity` permanece NULL
-
----
-
-### Cenário 3: Estoque insuficiente na confirmação
-
-**Passos:**
-1. Usar um grupo com estoque baixo (ex: 8 unidades)
-2. Adicionar ao carrinho 100 unidades de uma peça do grupo
-3. Finalizar pedido (cria pedido pendente normalmente)
-4. Acessar o painel administrativo e tentar confirmar o pedido
+1. Confirmar o pedido 99999 via painel
 
 **Resultado esperado:**
-- ✅ Pedido é criado com status pendente (criação funciona normalmente)
-- ❌ Confirmação FALHA devido a estoque insuficiente
-- ✅ Toast de erro exibe: "Estoque insuficiente no grupo..."
-- ✅ Nenhuma alteração no banco de dados (ROLLBACK completo)
-- ✅ Pedido permanece com status pendente
+- ✅ As 2 linhas são agregadas: qty total = 2
+- ✅ Peça A: estoque -2
+- ✅ Peça B: estoque -2 (modo 'each')
+- ✅ Log do servidor mostra: "Itens agregados por partId: 2 linhas -> 1 peças únicas"
 
 ---
 
-### Cenário 4: Confirmar pedido com peça sem grupo (estoque individual)
+### Cenário 4: Confirmar pedido já confirmado (idempotência)
+
+**Passos:**
+1. Confirmar um pedido normalmente
+2. Tentar confirmar o mesmo pedido novamente
+
+**Resultado esperado:**
+- ✅ Primeira confirmação: sucesso, estoque debitado
+- ✅ Segunda confirmação: sucesso com `idempotente: true`, estoque **NÃO** debitado novamente
+- ✅ Resposta: `{ success: true, message: "Pedido já está confirmado.", idempotente: true }`
+
+---
+
+### Cenário 5: Estoque insuficiente (validação)
+
+**Configuração SQL:**
+```sql
+-- Reduzir estoque de uma das peças do grupo
+UPDATE pro SET proqtde = 1 WHERE procod = 1;
+-- Outra peça continua com estoque 10
+UPDATE pro SET proqtde = 10 WHERE procod = 2;
+```
+
+**Passos:**
+1. Criar pedido com qty=5 de uma peça do grupo
+2. Tentar confirmar
+
+**Resultado esperado:**
+- ✅ Erro: "Estoque insuficiente para a peça X no grupo Y. Disponível: 1, Solicitado: 5"
+- ✅ Toast vermelho exibido
+- ✅ Nenhuma alteração no banco (ROLLBACK completo)
+- ✅ Pedido permanece pendente
+
+---
+
+### Cenário 6: Peça SEM grupo (estoque individual)
 
 **Passos:**
 1. Selecionar uma peça que NÃO pertence a nenhum grupo
-2. Verificar que `part_group_id` é NULL
-3. Adicionar ao carrinho e finalizar pedido (cria pedido pendente)
-4. Acessar o painel administrativo e confirmar o pedido
-
-**Resultado esperado (após confirmação):**
-- ✅ Apenas o estoque individual da peça (`proqtde`) é decrementado
-- ✅ Nenhum registro em `part_group_audit` é criado
-
----
-
-### Cenário 5: Débito duplicado corrigido (mesma peça em múltiplas linhas)
-
-**Este cenário testa a correção do bug de débito duplicado.**
-
-**Configuração SQL:**
-```sql
--- Criar uma peça sem grupo com estoque = 10
-UPDATE pro SET proqtde = 10, part_group_id = NULL WHERE procod = 1;
-```
-
-**Passos:**
-1. Adicionar a mesma peça ao carrinho múltiplas vezes (ex: 2x com qty=2 cada)
-   - Ou criar um pedido diretamente no banco com a mesma peça em múltiplas linhas
-2. Finalizar pedido (cria pedido pendente)
-3. Acessar o painel administrativo e confirmar o pedido
-
-**Resultado esperado (após confirmação):**
-- ✅ Estoque decrementado APENAS uma vez com a quantidade total (4, não 2+2)
-- ✅ Se o estoque inicial era 10 e qty total = 4, estoque final = 6
-- ✅ Log do servidor mostra: "Itens agregados por partId: 2 linhas -> 1 peças únicas"
-
-**Verificação SQL:**
-```sql
--- ANTES da confirmação
-SELECT procod, prodes, proqtde FROM pro WHERE procod = 1;
--- proqtde deve ser 10
-
--- APÓS confirmação
-SELECT procod, prodes, proqtde FROM pro WHERE procod = 1;
--- proqtde deve ser 6 (10 - 4)
-```
-
----
-
-### Cenário 6: Histórico no Frontend (Painel Administrativo)
-
-**Passos:**
-1. Acessar o painel administrativo
-2. Navegar para "Grupos de Compatibilidade"
-3. Selecionar um grupo e visualizar histórico
+2. Adicionar ao carrinho e finalizar pedido
+3. Confirmar pedido
 
 **Resultado esperado:**
-- ✅ Histórico exibe movimentações com o código do produto como referência
-- ✅ Cada entrada mostra: quantidade alterada, motivo (sale), data
-- ✅ Nome da peça é exibido quando disponível (join com tabela `pro`)
-
----
-
-## 🖼️ Interface do Usuário
-
-### Substituição de alert() por showToast()
-
-Todos os alertas foram substituídos por notificações toast para melhor experiência do usuário:
-
-- **Erros**: Toast vermelho com ícone ❌
-- **Sucesso**: Toast verde com ícone ✅  
-- **Avisos**: Toast amarelo com ícone ⚠️
-
-Os toasts são exibidos no canto superior direito e fecham automaticamente após 3 segundos.
-
----
-
-## 🔄 Fluxo de Criação e Confirmação de Pedido
-
-O fluxo atualizado garante que o estoque seja movimentado **SOMENTE** na confirmação do pedido:
-
-### Criação do Pedido (Carrinho → Retirada Balcão / Entrega)
-
-```
-1. Validar carrinho (itens e quantidades)
-2. Criar registro do pedido (pv) com status = pendente (pvconfirmado = 'N')
-3. Criar itens do pedido (pvi)
-4. Redirecionar para WhatsApp
-⚠️ ESTOQUE NÃO É MOVIMENTADO NESTE MOMENTO
-```
-
-### Confirmação do Pedido (Painel de Pedidos)
-
-```
-1. Usuário clica em "Confirmar Pedido" no painel administrativo
-2. [TRANSAÇÃO] Inicia transação no banco
-3. Bloqueia o pedido com FOR UPDATE
-4. Carrega os itens do pedido (pvi)
-5. [ESTOQUE] Consome estoque via stockService.consumirEstoqueParaPedido()
-   - Para peças sem grupo: decrementa estoque individual
-   - Para peças com grupo: distribui consumo entre peças (maior estoque primeiro)
-   - Atualiza part_groups.stock_quantity = MIN(estoques)
-   - Registra auditoria em part_group_audit (reference_id = código do produto)
-6. Atualiza pedido: pvconfirmado = 'S', pvdtconfirmado = NOW()
-7. [COMMIT] Persiste todas as alterações
-8. Retorna sucesso para o frontend (exibe toast de sucesso)
-```
-
-### Tratamento de Erros
-
-Se houver estoque insuficiente durante a confirmação:
-- Toda a transação é revertida (ROLLBACK)
-- Nenhum estoque é movimentado
-- Toast de erro é exibido: "Estoque insuficiente no grupo..."
-- Pedido permanece com status pendente
+- ✅ Apenas o estoque individual da peça é decrementado
+- ✅ Nenhum registro em `part_group_audit`
 
 ---
 
 ## 📝 Comandos Git
 
-Para trabalhar com esta feature:
-
 ```bash
-# Clonar o repositório (se ainda não tiver)
+# Clonar o repositório
 git clone https://github.com/CaioRodrigoCEVDEV/sistema_pedidos.git
 cd sistema_pedidos
 
-# Verificar a branch atual
-git branch -a
+# Criar branch para feature
+git checkout -b feature/sync-group-stock release
 
 # Instalar dependências
 npm install
 
-# Iniciar o servidor de desenvolvimento
+# Iniciar servidor
 npm run dev
-
-# Executar testes (se disponíveis)
-npm test
 ```
 
 ---
 
-## 📦 Arquivos Modificados/Criados
+## 📦 Arquivos Modificados
 
-### Novos Arquivos
-- `src/services/stock.js` - Serviço de gestão de estoque
+### Arquivos Principais
+- `src/services/stock.js` - Serviço de gestão de estoque (modo 'each')
+- `src/controllers/pedidosController.js` - Confirmação idempotente com consumo de estoque
+- `README_TESTING.md` - Documentação de testes
 
-### Arquivos Modificados
-- `src/controllers/pedidosController.js` - Integração com serviço de estoque
-- `public/html/auth/js/perfil.js` - alert → showToast
-- `public/html/auth/js/painel.js` - alert → showToast
-- `public/html/auth/js/painel-cor.js` - alert → showToast
-- `public/html/auth/js/painel-tipo.js` - alert → showToast
-- `public/html/auth/js/painel-produto.js` - alert → showToast
-- `public/html/auth/js/usuarios.js` - alert → showToast
-- `public/html/auth/js/lista-pecas.js` - alert → showToast
-- `public/html/auth/js/painel-marca.js` - alert → showToast
-- `public/html/auth/js/pecas.js` - alert → showToast
-- `public/html/auth/js/modelo.js` - alert → showToast
-- `public/html/auth/js/painel-pedidos.js` - alert → showToast
-- Diversos arquivos HTML - Inclusão de toast.js
-
----
-
-## ✅ Critérios de Aceitação
-
-- [x] Confirmar pedido que contenha itens agrupados: estoques decrementados apenas na confirmação
-- [x] `part_group_audit` registra `reference_id` com o código do produto
-- [x] `part_groups.estoque` atualizado para MIN(estoques) quando aplicável
-- [x] WhatsApp enviado APÓS commit bem-sucedido
-- [x] Se estoque insuficiente: erro "Estoque insuficiente no grupo" e ROLLBACK completo
-- [x] Todos os `alert()` substituídos por `showToast()`
-- [x] **Bug corrigido**: Itens com mesmo `partId` são agregados antes do processamento (evita débito duplicado)
+### Regras de Negócio Implementadas
+1. Estoque movimentado **SOMENTE** na confirmação do pedido
+2. Modo 'each': debita de CADA peça do grupo
+3. Agregação de itens por `part_id` antes do processamento
+4. Endpoint de confirmação idempotente
+5. Auditoria completa em `part_group_audit`
