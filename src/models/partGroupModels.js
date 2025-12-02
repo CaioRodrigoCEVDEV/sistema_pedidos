@@ -748,6 +748,8 @@ async function venderItens(itens, referenceId = null) {
       const group = groupResult.rows[0];
 
       // CASO 2a: Grupo TEM stock_quantity definido (não nulo)
+      // Neste caso, todas as peças do grupo compartilham o mesmo estoque conceitual.
+      // Ao vender, decrementamos todas as peças simultaneamente.
       if (group.stock_quantity !== null) {
         // Busca todas as peças do grupo com bloqueio para validação e atualização
         const pecasGrupoResult = await client.query(
@@ -761,17 +763,20 @@ async function venderItens(itens, referenceId = null) {
           [groupId]
         );
 
-        // Valida estoque de cada peça do grupo
-        for (const pecaGrupo of pecasGrupoResult.rows) {
-          if ((pecaGrupo.proqtde || 0) < quantidadeTotal) {
-            throw new Error(
-              `Estoque insuficiente no grupo "${group.name}". ` +
-              `Peça "${pecaGrupo.prodes}" tem apenas ${pecaGrupo.proqtde || 0} unidades, mas foram solicitadas ${quantidadeTotal}.`
-            );
-          }
+        // Calcula o estoque mínimo disponível no grupo (todas as peças devem poder decrementar)
+        const estoqueMinimo = Math.min(
+          ...pecasGrupoResult.rows.map(p => p.proqtde || 0)
+        );
+
+        // Valida que o estoque mínimo é suficiente para a quantidade solicitada
+        if (estoqueMinimo < quantidadeTotal) {
+          throw new Error(
+            `Estoque insuficiente no grupo "${group.name}". ` +
+            `Disponível: ${estoqueMinimo}, Solicitado: ${quantidadeTotal}`
+          );
         }
 
-        // Decrementa o estoque de TODAS as peças do grupo
+        // Decrementa o estoque de TODAS as peças do grupo (compartilham estoque)
         await client.query(
           `
           UPDATE pro 

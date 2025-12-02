@@ -3,6 +3,9 @@
  * Substitui o uso de alert() por uma experiência de usuário mais suave
  */
 
+// Configuração: número máximo de toasts exibidos simultaneamente
+const MAX_TOASTS_VISIBLE = 5;
+
 /**
  * Exibe uma notificação toast na tela
  * @param {string} message - A mensagem a ser exibida
@@ -12,7 +15,7 @@
 function showToast(message, type = 'info', duration = 3000) {
   // Remove toasts antigos se existirem muitos
   const existingToasts = document.querySelectorAll('.toast-notification');
-  if (existingToasts.length >= 5) {
+  if (existingToasts.length >= MAX_TOASTS_VISIBLE) {
     existingToasts[0].remove();
   }
 
