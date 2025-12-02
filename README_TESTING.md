@@ -15,7 +15,7 @@ Este documento descreve os passos para testar manualmente a funcionalidade de si
 O serviço de estoque implementa a lógica de consumo conforme especificado:
 
 - **`consumirEstoqueParaItem(partId, quantidade, reason, client?)`**: Consome estoque para um único item
-- **`consumirEstoqueParaPedido(itens, reason, referenceId?, client?)`**: Processa múltiplos itens em uma transação
+- **`consumirEstoqueParaPedido(itens, reason, referenceId?, externalClient?)`**: Processa múltiplos itens em uma transação
 
 ### Modo de Consumo: 'each' (ATIVO)
 
