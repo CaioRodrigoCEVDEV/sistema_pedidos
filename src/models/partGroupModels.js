@@ -749,14 +749,49 @@ async function venderItens(itens, referenceId = null) {
 
       // CASO 2a: Grupo TEM stock_quantity definido (não nulo)
       if (group.stock_quantity !== null) {
-        if (group.stock_quantity < quantidadeTotal) {
-          throw new Error(
-            `Estoque do grupo "${group.name}" insuficiente. ` +
-            `Disponível: ${group.stock_quantity}, Solicitado: ${quantidadeTotal}`
-          );
+        // Busca todas as peças do grupo com bloqueio para validação e atualização
+        const pecasGrupoResult = await client.query(
+          `
+          SELECT procod, prodes, proqtde
+          FROM pro
+          WHERE part_group_id = $1
+          ORDER BY proqtde DESC, procod ASC
+          FOR UPDATE
+        `,
+          [groupId]
+        );
+
+        // Valida estoque de cada peça do grupo
+        for (const pecaGrupo of pecasGrupoResult.rows) {
+          if ((pecaGrupo.proqtde || 0) < quantidadeTotal) {
+            throw new Error(
+              `Estoque insuficiente no grupo "${group.name}". ` +
+              `Peça "${pecaGrupo.prodes}" tem apenas ${pecaGrupo.proqtde || 0} unidades, mas foram solicitadas ${quantidadeTotal}.`
+            );
+          }
         }
 
-        const novoEstoqueGrupo = group.stock_quantity - quantidadeTotal;
+        // Decrementa o estoque de TODAS as peças do grupo
+        await client.query(
+          `
+          UPDATE pro 
+          SET proqtde = proqtde - $1
+          WHERE part_group_id = $2
+        `,
+          [quantidadeTotal, groupId]
+        );
+
+        // Atualiza o estoque do grupo para MIN(estoque das peças)
+        const minEstoqueResult = await client.query(
+          `
+          SELECT COALESCE(MIN(proqtde), 0) as min_estoque
+          FROM pro
+          WHERE part_group_id = $1
+        `,
+          [groupId]
+        );
+
+        const novoEstoqueGrupo = minEstoqueResult.rows[0].min_estoque;
 
         // Atualiza o estoque do grupo
         await client.query(
@@ -768,18 +803,8 @@ async function venderItens(itens, referenceId = null) {
           [novoEstoqueGrupo, groupId]
         );
 
-        // Sincroniza todas as peças do grupo para o mesmo valor de estoque
-        await client.query(
-          `
-          UPDATE pro 
-          SET proqtde = $1
-          WHERE part_group_id = $2
-        `,
-          [novoEstoqueGrupo, groupId]
-        );
-
         // Cria registros de auditoria para cada peça vendida
-        // reference_id deve ser o código do produto (procod) para identificar a peça no histórico
+        // reference_id é o código do produto (procod) para identificar a peça no histórico
         for (const itemGrupo of itensDoGrupo) {
           await client.query(
             `
