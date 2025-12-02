@@ -80,7 +80,7 @@ modeloForm.addEventListener('submit', async (ev) => {
         modeloModal.hide();
       alertPersonalizado('Sem permissão para criar marcas.', 2000);
     } else {
-      alert('Erro ao salvar os dados.');
+      showToast('Erro ao salvar os dados.', 'error');
     }
     console.error(error);
   }

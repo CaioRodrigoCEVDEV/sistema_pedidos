@@ -53,7 +53,7 @@ marcaForm.addEventListener("submit", async (ev) => {
       userModal.hide();
       alertPersonalizado("Sem permissão para criar marcas.", 2000);
     } else {
-      alert("Erro ao salvar os dados.");
+      showToast("Erro ao salvar os dados.", "error");
     }
     console.error(error);
   }
@@ -112,12 +112,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (resp.redirected) {
           window.location = resp.url;
         } else {
-          alert("Resposta inesperada do servidor. Veja console.");
+          showToast("Resposta inesperada do servidor. Veja console.", "warning");
         }
       }
     } catch (err) {
       console.error("Erro ao enviar marca:", err);
-      alert("Falha ao enviar: " + err.message);
+      showToast("Falha ao enviar: " + err.message, "error");
     } finally {
       btn && (btn.disabled = false);
       btn && (btn.innerText = "Salvar Dados");

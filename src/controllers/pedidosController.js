@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const partGroupModels = require("../models/partGroupModels");
+const stockService = require("../services/stock");
 
 exports.sequencia = async (req, res) => {
   try {
@@ -22,6 +23,11 @@ exports.sequencia = async (req, res) => {
  * - A validação de estoque é atômica (com locks FOR UPDATE)
  * - O WhatsApp só é enviado após o commit bem-sucedido
  * - Em caso de falha, nenhuma alteração é persistida
+ * 
+ * Utiliza o serviço de estoque (src/services/stock.js) para:
+ * - Consumir estoque das peças do grupo quando a peça pertence a um grupo
+ * - Atualizar part_groups.estoque = MIN(estoque das peças) quando aplicável
+ * - Gravar auditoria em part_group_audit com reference_id = código do produto
  */
 exports.validarEDecrementarEstoque = async (req, res, next) => {
   const { cart, pvcod } = req.body;
@@ -54,8 +60,10 @@ exports.validarEDecrementarEstoque = async (req, res, next) => {
     }
 
     // Tenta decrementar o estoque de todos os itens em uma única transação
-    const resultado = await partGroupModels.venderItens(
+    // usando o serviço de estoque que implementa a lógica de grupos
+    const resultado = await stockService.consumirEstoqueParaPedido(
       itensParaVenda,
+      "sale",
       pvcod ? String(pvcod) : null
     );
 
@@ -63,7 +71,7 @@ exports.validarEDecrementarEstoque = async (req, res, next) => {
     req.estoqueResultado = resultado;
 
     console.log(
-      `Estoque decrementado com sucesso para pedido ${pvcod}:`,
+      `[Pedidos] Estoque decrementado com sucesso para pedido ${pvcod}:`,
       resultado.itensProcessados.length,
       "itens processados"
     );
@@ -71,7 +79,7 @@ exports.validarEDecrementarEstoque = async (req, res, next) => {
     // Continua para a criação do pedido
     next();
   } catch (error) {
-    console.error("Erro ao validar/decrementar estoque:", error);
+    console.error("[Pedidos] Erro ao validar/decrementar estoque:", error);
 
     // Retorna erro amigável para o frontend
     const mensagemErro = error.message.includes("insuficiente")

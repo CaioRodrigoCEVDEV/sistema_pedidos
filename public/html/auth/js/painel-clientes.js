@@ -103,7 +103,7 @@ async function carregarClientes() {
         emptyState.style.display = (data.data || []).length ? "none" : "block";
     } catch (err) {
         console.error(err);
-        alert("Falha ao carregar clientes.");
+        showToast("Falha ao carregar clientes.", "error");
     }
 }
 
@@ -204,7 +204,7 @@ async function abrirEdicao(id) {
         cliModal.show();
     } catch (err) {
         console.error(err);
-        alert("Falha ao carregar cliente.");
+        showToast("Falha ao carregar cliente.", "error");
     }
 }
 
@@ -272,7 +272,7 @@ cliForm.addEventListener("submit", async (ev) => {
                 if (typeof alertPersonalizado === "function") {
                     alertPersonalizado("Sem permissão para salvar clientes.", 2000);
                 } else {
-                    alert("Sem permissão.");
+                    showToast("Sem permissão.", "error");
                 }
                 return;
             }
@@ -284,7 +284,7 @@ cliForm.addEventListener("submit", async (ev) => {
         carregarClientes();
     } catch (err) {
         console.error(err);
-        alert("Erro ao salvar: " + (err.message || "desconhecido"));
+        showToast("Erro ao salvar: " + (err.message || "desconhecido"), "error");
     } finally {
         if (btnSubmit) {
             btnSubmit.disabled = false;
@@ -313,7 +313,7 @@ btnInativar.addEventListener("click", async () => {
         carregarClientes();
     } catch (err) {
         console.error(err);
-        alert("Falha ao inativar.");
+        showToast("Falha ao inativar.", "error");
     }
 });
 
@@ -340,7 +340,7 @@ btnExcluir.addEventListener("click", async (ev) => {
         carregarClientes();
     } catch (err) {
         console.error(err);
-        alert("Falha ao excluir: " + (err.message || ""));
+        showToast("Falha ao excluir: " + (err.message || ""), "error");
     }
 
 });
