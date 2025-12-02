@@ -458,9 +458,13 @@ exports.confirmarPedido = async (req, res) => {
 
     console.log(`[Pedidos] Consumindo estoque para ${itensParaConsumo.length} itens do pedido ${pvcod}`);
 
-    // 4. Consome o estoque (usa a mesma transação)
-    // O stockService precisa aceitar um client externo
-    await consumirEstoqueComClient(client, itensParaConsumo, "sale", String(pvcod));
+    // 4. Consome o estoque usando o serviço de estoque (passando o client externo)
+    await stockService.consumirEstoqueParaPedido(
+      itensParaConsumo,
+      "sale",
+      String(pvcod),
+      client  // Passa o client externo para usar a mesma transação
+    );
 
     // 5. Marca o pedido como confirmado
     const updateResult = await client.query(
@@ -500,170 +504,6 @@ exports.confirmarPedido = async (req, res) => {
     client.release();
   }
 };
-
-/**
- * Função auxiliar para consumir estoque usando um client de transação externo.
- * Isso permite que o consumo de estoque faça parte da mesma transação
- * da confirmação do pedido.
- */
-async function consumirEstoqueComClient(client, itens, reason, referenceId) {
-  for (const item of itens) {
-    const { partId, quantidade } = item;
-
-    if (!partId || quantidade <= 0) {
-      throw new Error(`Item inválido: partId=${partId}, quantidade=${quantidade}`);
-    }
-
-    // Busca a peça com bloqueio FOR UPDATE
-    const partResult = await client.query(
-      `SELECT 
-        p.procod, 
-        p.prodes, 
-        p.part_group_id, 
-        p.proqtde,
-        p.procod::text as reference_code
-      FROM pro p
-      WHERE p.procod = $1
-      FOR UPDATE`,
-      [partId]
-    );
-
-    if (partResult.rows.length === 0) {
-      throw new Error(`Peça com ID ${partId} não encontrada`);
-    }
-
-    const part = partResult.rows[0];
-    const referenceCode = part.reference_code;
-
-    // CASO 1: Peça SEM grupo - decrementa apenas o estoque individual
-    if (!part.part_group_id) {
-      const estoqueAtual = part.proqtde || 0;
-
-      if (estoqueAtual < quantidade) {
-        throw new Error(
-          `Estoque insuficiente para a peça "${part.prodes}" (ID: ${partId}). ` +
-          `Disponível: ${estoqueAtual}, Solicitado: ${quantidade}`
-        );
-      }
-
-      // Decrementa estoque individual
-      await client.query(
-        `UPDATE pro 
-         SET proqtde = proqtde - $1
-         WHERE procod = $2`,
-        [quantidade, partId]
-      );
-
-      console.log(`[Stock] Peça ${partId} (sem grupo): estoque decrementado em ${quantidade}`);
-      continue;
-    }
-
-    // CASO 2: Peça COM grupo - consome das peças do grupo
-    const groupId = part.part_group_id;
-
-    // Busca o grupo com bloqueio FOR UPDATE
-    const groupResult = await client.query(
-      `SELECT id, name, stock_quantity
-       FROM part_groups
-       WHERE id = $1
-       FOR UPDATE`,
-      [groupId]
-    );
-
-    if (groupResult.rows.length === 0) {
-      throw new Error(`Grupo de compatibilidade (ID: ${groupId}) não encontrado`);
-    }
-
-    const group = groupResult.rows[0];
-
-    // Busca todas as peças do grupo com bloqueio, ordenadas por estoque DESC
-    const pecasGrupoResult = await client.query(
-      `SELECT procod, prodes, proqtde,
-              procod::text as reference_code
-       FROM pro
-       WHERE part_group_id = $1
-       ORDER BY proqtde DESC NULLS LAST, procod ASC
-       FOR UPDATE`,
-      [groupId]
-    );
-
-    const pecasDoGrupo = pecasGrupoResult.rows;
-
-    // Calcula estoque total disponível no grupo
-    const estoqueTotal = pecasDoGrupo.reduce(
-      (sum, p) => sum + (p.proqtde || 0),
-      0
-    );
-
-    // Verifica se há estoque suficiente
-    if (estoqueTotal < quantidade) {
-      throw new Error(
-        `Estoque insuficiente no grupo "${group.name}". ` +
-        `Disponível: ${estoqueTotal}, Solicitado: ${quantidade}`
-      );
-    }
-
-    // Distribui a retirada entre as peças, começando pelas de maior estoque
-    let restanteATirar = quantidade;
-    const pecasAfetadas = [];
-
-    for (const pecaGrupo of pecasDoGrupo) {
-      if (restanteATirar <= 0) break;
-
-      const estoqueAtual = pecaGrupo.proqtde || 0;
-      const tirarDestaPeca = Math.min(estoqueAtual, restanteATirar);
-
-      if (tirarDestaPeca > 0) {
-        // Atualiza o estoque desta peça
-        await client.query(
-          `UPDATE pro 
-           SET proqtde = proqtde - $1
-           WHERE procod = $2`,
-          [tirarDestaPeca, pecaGrupo.procod]
-        );
-
-        pecasAfetadas.push({
-          procod: pecaGrupo.procod,
-          prodes: pecaGrupo.prodes,
-          quantidadeRetirada: tirarDestaPeca,
-          referenceCode: pecaGrupo.reference_code
-        });
-
-        restanteATirar -= tirarDestaPeca;
-      }
-    }
-
-    // Se o grupo tem stock_quantity definido, atualiza para MIN(estoques das peças)
-    if (group.stock_quantity !== null) {
-      const minEstoqueResult = await client.query(
-        `SELECT COALESCE(MIN(proqtde), 0) as min_estoque
-         FROM pro
-         WHERE part_group_id = $1`,
-        [groupId]
-      );
-
-      const novoEstoqueGrupo = minEstoqueResult.rows[0].min_estoque;
-
-      await client.query(
-        `UPDATE part_groups 
-         SET stock_quantity = $1, updated_at = NOW()
-         WHERE id = $2`,
-        [novoEstoqueGrupo, groupId]
-      );
-    }
-
-    // Grava registros de auditoria para cada peça afetada
-    for (const pecaAfetada of pecasAfetadas) {
-      await client.query(
-        `INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
-         VALUES ($1, $2, $3, $4)`,
-        [groupId, -pecaAfetada.quantidadeRetirada, reason, pecaAfetada.referenceCode]
-      );
-    }
-
-    console.log(`[Stock] Grupo ${group.name}: estoque consumido de ${pecasAfetadas.length} peças`);
-  }
-}
 
 exports.cancelarPedido = async (req, res) => {
   const pvcod = req.params.pvcod;
