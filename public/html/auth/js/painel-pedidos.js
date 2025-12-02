@@ -392,9 +392,22 @@ async function confirmarPedido(pvcod) {
         pvrcacod: await buscarUsuario(),
       }),
     });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Exibe erro retornado pelo backend (ex: estoque insuficiente)
+      const mensagemErro = data.error || "Erro ao confirmar o pedido.";
+      showToast(mensagemErro, "error");
+      return false;
+    }
+
+    showToast("Pedido confirmado com sucesso!", "success");
+    return true;
   } catch (error) {
     console.error("Erro ao confirmar o pedido:", error);
     showToast("Erro ao confirmar o pedido.", "error");
+    return false;
   }
 }
 

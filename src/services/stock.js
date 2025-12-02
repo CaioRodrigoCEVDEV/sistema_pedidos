@@ -247,18 +247,22 @@ async function consumirEstoqueParaItem(partId, quantidade, reason = "sale", clie
  * @param {Array<{partId: number, quantidade: number}>} itens - Lista de itens
  * @param {string} reason - Motivo do consumo (ex: 'sale')
  * @param {string} referenceId - ID de referência opcional (ex: código do pedido)
+ * @param {object} externalClient - Cliente de transação PostgreSQL externo (opcional)
  * @returns {object} Resultado com detalhes de todos os itens processados
  * @throws {Error} Se estoque insuficiente ou qualquer erro de validação
  */
-async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = null) {
+async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = null, externalClient = null) {
   if (!Array.isArray(itens) || itens.length === 0) {
     throw new Error("Lista de itens vazia ou inválida");
   }
 
-  const client = await pool.connect();
+  const useExternalTransaction = !!externalClient;
+  const client = externalClient || await pool.connect();
 
   try {
-    await client.query("BEGIN");
+    if (!useExternalTransaction) {
+      await client.query("BEGIN");
+    }
 
     const resultados = [];
     const gruposProcessados = new Map();
@@ -319,7 +323,9 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
       });
     }
 
-    await client.query("COMMIT");
+    if (!useExternalTransaction) {
+      await client.query("COMMIT");
+    }
 
     console.log(
       `[Stock Service] Estoque consumido com sucesso para ${resultados.length} item(s).`,
@@ -334,15 +340,19 @@ async function consumirEstoqueParaPedido(itens, reason = "sale", referenceId = n
     };
 
   } catch (error) {
-    try {
-      await client.query("ROLLBACK");
-    } catch (rollbackError) {
-      console.error("[Stock Service] Erro ao fazer rollback:", rollbackError.message);
+    if (!useExternalTransaction) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("[Stock Service] Erro ao fazer rollback:", rollbackError.message);
+      }
     }
     console.error("[Stock Service] Erro ao consumir estoque:", error.message);
     throw error;
   } finally {
-    client.release();
+    if (!useExternalTransaction) {
+      client.release();
+    }
   }
 }
 
