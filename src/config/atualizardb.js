@@ -545,8 +545,16 @@ async function atualizarDB() {
 
     `);
 
-    // função de trigger para atualizar saldo no estoque
-    // Updated to support part_groups (compatibility groups)
+    // Trigger function to decrement stock when order is confirmed
+    // IDEMPOTENT: Only executes when pvconfirmado transitions from 'N' to 'S'
+    // 
+    // Stock decrement strategy:
+    // 1) Items WITH color (pviprocorid) -> decrement from procor table
+    // 2) Items WITHOUT color and product WITHOUT variations -> decrement from pro.proqtde
+    // 3) Products belonging to a compatibility group (part_groups):
+    //    - Decrement stock for the sold product
+    //    - Decrement stock for ALL members of the same group (shared/compatible parts)
+    //    - Create audit records for traceability
     await pool.query(`
       CREATE OR REPLACE FUNCTION public.atualizar_saldo()
         RETURNS trigger
@@ -554,51 +562,81 @@ async function atualizarDB() {
         AS $function$
         DECLARE
           r RECORD;
+          member_rec RECORD;
+          v_group_id INTEGER;
+          v_qty NUMERIC;
         BEGIN
-          IF NEW.pvconfirmado = 'S' THEN
+          -- IDEMPOTENT CHECK: Only execute if transitioning from 'N' to 'S'
+          -- This prevents double stock deductions on re-confirmation attempts
+          IF OLD.pvconfirmado = 'N' AND NEW.pvconfirmado = 'S' THEN
 
-            -- 1) Itens COM cor -> baixa em procor
+            -- 1) Items WITH color -> decrement from procor
             UPDATE procor pc
-              SET procorqtde = COALESCE(pc.procorqtde, 0) - COALESCE(i.pviqtde, 0)
+              SET procorqtde = GREATEST(COALESCE(pc.procorqtde, 0) - COALESCE(i.pviqtde, 0), 0)
               FROM pvi i
             WHERE i.pvipvcod      = NEW.pvcod
               AND i.pviprocorid  IS NOT NULL
               AND i.pviprocorid   = pc.procorcorescod;
 
-            -- 2) Itens SEM cor e produto SEM variações -> baixa em pro.proqtde (legacy)
+            -- 2) Items WITHOUT color AND product WITHOUT variations -> decrement from pro.proqtde
+            -- Only for products NOT in a compatibility group (groups are handled separately below)
             UPDATE pro pr
-              SET proqtde = COALESCE(pr.proqtde, 0) - COALESCE(i.pviqtde, 0)
+              SET proqtde = GREATEST(COALESCE(pr.proqtde, 0) - COALESCE(i.pviqtde, 0), 0)
               FROM pvi i
             WHERE i.pvipvcod = NEW.pvcod
               AND i.pviprocod = pr.procod
               AND i.pviprocorid IS NULL
+              AND pr.part_group_id IS NULL
               AND NOT EXISTS (
                     SELECT 1
                       FROM procor pc
                       WHERE pc.procorprocod = pr.procod
                   );
 
-            -- 3) NEW: Decrement part_group stock for products with a group
-            -- This is the new compatibility groups feature
+            -- 3) COMPATIBILITY GROUPS: For products in a group, decrement stock for ALL group members
+            -- This ensures that when product A is sold, the stock of compatible parts B, C, etc.
+            -- in the same group is also decremented.
+            -- 
+            -- Table structure assumed for part_groups:
+            -- - part_groups(id, name, stock_quantity, ...) - main group table
+            -- - pro.part_group_id - FK linking product to a group
+            -- - part_group_audit - audit trail for stock movements
             FOR r IN 
               SELECT DISTINCT 
                 pr.part_group_id,
-                pr.procod,
+                pr.procod as sold_procod,
                 COALESCE(i.pviqtde, 0) as qty
               FROM pvi i
               JOIN pro pr ON pr.procod = i.pviprocod
               WHERE i.pvipvcod = NEW.pvcod
                 AND pr.part_group_id IS NOT NULL
             LOOP
-              -- Update group stock
+              v_group_id := r.part_group_id;
+              v_qty := r.qty;
+
+              -- Update the group's shared stock_quantity
               UPDATE part_groups 
-              SET stock_quantity = stock_quantity - r.qty,
+              SET stock_quantity = GREATEST(stock_quantity - v_qty, 0),
                   updated_at = NOW()
-              WHERE id = r.part_group_id;
-              
-              -- Create audit record with reference_id = product code (procod) for frontend display
-              INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
-              VALUES (r.part_group_id, -r.qty, 'sale', r.procod::text);
+              WHERE id = v_group_id;
+
+              -- Decrement stock for ALL members of the compatibility group
+              -- This includes both the sold product and all other compatible parts
+              FOR member_rec IN
+                SELECT procod, prodes
+                FROM pro
+                WHERE part_group_id = v_group_id
+              LOOP
+                -- Decrement the individual product stock (pro.proqtde)
+                UPDATE pro
+                SET proqtde = GREATEST(COALESCE(proqtde, 0) - v_qty, 0)
+                WHERE procod = member_rec.procod;
+
+                -- Create audit record for each member affected
+                -- reference_id stores the product code (procod) for frontend display
+                INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+                VALUES (v_group_id, -v_qty, 'sale', member_rec.procod::text);
+              END LOOP;
             END LOOP;
 
           END IF;
@@ -609,6 +647,9 @@ async function atualizarDB() {
   
     `);
 
+    // Trigger function to return stock when a confirmed order is cancelled
+    // IDEMPOTENT: Only executes when pvsta transitions to 'X' for a confirmed order
+    // Mirrors the logic of atualizar_saldo but returns stock instead of decrementing
     await pool.query(`
       CREATE OR REPLACE FUNCTION public.retornar_saldo()
         RETURNS trigger
@@ -616,10 +657,15 @@ async function atualizarDB() {
         AS $function$
         DECLARE
           r RECORD;
+          member_rec RECORD;
+          v_group_id INTEGER;
+          v_qty NUMERIC;
         BEGIN
-          IF NEW.pvsta = 'X' AND NEW.pvconfirmado = 'S' THEN
+          -- Only return stock if the order was confirmed AND is being cancelled
+          -- Check that we're transitioning from non-cancelled to cancelled state
+          IF OLD.pvsta <> 'X' AND NEW.pvsta = 'X' AND NEW.pvconfirmado = 'S' THEN
 
-            -- 1) Itens COM cor -> devolve em procor
+            -- 1) Items WITH color -> return to procor
             UPDATE procor pc
               SET procorqtde = COALESCE(pc.procorqtde, 0) + COALESCE(i.pviqtde, 0)
               FROM pvi i
@@ -627,39 +673,56 @@ async function atualizarDB() {
               AND i.pviprocorid  IS NOT NULL
               AND i.pviprocorid   = pc.procorcorescod;
 
-            -- 2) Itens SEM cor e produto SEM variações -> devolve em pro.proqtde (legacy)
+            -- 2) Items WITHOUT color AND product WITHOUT variations -> return to pro.proqtde
+            -- Only for products NOT in a compatibility group (groups are handled separately)
             UPDATE pro pr
               SET proqtde = COALESCE(pr.proqtde, 0) + COALESCE(i.pviqtde, 0)
               FROM pvi i
             WHERE i.pvipvcod = NEW.pvcod
               AND i.pviprocod = pr.procod
               AND i.pviprocorid IS NULL
+              AND pr.part_group_id IS NULL
               AND NOT EXISTS (
                     SELECT 1
                       FROM procor pc
                       WHERE pc.procorprocod = pr.procod
                   );
 
-            -- 3) NEW: Return stock to part_group for products with a group (order cancellation)
+            -- 3) COMPATIBILITY GROUPS: Return stock for ALL members of the group
             FOR r IN 
               SELECT DISTINCT 
                 pr.part_group_id,
-                pr.procod,
+                pr.procod as sold_procod,
                 COALESCE(i.pviqtde, 0) as qty
               FROM pvi i
               JOIN pro pr ON pr.procod = i.pviprocod
               WHERE i.pvipvcod = NEW.pvcod
                 AND pr.part_group_id IS NOT NULL
             LOOP
-              -- Return stock to group
+              v_group_id := r.part_group_id;
+              v_qty := r.qty;
+
+              -- Return stock to the group's shared stock_quantity
               UPDATE part_groups 
-              SET stock_quantity = stock_quantity + r.qty,
+              SET stock_quantity = stock_quantity + v_qty,
                   updated_at = NOW()
-              WHERE id = r.part_group_id;
-              
-              -- Create audit record with reference_id = product code (procod) for frontend display
-              INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
-              VALUES (r.part_group_id, r.qty, 'cancellation', r.procod::text);
+              WHERE id = v_group_id;
+
+              -- Return stock to ALL members of the compatibility group
+              FOR member_rec IN
+                SELECT procod, prodes
+                FROM pro
+                WHERE part_group_id = v_group_id
+              LOOP
+                -- Return the individual product stock (pro.proqtde)
+                UPDATE pro
+                SET proqtde = COALESCE(proqtde, 0) + v_qty
+                WHERE procod = member_rec.procod;
+
+                -- Create audit record for each member affected
+                INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+                VALUES (v_group_id, v_qty, 'cancellation', member_rec.procod::text);
+              END LOOP;
             END LOOP;
 
           END IF;
@@ -673,23 +736,29 @@ async function atualizarDB() {
     // FIM INSERTS CONDICIONAIS
 
     //inicio das triggers
+    // Trigger for stock decrement on order confirmation
+    // The trigger fires AFTER UPDATE OF pvconfirmado and the condition ensures
+    // it only runs when transitioning from 'N' to 'S' (idempotent)
     await pool.query(`
       DROP TRIGGER IF EXISTS t_atualizar_saldo ON pv;
       CREATE TRIGGER t_atualizar_saldo
       AFTER UPDATE OF pvconfirmado
       ON public.pv
       FOR EACH ROW
-      WHEN (NEW.pvconfirmado = 'S')
+      WHEN (OLD.pvconfirmado = 'N' AND NEW.pvconfirmado = 'S')
       execute procedure atualizar_saldo()
     `);
 
+    // Trigger for stock return on order cancellation
+    // The trigger fires AFTER UPDATE OF pvsta and the condition ensures
+    // it only runs when transitioning to 'X' from a non-cancelled state (idempotent)
     await pool.query(`
       DROP TRIGGER IF EXISTS t_retornar_saldo ON public.pv;
       CREATE TRIGGER t_retornar_saldo
       AFTER UPDATE OF pvsta
       ON public.pv
       FOR EACH ROW
-      WHEN (NEW.pvsta = 'X')
+      WHEN (OLD.pvsta <> 'X' AND NEW.pvsta = 'X')
       execute procedure retornar_saldo()
     `);
 

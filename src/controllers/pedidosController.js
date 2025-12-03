@@ -404,10 +404,37 @@ exports.confirmarPedido = async (req, res) => {
   console.log(pvcod);
 
   try {
+    // Check if the order is already confirmed to prevent re-confirmation
+    // and avoid triggering the stock deduction again
+    const checkResult = await pool.query(
+      "SELECT pvconfirmado FROM pv WHERE pvcod = $1",
+      [pvcod]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: "Pedido não encontrado." });
+    }
+
+    if (checkResult.rows[0].pvconfirmado === 'S') {
+      // Order already confirmed - return success without modifying
+      return res.status(200).json({ 
+        message: "Pedido já confirmado.",
+        alreadyConfirmed: true 
+      });
+    }
+
     const result = await pool.query(
-      "update pv set pvconfirmado = 'S', pvrcacod = $2 where pvcod = $1 RETURNING *",
+      "UPDATE pv SET pvconfirmado = 'S', pvrcacod = $2 WHERE pvcod = $1 AND pvconfirmado = 'N' RETURNING *",
       [pvcod, req.body.pvrcacod]
     );
+    
+    if (result.rows.length === 0) {
+      return res.status(200).json({ 
+        message: "Pedido já confirmado.",
+        alreadyConfirmed: true 
+      });
+    }
+    
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
