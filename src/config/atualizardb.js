@@ -601,18 +601,21 @@ async function atualizarDB() {
             -- - part_groups(id, name, stock_quantity, ...) - main group table
             -- - pro.part_group_id - FK linking product to a group
             -- - part_group_audit - audit trail for stock movements
+            -- 
+            -- NOTE: We aggregate quantities by group_id first to handle cases where
+            -- an order contains multiple products from the same group
             FOR r IN 
-              SELECT DISTINCT 
+              SELECT 
                 pr.part_group_id,
-                pr.procod as sold_procod,
-                COALESCE(i.pviqtde, 0) as qty
+                SUM(COALESCE(i.pviqtde, 0)) as total_qty
               FROM pvi i
               JOIN pro pr ON pr.procod = i.pviprocod
               WHERE i.pvipvcod = NEW.pvcod
                 AND pr.part_group_id IS NOT NULL
+              GROUP BY pr.part_group_id
             LOOP
               v_group_id := r.part_group_id;
-              v_qty := r.qty;
+              v_qty := r.total_qty;
 
               -- Update the group's shared stock_quantity
               UPDATE part_groups 
@@ -689,18 +692,20 @@ async function atualizarDB() {
                   );
 
             -- 3) COMPATIBILITY GROUPS: Return stock for ALL members of the group
+            -- NOTE: We aggregate quantities by group_id first to handle cases where
+            -- an order contains multiple products from the same group
             FOR r IN 
-              SELECT DISTINCT 
+              SELECT 
                 pr.part_group_id,
-                pr.procod as sold_procod,
-                COALESCE(i.pviqtde, 0) as qty
+                SUM(COALESCE(i.pviqtde, 0)) as total_qty
               FROM pvi i
               JOIN pro pr ON pr.procod = i.pviprocod
               WHERE i.pvipvcod = NEW.pvcod
                 AND pr.part_group_id IS NOT NULL
+              GROUP BY pr.part_group_id
             LOOP
               v_group_id := r.part_group_id;
-              v_qty := r.qty;
+              v_qty := r.total_qty;
 
               -- Return stock to the group's shared stock_quantity
               UPDATE part_groups 
