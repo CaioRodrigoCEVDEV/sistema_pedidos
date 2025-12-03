@@ -4,9 +4,9 @@ const pedidosController = require("../controllers/pedidosController");
 const autenticarToken = require("../middlewares/middlewares");
 
 router.get("/pedidos/sequencia", pedidosController.sequencia);
+// Stock decrement happens only on order confirmation via database trigger (atualizar_saldo)
 router.post(
   "/pedidos/enviar",
-  pedidosController.validarEDecrementarEstoque,
   pedidosController.inserirPv,
   pedidosController.inserirPvi
 );
