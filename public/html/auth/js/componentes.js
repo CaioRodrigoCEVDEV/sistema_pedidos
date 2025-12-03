@@ -97,12 +97,32 @@ document.addEventListener("DOMContentLoaded", createFooter);
 
 document.addEventListener('DOMContentLoaded', function () {
   try {
-    const nodes = Array.from(document.querySelectorAll('h1,h2,h3,h4,div,span'));
-    nodes.forEach((el) => {
-      if (el && el.textContent && el.textContent.trim().startsWith('Estoque do Grupo')) {
-        const card = el.closest('.card') || el.closest('.panel') || el.parentElement;
-        if (card) card.style.display = 'none';
+    // Use TreeWalker for efficient text node search
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: function(node) {
+          return node.textContent.trim().startsWith('Estoque do Grupo')
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.FILTER_SKIP;
+        }
       }
+    );
+    
+    const nodesToHide = [];
+    while (walker.nextNode()) {
+      const el = walker.currentNode.parentElement;
+      if (el) {
+        const card = el.closest('.card') || el.closest('.panel');
+        if (card && !nodesToHide.includes(card)) {
+          nodesToHide.push(card);
+        }
+      }
+    }
+    
+    nodesToHide.forEach(card => {
+      card.style.display = 'none';
     });
   } catch (err) {
     console.error('Erro ao ocultar Estoque do Grupo:', err);
