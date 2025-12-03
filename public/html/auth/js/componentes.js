@@ -94,3 +94,17 @@ function createFooter() {
   `;
 }
 document.addEventListener("DOMContentLoaded", createFooter);
+
+document.addEventListener('DOMContentLoaded', function () {
+  try {
+    const nodes = Array.from(document.querySelectorAll('h1,h2,h3,h4,div,span'));
+    nodes.forEach((el) => {
+      if (el && el.textContent && el.textContent.trim().startsWith('Estoque do Grupo')) {
+        const card = el.closest('.card') || el.closest('.panel') || el.parentElement;
+        if (card) card.style.display = 'none';
+      }
+    });
+  } catch (err) {
+    console.error('Erro ao ocultar Estoque do Grupo:', err);
+  }
+});
