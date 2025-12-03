@@ -1,9 +1,9 @@
 /**
  * JavaScript do Painel de Grupos de Compatibilidade
- * 
+ *
  * Gerencia a interface administrativa dos grupos de compatibilidade.
  * Os grupos permitem que múltiplas peças compartilhem o mesmo estoque.
- * 
+ *
  * IMPORTANTE: O ID dos grupos é INTEGER simples, não criptografado.
  */
 
@@ -154,11 +154,6 @@ function renderGrupos(grupos) {
         <span class="badge rounded-pill bg-secondary-subtle text-secondary">${
           grupo.parts_count || 0
         }</span>
-      </td>
-      <td class="text-center">
-        <span class="${stockClass} fw-semibold px-3">${
-      grupo.stock_quantity
-    }</span>
       </td>
       <td class="text-center text-muted small">${formatDate(
         grupo.updated_at
@@ -528,7 +523,7 @@ function fecharModalComSeguranca(modalId) {
 
   // Limpa imediatamente qualquer backdrop residual
   limparBackdropResidual();
-  
+
   // Aguarda a animação de fechamento e limpa novamente para garantir
   setTimeout(() => {
     limparBackdropResidual();
@@ -541,12 +536,12 @@ function fecharModalComSeguranca(modalId) {
  */
 function limparBackdropResidual() {
   // Remove todos os backdrops que possam ter ficado
-  document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+  document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
   // Remove a classe modal-open do body
-  document.body.classList.remove('modal-open');
+  document.body.classList.remove("modal-open");
   // Remove o estilo inline de padding/overflow que o Bootstrap adiciona
-  document.body.style.removeProperty('overflow');
-  document.body.style.removeProperty('padding-right');
+  document.body.style.removeProperty("overflow");
+  document.body.style.removeProperty("padding-right");
 }
 
 /**
@@ -669,7 +664,7 @@ async function adicionarPecaAoGrupo(partId) {
  */
 async function atualizarListaPecasDisponiveis() {
   const tbody = document.getElementById("tabela-pecas-disponiveis");
-  
+
   try {
     const res = await fetch(`${BASE_URL}/part-groups/available-part`, {
       credentials: "include",
@@ -744,20 +739,20 @@ document.addEventListener("DOMContentLoaded", function () {
     modalAdicionarPeca.addEventListener("hidden.bs.modal", function () {
       limparBackdropResidual();
     });
-    
+
     // Evento disparado quando o modal está sendo escondido (backup)
     modalAdicionarPeca.addEventListener("hide.bs.modal", function () {
       // Agenda limpeza para após a animação
       setTimeout(limparBackdropResidual, 350);
     });
   }
-  
+
   // Adiciona listeners para todos os outros modais também
   // Usa atributo data para evitar adicionar listeners duplicados
-  const todosModais = document.querySelectorAll('.modal');
-  todosModais.forEach(modal => {
-    if (!modal.hasAttribute('data-backdrop-cleanup')) {
-      modal.setAttribute('data-backdrop-cleanup', 'true');
+  const todosModais = document.querySelectorAll(".modal");
+  todosModais.forEach((modal) => {
+    if (!modal.hasAttribute("data-backdrop-cleanup")) {
+      modal.setAttribute("data-backdrop-cleanup", "true");
       modal.addEventListener("hidden.bs.modal", function () {
         limparBackdropResidual();
       });
