@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const partGroupModels = require("../models/partGroupModels");
 
 exports.sequencia = async (req, res) => {
   try {
@@ -7,6 +8,80 @@ exports.sequencia = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao gerar sequência" });
+  }
+};
+
+/**
+ * Middleware que valida e decrementa o estoque antes de criar o pedido.
+ * 
+ * Esta função implementa a sincronização de estoque entre grupos:
+ * - Para peças sem grupo: decrementa apenas o estoque individual
+ * - Para peças com grupo: sincroniza o estoque entre todas as peças do grupo
+ * 
+ * IMPORTANTE: O decremento ocorre ANTES do pedido ser criado, garantindo que:
+ * - A validação de estoque é atômica (com locks FOR UPDATE)
+ * - O WhatsApp só é enviado após o commit bem-sucedido
+ * - Em caso de falha, nenhuma alteração é persistida
+ */
+exports.validarEDecrementarEstoque = async (req, res, next) => {
+  const { cart, pvcod } = req.body;
+
+  if (!Array.isArray(cart) || cart.length === 0) {
+    return res.status(400).json({ error: "Carrinho vazio ou inválido" });
+  }
+
+  try {
+    // Prepara a lista de itens para venda
+    const itensParaVenda = [];
+    for (const item of cart) {
+      const procod = item.id;
+      // O ID pode vir no formato "123-cor" ou apenas "123"
+      const codigoInteiro = parseInt(String(procod).split("-")[0], 10);
+      const quantidade = parseInt(item.qt, 10) || 1;
+
+      // Valida que o ID da peça é um número válido
+      if (isNaN(codigoInteiro) || codigoInteiro <= 0) {
+        return res.status(400).json({
+          error: `ID de peça inválido: ${procod}`,
+          tipo: "item_invalido",
+        });
+      }
+
+      itensParaVenda.push({
+        partId: codigoInteiro,
+        quantidade: quantidade,
+      });
+    }
+
+    // Tenta decrementar o estoque de todos os itens em uma única transação
+    const resultado = await partGroupModels.venderItens(
+      itensParaVenda,
+      pvcod ? String(pvcod) : null
+    );
+
+    // Armazena o resultado para uso posterior (opcional, para logging)
+    req.estoqueResultado = resultado;
+
+    console.log(
+      `Estoque decrementado com sucesso para pedido ${pvcod}:`,
+      resultado.itensProcessados.length,
+      "itens processados"
+    );
+
+    // Continua para a criação do pedido
+    next();
+  } catch (error) {
+    console.error("Erro ao validar/decrementar estoque:", error);
+
+    // Retorna erro amigável para o frontend
+    const mensagemErro = error.message.includes("insuficiente")
+      ? error.message
+      : "Erro ao processar estoque. Por favor, tente novamente.";
+
+    return res.status(400).json({
+      error: mensagemErro,
+      tipo: "estoque_insuficiente",
+    });
   }
 };
 
@@ -329,10 +404,37 @@ exports.confirmarPedido = async (req, res) => {
   console.log(pvcod);
 
   try {
+    // Check if the order is already confirmed to prevent re-confirmation
+    // and avoid triggering the stock deduction again
+    const checkResult = await pool.query(
+      "SELECT pvconfirmado FROM pv WHERE pvcod = $1",
+      [pvcod]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: "Pedido não encontrado." });
+    }
+
+    if (checkResult.rows[0].pvconfirmado === 'S') {
+      // Order already confirmed - return success without modifying
+      return res.status(200).json({ 
+        message: "Pedido já confirmado.",
+        alreadyConfirmed: true 
+      });
+    }
+
     const result = await pool.query(
-      "update pv set pvconfirmado = 'S', pvrcacod = $2 where pvcod = $1 RETURNING *",
+      "UPDATE pv SET pvconfirmado = 'S', pvrcacod = $2 WHERE pvcod = $1 AND pvconfirmado = 'N' RETURNING *",
       [pvcod, req.body.pvrcacod]
     );
+    
+    if (result.rows.length === 0) {
+      return res.status(200).json({ 
+        message: "Pedido já confirmado.",
+        alreadyConfirmed: true 
+      });
+    }
+    
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);

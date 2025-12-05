@@ -406,3 +406,136 @@ AS SELECT modelo.modcod,
 ```
 
 ---
+
+# 🧪 Testes Manuais - Sincronização de Estoque de Grupos
+
+Esta seção descreve os passos para testar manualmente a funcionalidade de sincronização de estoque entre grupos de compatibilidade (part_groups).
+
+## Pré-requisitos
+
+1. Banco de dados PostgreSQL configurado e rodando
+2. Servidor Node.js em execução
+3. Tabelas `part_groups`, `part_group_audit` e `pro` criadas (executar migração do banco)
+
+## Cenários de Teste
+
+### Cenário 1: Vender peça de grupo COM estoque definido
+
+**Configuração:**
+```sql
+-- Criar um grupo com estoque definido
+INSERT INTO part_groups (name, stock_quantity) VALUES ('Grupo Teste 1', 10);
+
+-- Vincular peças ao grupo (ajustar os IDs conforme seu banco)
+UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 1'), proqtde = 10 WHERE procod IN (1, 2, 3);
+```
+
+**Passos:**
+1. Acessar o sistema como usuário
+2. Adicionar ao carrinho 2 unidades de uma peça do grupo
+3. Finalizar pedido (Retirada Balcão ou Entrega)
+4. Verificar resultado
+
+**Resultado esperado:**
+- Todas as peças do grupo devem ter estoque decrementado em 2 unidades
+- `part_groups.stock_quantity` deve ser igual ao MIN(estoque das peças) = 8
+- Registro de auditoria criado em `part_group_audit` com `reference_id` = código do produto
+- Mensagem de sucesso via toast (não alert)
+- WhatsApp abre apenas após commit bem-sucedido
+
+**Verificação SQL:**
+```sql
+-- Verificar estoque das peças do grupo
+SELECT procod, prodes, proqtde FROM pro WHERE part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 1');
+
+-- Verificar estoque do grupo
+SELECT * FROM part_groups WHERE name = 'Grupo Teste 1';
+
+-- Verificar auditoria
+SELECT * FROM part_group_audit WHERE part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 1') ORDER BY created_at DESC;
+```
+
+---
+
+### Cenário 2: Vender peça de grupo SEM estoque definido (NULL)
+
+**Configuração:**
+```sql
+-- Criar um grupo sem estoque definido
+INSERT INTO part_groups (name, stock_quantity) VALUES ('Grupo Teste 2', NULL);
+
+-- Vincular peças ao grupo com estoques diferentes
+UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 2') WHERE procod = 4;
+UPDATE pro SET proqtde = 5 WHERE procod = 4;
+
+UPDATE pro SET part_group_id = (SELECT id FROM part_groups WHERE name = 'Grupo Teste 2') WHERE procod = 5;
+UPDATE pro SET proqtde = 3 WHERE procod = 5;
+```
+
+**Passos:**
+1. Acessar o sistema como usuário
+2. Adicionar ao carrinho 6 unidades de uma peça do grupo
+3. Finalizar pedido
+
+**Resultado esperado:**
+- Estoque é consumido das peças, começando pela de maior estoque
+- Peça com 5 unidades fica com 0
+- Peça com 3 unidades fica com 2 (5-5+3-1=2)
+- Registros de auditoria criados para cada peça afetada
+- `part_groups.stock_quantity` permanece NULL
+
+---
+
+### Cenário 3: Estoque insuficiente
+
+**Configuração:**
+```sql
+-- Usar o Grupo Teste 1 com estoque = 8 (após Cenário 1)
+-- Ou criar novo grupo com estoque baixo
+```
+
+**Passos:**
+1. Acessar o sistema como usuário
+2. Adicionar ao carrinho 100 unidades de uma peça do grupo
+3. Tentar finalizar pedido
+
+**Resultado esperado:**
+- Pedido NÃO é criado
+- Toast de erro exibe: "Estoque insuficiente no grupo..."
+- Nenhuma alteração no banco de dados
+- Botões são reabilitados para nova tentativa
+
+---
+
+### Cenário 4: Histórico no Frontend
+
+**Passos:**
+1. Acessar o painel administrativo
+2. Navegar para "Grupos de Compatibilidade"
+3. Selecionar um grupo e visualizar histórico
+
+**Resultado esperado:**
+- Histórico exibe movimentações com o código do produto (procod) como referência
+- Cada entrada mostra: quantidade alterada, motivo (sale/cancellation), data
+
+---
+
+## Comandos Git
+
+Para criar a branch e trabalhar nesta feature:
+
+```bash
+# Criar branch a partir da release
+git checkout release
+git pull origin release
+git checkout -b feature/sync-group-stock
+
+# Após fazer as alterações, commitar
+git add .
+git commit -m "feat: implementa sincronização de estoque de grupos"
+
+# Enviar para o repositório remoto
+git push -u origin feature/sync-group-stock
+```
+
+---

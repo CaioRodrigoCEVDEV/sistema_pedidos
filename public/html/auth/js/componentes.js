@@ -1,28 +1,3 @@
-function createHeaderUser() {
-  const header = document.getElementById("header");
-  header.innerHTML = `
-  <nav class="navbar navbar-expand-lg navbar-light  shadow-sm rounded p-2 m-1">
-                <a class="navbar-brand" href="index" id="nomeEmpresa"><img src="/uploads/logo.jpg" width="30"
-                        height="30" alt="" /></a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav">
-                        <li class="nav-item active">
-                            <a class="nav-link" href="index">Inicio</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="painel">Acesso</a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-  `;
-}
-document.addEventListener("DOMContentLoaded", createHeaderUser);
-
 function createHeader() {
   const header = document.getElementById("header-admin");
   header.innerHTML = `
@@ -43,6 +18,9 @@ function createHeader() {
             </li>
             <li class="nav-item">
               <a class="nav-link" href="painel">Produtos</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="part">Grupos</a>
             </li>
             <li class="nav-item" id="clientes">
               <a class="nav-link" href="clientes">Clientes</a>
@@ -75,7 +53,6 @@ function createHeader() {
         </div>
       </nav>  
   `;
-
 
   const btnSair = document.getElementById("buttonSair");
   if (btnSair) {
@@ -116,20 +93,20 @@ function createFooter() {
 }
 document.addEventListener("DOMContentLoaded", createFooter);
 
-document
-  .getElementById("buttonSair")
-  .addEventListener("click", function (event) {
-    event.preventDefault();
+// Hide "Estoque do Grupo" card in the part groups details view
+document.addEventListener("DOMContentLoaded", function () {
+  // Only run on pages with the group details section
+  const detalhesGrupo = document.getElementById("detalhesGrupo");
+  if (!detalhesGrupo) return;
 
-    localStorage.removeItem("usuarioLogado");
-
-    fetch("/auth/sair", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).finally(() => {
-      // Redireciona após logout
-      window.location.href = "/index";
-    });
+  // Find the card subtitle containing "Estoque do Grupo" and hide its parent column
+  const subtitles = detalhesGrupo.querySelectorAll(".card-subtitle");
+  subtitles.forEach(function (subtitle) {
+    if (subtitle.textContent.trim() === "Estoque do Grupo") {
+      const parentCol = subtitle.closest(".col-md-4");
+      if (parentCol) {
+        parentCol.style.display = "none";
+      }
+    }
   });
+});

@@ -14,8 +14,6 @@ async function atualizarDB() {
 
     //  await pool.query(`ALTER TABLE public.emp ADD IF NOT exists empcod serial4 NOT NULL;`);
 
-
-
     await pool.query(
       `ALTER TABLE public.emp ADD IF NOT exists empcod serial4 NOT NULL;`
     );
@@ -80,14 +78,11 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.pro ADD if not exists proacabando bpchar(1) DEFAULT 'N'::bpchar NULL;`
     );
-      //temporatrio 
+    //temporatrio
 
-      await pool.query(
-      `update usu set usuviuversao = 'N';`
-    );
+    await pool.query(`update usu set usuviuversao = 'N';`);
 
-      //fim temporatrio
-
+    //fim temporatrio
 
     // Tabela de relacionamento muitos-para-muitos entre produtos e modelos
     await pool.query(`
@@ -107,6 +102,104 @@ async function atualizarDB() {
       WHERE promodcod IS NOT NULL
       ON CONFLICT (promodprocod, promodmodcod) DO NOTHING;
     `);
+
+    // ==================================================================================================================================
+    // GRUPOS DE COMPATIBILIDADE (PART GROUPS) - Grupos para gerenciamento de estoque compartilhado
+    // Simplificado: usa INTEGER como ID (auto increment) ao invés de UUID
+    // ==================================================================================================================================
+
+    // Verifica se a tabela part_groups existe com UUID e precisa de migração
+    await pool.query(`
+      DO $$
+      BEGIN
+        -- Se a tabela existe com coluna UUID, faz a migração para INTEGER
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'part_groups' 
+          AND column_name = 'id' 
+          AND data_type = 'uuid'
+        ) THEN
+          -- Remove as constraints antigas
+          ALTER TABLE public.pro DROP CONSTRAINT IF EXISTS fk_pro_part_group;
+          DROP INDEX IF EXISTS idx_pro_part_group_id;
+          DROP INDEX IF EXISTS idx_part_group_audit_group_id;
+          
+          -- Cria tabela temporária para migração dos dados
+          CREATE TEMP TABLE temp_part_groups AS SELECT * FROM public.part_groups;
+          CREATE TEMP TABLE temp_audit AS SELECT * FROM public.part_group_audit;
+          CREATE TEMP TABLE temp_pro_groups AS SELECT procod, part_group_id FROM public.pro WHERE part_group_id IS NOT NULL;
+          
+          -- Remove as tabelas antigas
+          DROP TABLE IF EXISTS public.part_group_audit;
+          DROP TABLE IF EXISTS public.part_groups CASCADE;
+          
+          -- Limpa a coluna part_group_id da tabela pro
+          ALTER TABLE public.pro DROP COLUMN IF EXISTS part_group_id;
+        END IF;
+      END$$;
+    `);
+
+    // Cria tabela part_groups com ID INTEGER (auto increment) - mais simples e fácil de entender
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.part_groups (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        stock_quantity INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // Adiciona coluna part_group_id na tabela pro (FK para grupos de compatibilidade)
+    await pool.query(`
+      ALTER TABLE public.pro ADD IF NOT EXISTS part_group_id INTEGER NULL;
+    `);
+
+    // Adiciona a constraint de chave estrangeira se não existir
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints 
+          WHERE constraint_name = 'fk_pro_part_group' 
+          AND table_name = 'pro'
+        ) THEN
+          ALTER TABLE public.pro 
+            ADD CONSTRAINT fk_pro_part_group 
+            FOREIGN KEY (part_group_id) 
+            REFERENCES public.part_groups(id) 
+            ON DELETE SET NULL;
+        END IF;
+      END$$;
+    `);
+
+    // Cria tabela de auditoria para histórico de movimentações de estoque do grupo
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.part_group_audit (
+        id SERIAL PRIMARY KEY,
+        part_group_id INTEGER NOT NULL REFERENCES public.part_groups(id) ON DELETE CASCADE,
+        change INTEGER NOT NULL,
+        reason TEXT,
+        reference_id TEXT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // Índice para buscas rápidas no histórico de auditoria
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_part_group_audit_group_id 
+      ON public.part_group_audit(part_group_id);
+    `);
+
+    // Índice para buscas rápidas de peças por grupo
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_pro_part_group_id 
+      ON public.pro(part_group_id);
+    `);
+
+    // ==================================================================================================================================
+    // FIM GRUPOS DE COMPATIBILIDADE
+    // ==================================================================================================================================
 
     // FIM NOVOS CAMPOS
     // ==================================================================================================================================
@@ -447,35 +540,102 @@ async function atualizarDB() {
 
     `);
 
-    // função de trigger para atualizar saldo no estoque
+    // Trigger function to decrement stock when order is confirmed
+    // IDEMPOTENT: Only executes when pvconfirmado transitions from 'N' to 'S'
+    //
+    // Stock decrement strategy:
+    // 1) Items WITH color (pviprocorid) -> decrement from procor table
+    // 2) Items WITHOUT color and product WITHOUT variations -> decrement from pro.proqtde
+    // 3) Products belonging to a compatibility group (part_groups):
+    //    - Decrement stock for the sold product
+    //    - Decrement stock for ALL members of the same group (shared/compatible parts)
+    //    - Create audit records for traceability
     await pool.query(`
       CREATE OR REPLACE FUNCTION public.atualizar_saldo()
         RETURNS trigger
         LANGUAGE plpgsql
         AS $function$
+        DECLARE
+          r RECORD;
+          member_rec RECORD;
+          v_group_id INTEGER;
+          v_qty NUMERIC;
         BEGIN
-          IF NEW.pvconfirmado = 'S' THEN
+          -- IDEMPOTENT CHECK: Only execute if transitioning from 'N' to 'S'
+          -- This prevents double stock deductions on re-confirmation attempts
+          IF OLD.pvconfirmado = 'N' AND NEW.pvconfirmado = 'S' THEN
 
-            -- 1) Itens COM cor -> baixa em procor
+            -- 1) Items WITH color -> decrement from procor
             UPDATE procor pc
-              SET procorqtde = COALESCE(pc.procorqtde, 0) - COALESCE(i.pviqtde, 0)
+              SET procorqtde = GREATEST(COALESCE(pc.procorqtde, 0) - COALESCE(i.pviqtde, 0), 0)
               FROM pvi i
             WHERE i.pvipvcod      = NEW.pvcod
               AND i.pviprocorid  IS NOT NULL
               AND i.pviprocorid   = pc.procorcorescod;
 
-            -- 2) Itens SEM cor e produto SEM variações -> baixa em pro
+            -- 2) Items WITHOUT color AND product WITHOUT variations -> decrement from pro.proqtde
+            -- Only for products NOT in a compatibility group (groups are handled separately below)
             UPDATE pro pr
-              SET proqtde = COALESCE(pr.proqtde, 0) - COALESCE(i.pviqtde, 0)
+              SET proqtde = GREATEST(COALESCE(pr.proqtde, 0) - COALESCE(i.pviqtde, 0), 0)
               FROM pvi i
             WHERE i.pvipvcod = NEW.pvcod
               AND i.pviprocod = pr.procod
               AND i.pviprocorid IS NULL
+              AND pr.part_group_id IS NULL
               AND NOT EXISTS (
                     SELECT 1
                       FROM procor pc
                       WHERE pc.procorprocod = pr.procod
                   );
+
+            -- 3) COMPATIBILITY GROUPS: For products in a group, decrement stock for ALL group members
+            -- This ensures that when product A is sold, the stock of compatible parts B, C, etc.
+            -- in the same group is also decremented.
+            -- 
+            -- Table structure assumed for part_groups:
+            -- - part_groups(id, name, stock_quantity, ...) - main group table
+            -- - pro.part_group_id - FK linking product to a group
+            -- - part_group_audit - audit trail for stock movements
+            -- 
+            -- NOTE: We aggregate quantities by group_id first to handle cases where
+            -- an order contains multiple products from the same group
+            FOR r IN 
+              SELECT 
+                pr.part_group_id,
+                SUM(COALESCE(i.pviqtde, 0)) as total_qty
+              FROM pvi i
+              JOIN pro pr ON pr.procod = i.pviprocod
+              WHERE i.pvipvcod = NEW.pvcod
+                AND pr.part_group_id IS NOT NULL
+              GROUP BY pr.part_group_id
+            LOOP
+              v_group_id := r.part_group_id;
+              v_qty := r.total_qty;
+
+              -- Update the group's shared stock_quantity
+              UPDATE part_groups 
+              SET stock_quantity = GREATEST(stock_quantity - v_qty, 0),
+                  updated_at = NOW()
+              WHERE id = v_group_id;
+
+              -- Decrement stock for ALL members of the compatibility group
+              -- This includes both the sold product and all other compatible parts
+              FOR member_rec IN
+                SELECT procod, prodes
+                FROM pro
+                WHERE part_group_id = v_group_id
+              LOOP
+                -- Decrement the individual product stock (pro.proqtde)
+                UPDATE pro
+                SET proqtde = GREATEST(COALESCE(proqtde, 0) - v_qty, 0)
+                WHERE procod = member_rec.procod;
+
+                -- Create audit record for each member affected
+                -- reference_id stores the product code (procod) for frontend display
+                INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+                VALUES (v_group_id, -v_qty, 'sale', member_rec.procod::text);
+              END LOOP;
+            END LOOP;
 
           END IF;
 
@@ -485,15 +645,25 @@ async function atualizarDB() {
   
     `);
 
+    // Trigger function to return stock when a confirmed order is cancelled
+    // IDEMPOTENT: Only executes when pvsta transitions to 'X' for a confirmed order
+    // Mirrors the logic of atualizar_saldo but returns stock instead of decrementing
     await pool.query(`
       CREATE OR REPLACE FUNCTION public.retornar_saldo()
         RETURNS trigger
         LANGUAGE plpgsql
         AS $function$
+        DECLARE
+          r RECORD;
+          member_rec RECORD;
+          v_group_id INTEGER;
+          v_qty NUMERIC;
         BEGIN
-          IF NEW.pvsta = 'X' AND NEW.pvconfirmado = 'S' THEN
+          -- Only return stock if the order was confirmed AND is being cancelled
+          -- Check that we're transitioning from non-cancelled to cancelled state
+          IF OLD.pvsta <> 'X' AND NEW.pvsta = 'X' AND NEW.pvconfirmado = 'S' THEN
 
-            -- 1) Itens COM cor -> devolve em procor
+            -- 1) Items WITH color -> return to procor
             UPDATE procor pc
               SET procorqtde = COALESCE(pc.procorqtde, 0) + COALESCE(i.pviqtde, 0)
               FROM pvi i
@@ -501,18 +671,59 @@ async function atualizarDB() {
               AND i.pviprocorid  IS NOT NULL
               AND i.pviprocorid   = pc.procorcorescod;
 
-            -- 2) Itens SEM cor e produto SEM variações -> devolve em pro
+            -- 2) Items WITHOUT color AND product WITHOUT variations -> return to pro.proqtde
+            -- Only for products NOT in a compatibility group (groups are handled separately)
             UPDATE pro pr
               SET proqtde = COALESCE(pr.proqtde, 0) + COALESCE(i.pviqtde, 0)
               FROM pvi i
             WHERE i.pvipvcod = NEW.pvcod
               AND i.pviprocod = pr.procod
               AND i.pviprocorid IS NULL
+              AND pr.part_group_id IS NULL
               AND NOT EXISTS (
                     SELECT 1
                       FROM procor pc
                       WHERE pc.procorprocod = pr.procod
                   );
+
+            -- 3) COMPATIBILITY GROUPS: Return stock for ALL members of the group
+            -- NOTE: We aggregate quantities by group_id first to handle cases where
+            -- an order contains multiple products from the same group
+            FOR r IN 
+              SELECT 
+                pr.part_group_id,
+                SUM(COALESCE(i.pviqtde, 0)) as total_qty
+              FROM pvi i
+              JOIN pro pr ON pr.procod = i.pviprocod
+              WHERE i.pvipvcod = NEW.pvcod
+                AND pr.part_group_id IS NOT NULL
+              GROUP BY pr.part_group_id
+            LOOP
+              v_group_id := r.part_group_id;
+              v_qty := r.total_qty;
+
+              -- Return stock to the group's shared stock_quantity
+              UPDATE part_groups 
+              SET stock_quantity = stock_quantity + v_qty,
+                  updated_at = NOW()
+              WHERE id = v_group_id;
+
+              -- Return stock to ALL members of the compatibility group
+              FOR member_rec IN
+                SELECT procod, prodes
+                FROM pro
+                WHERE part_group_id = v_group_id
+              LOOP
+                -- Return the individual product stock (pro.proqtde)
+                UPDATE pro
+                SET proqtde = COALESCE(proqtde, 0) + v_qty
+                WHERE procod = member_rec.procod;
+
+                -- Create audit record for each member affected
+                INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+                VALUES (v_group_id, v_qty, 'Cancelado', member_rec.procod::text);
+              END LOOP;
+            END LOOP;
 
           END IF;
 
@@ -525,23 +736,29 @@ async function atualizarDB() {
     // FIM INSERTS CONDICIONAIS
 
     //inicio das triggers
+    // Trigger for stock decrement on order confirmation
+    // The trigger fires AFTER UPDATE OF pvconfirmado and the condition ensures
+    // it only runs when transitioning from 'N' to 'S' (idempotent)
     await pool.query(`
       DROP TRIGGER IF EXISTS t_atualizar_saldo ON pv;
       CREATE TRIGGER t_atualizar_saldo
       AFTER UPDATE OF pvconfirmado
       ON public.pv
       FOR EACH ROW
-      WHEN (NEW.pvconfirmado = 'S')
+      WHEN (OLD.pvconfirmado = 'N' AND NEW.pvconfirmado = 'S')
       execute procedure atualizar_saldo()
     `);
 
+    // Trigger for stock return on order cancellation
+    // The trigger fires AFTER UPDATE OF pvsta and the condition ensures
+    // it only runs when transitioning to 'X' from a non-cancelled state (idempotent)
     await pool.query(`
       DROP TRIGGER IF EXISTS t_retornar_saldo ON public.pv;
       CREATE TRIGGER t_retornar_saldo
       AFTER UPDATE OF pvsta
       ON public.pv
       FOR EACH ROW
-      WHEN (NEW.pvsta = 'X')
+      WHEN (OLD.pvsta <> 'X' AND NEW.pvsta = 'X')
       execute procedure retornar_saldo()
     `);
 

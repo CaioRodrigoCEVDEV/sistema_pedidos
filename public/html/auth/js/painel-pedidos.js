@@ -130,7 +130,7 @@ window.atualizarTotaisPedidos = atualizarTotaisPedidos;
 // chama uma vez ao carregar a página
 document.addEventListener("DOMContentLoaded", () => {
   atualizarTotaisPedidos();
-  console.log(localStorage.getItem("usucod"));
+  //console.log(localStorage.getItem("usucod"));
 });
 
 async function abriDetalhePedido(pvcod, status = "pendentes") {
@@ -265,10 +265,9 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
     if (newBtnConfirm) {
       newBtnConfirm.addEventListener("click", async () => {
         try {
-          // // pega todas as linhas de itens
+          // Pega todas as linhas de itens
           const linhas = modalEl.querySelectorAll("tbody tr");
           const itens = [];
-          console.log("Linhas de itens:", linhas);
           linhas.forEach((tr) => {
             const cellProcod = tr.querySelector("[data-procod]");
             const inputQtd = tr.querySelector(".qtd-input");
@@ -281,15 +280,19 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             }
           });
 
-          // confirma cada item do pedido
+          // Fluxo de confirmação do pedido:
+          // 1. Confirma cada item do pedido (atualiza quantidades)
           for (const item of itens) {
             await confirmarItensPedido(pvcod, item.qtd, item.procod);
           }
 
-          // fecha o modal ao fim
+          // 2. Confirma o pedido - a saída de estoque é processada automaticamente
+          // pelo trigger de banco de dados (public.atualizar_saldo)
+          await confirmarPedido(pvcod);
+
+          // 4. Fecha o modal ao fim
           const m = bootstrap.Modal.getInstance(modalEl);
           m.hide();
-          await confirmarPedido(pvcod);
         } catch (err) {
           console.error("Erro ao confirmar via modal:", err);
           alert("Erro ao confirmar pedido.");
@@ -411,7 +414,7 @@ async function confirmarItensPedido(pvcod, pviqtde, procod) {
       }
     );
     if (response.ok) {
-      console.log("Item confirmado com sucesso!  procod:", procod);
+      //console.log("Item confirmado com sucesso!  procod:", procod);
       // alert("Pedido confirmado com sucesso!");
       // Atualize a interface do usuário conforme necessário
     } else {

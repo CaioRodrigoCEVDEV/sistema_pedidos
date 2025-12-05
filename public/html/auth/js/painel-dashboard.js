@@ -361,11 +361,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       const marcas = await jget("/marcas", []);
       setText("kpiMarcas", marcas?.length ?? 0);
 
-      const modelos = await jget("/modelos/todos", []);
-      setText("kpiModelos", modelos?.length ?? 0);
-      const tipos = await jget("/tipos/todos", []);
-      setText("kpiTipos", tipos?.length ?? 0);
-
       // Estoque (listas)
       const comEstoque = await jget("/proComEstoque", []);
       const semEstoque = await jget("/proSemEstoque", []);
@@ -639,6 +634,6 @@ let chartTopProdutosMes;
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initTopMarcasMes);
     else initTopMarcasMes();
 
-    window.addEventListener("resize", throttleDash(initTopProdutosMes, 200));
+    //window.addEventListener("resize", throttleDash(initTopProdutosMes, 200));
   
 
