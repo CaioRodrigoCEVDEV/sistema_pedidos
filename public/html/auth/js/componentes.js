@@ -1,5 +1,3 @@
-
-
 function createHeader() {
   const header = document.getElementById("header-admin");
   header.innerHTML = `
@@ -22,7 +20,7 @@ function createHeader() {
               <a class="nav-link" href="painel">Produtos</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="part">Part</a>
+              <a class="nav-link" href="part">Grupos</a>
             </li>
             <li class="nav-item" id="clientes">
               <a class="nav-link" href="clientes">Clientes</a>
@@ -96,14 +94,14 @@ function createFooter() {
 document.addEventListener("DOMContentLoaded", createFooter);
 
 // Hide "Estoque do Grupo" card in the part groups details view
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
   // Only run on pages with the group details section
   const detalhesGrupo = document.getElementById("detalhesGrupo");
   if (!detalhesGrupo) return;
 
   // Find the card subtitle containing "Estoque do Grupo" and hide its parent column
   const subtitles = detalhesGrupo.querySelectorAll(".card-subtitle");
-  subtitles.forEach(function(subtitle) {
+  subtitles.forEach(function (subtitle) {
     if (subtitle.textContent.trim() === "Estoque do Grupo") {
       const parentCol = subtitle.closest(".col-md-4");
       if (parentCol) {
