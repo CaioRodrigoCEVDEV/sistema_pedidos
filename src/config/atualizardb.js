@@ -14,8 +14,6 @@ async function atualizarDB() {
 
     //  await pool.query(`ALTER TABLE public.emp ADD IF NOT exists empcod serial4 NOT NULL;`);
 
-
-
     await pool.query(
       `ALTER TABLE public.emp ADD IF NOT exists empcod serial4 NOT NULL;`
     );
@@ -80,14 +78,11 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.pro ADD if not exists proacabando bpchar(1) DEFAULT 'N'::bpchar NULL;`
     );
-      //temporatrio 
+    //temporatrio
 
-      await pool.query(
-      `update usu set usuviuversao = 'N';`
-    );
+    await pool.query(`update usu set usuviuversao = 'N';`);
 
-      //fim temporatrio
-
+    //fim temporatrio
 
     // Tabela de relacionamento muitos-para-muitos entre produtos e modelos
     await pool.query(`
@@ -547,7 +542,7 @@ async function atualizarDB() {
 
     // Trigger function to decrement stock when order is confirmed
     // IDEMPOTENT: Only executes when pvconfirmado transitions from 'N' to 'S'
-    // 
+    //
     // Stock decrement strategy:
     // 1) Items WITH color (pviprocorid) -> decrement from procor table
     // 2) Items WITHOUT color and product WITHOUT variations -> decrement from pro.proqtde
@@ -726,7 +721,7 @@ async function atualizarDB() {
 
                 -- Create audit record for each member affected
                 INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
-                VALUES (v_group_id, v_qty, 'cancellation', member_rec.procod::text);
+                VALUES (v_group_id, v_qty, 'Cancelado', member_rec.procod::text);
               END LOOP;
             END LOOP;
 

@@ -2,15 +2,15 @@ const pool = require("../config/db");
 
 /**
  * Modelo de Grupos de Compatibilidade (Part Groups)
- * 
+ *
  * Gerencia os grupos de compatibilidade para estoque compartilhado.
  * Peças no mesmo grupo compartilham a mesma quantidade de estoque.
- * 
+ *
  * Estrutura das tabelas:
  * - part_groups: Tabela principal dos grupos (id INTEGER, name, stock_quantity)
  * - part_group_audit: Histórico de movimentações de estoque
  * - pro.part_group_id: Coluna FK que vincula uma peça a um grupo
- * 
+ *
  * IMPORTANTE: O campo id usa INTEGER simples (auto increment), não UUID.
  */
 
@@ -561,7 +561,7 @@ async function getGroupAuditHistory(groupId, limit = 50) {
 async function updateGroupStock(
   groupId,
   newQuantity,
-  reason = "manual_adjustment"
+  reason = "Ajuste_Manual"
 ) {
   const client = await pool.connect();
 
@@ -617,14 +617,14 @@ async function updateGroupStock(
 
 /**
  * Valida e decrementa estoque para múltiplos itens de venda em uma única transação atômica.
- * 
+ *
  * Esta função implementa a lógica de sincronização de estoque entre grupos:
  * - Para peças sem grupo: decrementa apenas o estoque individual (proqtde)
  * - Para peças com grupo:
  *   a) Se o grupo tem stock_quantity definido (não nulo): usa esse campo como fonte da verdade
  *      e sincroniza todas as peças do grupo para o mesmo valor
  *   b) Se o grupo NÃO tem stock_quantity definido: valida e decrementa cada peça individualmente
- * 
+ *
  * @param {Array<{partId: number, quantidade: number}>} itens - Lista de itens a vender
  * @param {string} referenceId - ID de referência para auditoria (ex: pvcod)
  * @returns {Object} Resultado com status de sucesso e detalhes
@@ -656,7 +656,9 @@ async function venderItens(itens, referenceId = null) {
       const { partId, quantidade } = item;
 
       if (!partId || !quantidade || quantidade <= 0) {
-        throw new Error(`Item inválido: partId=${partId}, quantidade=${quantidade}`);
+        throw new Error(
+          `Item inválido: partId=${partId}, quantidade=${quantidade}`
+        );
       }
 
       // Busca a peça com bloqueio para atualização
@@ -682,7 +684,7 @@ async function venderItens(itens, referenceId = null) {
         if (part.proqtde < quantidade) {
           throw new Error(
             `Estoque insuficiente para a peça "${part.prodes}" (ID: ${partId}). ` +
-            `Disponível: ${part.proqtde}, Solicitado: ${quantidade}`
+              `Disponível: ${part.proqtde}, Solicitado: ${quantidade}`
           );
         }
 
@@ -715,7 +717,9 @@ async function venderItens(itens, referenceId = null) {
       if (gruposProcessados.has(groupId)) {
         // Acumula a quantidade adicional para o mesmo grupo
         gruposProcessados.get(groupId).quantidadeTotal += quantidade;
-        gruposProcessados.get(groupId).itens.push({ partId, partName: part.prodes, quantidade });
+        gruposProcessados
+          .get(groupId)
+          .itens.push({ partId, partName: part.prodes, quantidade });
         continue;
       }
 
@@ -742,7 +746,9 @@ async function venderItens(itens, referenceId = null) {
       );
 
       if (groupResult.rows.length === 0) {
-        throw new Error(`Grupo de compatibilidade (ID: ${groupId}) não encontrado`);
+        throw new Error(
+          `Grupo de compatibilidade (ID: ${groupId}) não encontrado`
+        );
       }
 
       const group = groupResult.rows[0];
@@ -765,14 +771,14 @@ async function venderItens(itens, referenceId = null) {
 
         // Calcula o estoque mínimo disponível no grupo (todas as peças devem poder decrementar)
         const estoqueMinimo = Math.min(
-          ...pecasGrupoResult.rows.map(p => p.proqtde || 0)
+          ...pecasGrupoResult.rows.map((p) => p.proqtde || 0)
         );
 
         // Valida que o estoque mínimo é suficiente para a quantidade solicitada
         if (estoqueMinimo < quantidadeTotal) {
           throw new Error(
             `Estoque insuficiente no grupo "${group.name}". ` +
-            `Disponível: ${estoqueMinimo}, Solicitado: ${quantidadeTotal}`
+              `Disponível: ${estoqueMinimo}, Solicitado: ${quantidadeTotal}`
           );
         }
 
@@ -816,7 +822,7 @@ async function venderItens(itens, referenceId = null) {
             INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
             VALUES ($1, $2, $3, $4)
           `,
-            [groupId, -itemGrupo.quantidade, "sale", String(itemGrupo.partId)]
+            [groupId, -itemGrupo.quantidade, "Venda", String(itemGrupo.partId)]
           );
 
           resultados.push({
@@ -856,7 +862,7 @@ async function venderItens(itens, referenceId = null) {
         if (estoqueTotal < quantidadeTotal) {
           throw new Error(
             `Estoque insuficiente no grupo "${group.name}". ` +
-            `Disponível (soma das peças): ${estoqueTotal}, Solicitado: ${quantidadeTotal}`
+              `Disponível (soma das peças): ${estoqueTotal}, Solicitado: ${quantidadeTotal}`
           );
         }
 
@@ -900,7 +906,12 @@ async function venderItens(itens, referenceId = null) {
             INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
             VALUES ($1, $2, $3, $4)
           `,
-            [groupId, -pecaAfetada.quantidadeRetirada, "sale", String(pecaAfetada.procod)]
+            [
+              groupId,
+              -pecaAfetada.quantidadeRetirada,
+              "Venda",
+              String(pecaAfetada.procod),
+            ]
           );
         }
 
