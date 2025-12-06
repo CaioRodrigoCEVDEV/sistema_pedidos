@@ -257,9 +257,7 @@ app.get("/backups/folder/:folder", requireAdminPages, async (req, res) => {
       return res.status(400).json({ erro: "Nome de pasta inválido." });
     }
 
-    const entries = await fs.promises.readdir(folderPath, {
-      withFileTypes: true,
-    });
+    const entries = await fs.promises.readdir(folderPath, { withFileTypes: true });
 
     const backups = await Promise.all(
       entries.map(async (entry) => {
@@ -270,13 +268,11 @@ app.get("/backups/folder/:folder", requireAdminPages, async (req, res) => {
           nome: entry.name,
           tipo: entry.isDirectory() ? "pasta" : "arquivo",
           tamanhoKB: entry.isDirectory() ? "-" : (stats.size / 1024).toFixed(2),
+
+          // ✅ NADA de path.join em URLs
           url: entry.isDirectory()
-            ? `/backups/folder/${encodeURIComponent(
-                path.join(folderName, entry.name)
-              )}`
-            : `/backups/download/${encodeURIComponent(
-                path.join(folderName, entry.name)
-              )}`,
+            ? `/backups/folder/${encodeURIComponent(entry.name)}`
+            : `/backups/download/${encodeURIComponent(folderName)}/${encodeURIComponent(entry.name)}`
         };
       })
     );
@@ -284,40 +280,42 @@ app.get("/backups/folder/:folder", requireAdminPages, async (req, res) => {
     res.json({ backups });
   } catch (err) {
     console.error("Erro ao listar pasta:", err.message);
-    res
-      .status(500)
-      .json({ erro: "Erro ao listar pasta", detalhe: err.message });
+    res.status(500).json({ erro: "Erro ao listar pasta", detalhe: err.message });
   }
 });
 
-// 🔹 DOWNLOAD DE ARQUIVO ESPECÍFICO
-app.get("/backups/download/:dir", requireAdminPages, async (req, res) => {
-  try {
-    const fileName = path.basename(decodeURIComponent(req.params.file)); // evita ../
-    const filePath = path.join(dirPathBackups, fileName);
 
-    // segurança: impede acesso fora da pasta
+// 🔹 DOWNLOAD DE ARQUIVO ESPECÍFICO
+app.get("/backups/download/:folder/:file", requireAdminPages, async (req, res) => {
+  try {
+    const folder = path.basename(decodeURIComponent(req.params.folder));
+    const file = path.basename(decodeURIComponent(req.params.file));
+    const filePath = path.join(dirPathBackups, folder, file);
+
+    // segurança
     const resolvedBase = path.resolve(dirPathBackups) + path.sep;
     const resolvedTarget = path.resolve(filePath);
     if (!resolvedTarget.startsWith(resolvedBase)) {
       return res.status(400).json({ erro: "Nome de arquivo inválido." });
     }
 
-    // verifica existência
     await fs.promises.access(filePath, fs.constants.F_OK);
 
-    // envia o arquivo
+    // nome para o download
+    const fileName = path.basename(filePath);
+
     res.download(filePath, fileName, (err) => {
       if (err) {
         console.error("Erro no download:", err.message);
-        res.status(500).json({ erro: "Falha ao realizar download." });
+        if (!res.headersSent) return res.status(500).json({ erro: "Falha ao realizar download." });
       }
     });
   } catch (err) {
     console.error("Erro ao baixar arquivo:", err.message);
-    res.status(404).json({ erro: "Arquivo não encontrado." });
+    if (!res.headersSent) return res.status(404).json({ erro: "Arquivo não encontrado." });
   }
 });
+
 
 app.get("/config.js", (req, res) => {
   res.type("application/javascript");
