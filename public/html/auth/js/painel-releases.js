@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const alertEl = document.getElementById("releaseID");
   const closeBtn = document.getElementById("releaseIDClose");
+  const br = document.getElementById("br");
 
   try {
     const response = await fetch("/usuario/viuversao", {
@@ -24,12 +25,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     //alertEl.style.display = "none";
     setTimeout(() => {
+      br.style.display = "block";
       alertEl.style.display = "block";
       alertEl.classList.add("slide-down");
     }, 1500);
 
     if (closeBtn) {
       closeBtn.addEventListener("click", () => {
+      br.style.display = "none";
         try {
           fetch(`${BASE_URL}/usuario/viuversao/`, {
             method: "POST",
@@ -220,27 +223,27 @@ document.addEventListener("DOMContentLoaded", async () => {
       card.className = 'release-card';
 
       const meta = document.createElement('div');
-      meta.className = 'release-meta';
+      // meta.className = 'release-meta';
 
-      const ver = document.createElement('div');
-      ver.className = 'version-badge';
-      ver.textContent = r.tag_name || r.name || '';
-      meta.appendChild(ver);
+      // const ver = document.createElement('div');
+      // ver.className = 'version-badge';
+      // ver.textContent = r.tag_name || r.name || '';
+      // meta.appendChild(ver);
 
-      const dsmall = document.createElement('div');
-      dsmall.className = 'date-small';
-      dsmall.textContent = new Date(r.published_at || Date.now()).toLocaleDateString();
-      meta.appendChild(dsmall);
+      // const dsmall = document.createElement('div');
+      // dsmall.className = 'date-small';
+      // dsmall.textContent = new Date(r.published_at || Date.now()).toLocaleDateString();
+      // meta.appendChild(dsmall);
 
       const authorWrap = document.createElement('div');
       authorWrap.className = 'mt-2';
       const avatar = document.createElement('div');
       avatar.className = 'author-avatar';
       avatar.textContent = 'O';
-      const brand = document.createElement('div');
-      brand.className = 'small text-muted mt-1';
-      brand.textContent = 'OrderUp';
-      authorWrap.append(avatar, brand);
+      // const brand = document.createElement('div');
+      // brand.className = 'small text-muted mt-1';
+      // brand.textContent = 'OrderUp';
+      // authorWrap.append(avatar, brand);
       meta.appendChild(authorWrap);
 
       const body = document.createElement('div');

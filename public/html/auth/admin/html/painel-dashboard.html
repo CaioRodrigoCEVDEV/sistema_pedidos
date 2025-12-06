@@ -57,15 +57,22 @@
       <div class="container">
         <div class="alert alert-dismissible fade show shadow p-3 m-auto bg-white rounded" id="releaseID"
           style="max-width: 800px; margin: auto; display: none;" role="alert">
-          <strong>Veja o que há de novo?</strong> melhorias, correções e novidades para deixar o sistema ainda melhor.
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" id="releaseIDClose">
-          </button>
+            <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-circle-fill text-warning" style="font-size: 2.5rem;"></i>
+            <div>
+              <strong class="text-warning">Nova Atualização Disponível!</strong>
+              <p class="mb-0 text-muted small">Confira melhorias, correções e novidades que deixarão seu sistema mais eficiente.</p>
+            </div>
+            </div>
           <hr>
-          <p class="mb-0"><button id="openReleasesBtn" type="button" class="btn btn-success"> <i class="bi bi-github">
+          <p class="d-flex justify-content-between align-items-center mt-2">
+            <button id="openReleasesBtn" type="button" class="btn btn-success"> <i class="bi bi-github">
               </i>Ver atualizações
-              </i></button></p>
-        </div>
-      </div><br>
+              </i></button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="alert" id="releaseIDClose">Fechar</button>
+          </p>
+        </div><br id="br" style="display: none;">
+      </div>
 
       <!-- Modal -->
       <div class="modal fade" id="releasesModal" tabindex="-1" aria-labelledby="releasesModalLabel" aria-hidden="true">
@@ -73,10 +80,10 @@
           <div class="modal-content">
             <div class="modal-header">
               <div>
-                <h5 class="modal-title" id="releasesModalLabel"> 🚀 Releases — OrderUp</h5>
-                <div class="text-muted small">Mantenha sua equipe atualizada com as versões mais importantes</div>
+                <h5 class="modal-title" id="releasesModalLabel"> 🚀 Atualizações — OrderUp</h5>
+                <p class="text-muted small">Confira as novidades e melhorias das últimas atualizações</p>
               </div>
-              <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
             </div>
 
             <div class="modal-body">
@@ -90,7 +97,7 @@
                 </select>
 
                 <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
-                  <small class="text-muted">Cache: <span id="cacheInfo">--</span></small>
+                  <small class="text-muted d-none">Cache: <span id="cacheInfo">--</span></small>
                   <input id="ghToken" type="password" class="form-control" placeholder="Token (opcional)"
                     style="width:220px; display: none;" />
                 </div>
