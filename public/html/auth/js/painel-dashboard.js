@@ -1,3 +1,13 @@
+     // remove loading + placeholders de todos os wrappers
+    function finishAllChartsLoading() {
+      document.querySelectorAll('.chart-wrapper.loading').forEach(w => {
+        w.classList.remove('loading', 'placeholder', 'placeholder-wave');
+      });
+    }
+
+    // EXEMPLO provisório: remove após 1.2s (substitua pela chamada após render do Chart.js)
+    setTimeout(finishAllChartsLoading, 1200);
+ 
  // Usa window.API_URL (se definido em /config.js). Caso contrário, usa caminho relativo.
     const API = (path) => (window.API_URL ? window.API_URL + path : path);
     const optAuth = { credentials: "include" }; // envia cookie httpOnly do login
