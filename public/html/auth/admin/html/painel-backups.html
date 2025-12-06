@@ -10,7 +10,6 @@
   <!--Links proprios-->
   <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css" />
   <link rel="stylesheet" href="/html/auth/admin/css/style-painel.css" />
-
   <link rel="stylesheet" href="/html/auth/admin/css/style-components.css" />
   <link rel="stylesheet" href="/html/auth/admin/css/style.css" />
   <!--links bootstrap-->
@@ -23,75 +22,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
     integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-
-  <style>
-
-    .wrap {
-      max-width: 980px;
-      margin: auto
-    }
-
-    h1 {
-      margin: 0 0 12px
-    }
-
-    .toolbar {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 12px
-    }
-
-    input[type="search"] {
-      flex: 1;
-      min-width: 220px;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 8px
-    }
-
-    select {
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 8px
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse
-    }
-
-    th,
-    td {
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-      text-align: left
-    }
-
-    th {
-      cursor: pointer;
-      user-select: none
-    }
-
-    .btn {
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      background: #f8f8f8;
-      text-decoration: none
-    }
-
-    .muted {
-      color: #666;
-      font-size: 12px;
-      margin-top: 4px
-    }
-
-    .right {
-      text-align: right
-    }
-  </style>
+  <link rel="stylesheet" href="/html/auth/admin/css/style-painel-backups.css" />
 
 </head>
 
@@ -111,24 +42,20 @@
               <div>
                 <h1 class="h4 mb-0">Backups</h1>
                 <div class="text-muted small">
-                  Gerencie os backups do sistema
+                  Backups diários dos dados do sistema.
                 </div>
               </div>
             </div>
           </div>
         </div>
         <div class="wrap">
-          <h1>Backups</h1>
+          <h1></h1>
           <div class="toolbar">
             <input id="q" type="search" placeholder="Filtrar por nome...">
             <select id="ext">
-              <option value="">Todas as extensões</option>
-              <option>.pfx</option>
-              <option>.exe</option>
-              <option>.jasper</option>
-              <option>.jrxml</option>
-              <option>.zip</option>
-              <option>.gz</option>
+              <option value="">Todas</option>
+              <option>.tgz</option>
+              <option>.log</option>
             </select>
             <span class="muted" id="status"></span>
           </div>
@@ -158,190 +85,7 @@
     crossorigin="anonymous"></script>
   <script src="../js/nomeEmpresa.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-  <script>
-    const state = {
-      data: [],
-      sortKey: 'nome',
-      sortDir: 1,
-      path: '' // caminho relativo dentro de /backups
-    };
-
-    const fmtKB = v => {
-      const n = Number(v);
-      return Number.isFinite(n) ? n.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : v;
-    };
-
-    // ---------- helpers de path/breadcrumb ----------
-    function getParentPath(p) {
-      if (!p) return '';
-      const parts = p.split('/').filter(Boolean);
-      parts.pop();
-      return parts.join('/');
-    }
-
-    function renderBreadcrumb() {
-      const host = 'Backups';
-      const wrap = document.querySelector('.wrap > h1');
-      const crumbs = document.getElementById('crumbs') || document.createElement('div');
-      crumbs.id = 'crumbs';
-      crumbs.className = 'muted';
-      const parts = state.path.split('/').filter(Boolean);
-
-      let html = `<strong>${host}</strong>`;
-      let acc = [];
-      parts.forEach((seg, i) => {
-        acc.push(seg);
-        const p = acc.join('/');
-        html += ` / <a href="#" data-path="${p}" class="crumb">${seg}</a>`;
-      });
-
-      crumbs.innerHTML = html;
-      if (!wrap.nextElementSibling || wrap.nextElementSibling.id !== 'crumbs') {
-        wrap.insertAdjacentElement('afterend', crumbs);
-      }
-
-      // eventos do breadcrumb
-      crumbs.querySelectorAll('a.crumb').forEach(a => {
-        a.addEventListener('click', (e) => {
-          e.preventDefault();
-          state.path = a.dataset.path;
-          load();
-        });
-      });
-    }
-
-    // ---------- carregamento ----------
-    async function load() {
-      const status = document.getElementById('status');
-      status.textContent = 'Carregando...';
-
-      // endpoint muda conforme o path atual
-      const endpoint = state.path
-        ? `/backups/folder/${encodeURIComponent(state.path)}`
-        : '/backups';
-
-      try {
-        const r = await fetch(endpoint, { credentials: 'same-origin' });
-        if (!r.ok) throw new Error('Falha ao carregar lista');
-        const json = await r.json();
-        state.data = Array.isArray(json.backups) ? json.backups : [];
-
-        const qntArq = state.data.filter(i => i.tipo !== 'pasta').length;
-        const qntPastas = state.data.filter(i => i.tipo === 'pasta').length;
-        status.textContent = `${qntPastas} pasta(s), ${qntArq} arquivo(s)`;
-
-        renderBreadcrumb();
-        render();
-      } catch (e) {
-        status.textContent = 'Erro ao carregar.';
-        console.error(e);
-      }
-    }
-
-    // ---------- render tabela ----------
-    function render() {
-      const q = document.getElementById('q').value.trim().toLowerCase();
-      const ext = document.getElementById('ext').value;
-      let rows = state.data.slice();
-
-      // filtro
-      rows = rows.filter(it => {
-        const nomeOK = !q || it.nome.toLowerCase().includes(q);
-        if (!nomeOK) return false;
-
-        // filtro de extensão só faz sentido para arquivos
-        if (ext && it.tipo !== 'arquivo') return false;
-        if (ext && !it.nome.toLowerCase().endsWith(ext.toLowerCase())) return false;
-
-        return true;
-      });
-
-      // ordenação
-      const key = state.sortKey;
-      const dir = state.sortDir;
-      rows.sort((a, b) => {
-        const va = key === 'tamanhoKB'
-          ? (a.tipo === 'pasta' ? -1 : Number(a[key]))
-          : String(a[key]).toLowerCase();
-
-        const vb = key === 'tamanhoKB'
-          ? (b.tipo === 'pasta' ? -1 : Number(b[key]))
-          : String(b[key]).toLowerCase();
-
-        if (va < vb) return -1 * dir;
-        if (va > vb) return 1 * dir;
-        return 0;
-      });
-
-      // monta tabela
-      const tb = document.querySelector('#tbl tbody');
-      tb.innerHTML = '';
-
-      // linha de "voltar" quando dentro de subpasta
-      if (state.path) {
-        const trUp = document.createElement('tr');
-        trUp.innerHTML = `
-        <td colspan="3">
-          <a href="#" id="btnUp" class="btn">⬅ Voltar</a>
-          <span class="muted ms-2">${state.path}</span>
-        </td>`;
-        tb.appendChild(trUp);
-        trUp.querySelector('#btnUp').addEventListener('click', (e) => {
-          e.preventDefault();
-          state.path = getParentPath(state.path);
-          load();
-        });
-      }
-
-      for (const it of rows) {
-        const isFolder = it.tipo === 'pasta';
-        const tr = document.createElement('tr');
-
-        // nome clicável para pastas
-        const nomeHTML = isFolder
-          ? `<a href="#" class="lnk-folder" data-name="${it.nome}">📁 ${it.nome}</a>`
-          : it.nome;
-
-        // ações: Abrir (pasta) ou Download (arquivo)
-        const acaoHTML = isFolder
-          ? `<a href="#" class="btn btn-open" data-name="${it.nome}">Abrir</a>`
-          : `<a class="btn" href="${it.url}" download>Download</a>`;
-
-        tr.innerHTML = `
-        <td>${nomeHTML}</td>
-        <td class="right">${isFolder ? '-' : fmtKB(it.tamanhoKB)}</td>
-        <td>${acaoHTML}</td>
-      `;
-        tb.appendChild(tr);
-      }
-
-      // bind de cliques para entrar em pasta
-      document.querySelectorAll('.btn-open, .lnk-folder').forEach(el => {
-        el.addEventListener('click', (e) => {
-          e.preventDefault();
-          const folder = e.currentTarget.dataset.name;
-          state.path = state.path ? `${state.path}/${folder}` : folder;
-          load();
-        });
-      });
-    }
-
-    // eventos
-    document.getElementById('q').addEventListener('input', render);
-    document.getElementById('ext').addEventListener('change', render);
-    for (const th of document.querySelectorAll('th[data-k]')) {
-      th.addEventListener('click', () => {
-        const k = th.dataset.k;
-        state.sortKey === k ? state.sortDir *= -1 : (state.sortKey = k, state.sortDir = 1);
-        render();
-      });
-    }
-
-    load();
-  </script>
-
-
-
+  <script src="html/auth/js/painel-backups.js"></script>
 
 </body>
 

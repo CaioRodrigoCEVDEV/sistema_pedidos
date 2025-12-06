@@ -21,32 +21,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
     integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-
+  <link rel="stylesheet" href="/html/auth/admin/css/style-painel-dashboard.css" />
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-
-
-  <style>
-    /* Ajustes sutis para harmonizar com as cards existentes */
-    .dashboard-card h3 {
-      font-weight: 700;
-    }
-
-    .chart-card {
-      min-height: 420px;
-    }
-
-    .chart-card canvas {
-      width: 100% !important;
-      height: 320px !important;
-    }
-
-    .subtle {
-      color: #6c757d;
-      font-size: .82rem;
-    }
-  </style>
 </head>
 
 <body class="bg-light">
@@ -57,15 +35,23 @@
       <div class="container">
         <div class="alert alert-dismissible fade show shadow p-3 m-auto bg-white rounded" id="releaseID"
           style="max-width: 800px; margin: auto; display: none;" role="alert">
-          <strong>Veja o que há de novo?</strong> melhorias, correções e novidades para deixar o sistema ainda melhor.
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" id="releaseIDClose">
-          </button>
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-circle-fill text-warning" style="font-size: 2.5rem;"></i>
+            <div>
+              <strong class="text-warning">Nova Atualização Disponível!</strong>
+              <p class="mb-0 text-muted small">Confira melhorias, correções e novidades que deixarão seu sistema mais
+                eficiente.</p>
+            </div>
+          </div>
           <hr>
-          <p class="mb-0"><button id="openReleasesBtn" type="button" class="btn btn-success"> <i class="bi bi-github">
+          <p class="d-flex justify-content-between align-items-center mt-2">
+            <button id="openReleasesBtn" type="button" class="btn btn-success"> <i class="bi bi-github">
               </i>Ver atualizações
-              </i></button></p>
-        </div>
-      </div><br>
+              </i></button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="alert" id="releaseIDClose">Fechar</button>
+          </p>
+        </div><br id="br" style="display: none;">
+      </div>
 
       <!-- Modal -->
       <div class="modal fade" id="releasesModal" tabindex="-1" aria-labelledby="releasesModalLabel" aria-hidden="true">
@@ -73,10 +59,10 @@
           <div class="modal-content">
             <div class="modal-header">
               <div>
-                <h5 class="modal-title" id="releasesModalLabel"> 🚀 Releases — OrderUp</h5>
-                <div class="text-muted small">Mantenha sua equipe atualizada com as versões mais importantes</div>
+                <h5 class="modal-title" id="releasesModalLabel"> 🚀 Atualizações — OrderUp</h5>
+                <p class="text-muted small">Confira as novidades e melhorias das últimas atualizações</p>
               </div>
-              <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
             </div>
 
             <div class="modal-body">
@@ -90,7 +76,7 @@
                 </select>
 
                 <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
-                  <small class="text-muted">Cache: <span id="cacheInfo">--</span></small>
+                  <small class="text-muted d-none">Cache: <span id="cacheInfo">--</span></small>
                   <input id="ghToken" type="password" class="form-control" placeholder="Token (opcional)"
                     style="width:220px; display: none;" />
                 </div>
@@ -129,19 +115,36 @@
           </div>
         </div>
 
-        <!-- NOVO: Top Produtos do Mês -->
+        <!-- Top Produtos do Mês -->
         <div class="col-12">
           <div class="card border-0 shadow-sm chart-card h-100">
             <div class="card-body">
               <div class="d-flex align-items-center mb-2">
                 <h5 class="mb-0 p-2">Top 10 Produtos — Últimos 30 dias</h5>
-                <span class="badge bg-info text-dark">Por Quantidate</span>
+                <span class="badge bg-info text-dark">Por Quantidade</span>
               </div>
-              <canvas id="chartTopProdutosMes"></canvas>
+
+              <!-- wrapper inicia em loading + placeholders -->
+              <div class="chart-wrapper loading placeholder placeholder-wave">
+                <!-- overlay com “barrinhas” -->
+                <div class="skeleton-overlay placeholder-wave">
+                  <span class="placeholder col-8 mb-3 rounded-1" style="height:18px;"></span>
+                  <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
+                  <div class="d-flex gap-4">
+                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
+                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
+                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
+                  </div>
+                </div>
+
+                <canvas id="chartTopProdutosMes"></canvas>
+              </div>
+
               <div id="resumoTopProdutosMes" class="subtle mt-2"></div>
             </div>
           </div>
         </div><br>
+
         <!-- NOVO: Top Marcas — Mês -->
         <div class="col-12">
           <div class="card border-0 shadow-sm chart-card h-100">
@@ -150,24 +153,55 @@
                 <h5 class="mb-0 p-2">Top 10 Marcas — Últimos 30 dias</h5>
                 <span class="badge bg-info text-dark">Por Valor</span>
               </div>
-              <canvas id="chartTopMarcasMes"></canvas>
+
+              <div class="chart-wrapper loading placeholder placeholder-wave">
+                <div class="skeleton-overlay placeholder-wave">
+                  <span class="placeholder col-8 mb-3 rounded-1" style="height:18px;"></span>
+                  <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
+                  <div class="d-flex gap-4">
+                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
+                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
+                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
+                  </div>
+                </div>
+
+                <canvas id="chartTopMarcasMes"></canvas>
+              </div>
+
               <div id="resumoTopMarcasMes" class="subtle mt-2"></div>
             </div>
           </div>
         </div><br>
+
         <!-- NOVO GRÁFICO: Vendas Do dia -->
         <div class="col-12">
           <div class="card border-0 shadow-sm chart-card h-100">
             <div class="card-body">
-              <div class="d-flex  align-items-center mb-2">
+              <div class="d-flex align-items-center mb-2">
                 <h5 class="mb-0 p-2">Vendas do dia</h5>
                 <span class="badge bg-info text-dark">Por Valor</span>
               </div>
-              <canvas id="chartFaturamentoDia"></canvas>
+
+              <div class="chart-wrapper loading placeholder placeholder-wave">
+                <div class="skeleton-overlay placeholder-wave">
+                  <span class="placeholder col-10 mb-3 rounded-1" style="height:18px;"></span>
+                  <span class="placeholder col-12 mb-3 rounded-1" style="height:100px;"></span>
+                  <div class="d-flex gap-3">
+                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                  </div>
+                </div>
+
+                <canvas id="chartFaturamentoDia"></canvas>
+              </div>
+
               <div id="chartFaturamentoDiaResumo" class="subtle mt-2"></div>
             </div>
           </div>
-        </div> <br>
+        </div><br>
+
         <!-- NOVO: Venda Anual (barras verticais) -->
         <div class="col-12">
           <div class="card border-0 shadow-sm chart-card h-100">
@@ -176,11 +210,28 @@
                 <h5 class="mb-0 p-2">Venda Anual — por Mês e Canal</h5>
                 <span class="badge bg-info text-dark">Por Valor</span>
               </div>
-              <canvas id="chartFaturamentoAnual"></canvas>
+
+              <div class="chart-wrapper loading placeholder placeholder-wave">
+                <div class="skeleton-overlay placeholder-wave">
+                  <span class="placeholder col-6 mb-3 rounded-1" style="height:18px;"></span>
+                  <span class="placeholder col-12 mb-3 rounded-1" style="height:120px;"></span>
+                  <div class="d-flex gap-2">
+                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                  </div>
+                </div>
+
+                <canvas id="chartFaturamentoAnual"></canvas>
+              </div>
+
               <div id="resumoFaturamentoAnual" class="subtle mt-2"></div>
             </div>
           </div>
         </div><br>
+
 
         <!-- Linha 1: KPIs principais -->
         <div class="row row-cols-1 row-cols-md-4 g-4 text-start">
@@ -294,48 +345,104 @@
         </div>
 
         <!-- Linha 3: Gráficos -->
+        <!-- Linha 3: Gráficos -->
         <div class="row g-4 mt-1">
+          <!-- Pedidos — Pendentes x Confirmados -->
           <div class="col-12 col-xl-6">
             <div class="card border-0 shadow-sm chart-card h-100">
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <h5 class="mb-0">Pedidos — Pendentes x Confirmados</h5>
                 </div>
-                <canvas id="chartPedidos"></canvas>
+
+                <div class="chart-wrapper loading placeholder placeholder-wave">
+                  <div class="skeleton-overlay placeholder-wave">
+                    <span class="placeholder col-7 mb-3 rounded-1" style="height:18px;"></span>
+                    <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
+                    <div class="d-flex gap-3">
+                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
+                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
+                    </div>
+                  </div>
+                  <canvas id="chartPedidos"></canvas>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Canais — Balcão x Entrega -->
           <div class="col-12 col-xl-6">
             <div class="card border-0 shadow-sm chart-card h-100">
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <h5 class="mb-0">Canais — Balcão x Entrega</h5>
                 </div>
-                <canvas id="chartCanais"></canvas>
+
+                <div class="chart-wrapper loading placeholder placeholder-wave">
+                  <div class="skeleton-overlay placeholder-wave">
+                    <span class="placeholder col-6 mb-3 rounded-1" style="height:18px;"></span>
+                    <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
+                    <div class="d-flex gap-3">
+                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
+                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
+                    </div>
+                  </div>
+                  <canvas id="chartCanais"></canvas>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Estoque — Com x Sem -->
           <div class="col-12 col-xl-6">
             <div class="card border-0 shadow-sm chart-card h-100">
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <h5 class="mb-0">Estoque — Com x Sem</h5>
                 </div>
-                <canvas id="chartEstoque"></canvas>
+
+                <div class="chart-wrapper loading placeholder placeholder-wave">
+                  <div class="skeleton-overlay placeholder-wave">
+                    <span class="placeholder col-7 mb-3 rounded-1" style="height:18px;"></span>
+                    <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
+                    <div class="d-flex gap-3">
+                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
+                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
+                    </div>
+                  </div>
+                  <canvas id="chartEstoque"></canvas>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Top 5 Marcas com Estoque -->
           <div class="col-12 col-xl-6">
             <div class="card border-0 shadow-sm chart-card h-100">
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <h5 class="mb-0">Top 5 Marcas com Estoque</h5>
                 </div>
-                <canvas id="chartTopMarcas"></canvas>
+
+                <div class="chart-wrapper loading placeholder placeholder-wave">
+                  <div class="skeleton-overlay placeholder-wave">
+                    <span class="placeholder col-8 mb-3 rounded-1" style="height:18px;"></span>
+                    <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
+                    <div class="d-flex gap-2">
+                      <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                      <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                      <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                      <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                      <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
+                    </div>
+                  </div>
+                  <canvas id="chartTopMarcas"></canvas>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
 
       </div>
     </main>
