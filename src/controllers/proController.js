@@ -77,7 +77,9 @@ exports.totalProdutoAcabando = async (req, res) => {
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Erro ao buscar total de produtos acabando" });
+    res
+      .status(500)
+      .json({ error: "Erro ao buscar total de produtos acabando" });
   }
 };
 
@@ -89,7 +91,9 @@ exports.totalProdutoEmFalta = async (req, res) => {
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Erro ao buscar total de produtos acabando" });
+    res
+      .status(500)
+      .json({ error: "Erro ao buscar total de produtos acabando" });
   }
 };
 
@@ -109,53 +113,31 @@ exports.listarProdutoCarrinho = async (req, res) => {
 };
 
 exports.inserirProduto = async (req, res) => {
-  const { prodes, promarcascod, promodcod, promodcods, protipocod, provl } =
-    req.body;
+  const { prodes, promarcascod, promodcod, protipocod, provl } = req.body;
 
-  // Normalizar modelos: aceitar tanto um único valor quanto um array
-  let modelIds = [];
-  if (promodcods && Array.isArray(promodcods)) {
-    modelIds = promodcods
-      .map((id) => parseInt(id, 10))
-      .filter((id) => !isNaN(id));
-  } else if (promodcod) {
-    // Compatibilidade com formato antigo (único modelo)
-    const singleId = parseInt(promodcod, 10);
-    if (!isNaN(singleId)) {
-      modelIds = [singleId];
-    }
-  }
-
-  if (modelIds.length === 0) {
-    return res
-      .status(400)
-      .json({ error: "É necessário informar pelo menos um modelo" });
+  // Validar modelo único
+  const modeloId = parseInt(promodcod);
+  if (isNaN(modeloId)) {
+    return res.status(400).json({ error: "Modelo inválido ou não informado" });
   }
 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    // Inserir o produto com o primeiro modelo como promodcod (para compatibilidade)
+    // Inserção simples do produto
     const result = await client.query(
-      `insert into pro (prodes,promarcascod,promodcod,protipocod,provl) values ($1,$2,$3,$4,$5) RETURNING *`,
-      [prodes, promarcascod, modelIds[0], protipocod, provl]
+      `
+        INSERT INTO pro (prodes, promarcascod, promodcod, protipocod, provl)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *
+      `,
+      [prodes, promarcascod, modeloId, protipocod, provl]
     );
 
-    const procod = result.rows[0].procod;
-
-    // Inserir todos os modelos na tabela de relacionamento usando batch insert
-    if (modelIds.length > 0) {
-      const values = modelIds.map((modcod, i) => `($1, $${i + 2})`).join(", ");
-      const params = [procod, ...modelIds];
-      await client.query(
-        `INSERT INTO promod (promodprocod, promodmodcod) VALUES ${values} ON CONFLICT DO NOTHING`,
-        params
-      );
-    }
-
     await client.query("COMMIT");
-    res.status(200).json(result.rows);
+
+    res.status(200).json(result.rows[0]);
   } catch (error) {
     await client.query("ROLLBACK");
     console.error(error);
@@ -184,44 +166,37 @@ exports.excluirProduto = async (req, res) => {
 
 exports.editarProduto = async (req, res) => {
   const { id } = req.params;
-  const { prodes, provl, prosemest, promodcods, proacabando } = req.body;
+  const { prodes, provl, prosemest, promodcod, proacabando } = req.body;
 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    // Atualizar dados básicos do produto
+    // Atualizar dados do produto, incluindo o modelo principal
     const result = await client.query(
-      `update pro set prodes = $1, provl = $2, prosemest = $3, proacabando = $4 where procod = $5 RETURNING *`,
-      [prodes, provl, prosemest, proacabando, id]
+      `UPDATE pro 
+         SET prodes = $1, 
+             provl = $2, 
+             prosemest = $3, 
+             proacabando = $4,
+             promodcod = $5
+       WHERE procod = $6
+       RETURNING *`,
+      [prodes, provl, prosemest, proacabando, promodcod, id]
     );
 
-    // Se foram enviados modelos, atualizar a tabela de relacionamento
-    if (promodcods && Array.isArray(promodcods)) {
-      const modelIds = promodcods
-        .map((modId) => parseInt(modId, 10))
-        .filter((modId) => !isNaN(modId));
+    // Atualizar tabela promod (relacionamento)
+    if (promodcod && !isNaN(parseInt(promodcod))) {
+      // Remove qualquer modelo antigo
+      await client.query(`DELETE FROM promod WHERE promodprocod = $1`, [id]);
 
-      if (modelIds.length > 0) {
-        // Remover modelos antigos
-        await client.query(`DELETE FROM promod WHERE promodprocod = $1`, [id]);
-
-        // Inserir novos modelos usando batch insert
-        const values = modelIds
-          .map((modcod, i) => `($1, $${i + 2})`)
-          .join(", ");
-        const params = [id, ...modelIds];
-        await client.query(
-          `INSERT INTO promod (promodprocod, promodmodcod) VALUES ${values} ON CONFLICT DO NOTHING`,
-          params
-        );
-
-        // Atualizar o promodcod no produto (para compatibilidade)
-        await client.query(`UPDATE pro SET promodcod = $1 WHERE procod = $2`, [
-          modelIds[0],
-          id,
-        ]);
-      }
+      // Insere o novo modelo
+      await client.query(
+        `INSERT INTO promod (promodprocod, promodmodcod)
+         VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+        [id, promodcod]
+      );
     }
 
     await client.query("COMMIT");
@@ -238,15 +213,16 @@ exports.editarProduto = async (req, res) => {
 // Listar modelos vinculados a um produto
 exports.listarModelosProduto = async (req, res) => {
   const { id } = req.params;
+
   try {
     const result = await pool.query(
       `SELECT m.modcod, m.moddes, m.modmarcascod
-       FROM promod pm
-       JOIN modelo m ON pm.promodmodcod = m.modcod
-       WHERE pm.promodprocod = $1
-       ORDER BY m.moddes`,
+         FROM pro
+         JOIN modelo m ON m.modcod = pro.promodcod
+         WHERE modmarcascod = $1`,
       [id]
     );
+
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);

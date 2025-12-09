@@ -1,5 +1,15 @@
 const proModels = require("../models/proModels");
 
+exports.listarTodosProdutos = async (req, res) => {
+  try {
+    const result = await proModels.listarTodosProdutos();
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao buscar produtos" });
+  }
+};
+
 exports.listarProdutosComEstoque = async (req, res) => {
   try {
     const result = await proModels.listarProdutosComEstoque();

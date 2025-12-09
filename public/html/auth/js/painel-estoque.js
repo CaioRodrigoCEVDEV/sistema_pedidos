@@ -3,6 +3,7 @@ const modelosEstoque = document.getElementById("filtroModeloSelect");
 const btnAplicarEstoque = document.getElementById("btnAplicarFiltroEstoque");
 const btnLimparEstoque = document.getElementById("btnLimparFiltroEstoque");
 const estoqueSelect = document.getElementById("filtroEstoqueSelect");
+const inputPesquisa = document.getElementById("pesquisa");
 
 // Toast helper (leve, sem dependências)
 function showToast(message, type = "success") {
@@ -55,6 +56,155 @@ function showToast(message, type = "success") {
     toast.style.transform = "translateY(-6px)";
     setTimeout(() => toast.remove(), 200);
   }, 2500);
+}
+
+if (inputPesquisa) {
+  inputPesquisa.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const termo = inputPesquisa.value;
+      buscarEstoquePorPesquisa(termo);
+    }
+  });
+}
+
+/**
+ * Busca todos os produtos em /v2/pros/ e filtra localmente pelo termo.
+ * A busca só faz o fetch quando chamada (por exemplo, ao pressionar Enter).
+ */
+async function buscarEstoquePorPesquisa(termo) {
+  const tabelaEstoque = document.getElementById("tabela-estoque");
+
+  if (!termo || !termo.trim()) {
+    // Se não há termo, não faz fetch — pode manter a tabela atual ou limpar
+    tabelaEstoque.innerHTML = `
+      <tr><td colspan="7" class="text-center">Digite um termo e pressione Enter para buscar.</td></tr>
+    `;
+    return;
+  }
+
+  const q = termo.trim().toLowerCase();
+
+  tabelaEstoque.innerHTML = `
+    <tr><td colspan="7" class="text-center">Buscando...</td></tr>
+  `;
+
+  try {
+    const res = await fetch(`${BASE_URL}/v2/pros/`, { credentials: "include" });
+    if (!res.ok) throw new Error("Erro ao buscar produtos");
+
+    const data = await res.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      tabelaEstoque.innerHTML = `
+        <tr><td colspan="7" class="text-center">Nenhum produto encontrado</td></tr>
+      `;
+      return;
+    }
+
+    // Filtra localmente por vários campos (case-insensitive)
+    const filtrados = data.filter((item) => {
+      const fields = [
+        item.procod,
+        item.prodes,
+        item.marcasdes,
+        item.moddes,
+        item.tipodes,
+        item.cordes,
+      ];
+      return fields.some((f) =>
+        String(f || "")
+          .toLowerCase()
+          .includes(q)
+      );
+    });
+
+    if (!filtrados || filtrados.length === 0) {
+      tabelaEstoque.innerHTML = `
+        <tr><td colspan="7" class="text-center">Nenhum produto encontrado</td></tr>
+      `;
+      return;
+    }
+
+    // Reutiliza renderização semelhante à listagem principal
+    const renderSearchRows = (tbody, dados) => {
+      tbody.innerHTML = "";
+      dados.forEach((dado) => {
+        const tr = document.createElement("tr");
+        tr.className = "align-middle";
+        tr.style.transition = "background .25s";
+
+        const qtClass =
+          dado.qtde === 0
+            ? "badge rounded-pill bg-danger-subtle text-danger fw-semibold shadow-sm"
+            : dado.qtde < 10
+            ? "badge rounded-pill bg-warning-subtle text-warning fw-semibold shadow-sm"
+            : "badge rounded-pill bg-success-subtle text-success fw-semibold shadow-sm";
+
+        tr.innerHTML = `
+          <td>
+            <div class="d-flex flex-column">
+              <span class="fw-semibold">${dado.prodes}</span>
+              <span class="text-secondary small">${dado.tipodes || ""}</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge rounded-pill bg-primary-subtle text-primary fw-medium border border-primary-subtle px-3">
+              ${dado.marcasdes || ""}
+            </span>
+          </td>
+          <td>
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary fw-medium border border-secondary-subtle px-3">
+              ${dado.moddes || ""}
+            </span>
+          </td>
+          <td>
+            <span class="badge rounded-pill bg-info-subtle text-info fw-medium border border-info-subtle px-3">
+              ${dado.tipodes || ""}
+            </span>
+          </td>
+          <td>
+            <span class="badge rounded-pill bg-dark-subtle text-dark fw-medium border px-3">
+              ${dado.cordes || "Sem Cor"}
+            </span>
+          </td>
+          <td>
+            <div class="input-group input-group-sm" style="max-width:160px;">
+              <input type="number" min="0" class="form-control border-end" placeholder="Qtd">
+              <button class="btn btn-success btn-add-estoque px-3" type="button" title="Adicionar" style="display:flex;align-items:center;gap:.35rem;">
+                <i class="fa-regular fa-square-plus"></i><span class="small">Add</span>
+              </button>
+            </div>
+          </td>
+          <td class="text-center">
+            <span class="${qtClass} px-3">${dado.qtde ?? 0}</span>
+          </td>
+        `;
+
+        const btn = tr.querySelector(".btn-add-estoque");
+        btn.addEventListener("click", () => {
+          const qtd = tr.querySelector("input").value;
+          if (qtd === "" || Number(qtd) < 0) return;
+          adicionarEstoque(
+            dado.procod,
+            Number(qtd),
+            dado.procorcorescod ?? null
+          );
+        });
+
+        tbody.appendChild(tr);
+      });
+    };
+
+    renderSearchRows(tabelaEstoque, filtrados);
+  } catch (err) {
+    console.error(err);
+    tabelaEstoque.innerHTML = `
+      <tr><td colspan="7" class="text-center text-danger">
+        Erro ao buscar produtos
+      </td></tr>
+    `;
+  }
 }
 
 async function adicionarEstoque(procod, quantidade, cor = null) {
