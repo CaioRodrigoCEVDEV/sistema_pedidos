@@ -337,7 +337,7 @@ async function abrirDetalhes(id) {
 
     document.getElementById("nomeGrupoDetalhe").textContent = grupo.name;
     document.getElementById("estoqueGrupoDetalhe").textContent =
-      grupo.stock_quantity;
+      grupo.stock_quantity || 0;
 
     // Renderiza as peças do grupo
     renderPecasGrupo(grupo.parts || []);
