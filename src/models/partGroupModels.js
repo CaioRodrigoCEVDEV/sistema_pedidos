@@ -946,6 +946,67 @@ async function venderItens(itens, referenceId = null) {
   }
 }
 
+/**
+ * Atualiza o estoque de TODAS as peças que pertencem a um grupo
+ * Esta função é chamada quando o usuário edita a quantidade do grupo,
+ * garantindo que todas as peças do grupo fiquem sincronizadas com a mesma quantidade.
+ * 
+ * @param {number} groupId - ID do grupo
+ * @param {number} quantity - Nova quantidade para todas as peças do grupo
+ * @returns {Object} Resultado da atualização com quantidade de peças afetadas
+ * @throws {Error} Se o grupo não for encontrado ou ocorrer erro na atualização
+ */
+async function updateAllPartsStockInGroup(groupId, quantity) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1. Verifica se o grupo existe
+    const groupResult = await client.query(
+      `SELECT id, name FROM part_groups WHERE id = $1`,
+      [groupId]
+    );
+
+    if (groupResult.rows.length === 0) {
+      throw new Error("Grupo não encontrado");
+    }
+
+    const group = groupResult.rows[0];
+
+    // 2. Busca todas as peças do grupo
+    const partsResult = await client.query(
+      `SELECT procod FROM pro WHERE part_group_id = $1`,
+      [groupId]
+    );
+
+    const partsCount = partsResult.rows.length;
+
+    // 3. Atualiza o estoque (proqtde) de todas as peças do grupo
+    if (partsCount > 0) {
+      await client.query(
+        `UPDATE pro SET proqtde = $1 WHERE part_group_id = $2`,
+        [quantity, groupId]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    return {
+      success: true,
+      groupId: groupId,
+      groupName: group.name,
+      partsUpdated: partsCount,
+      newQuantity: quantity,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   listAllGroups,
   getGroupById,
@@ -963,4 +1024,5 @@ module.exports = {
   getGroupAuditHistory,
   updateGroupStock,
   venderItens,
+  updateAllPartsStockInGroup,
 };
