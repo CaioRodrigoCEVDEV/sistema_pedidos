@@ -54,18 +54,18 @@ exports.getPartGroupStock = async (req, res) => {
 };
 
 // Cria um novo grupo de compatibilidade
+// Grupos são sempre criados com stock_quantity = 0
+// O estoque só pode ser definido após adicionar peças ao grupo
 exports.createGroup = async (req, res) => {
-  const { name, stock_quantity = 0 } = req.body;
+  const { name } = req.body;
 
   if (!name || name.trim() === "") {
     return res.status(400).json({ error: "Nome do grupo é obrigatório" });
   }
 
   try {
-    const group = await partGroupModels.createGroup(
-      name.trim(),
-      stock_quantity
-    );
+    // Sempre cria grupos com estoque inicial de 0
+    const group = await partGroupModels.createGroup(name.trim(), 0);
     res.status(201).json(group);
   } catch (error) {
     console.error("Erro ao criar grupo de compatibilidade:", error);
@@ -99,6 +99,7 @@ exports.updateGroup = async (req, res) => {
 };
 
 // Atualiza o estoque de um grupo diretamente
+// A quantidade definida será aplicada automaticamente para todas as peças do grupo
 exports.updateGroupStock = async (req, res) => {
   const { id } = req.params;
   const { stock_quantity, reason = "manual_adjustment" } = req.body;
@@ -112,6 +113,7 @@ exports.updateGroupStock = async (req, res) => {
   }
 
   try {
+    // Atualiza o estoque do grupo
     const group = await partGroupModels.updateGroupStock(
       id,
       stock_quantity,
@@ -120,7 +122,18 @@ exports.updateGroupStock = async (req, res) => {
     if (!group) {
       return res.status(404).json({ error: "Grupo não encontrado" });
     }
-    res.status(200).json(group);
+
+    // Distribui a quantidade para todas as peças do grupo
+    const partsResult = await partGroupModels.updateAllPartsStockInGroup(
+      id,
+      stock_quantity
+    );
+
+    res.status(200).json({
+      ...group,
+      partsUpdated: partsResult.partsUpdated,
+      message: `Estoque do grupo atualizado e distribuído para ${partsResult.partsUpdated} peça(s)`,
+    });
   } catch (error) {
     console.error("Erro ao atualizar estoque do grupo:", error);
     res.status(500).json({ error: "Erro ao atualizar estoque do grupo" });
