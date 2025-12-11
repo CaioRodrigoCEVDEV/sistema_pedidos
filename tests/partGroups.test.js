@@ -325,7 +325,7 @@ async function runTests() {
     });
 
     // Limpa as peças de teste
-    await pool.query('DELETE FROM pro WHERE procod = ANY($1)', [[part1Id, part2Id, part3Id]]);
+    await pool.query('DELETE FROM pro WHERE procod IN ($1, $2, $3)', [part1Id, part2Id, part3Id]);
   });
 
   // Teste 12: updateAllPartsStockInGroup funciona mesmo sem peças no grupo
