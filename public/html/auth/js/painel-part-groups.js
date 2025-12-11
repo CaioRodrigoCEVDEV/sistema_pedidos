@@ -195,11 +195,11 @@ function escapeHtml(text) {
 
 /**
  * Cria um novo grupo de compatibilidade
- * Grupos são criados sempre com estoque 0, pois o estoque só pode ser
- * definido depois que o grupo tiver peças vinculadas
  */
 async function criarGrupo() {
   const nome = document.getElementById("nomeGrupo").value.trim();
+  const estoque =
+    parseInt(document.getElementById("estoqueInicial").value, 10) || 0;
 
   if (!nome) {
     showToast("Nome do grupo é obrigatório", "error");
@@ -211,7 +211,7 @@ async function criarGrupo() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ name: nome }),
+      body: JSON.stringify({ name: nome, stock_quantity: estoque }),
     });
 
     if (!res.ok) {

@@ -349,19 +349,18 @@ async function incrementGroupStock(
 
 /**
  * Cria um novo grupo de compatibilidade
- * Grupos são SEMPRE criados com stock_quantity = 0, independente do parâmetro passado.
- * O estoque só pode ser definido após o grupo ter peças vinculadas.
  * @param {string} name - Nome do grupo
+ * @param {number} stockQuantity - Quantidade inicial de estoque (padrão: 0)
  * @returns {Object} Grupo criado
  */
-async function createGroup(name) {
+async function createGroup(name, stockQuantity = 0) {
   const result = await pool.query(
     `
     INSERT INTO part_groups (name, stock_quantity)
-    VALUES ($1, 0)
+    VALUES ($1, $2)
     RETURNING *
   `,
-    [name]
+    [name, stockQuantity]
   );
   return result.rows[0];
 }
@@ -947,74 +946,6 @@ async function venderItens(itens, referenceId = null) {
   }
 }
 
-/**
- * Atualiza o estoque de TODAS as peças que pertencem a um grupo
- * Esta função é chamada quando o usuário edita a quantidade do grupo,
- * garantindo que todas as peças do grupo fiquem sincronizadas com a mesma quantidade.
- * 
- * @param {number} groupId - ID do grupo
- * @param {number} quantity - Nova quantidade para todas as peças do grupo
- * @returns {Object} Resultado da atualização com quantidade de peças afetadas
- * @throws {Error} Se o grupo não for encontrado, quantidade inválida ou erro na atualização
- */
-async function updateAllPartsStockInGroup(groupId, quantity) {
-  // Validação de entrada - converte para número se for string
-  const parsedQuantity = typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
-  
-  if (typeof parsedQuantity !== 'number' || parsedQuantity < 0 || !Number.isInteger(parsedQuantity) || Number.isNaN(parsedQuantity)) {
-    throw new Error("Quantidade deve ser um número inteiro não-negativo");
-  }
-
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
-    // 1. Verifica se o grupo existe
-    const groupResult = await client.query(
-      `SELECT id, name FROM part_groups WHERE id = $1`,
-      [groupId]
-    );
-
-    if (groupResult.rows.length === 0) {
-      throw new Error("Grupo não encontrado");
-    }
-
-    const group = groupResult.rows[0];
-
-    // 2. Busca todas as peças do grupo
-    const partsResult = await client.query(
-      `SELECT procod FROM pro WHERE part_group_id = $1`,
-      [groupId]
-    );
-
-    const partsCount = partsResult.rows.length;
-
-    // 3. Atualiza o estoque (proqtde) de todas as peças do grupo
-    if (partsCount > 0) {
-      await client.query(
-        `UPDATE pro SET proqtde = $1 WHERE part_group_id = $2`,
-        [parsedQuantity, groupId]
-      );
-    }
-
-    await client.query("COMMIT");
-
-    return {
-      success: true,
-      groupId: groupId,
-      groupName: group.name,
-      partsUpdated: partsCount,
-      newQuantity: parsedQuantity,
-    };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-
 module.exports = {
   listAllGroups,
   getGroupById,
@@ -1032,5 +963,4 @@ module.exports = {
   getGroupAuditHistory,
   updateGroupStock,
   venderItens,
-  updateAllPartsStockInGroup,
 };
