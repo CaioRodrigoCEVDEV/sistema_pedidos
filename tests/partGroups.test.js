@@ -90,13 +90,14 @@ async function runTests() {
 
   // Teste 1: Criar um novo grupo
   await test('Criar um novo grupo de compatibilidade', async () => {
-    const group = await partGroupModels.createGroup('Test Group 1', 100);
+    const group = await partGroupModels.createGroup('Test Group 1');
     assertNotNull(group, 'Grupo deve ser criado');
     assertNotNull(group.id, 'Grupo deve ter um ID');
     // Verifica que o ID é um INTEGER (não UUID)
     assert(typeof group.id === 'number', 'ID do grupo deve ser um número inteiro');
     assertEqual(group.name, 'Test Group 1', 'Nome do grupo deve corresponder');
-    assertEqual(group.stock_quantity, 100, 'Quantidade de estoque deve corresponder');
+    // Grupos sempre são criados com stock_quantity = 0
+    assertEqual(group.stock_quantity, 0, 'Quantidade de estoque inicial deve ser 0');
   });
 
   // Teste 2: Listar grupos
@@ -109,7 +110,7 @@ async function runTests() {
   // Teste 3: Buscar grupo por ID
   await test('Buscar grupo por ID', async () => {
     // Primeiro cria um grupo
-    const created = await partGroupModels.createGroup('Test Group 2', 50);
+    const created = await partGroupModels.createGroup('Test Group 2');
     
     // Depois busca pelo ID
     const group = await partGroupModels.getGroupById(created.id);
@@ -120,7 +121,7 @@ async function runTests() {
 
   // Teste 4: Atualizar grupo
   await test('Atualizar nome do grupo', async () => {
-    const created = await partGroupModels.createGroup('Test Group 3', 25);
+    const created = await partGroupModels.createGroup('Test Group 3');
     const updated = await partGroupModels.updateGroup(created.id, 'Test Group 3 Atualizado');
     
     assertNotNull(updated, 'Deve retornar grupo atualizado');
@@ -129,9 +130,9 @@ async function runTests() {
 
   // Teste 5: Atualizar estoque do grupo com auditoria
   await test('Atualizar estoque do grupo cria registro de auditoria', async () => {
-    const created = await partGroupModels.createGroup('Test Group Estoque', 10);
+    const created = await partGroupModels.createGroup('Test Group Estoque');
     
-    // Atualiza o estoque
+    // Atualiza o estoque de 0 para 25
     await partGroupModels.updateGroupStock(created.id, 25, 'test_adjustment');
     
     // Verifica se o estoque foi atualizado
@@ -141,13 +142,13 @@ async function runTests() {
     // Verifica se o registro de auditoria existe
     const history = await partGroupModels.getGroupAuditHistory(created.id);
     assert(history.length > 0, 'Deve ter histórico de auditoria');
-    assertEqual(history[0].change, 15, 'Auditoria deve mostrar alteração de +15');
+    assertEqual(history[0].change, 25, 'Auditoria deve mostrar alteração de +25 (de 0 para 25)');
     assertEqual(history[0].reason, 'test_adjustment', 'Motivo da auditoria deve corresponder');
   });
 
   // Teste 6: Excluir grupo
   await test('Excluir grupo', async () => {
-    const created = await partGroupModels.createGroup('Test Group Excluir', 0);
+    const created = await partGroupModels.createGroup('Test Group Excluir');
     const deleted = await partGroupModels.deleteGroup(created.id);
     
     assertNotNull(deleted, 'Deve retornar grupo excluído');
@@ -159,7 +160,9 @@ async function runTests() {
 
   // Teste 7: Verificação básica de concorrência
   await test('Decremento de estoque com quantidade insuficiente deve falhar', async () => {
-    const created = await partGroupModels.createGroup('Test Group Concorrência', 5);
+    const created = await partGroupModels.createGroup('Test Group Concorrência');
+    // Define estoque do grupo como 5
+    await partGroupModels.updateGroupStock(created.id, 5, 'test_setup');
     
     // Cria uma peça de teste vinculada a este grupo
     const partResult = await pool.query(`
@@ -191,7 +194,9 @@ async function runTests() {
 
   // Teste 8: Sucesso no decremento de estoque
   await test('Decremento de estoque funciona com quantidade suficiente', async () => {
-    const created = await partGroupModels.createGroup('Test Group Decremento', 20);
+    const created = await partGroupModels.createGroup('Test Group Decremento');
+    // Define estoque do grupo como 20
+    await partGroupModels.updateGroupStock(created.id, 20, 'test_setup');
     
     // Cria uma peça de teste vinculada a este grupo
     const partResult = await pool.query(`
@@ -224,7 +229,9 @@ async function runTests() {
 
   // Teste 9: Incremento de estoque
   await test('Incremento de estoque funciona corretamente', async () => {
-    const created = await partGroupModels.createGroup('Test Group Incremento', 10);
+    const created = await partGroupModels.createGroup('Test Group Incremento');
+    // Define estoque do grupo como 10
+    await partGroupModels.updateGroupStock(created.id, 10, 'test_setup');
     
     // Cria uma peça de teste vinculada a este grupo
     const partResult = await pool.query(`
@@ -247,6 +254,90 @@ async function runTests() {
     
     // Limpa a peça de teste
     await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
+  });
+
+  // Teste 10: Criar grupo sempre com stock_quantity = 0
+  await test('Criar grupo sempre cria com estoque 0', async () => {
+    const group = await partGroupModels.createGroup('Test Group Stock Zero');
+    
+    assertNotNull(group, 'Grupo deve ser criado');
+    assertEqual(group.stock_quantity, 0, 'Estoque inicial deve ser 0 sempre');
+  });
+
+  // Teste 11: Atualizar estoque do grupo distribui para todas as peças
+  await test('Atualizar estoque do grupo distribui quantidade para todas as peças', async () => {
+    // Cria um grupo
+    const group = await partGroupModels.createGroup('Test Group Distribuição');
+    
+    // Adiciona 3 peças ao grupo
+    const part1Result = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde, part_group_id)
+      SELECT 'Peça Distribuição 1', 
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             100,
+             0,
+             $1
+      RETURNING procod
+    `, [group.id]);
+    const part1Id = part1Result.rows[0].procod;
+
+    const part2Result = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde, part_group_id)
+      SELECT 'Peça Distribuição 2', 
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             100,
+             0,
+             $1
+      RETURNING procod
+    `, [group.id]);
+    const part2Id = part2Result.rows[0].procod;
+
+    const part3Result = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde, part_group_id)
+      SELECT 'Peça Distribuição 3', 
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             100,
+             0,
+             $1
+      RETURNING procod
+    `, [group.id]);
+    const part3Id = part3Result.rows[0].procod;
+
+    // Define estoque do grupo como 25
+    const result = await partGroupModels.updateAllPartsStockInGroup(group.id, 25);
+    
+    assertEqual(result.success, true, 'Distribuição deve ter sucesso');
+    assertEqual(result.partsUpdated, 3, 'Deve ter atualizado 3 peças');
+    assertEqual(result.newQuantity, 25, 'Nova quantidade deve ser 25');
+
+    // Verifica se todas as peças têm quantidade 25
+    const parts = await pool.query(
+      'SELECT procod, proqtde FROM pro WHERE part_group_id = $1',
+      [group.id]
+    );
+    
+    assert(parts.rows.length === 3, 'Deve ter 3 peças no grupo');
+    parts.rows.forEach((part) => {
+      assertEqual(part.proqtde, 25, `Peça ${part.procod} deve ter quantidade 25`);
+    });
+
+    // Limpa as peças de teste
+    await pool.query('DELETE FROM pro WHERE procod IN ($1, $2, $3)', [part1Id, part2Id, part3Id]);
+  });
+
+  // Teste 12: updateAllPartsStockInGroup funciona mesmo sem peças no grupo
+  await test('Atualizar estoque funciona mesmo quando não há peças no grupo', async () => {
+    const group = await partGroupModels.createGroup('Test Group Vazio');
+    
+    // Tenta atualizar estoque de grupo vazio
+    const result = await partGroupModels.updateAllPartsStockInGroup(group.id, 10);
+    
+    assertEqual(result.success, true, 'Distribuição deve ter sucesso');
+    assertEqual(result.partsUpdated, 0, 'Deve ter atualizado 0 peças (grupo vazio)');
+    assertEqual(result.newQuantity, 10, 'Nova quantidade deve ser 10');
   });
 
   // Limpeza

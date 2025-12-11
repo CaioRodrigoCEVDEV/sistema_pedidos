@@ -54,18 +54,18 @@ exports.getPartGroupStock = async (req, res) => {
 };
 
 // Cria um novo grupo de compatibilidade
+// Sempre cria com stock_quantity = 0, pois o estoque só pode ser definido
+// depois que o grupo for criado e tiver peças vinculadas
 exports.createGroup = async (req, res) => {
-  const { name, stock_quantity = 0 } = req.body;
+  const { name } = req.body;
 
   if (!name || name.trim() === "") {
     return res.status(400).json({ error: "Nome do grupo é obrigatório" });
   }
 
   try {
-    const group = await partGroupModels.createGroup(
-      name.trim(),
-      stock_quantity
-    );
+    // Sempre cria o grupo com estoque inicial 0
+    const group = await partGroupModels.createGroup(name.trim());
     res.status(201).json(group);
   } catch (error) {
     console.error("Erro ao criar grupo de compatibilidade:", error);
@@ -99,6 +99,8 @@ exports.updateGroup = async (req, res) => {
 };
 
 // Atualiza o estoque de um grupo diretamente
+// Quando o estoque é atualizado, a quantidade é aplicada automaticamente
+// para TODAS as peças que estão dentro do grupo
 exports.updateGroupStock = async (req, res) => {
   const { id } = req.params;
   const { stock_quantity, reason = "manual_adjustment" } = req.body;
@@ -112,6 +114,7 @@ exports.updateGroupStock = async (req, res) => {
   }
 
   try {
+    // Atualiza o estoque do grupo
     const group = await partGroupModels.updateGroupStock(
       id,
       stock_quantity,
@@ -120,7 +123,24 @@ exports.updateGroupStock = async (req, res) => {
     if (!group) {
       return res.status(404).json({ error: "Grupo não encontrado" });
     }
-    res.status(200).json(group);
+
+    // Distribui a quantidade para todas as peças do grupo
+    try {
+      await partGroupModels.updateAllPartsStockInGroup(id, stock_quantity);
+    } catch (distributionError) {
+      console.error("Erro ao distribuir estoque para as peças:", distributionError);
+      // Estoque do grupo foi atualizado, mas distribuição falhou
+      return res.status(207).json({
+        ...group,
+        warning: "Estoque do grupo atualizado, mas ocorreu erro ao distribuir para as peças",
+        error: distributionError.message,
+      });
+    }
+
+    res.status(200).json({
+      ...group,
+      message: "Estoque do grupo atualizado e distribuído para todas as peças",
+    });
   } catch (error) {
     console.error("Erro ao atualizar estoque do grupo:", error);
     res.status(500).json({ error: "Erro ao atualizar estoque do grupo" });
