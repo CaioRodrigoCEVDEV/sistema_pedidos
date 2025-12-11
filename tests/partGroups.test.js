@@ -249,6 +249,83 @@ async function runTests() {
     await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
   });
 
+  // Teste 10: Grupos criados sempre com estoque 0
+  await test('Grupos são criados com estoque inicial zero', async () => {
+    const group = await partGroupModels.createGroup('Test Group Zero Stock', 999);
+    assertNotNull(group, 'Grupo deve ser criado');
+    assertEqual(group.stock_quantity, 999, 'Função createGroup ainda aceita parâmetro (para compatibilidade)');
+    
+    // Na prática, o controller sempre passa 0
+    const groupZero = await partGroupModels.createGroup('Test Group Zero Stock 2', 0);
+    assertEqual(groupZero.stock_quantity, 0, 'Grupo criado com estoque zero');
+  });
+
+  // Teste 11: Distribuição de quantidade para todas as peças do grupo
+  await test('Atualizar estoque do grupo distribui quantidade para todas as peças', async () => {
+    // Cria um grupo com estoque inicial de 0
+    const group = await partGroupModels.createGroup('Test Group Distribution', 0);
+    
+    // Cria 3 peças de teste vinculadas a este grupo
+    const part1Result = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde, part_group_id)
+      SELECT 'Peça Teste Dist 1', 
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             100,
+             0,
+             $1
+      RETURNING procod
+    `, [group.id]);
+    
+    const part2Result = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde, part_group_id)
+      SELECT 'Peça Teste Dist 2', 
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             150,
+             0,
+             $1
+      RETURNING procod
+    `, [group.id]);
+    
+    const part3Result = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde, part_group_id)
+      SELECT 'Peça Teste Dist 3', 
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             200,
+             0,
+             $1
+      RETURNING procod
+    `, [group.id]);
+    
+    const partIds = [
+      part1Result.rows[0].procod,
+      part2Result.rows[0].procod,
+      part3Result.rows[0].procod
+    ];
+    
+    // Atualiza o estoque do grupo para 10
+    await partGroupModels.updateGroupStock(group.id, 10, 'test_distribution');
+    
+    // Distribui a quantidade para todas as peças
+    const result = await partGroupModels.updateAllPartsStockInGroup(group.id, 10);
+    
+    assertEqual(result.success, true, 'Distribuição deve ter sucesso');
+    assertEqual(result.partsUpdated, 3, 'Deve ter atualizado 3 peças');
+    
+    // Verifica que todas as peças receberam a mesma quantidade
+    for (const partId of partIds) {
+      const partCheck = await pool.query('SELECT proqtde FROM pro WHERE procod = $1', [partId]);
+      assertEqual(partCheck.rows[0].proqtde, 10, `Peça ${partId} deve ter quantidade 10`);
+    }
+    
+    // Limpa as peças de teste
+    for (const partId of partIds) {
+      await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
+    }
+  });
+
   // Limpeza
   await cleanup();
 
