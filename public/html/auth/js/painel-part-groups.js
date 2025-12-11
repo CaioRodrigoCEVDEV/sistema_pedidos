@@ -337,7 +337,7 @@ async function abrirDetalhes(id) {
 
     document.getElementById("nomeGrupoDetalhe").textContent = grupo.name;
     document.getElementById("estoqueGrupoDetalhe").textContent =
-      grupo.stock_quantity;
+      grupo.stock_quantity || 0;
 
     // Renderiza as peças do grupo
     renderPecasGrupo(grupo.parts || []);
@@ -490,7 +490,8 @@ async function salvarEstoque() {
       throw new Error(err.error || "Erro ao atualizar estoque");
     }
 
-    showToast("Estoque atualizado com sucesso!", "success");
+    const result = await res.json();
+    showToast(result.message || "Estoque atualizado com sucesso!", "success");
     bootstrap.Modal.getInstance(
       document.getElementById("modalEditarEstoque")
     ).hide();
