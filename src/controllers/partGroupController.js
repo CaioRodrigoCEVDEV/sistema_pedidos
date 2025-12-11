@@ -125,7 +125,17 @@ exports.updateGroupStock = async (req, res) => {
     }
 
     // Distribui a quantidade para todas as peças do grupo
-    await partGroupModels.updateAllPartsStockInGroup(id, stock_quantity);
+    try {
+      await partGroupModels.updateAllPartsStockInGroup(id, stock_quantity);
+    } catch (distributionError) {
+      console.error("Erro ao distribuir estoque para as peças:", distributionError);
+      // Estoque do grupo foi atualizado, mas distribuição falhou
+      return res.status(207).json({
+        ...group,
+        warning: "Estoque do grupo atualizado, mas ocorreu erro ao distribuir para as peças",
+        error: distributionError.message,
+      });
+    }
 
     res.status(200).json({
       ...group,

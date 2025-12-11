@@ -954,9 +954,16 @@ async function venderItens(itens, referenceId = null) {
  * @param {number} groupId - ID do grupo
  * @param {number} quantity - Nova quantidade para todas as peças do grupo
  * @returns {Object} Resultado da atualização com quantidade de peças afetadas
- * @throws {Error} Se o grupo não for encontrado ou ocorrer erro na atualização
+ * @throws {Error} Se o grupo não for encontrado, quantidade inválida ou erro na atualização
  */
 async function updateAllPartsStockInGroup(groupId, quantity) {
+  // Validação de entrada - converte para número se for string
+  const parsedQuantity = typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
+  
+  if (typeof parsedQuantity !== 'number' || parsedQuantity < 0 || !Number.isInteger(parsedQuantity) || Number.isNaN(parsedQuantity)) {
+    throw new Error("Quantidade deve ser um número inteiro não-negativo");
+  }
+
   const client = await pool.connect();
 
   try {
@@ -986,7 +993,7 @@ async function updateAllPartsStockInGroup(groupId, quantity) {
     if (partsCount > 0) {
       await client.query(
         `UPDATE pro SET proqtde = $1 WHERE part_group_id = $2`,
-        [quantity, groupId]
+        [parsedQuantity, groupId]
       );
     }
 
@@ -997,7 +1004,7 @@ async function updateAllPartsStockInGroup(groupId, quantity) {
       groupId: groupId,
       groupName: group.name,
       partsUpdated: partsCount,
-      newQuantity: quantity,
+      newQuantity: parsedQuantity,
     };
   } catch (error) {
     await client.query("ROLLBACK");
