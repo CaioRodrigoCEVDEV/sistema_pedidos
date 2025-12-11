@@ -349,18 +349,19 @@ async function incrementGroupStock(
 
 /**
  * Cria um novo grupo de compatibilidade
+ * Grupos são SEMPRE criados com stock_quantity = 0, independente do parâmetro passado.
+ * O estoque só pode ser definido após o grupo ter peças vinculadas.
  * @param {string} name - Nome do grupo
- * @param {number} stockQuantity - Quantidade inicial de estoque (padrão: 0)
  * @returns {Object} Grupo criado
  */
-async function createGroup(name, stockQuantity = 0) {
+async function createGroup(name) {
   const result = await pool.query(
     `
     INSERT INTO part_groups (name, stock_quantity)
-    VALUES ($1, $2)
+    VALUES ($1, 0)
     RETURNING *
   `,
-    [name, stockQuantity]
+    [name]
   );
   return result.rows[0];
 }

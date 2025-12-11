@@ -65,7 +65,7 @@ exports.createGroup = async (req, res) => {
 
   try {
     // Sempre cria o grupo com estoque inicial 0
-    const group = await partGroupModels.createGroup(name.trim(), 0);
+    const group = await partGroupModels.createGroup(name.trim());
     res.status(201).json(group);
   } catch (error) {
     console.error("Erro ao criar grupo de compatibilidade:", error);
