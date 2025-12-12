@@ -195,11 +195,10 @@ function escapeHtml(text) {
 
 /**
  * Cria um novo grupo de compatibilidade
+ * Grupos são sempre criados com estoque inicial de 0
  */
 async function criarGrupo() {
   const nome = document.getElementById("nomeGrupo").value.trim();
-  const estoque =
-    parseInt(document.getElementById("estoqueInicial").value, 10) || 0;
 
   if (!nome) {
     showToast("Nome do grupo é obrigatório", "error");
@@ -211,7 +210,7 @@ async function criarGrupo() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ name: nome, stock_quantity: estoque }),
+      body: JSON.stringify({ name: nome }),
     });
 
     if (!res.ok) {
@@ -338,7 +337,7 @@ async function abrirDetalhes(id) {
 
     document.getElementById("nomeGrupoDetalhe").textContent = grupo.name;
     document.getElementById("estoqueGrupoDetalhe").textContent =
-      grupo.stock_quantity;
+      grupo.stock_quantity || 0;
 
     // Renderiza as peças do grupo
     renderPecasGrupo(grupo.parts || []);
@@ -491,7 +490,8 @@ async function salvarEstoque() {
       throw new Error(err.error || "Erro ao atualizar estoque");
     }
 
-    showToast("Estoque atualizado com sucesso!", "success");
+    const result = await res.json();
+    showToast(result.message || "Estoque atualizado com sucesso!", "success");
     bootstrap.Modal.getInstance(
       document.getElementById("modalEditarEstoque")
     ).hide();

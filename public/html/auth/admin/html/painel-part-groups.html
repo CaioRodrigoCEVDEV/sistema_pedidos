@@ -253,18 +253,6 @@
                   placeholder="Ex: Tela Samsung A50/A50s"
                 />
               </div>
-              <div class="mb-3">
-                <label for="estoqueInicial" class="form-label"
-                  >Estoque Inicial</label
-                >
-                <input
-                  type="number"
-                  class="form-control"
-                  id="estoqueInicial"
-                  value="0"
-                  min="0"
-                />
-              </div>
             </form>
           </div>
           <div class="modal-footer">
@@ -364,6 +352,10 @@
             ></button>
           </div>
           <div class="modal-body">
+            <div class="alert alert-info" role="alert">
+              <i class="bi bi-info-circle"></i>
+              <strong>Atenção:</strong> A quantidade definida aqui será aplicada automaticamente para <strong>todas as peças</strong> que pertencem a este grupo.
+            </div>
             <form id="formEditarEstoque">
               <div class="mb-3">
                 <label for="novoEstoque" class="form-label"

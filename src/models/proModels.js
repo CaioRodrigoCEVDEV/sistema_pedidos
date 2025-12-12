@@ -1,5 +1,30 @@
 const pool = require("../config/db");
 
+async function listarTodosProdutos() {
+  const result = await pool.query(`
+        select distinct
+        procod,
+        prodes,
+        marcasdes,
+        (
+          SELECT string_agg(m.moddes, ', ' ORDER BY m.moddes)
+          FROM promod pm
+          JOIN modelo m ON pm.promodmodcod = m.modcod
+          WHERE pm.promodprocod = pro.procod
+        ) as moddes,
+        tipodes,
+        coalesce(cornome, 'Sem Cor') as cordes,
+        case when procorcorescod is null then proqtde else procorqtde end as qtde,
+        procorcorescod
+        from pro
+        join marcas on marcascod = promarcascod 
+        join tipo on tipocod = protipocod
+        left join procor on procod = procorprocod
+        left join cores on corcod = procorcorescod
+        where prosit = 'A'`);
+  return result.rows;
+}
+
 async function listarProdutosComEstoque() {
   const result = await pool.query(`
         select distinct
@@ -231,6 +256,7 @@ async function listarProdutosComEstoqueAcabandoItem(marca, modelo) {
 }
 
 module.exports = {
+  listarTodosProdutos,
   listarProdutosComEstoque,
   listarProdutosSemEstoque,
   listarProdutosComEstoqueAcabando,

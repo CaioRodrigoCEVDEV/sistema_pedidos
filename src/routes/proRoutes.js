@@ -31,6 +31,7 @@ router.get(
   proController.listarProdutosSemEstoque
 );
 // V2 Routes com models
+router.get("/v2/pros", autenticarToken, proControllerV2.listarTodosProdutos);
 router.get(
   "/v2/proComEstoque",
   autenticarToken,

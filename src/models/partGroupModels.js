@@ -30,7 +30,7 @@ async function listAllGroups() {
     FROM part_groups pg
     LEFT JOIN pro p ON p.part_group_id = pg.id
     GROUP BY pg.id, pg.name, pg.stock_quantity, pg.created_at, pg.updated_at
-    ORDER BY pg.name
+    ORDER BY pg.created_at
   `);
   return result.rows;
 }
@@ -616,6 +616,63 @@ async function updateGroupStock(
 }
 
 /**
+ * Atualiza o estoque de TODAS as peças que pertencem a um grupo
+ * 
+ * Esta função é chamada quando o usuário edita a quantidade do grupo.
+ * A nova quantidade é aplicada para todas as peças do grupo, mantendo
+ * sincronização entre o estoque do grupo e o estoque individual das peças.
+ * 
+ * @param {number} groupId - ID do grupo
+ * @param {number} quantity - Nova quantidade para todas as peças
+ * @returns {Object} Resultado da atualização com quantidade de peças atualizadas
+ */
+async function updateAllPartsStockInGroup(groupId, quantity) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1. Busca todas as peças do grupo
+    const partsResult = await client.query(
+      `
+      SELECT procod, prodes
+      FROM pro
+      WHERE part_group_id = $1
+    `,
+      [groupId]
+    );
+
+    const parts = partsResult.rows;
+
+    // 2. Atualiza proqtde de todas as peças para a mesma quantidade do grupo
+    const updateResult = await client.query(
+      `
+      UPDATE pro
+      SET proqtde = $1
+      WHERE part_group_id = $2
+    `,
+      [quantity, groupId]
+    );
+
+    await client.query("COMMIT");
+
+    return {
+      success: true,
+      partsUpdated: updateResult.rowCount,
+      parts: parts.map((p) => ({
+        id: p.procod,
+        name: p.prodes,
+      })),
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Valida e decrementa estoque para múltiplos itens de venda em uma única transação atômica.
  *
  * Esta função implementa a lógica de sincronização de estoque entre grupos:
@@ -962,5 +1019,6 @@ module.exports = {
   getAvailablePart,
   getGroupAuditHistory,
   updateGroupStock,
+  updateAllPartsStockInGroup,
   venderItens,
 };
