@@ -62,6 +62,16 @@ router.get(
   autenticarToken,
   proControllerV2.listarProdutosComEstoqueAcabandoItem
 );
+router.get(
+  "/v2/proEstoqueEmFalta",
+  autenticarToken,
+  proControllerV2.listarProdutosEmFalta
+);
+router.get(
+  "/v2/proEstoqueEmFalta/:marca/:modelo",
+  autenticarToken,
+  proControllerV2.listarProdutosEmFaltaItem
+);
 // Fim V2 Routes com models
 
 // ==================  PUT

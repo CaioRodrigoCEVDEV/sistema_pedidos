@@ -18,18 +18,34 @@ function limparCarrinho() {
   atualizarIconeCarrinho(); // Atualiza o ícone do carrinho, se necessário
 }
 
+async function carregarUsuarioLogado() {
+  const response = await fetch(`${BASE_URL}/me/usuario`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+  if (response.ok) {
+    const data = await response.json();
+    return data.usunome;
+  } else {
+    return null;
+  }
+}
+
 //função para verificar se esta logado e mostrar o botão orçamento
 document.addEventListener("DOMContentLoaded", function () {
   fetch(`${BASE_URL}/emp`)
     .then((response) => response.json())
-    .then((data) => {
+    .then(async (data) => {
       const empusapv = data.empusapv;
 
-      const usuarioLogado = localStorage.getItem("usuarioLogado");
       const botaoOrcamento = document.getElementById("botao-orcamento");
 
+      const usuarioLogado = await carregarUsuarioLogado();
+
       if (usuarioLogado && empusapv === "S") {
-        buscarVendedores();
         botaoOrcamento.style.display = "inline";
       } else if (usuarioLogado && empusapv === "N") {
         botaoOrcamento.style.display = "inline";
@@ -302,7 +318,8 @@ async function enviarWhatsApp() {
     // Verifica se houve erro (ex: estoque insuficiente)
     if (!respPedido.ok) {
       console.error("Erro ao criar pedido:", data);
-      const mensagemErro = data.error || "Erro ao processar pedido. Tente novamente.";
+      const mensagemErro =
+        data.error || "Erro ao processar pedido. Tente novamente.";
       showToast(mensagemErro, "error");
       reabilitarBotoes();
       return;
@@ -319,65 +336,69 @@ async function enviarWhatsApp() {
     // mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
 
     fetch(`${BASE_URL}/emp`)
-    .then((response) => response.json())
-    .then((data) => {
-      // Use o número
-      const whatsappNumber1 = data.empwhatsapp1 || ""; // Use a default number if not found
-      const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
-        mensagem
-      )}`;
-      window.location.href = whatsappUrl;
+      .then((response) => response.json())
+      .then((data) => {
+        // Use o número
+        const whatsappNumber1 = data.empwhatsapp1 || ""; // Use a default number if not found
+        const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
+          mensagem
+        )}`;
+        window.location.href = whatsappUrl;
 
-      // testes;
+        // testes;
 
-      /// Limpa o carrinho no localStorage e na tela
-      localStorage.setItem("cart", JSON.stringify([]));
-      renderCart(); // Isso vai limpar a tabela e zerar o total
+        /// Limpa o carrinho no localStorage e na tela
+        localStorage.setItem("cart", JSON.stringify([]));
+        renderCart(); // Isso vai limpar a tabela e zerar o total
 
-      // Remove o parâmetro cart da URL
-      const url = new URL(window.location);
-      url.searchParams.delete("cart");
-      window.history.replaceState(
-        {},
-        document.title,
-        url.pathname + url.search
-      );
+        // Remove o parâmetro cart da URL
+        const url = new URL(window.location);
+        url.searchParams.delete("cart");
+        window.history.replaceState(
+          {},
+          document.title,
+          url.pathname + url.search
+        );
 
-      // Redireciona para o index após um pequeno delay
-      setTimeout(() => {
-        window.location.href = "index";
-      }, 500);
-      // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
-    })
-    .catch((error) => {
-      console.error("Erro ao buscar número do WhatsApp:", error);
-      // Notifica o usuário que houve um problema ao buscar o número
-      showToast("Pedido criado com sucesso! Não foi possível obter o número do WhatsApp. Você será redirecionado para selecionar um contato.", "warning", 5000);
-      const whatsappNumber1 = ""; // Fallback caso a API falhe
-      const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
-        mensagem
-      )}`;
-      window.location.href = whatsappUrl;
+        // Redireciona para o index após um pequeno delay
+        setTimeout(() => {
+          window.location.href = "index";
+        }, 500);
+        // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
+      })
+      .catch((error) => {
+        console.error("Erro ao buscar número do WhatsApp:", error);
+        // Notifica o usuário que houve um problema ao buscar o número
+        showToast(
+          "Pedido criado com sucesso! Não foi possível obter o número do WhatsApp. Você será redirecionado para selecionar um contato.",
+          "warning",
+          5000
+        );
+        const whatsappNumber1 = ""; // Fallback caso a API falhe
+        const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
+          mensagem
+        )}`;
+        window.location.href = whatsappUrl;
 
-      /// Limpa o carrinho no localStorage e na tela
-      localStorage.setItem("cart", JSON.stringify([]));
-      renderCart(); // Isso vai limpar a tabela e zerar o total
+        /// Limpa o carrinho no localStorage e na tela
+        localStorage.setItem("cart", JSON.stringify([]));
+        renderCart(); // Isso vai limpar a tabela e zerar o total
 
-      // Remove o parâmetro cart da URL
-      const url = new URL(window.location);
-      url.searchParams.delete("cart");
-      window.history.replaceState(
-        {},
-        document.title,
-        url.pathname + url.search
-      );
+        // Remove o parâmetro cart da URL
+        const url = new URL(window.location);
+        url.searchParams.delete("cart");
+        window.history.replaceState(
+          {},
+          document.title,
+          url.pathname + url.search
+        );
 
-      // Redireciona para o index após um pequeno delay
-      setTimeout(() => {
-        window.location.href = "index";
-      }, 500);
-      // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
-    });
+        // Redireciona para o index após um pequeno delay
+        setTimeout(() => {
+          window.location.href = "index";
+        }, 500);
+        // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
+      });
   } catch (error) {
     console.error("Erro ao processar pedido:", error);
     showToast("Erro ao processar pedido. Tente novamente.", "error");
@@ -455,7 +476,8 @@ async function enviarWhatsAppEntrega() {
     // Verifica se houve erro (ex: estoque insuficiente)
     if (!respPedido.ok) {
       console.error("Erro ao criar pedido:", data);
-      const mensagemErro = data.error || "Erro ao processar pedido. Tente novamente.";
+      const mensagemErro =
+        data.error || "Erro ao processar pedido. Tente novamente.";
       showToast(mensagemErro, "error");
       reabilitarBotoes();
       return;
@@ -504,7 +526,11 @@ async function enviarWhatsAppEntrega() {
       .catch((error) => {
         console.error("Erro ao buscar número do WhatsApp:", error);
         // Notifica o usuário que houve um problema ao buscar o número
-        showToast("Pedido criado com sucesso! Não foi possível obter o número do WhatsApp. Você será redirecionado para selecionar um contato.", "warning", 5000);
+        showToast(
+          "Pedido criado com sucesso! Não foi possível obter o número do WhatsApp. Você será redirecionado para selecionar um contato.",
+          "warning",
+          5000
+        );
         const whatsappNumber2 = ""; // Fallback caso a API falhe
         const whatsappUrl2 = `https://api.whatsapp.com/send?phone=${whatsappNumber2}&text=${encodeURIComponent(
           mensagem
