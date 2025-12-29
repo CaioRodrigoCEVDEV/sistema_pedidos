@@ -135,6 +135,19 @@ exports.inserirProduto = async (req, res) => {
       [prodes, promarcascod, modeloId, protipocod, provl]
     );
 
+    const procod = result.rows[0].procod;
+
+    // inserir tabela promod (relacionamento)
+    if (promodcod && !isNaN(parseInt(promodcod))) {
+      // Insere o novo modelo
+      await client.query(
+        `INSERT INTO promod (promodprocod, promodmodcod)
+         VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+        [procod, promodcod]
+      );
+    }
+
     await client.query("COMMIT");
 
     res.status(200).json(result.rows[0]);
