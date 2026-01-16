@@ -99,12 +99,12 @@ exports.getTopPecasPDF = async (req, res) => {
       }
       
       if (groupBy === 'grupo') {
-        doc.text(row.grupo || '-', 50, doc.y, { width: 150, continued: false });
+        doc.text(row.grupo || '-', 50, currentY, { width: 150, continued: false });
         doc.text(row.qtde_vendida || '0', 210, currentY, { width: 100, continued: false });
         doc.text(row.modelo || '-', 320, currentY, { width: 120, continued: false });
         doc.text(row.peca || '-', 450, currentY, { width: 100, continued: false });
       } else {
-        doc.text(row.peca || '-', 50, doc.y, { width: 180, continued: false });
+        doc.text(row.peca || '-', 50, currentY, { width: 180, continued: false });
         doc.text(row.qtde_vendida || '0', 240, currentY, { width: 100, continued: false });
         doc.text(row.modelo || '-', 350, currentY, { width: 120, continued: false });
         doc.text(row.grupo || '-', 480, currentY, { width: 80, continued: false });
