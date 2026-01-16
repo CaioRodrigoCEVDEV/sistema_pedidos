@@ -1,5 +1,8 @@
 const pool = require("../config/db");
 
+// Constants
+const CONFIRMED_ORDER_STATUS = 'S';
+
 /**
  * Modelo de Relatórios
  * 
@@ -18,7 +21,7 @@ const pool = require("../config/db");
 async function getTopPecas(filters = {}) {
   const { dataInicio, dataFim, marca, groupBy = 'peca' } = filters;
   
-  let whereClauses = ["pvconfirmado = 'S'"]; // Apenas pedidos confirmados
+  let whereClauses = [`pvconfirmado = '${CONFIRMED_ORDER_STATUS}'`]; // Apenas pedidos confirmados
   let params = [];
   let paramIndex = 1;
 

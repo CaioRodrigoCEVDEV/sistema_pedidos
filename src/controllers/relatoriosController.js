@@ -2,6 +2,9 @@ const relatoriosModels = require("../models/relatoriosModels");
 const ExcelJS = require("exceljs");
 const PDFDocument = require("pdfkit");
 
+// Constants
+const PDF_PAGE_BREAK_Y = 700;
+
 /**
  * Controlador de Relatórios
  * 
@@ -94,7 +97,7 @@ exports.getTopPecasPDF = async (req, res) => {
       const currentY = doc.y;
       
       // Verifica se precisa de nova página
-      if (currentY > 700) {
+      if (currentY > PDF_PAGE_BREAK_Y) {
         doc.addPage();
       }
       
