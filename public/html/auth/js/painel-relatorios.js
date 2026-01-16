@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let filtrosAtuais = null;
 
   // Carrega marcas
+  // Note: Uses existing /marcas endpoint (from marcasRoutes)
   async function carregarMarcas() {
     try {
       const response = await fetch(`${BASE_URL}/marcas`, {

@@ -7,6 +7,9 @@ const PDFDocument = require("pdfkit");
  * Implementa endpoints para relatório de Top Peças (peças mais vendidas)
  */
 
+// Constantes para geração de PDF
+const PDF_PAGE_BREAK_THRESHOLD = 700;
+
 /**
  * Busca dados do relatório Top Peças com filtros
  * @param {Object} filters - { dataInicio, dataFim, marca, groupBy }
@@ -38,6 +41,7 @@ async function getTopPecasData(filters) {
   let query;
   if (groupBy === "grupo") {
     // Agrupamento por grupo de compatibilidade
+    // Note: Uses subquery for modelo aggregation to match existing codebase pattern (see proModels.js)
     query = `
       SELECT 
         COALESCE(pg.name, 'Sem Grupo') as grupo,
@@ -64,6 +68,7 @@ async function getTopPecasData(filters) {
     `;
   } else {
     // Sem agrupamento - lista de peças individuais
+    // Note: Uses subquery for modelo aggregation to match existing codebase pattern (see proModels.js)
     query = `
       SELECT 
         pro.procod,
@@ -177,7 +182,7 @@ exports.getTopPecasPDF = async (req, res) => {
       const currentY = doc.y;
       
       // Check if we need a new page
-      if (currentY > 700) {
+      if (currentY > PDF_PAGE_BREAK_THRESHOLD) {
         doc.addPage();
       }
       
@@ -223,6 +228,7 @@ exports.getTopPecasXLS = async (req, res) => {
     const worksheet = workbook.addWorksheet("Top Peças");
 
     // Add title and filters
+    // Note: Merge cells A1:D1 - both groupBy modes use 4 columns
     worksheet.mergeCells("A1:D1");
     worksheet.getCell("A1").value = "Relatório - Top Peças";
     worksheet.getCell("A1").font = { bold: true, size: 16 };
