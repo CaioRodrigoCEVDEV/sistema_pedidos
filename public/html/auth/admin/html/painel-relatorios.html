@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatórios - Top Peças</title>
+  <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png" />
+
+  <!-- Styles do seu projeto -->
+  <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-components.css" />
+
+  <!-- Bootstrap + ícones -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+    crossorigin="anonymous" />
+  <link rel="stylesheet" href="../../../../css/tema-bootstrap.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+<body class="bg-light">
+  <div class="wrapper">
+    <header id="header-admin"><!-- preenchido via JS global --></header>
+
+    <main class="p-3">
+      <div class="container">
+        <div class="panel-hero mb-4">
+          <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="icon-circle" aria-hidden="true">
+                <i class="fa-solid fa-chart-line text-primary"></i>
+              </div>
+              <div>
+                <h1 class="h4 mb-0">Relatório: Top Peças</h1>
+                <div class="text-muted small">Visualize as peças mais vendidas com filtros personalizados</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="app-container">
+          <!-- Filtros -->
+          <div class="card shadow-sm mb-3">
+            <div class="card-header">
+              <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h5>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label for="dataInicio" class="form-label">Data Início</label>
+                  <input type="date" class="form-control" id="dataInicio" />
+                </div>
+                <div class="col-md-3">
+                  <label for="dataFim" class="form-label">Data Fim</label>
+                  <input type="date" class="form-control" id="dataFim" />
+                </div>
+                <div class="col-md-3">
+                  <label for="marcaSelect" class="form-label">Marca</label>
+                  <select class="form-select" id="marcaSelect">
+                    <option value="">Todas</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label for="groupBySelect" class="form-label">Agrupar por</label>
+                  <select class="form-select" id="groupBySelect">
+                    <option value="peca">Peça</option>
+                    <option value="grupo">Grupo de Compatibilidade</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-3">
+                <div class="col-12">
+                  <button type="button" class="btn btn-primary" id="btnFiltrar">
+                    <i class="bi bi-search"></i> Filtrar
+                  </button>
+                  <button type="button" class="btn btn-secondary" id="btnLimpar">
+                    <i class="bi bi-x-circle"></i> Limpar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resultados -->
+          <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0"><i class="bi bi-table"></i> Resultados</h5>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-success btn-sm" id="btnExportPDF">
+                  <i class="bi bi-file-pdf"></i> Exportar PDF
+                </button>
+                <button type="button" class="btn btn-success btn-sm" id="btnExportXLS">
+                  <i class="bi bi-file-excel"></i> Exportar Excel
+                </button>
+              </div>
+            </div>
+
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0" id="resultsTable">
+                  <thead class="table-light" id="tableHeader">
+                    <!-- Cabeçalho dinâmico -->
+                  </thead>
+                  <tbody id="tableBody">
+                    <!-- Dados dinâmicos -->
+                  </tbody>
+                </table>
+              </div>
+              <div id="emptyState" class="text-center p-4 text-muted" style="display:none">
+                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                <p>Nenhum resultado encontrado. Ajuste os filtros e tente novamente.</p>
+              </div>
+              <div id="loadingState" class="text-center p-4 text-muted" style="display:none">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Carregando...</span>
+                </div>
+                <p class="mt-2">Carregando dados...</p>
+              </div>
+            </div>
+
+            <div class="card-footer text-muted d-flex justify-content-between">
+              <small id="resultsInfo">0 registros</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer"></footer>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    crossorigin="anonymous"></script>
+
+  <!-- Componentes globais (header/footer) -->
+  <script src="/html/auth/js/componentes.js"></script>
+
+  <!-- Script da página -->
+  <script>
+    // Estado da aplicação
+    let currentData = [];
+    let currentFilters = {
+      dataInicio: '',
+      dataFim: '',
+      marca: '',
+      groupBy: 'peca'
+    };
+
+    // Elementos DOM
+    const dataInicioInput = document.getElementById('dataInicio');
+    const dataFimInput = document.getElementById('dataFim');
+    const marcaSelect = document.getElementById('marcaSelect');
+    const groupBySelect = document.getElementById('groupBySelect');
+    const btnFiltrar = document.getElementById('btnFiltrar');
+    const btnLimpar = document.getElementById('btnLimpar');
+    const btnExportPDF = document.getElementById('btnExportPDF');
+    const btnExportXLS = document.getElementById('btnExportXLS');
+    const tableHeader = document.getElementById('tableHeader');
+    const tableBody = document.getElementById('tableBody');
+    const emptyState = document.getElementById('emptyState');
+    const loadingState = document.getElementById('loadingState');
+    const resultsInfo = document.getElementById('resultsInfo');
+
+    // Carrega marcas para o select
+    async function loadMarcas() {
+      try {
+        const response = await fetch('/marcas');
+        if (!response.ok) throw new Error('Erro ao carregar marcas');
+        const marcas = await response.json();
+        
+        marcaSelect.innerHTML = '<option value="">Todas</option>';
+        marcas.forEach(marca => {
+          const option = document.createElement('option');
+          option.value = marca.marcascod;
+          option.textContent = marca.marcasdes;
+          marcaSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Erro ao carregar marcas:', error);
+      }
+    }
+
+    // Atualiza cabeçalho da tabela baseado no tipo de agrupamento
+    function updateTableHeader() {
+      const groupBy = groupBySelect.value;
+      
+      if (groupBy === 'grupo') {
+        tableHeader.innerHTML = `
+          <tr>
+            <th>Grupo</th>
+            <th>Qtde Vendida</th>
+            <th>Modelo</th>
+            <th>Peça</th>
+          </tr>
+        `;
+      } else {
+        tableHeader.innerHTML = `
+          <tr>
+            <th>Peça</th>
+            <th>Qtde Vendida</th>
+            <th>Modelo</th>
+            <th>Grupo</th>
+          </tr>
+        `;
+      }
+    }
+
+    // Renderiza dados na tabela
+    function renderTable(data) {
+      const groupBy = groupBySelect.value;
+      tableBody.innerHTML = '';
+
+      if (!data || data.length === 0) {
+        emptyState.style.display = 'block';
+        resultsInfo.textContent = '0 registros';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        
+        if (groupBy === 'grupo') {
+          tr.innerHTML = `
+            <td>${row.grupo || '-'}</td>
+            <td>${row.qtde_vendida || '0'}</td>
+            <td>${row.modelo || '-'}</td>
+            <td>${row.peca || '-'}</td>
+          `;
+        } else {
+          tr.innerHTML = `
+            <td>${row.peca || '-'}</td>
+            <td>${row.qtde_vendida || '0'}</td>
+            <td>${row.modelo || '-'}</td>
+            <td>${row.grupo || '-'}</td>
+          `;
+        }
+        
+        tableBody.appendChild(tr);
+      });
+
+      resultsInfo.textContent = `${data.length} registro${data.length !== 1 ? 's' : ''}`;
+    }
+
+    // Busca dados do relatório
+    async function fetchData() {
+      try {
+        loadingState.style.display = 'block';
+        emptyState.style.display = 'none';
+        tableBody.innerHTML = '';
+
+        const params = new URLSearchParams();
+        if (currentFilters.dataInicio) params.append('dataInicio', currentFilters.dataInicio);
+        if (currentFilters.dataFim) params.append('dataFim', currentFilters.dataFim);
+        if (currentFilters.marca) params.append('marca', currentFilters.marca);
+        params.append('groupBy', currentFilters.groupBy);
+
+        const response = await fetch(`/v2/relatorios/top-pecas?${params.toString()}`);
+        if (!response.ok) throw new Error('Erro ao buscar dados');
+        
+        const data = await response.json();
+        currentData = data;
+        
+        loadingState.style.display = 'none';
+        renderTable(data);
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error);
+        loadingState.style.display = 'none';
+        emptyState.style.display = 'block';
+        alert('Erro ao carregar dados do relatório');
+      }
+    }
+
+    // Exporta relatório
+    function exportReport(format) {
+      const params = new URLSearchParams();
+      if (currentFilters.dataInicio) params.append('dataInicio', currentFilters.dataInicio);
+      if (currentFilters.dataFim) params.append('dataFim', currentFilters.dataFim);
+      if (currentFilters.marca) params.append('marca', currentFilters.marca);
+      params.append('groupBy', currentFilters.groupBy);
+
+      const url = `/v2/relatorios/top-pecas/${format}?${params.toString()}`;
+      window.open(url, '_blank');
+    }
+
+    // Event Listeners
+    btnFiltrar.addEventListener('click', () => {
+      currentFilters = {
+        dataInicio: dataInicioInput.value,
+        dataFim: dataFimInput.value,
+        marca: marcaSelect.value,
+        groupBy: groupBySelect.value
+      };
+      updateTableHeader();
+      fetchData();
+    });
+
+    btnLimpar.addEventListener('click', () => {
+      dataInicioInput.value = '';
+      dataFimInput.value = '';
+      marcaSelect.value = '';
+      groupBySelect.value = 'peca';
+      currentFilters = {
+        dataInicio: '',
+        dataFim: '',
+        marca: '',
+        groupBy: 'peca'
+      };
+      updateTableHeader();
+      tableBody.innerHTML = '';
+      emptyState.style.display = 'none';
+      resultsInfo.textContent = '0 registros';
+    });
+
+    groupBySelect.addEventListener('change', () => {
+      updateTableHeader();
+    });
+
+    btnExportPDF.addEventListener('click', () => {
+      exportReport('pdf');
+    });
+
+    btnExportXLS.addEventListener('click', () => {
+      exportReport('xls');
+    });
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', () => {
+      loadMarcas();
+      updateTableHeader();
+    });
+  </script>
+</body>
+
+</html>

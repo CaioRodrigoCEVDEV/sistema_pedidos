@@ -98,6 +98,9 @@ app.use(usuarioRoute2);
 const pedidoRoutesV2 = require("./routes/pedidosRoutesV2");
 app.use(pedidoRoutesV2);
 
+const relatoriosRoutes = require("./routes/relatoriosRoutes");
+app.use(relatoriosRoutes);
+
 // Rotas de páginas
 
 app.get("/", (req, res) => {
@@ -198,6 +201,12 @@ app.get("/dash", autenticarToken, (req, res) => {
 app.get("/backup", autenticarToken, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-backups.html")
+  );
+});
+
+app.get("/relatorios", autenticarToken, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-relatorios.html")
   );
 });
 
