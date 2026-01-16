@@ -37,6 +37,9 @@ function createHeader() {
             <li class="nav-item" id="backup">
               <a class="nav-link" href="backup">Backup</a>
             </li>
+            <li class="nav-item" id="relatorios">
+              <a class="nav-link" href="relatorios">Relatórios</a>
+            </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
                 aria-haspopup="true" aria-expanded="false">

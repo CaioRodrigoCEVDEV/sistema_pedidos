@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatórios — Top Peças</title>
+  <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png" />
+
+  <!-- CSS do projeto -->
+  <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-painel.css" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-components.css" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style.css" />
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous" />
+</head>
+
+<body class="bg-light">
+  <div class="wrapper">
+    <header id="header-admin"></header>
+
+    <main class="bg-light p-3">
+      <div class="container">
+        <!-- Hero Section -->
+        <div class="panel-hero mb-4">
+          <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="icon-circle" aria-hidden="true">
+                <i class="bi bi-graph-up-arrow text-primary fs-4"></i>
+              </div>
+              <div>
+                <h1 class="h4 mb-0">Relatório - Top Peças</h1>
+                <div class="text-muted small">
+                  Visualize as peças mais vendidas em pedidos confirmados
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <h5 class="card-title mb-3">
+              <i class="bi bi-funnel me-2"></i>Filtros
+            </h5>
+            <form id="formFiltros">
+              <div class="row g-3">
+                <!-- Data Início -->
+                <div class="col-md-3">
+                  <label for="dataInicio" class="form-label">Data Início</label>
+                  <input type="date" class="form-control" id="dataInicio" name="dataInicio">
+                </div>
+
+                <!-- Data Fim -->
+                <div class="col-md-3">
+                  <label for="dataFim" class="form-label">Data Fim</label>
+                  <input type="date" class="form-control" id="dataFim" name="dataFim">
+                </div>
+
+                <!-- Marca -->
+                <div class="col-md-3">
+                  <label for="marca" class="form-label">Marca</label>
+                  <select class="form-select" id="marca" name="marca">
+                    <option value="todas" selected>Todas</option>
+                  </select>
+                </div>
+
+                <!-- Agrupamento -->
+                <div class="col-md-3">
+                  <label for="groupBy" class="form-label">Agrupar por</label>
+                  <select class="form-select" id="groupBy" name="groupBy">
+                    <option value="peca" selected>Peça</option>
+                    <option value="grupo">Grupo de Compatibilidade</option>
+                  </select>
+                </div>
+
+                <!-- Botões -->
+                <div class="col-12">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-2"></i>Buscar
+                  </button>
+                  <button type="button" class="btn btn-secondary" id="btnLimpar">
+                    <i class="bi bi-x-circle me-2"></i>Limpar
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Resultado -->
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="card-title mb-0">
+                <i class="bi bi-table me-2"></i>Resultados
+              </h5>
+              <div class="btn-group" role="group">
+                <button type="button" class="btn btn-sm btn-outline-danger" id="btnExportPDF" disabled>
+                  <i class="bi bi-file-pdf me-1"></i>PDF
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success" id="btnExportXLS" disabled>
+                  <i class="bi bi-file-excel me-1"></i>Excel
+                </button>
+              </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loading" class="text-center py-5" style="display: none;">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+              </div>
+              <p class="mt-2 text-muted">Carregando dados...</p>
+            </div>
+
+            <!-- Tabela -->
+            <div id="tabelaResultado" style="display: none;">
+              <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                  <thead class="table-light">
+                    <tr id="tabelaHeader"></tr>
+                  </thead>
+                  <tbody id="tabelaBody"></tbody>
+                </table>
+              </div>
+              <div id="totalRegistros" class="text-muted small mt-2"></div>
+            </div>
+
+            <!-- Mensagem vazia -->
+            <div id="mensagemVazia" class="text-center py-5" style="display: none;">
+              <i class="bi bi-inbox fs-1 text-muted"></i>
+              <p class="text-muted mt-2">Nenhum registro encontrado com os filtros selecionados.</p>
+            </div>
+
+            <!-- Mensagem inicial -->
+            <div id="mensagemInicial" class="text-center py-5">
+              <i class="bi bi-info-circle fs-1 text-muted"></i>
+              <p class="text-muted mt-2">Selecione os filtros e clique em "Buscar" para visualizar o relatório.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer"></footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/config.js"></script>
+  <script src="../js/nomeEmpresa.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+    crossorigin="anonymous"></script>
+  <script src="html/auth/js/componentes.js"></script>
+  <script src="html/auth/js/painel-relatorios.js"></script>
+</body>
+
+</html>
