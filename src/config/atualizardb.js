@@ -79,7 +79,11 @@ async function atualizarDB() {
       `ALTER TABLE public.pro ADD if not exists proacabando bpchar(1) DEFAULT 'N'::bpchar NULL;`
     );
     //temporatrio
+    await pool.query(`
+        ALTER TABLE public.procor ALTER COLUMN procorqtde SET DEFAULT 0;
+        ALTER TABLE public.procor ALTER COLUMN procorsemest SET DEFAULT 'S'::bpchar;
 
+    `);
     await pool.query(`update usu set usuviuversao = 'N';`);
 
     //fim temporatrio
@@ -732,6 +736,43 @@ async function atualizarDB() {
         $function$;
  
     `);
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION fn_marcar_prosemest()
+      RETURNS TRIGGER AS $$
+      BEGIN
+          IF NOT EXISTS (
+              SELECT 1
+              FROM procor
+              WHERE procorprocod = NEW.procod
+          ) THEN
+              IF NEW.proqtde = 0 THEN
+                  NEW.prosemest := 'S';
+              ELSE
+                  NEW.prosemest := 'N';
+              END IF;
+          END IF;
+
+          RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+
+    `);
+   await pool.query(`
+      CREATE OR REPLACE FUNCTION fn_marcar_procorsemest()
+      RETURNS TRIGGER AS $$
+      BEGIN
+          IF NEW.procorqtde = 0 THEN
+              NEW.procorsemest := 'S';
+          ELSE
+              NEW.procorsemest := 'N';
+          END IF;
+
+          RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+
+    `);
+
 
     // FIM INSERTS CONDICIONAIS
 
@@ -761,7 +802,31 @@ async function atualizarDB() {
       WHEN (OLD.pvsta <> 'X' AND NEW.pvsta = 'X')
       execute procedure retornar_saldo()
     `);
+    await pool.query(`
+        DROP TRIGGER IF EXISTS trg_marcar_prosemest ON pro;
+        CREATE TRIGGER trg_marcar_prosemest
+        BEFORE UPDATE OF proqtde ON pro
+        FOR EACH ROW
+        EXECUTE PROCEDURE fn_marcar_prosemest();
 
+        DROP TRIGGER IF EXISTS trg_marcar_prosemest_ins ON pro;
+        CREATE TRIGGER trg_marcar_prosemest_ins
+        BEFORE INSERT ON pro
+        FOR EACH ROW
+        EXECUTE PROCEDURE fn_marcar_prosemest();
+
+        DROP TRIGGER IF EXISTS trg_marcar_procorsemest ON procor;
+        CREATE TRIGGER trg_marcar_procorsemest
+        BEFORE UPDATE OF procorqtde ON procor
+        FOR EACH ROW
+        EXECUTE PROCEDURE fn_marcar_procorsemest();
+
+        DROP TRIGGER IF EXISTS trg_marcar_procorsemest_ins ON procor;
+        CREATE TRIGGER trg_marcar_procorsemest_ins
+        BEFORE INSERT ON procor
+        FOR EACH ROW
+        EXECUTE PROCEDURE fn_marcar_procorsemest();
+    `);
     //fim das triggers
 
     //inicio das sequences
