@@ -85,11 +85,13 @@ exports.getTopPecasPDF = async (req, res) => {
       doc.text("Qtde Vendida", 210, startY, { width: 100, continued: false });
       doc.text("Modelo", 320, startY, { width: 120, continued: false });
       doc.text("Peça", 450, startY, { width: 100, continued: false });
+      doc.text("Custo", 550, startY, { width: 100, continued: false });
     } else {
       doc.text("Peça", 50, startY, { width: 180, continued: false });
       doc.text("Qtde Vendida", 240, startY, { width: 100, continued: false });
       doc.text("Modelo", 350, startY, { width: 120, continued: false });
       doc.text("Grupo", 480, startY, { width: 80, continued: false });
+      doc.text("Custo", 550, startY, { width: 100, continued: false });
     }
 
     doc.moveDown();
@@ -125,6 +127,18 @@ exports.getTopPecasPDF = async (req, res) => {
           width: 100,
           continued: false,
         });
+        const custoFormatado =
+          row.custo != null
+            ? Number(row.custo).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })
+            : "-";
+
+        doc.text(custoFormatado, 550, currentY, {
+          width: 100,
+          continued: false,
+        });
       } else {
         doc.text(row.peca || "-", 50, currentY, {
           width: 180,
@@ -144,6 +158,18 @@ exports.getTopPecasPDF = async (req, res) => {
         });
         doc.text(row.grupo || "-", 480, currentY, {
           width: 80,
+          continued: false,
+        });
+        const custoFormatado =
+          row.custo != null
+            ? Number(row.custo).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })
+            : "-";
+
+        doc.text(custoFormatado, 550, currentY, {
+          width: 100,
           continued: false,
         });
       }
@@ -189,6 +215,7 @@ exports.getTopPecasXLS = async (req, res) => {
         { header: "Qtde Vendida", key: "qtde_vendida", width: 15 },
         { header: "Modelo", key: "modelo", width: 30 },
         { header: "Peça", key: "peca", width: 30 },
+        { header: "Custo", key: "custo", width: 15 },
       ];
     } else {
       worksheet.columns = [
@@ -196,6 +223,7 @@ exports.getTopPecasXLS = async (req, res) => {
         { header: "Qtde Vendida", key: "qtde_vendida", width: 15 },
         { header: "Modelo", key: "modelo", width: 30 },
         { header: "Grupo", key: "grupo", width: 20 },
+        { header: "Custo", key: "custo", width: 15 },
       ];
     }
 

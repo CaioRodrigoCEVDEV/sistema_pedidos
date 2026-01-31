@@ -152,7 +152,7 @@ inputPesquisa.addEventListener("input", function () {
     .then((produtos) => {
       const filtrados = produtos.filter(
         (produto) =>
-          produto.prodes && produto.prodes.toLowerCase().includes(pesquisa)
+          produto.prodes && produto.prodes.toLowerCase().includes(pesquisa),
       );
 
       if (filtrados.length === 0) {
@@ -170,6 +170,7 @@ inputPesquisa.addEventListener("input", function () {
         tr.innerHTML = `
           <td>${produto.prodes}</td>
           <td>${formatarMoeda(produto.provl)}</td>
+          <td>${formatarMoeda(produto.procusto)}</td>
           <td>
             <button class="btn btn-primary btn-sm" onclick="editarProduto('${
               produto.procod
@@ -207,7 +208,7 @@ function editarProduto(codigo) {
         Promise.resolve(produto),
         fetch(`${BASE_URL}/procores`).then((r) => r.json()),
         fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) =>
-          r.json()
+          r.json(),
         ),
       ]);
     })
@@ -246,6 +247,12 @@ function editarProduto(codigo) {
             </div>
 
             <div class="mb-3">
+              <label class="form-label">💵 Valor de Custo</label>
+              <input type="number" step="0.01" class="form-control" id="editarValorCusto" required
+                value="${Number(produto[0]?.procusto).toFixed(2) || ""}">
+            </div>
+
+            <div class="mb-3">
               <label class="form-label">📥 Produto sem estoque</label><br>
               <input type="checkbox" id="editar_prosemest"
                 ${produto.some((p) => p.prosemest === "S") ? "checked" : ""}>
@@ -265,10 +272,10 @@ function editarProduto(codigo) {
                 ${coresDisponiveis
                   .map((c) => {
                     const ligada = coresProduto.some(
-                      (cp) => cp.corcod == c.corcod
+                      (cp) => cp.corcod == c.corcod,
                     );
                     const semEst = coresProduto.some(
-                      (cp) => cp.corcod == c.corcod && cp.procorsemest === "S"
+                      (cp) => cp.corcod == c.corcod && cp.procorsemest === "S",
                     );
 
                     return `
@@ -353,6 +360,7 @@ function editarProduto(codigo) {
             .getElementById("editarDescricao")
             .value.trim();
           const provl = document.getElementById("editarValor").value;
+          const procusto = document.getElementById("editarValorCusto").value;
           const prosemest = document.getElementById("editar_prosemest").checked
             ? "S"
             : "N";
@@ -372,7 +380,7 @@ function editarProduto(codigo) {
 
           // Estado atual
           const linhas = popup.querySelectorAll(
-            "#editarProdutoCores .form-check"
+            "#editarProdutoCores .form-check",
           );
           const atuais = [];
           linhas.forEach((l) => {
@@ -394,6 +402,7 @@ function editarProduto(codigo) {
               body: JSON.stringify({
                 prodes,
                 provl,
+                procusto,
                 prosemest,
                 proacabando,
               }),
@@ -404,7 +413,7 @@ function editarProduto(codigo) {
               if (!anterioresMap[c.corcod]) {
                 const addResponse = await fetch(
                   `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${c.corcod}&procorsemest=${c.procorsemest}`,
-                  { method: "POST" }
+                  { method: "POST" },
                 );
                 if (!addResponse.ok) {
                   const errorData = await addResponse.json();
@@ -417,7 +426,7 @@ function editarProduto(codigo) {
                     `&procorsemest=${anterioresMap[c.corcod]}` +
                     `&corescodnovo=${c.corcod}` +
                     `&procorsemestnovo=${c.procorsemest}`,
-                  { method: "PUT" }
+                  { method: "PUT" },
                 );
               }
             }
@@ -427,7 +436,7 @@ function editarProduto(codigo) {
               if (!atuais.some((a) => a.corcod === corAnterior)) {
                 const deleteResponse = await fetch(
                   `${BASE_URL}/proCoresDisponiveis/${codigo}?corescod=${corAnterior}`,
-                  { method: "DELETE" }
+                  { method: "DELETE" },
                 );
                 if (!deleteResponse.ok) {
                   const errorData = await deleteResponse.json();
@@ -453,7 +462,7 @@ function editarProduto(codigo) {
             popup.remove();
             alertPersonalizado(
               erro.message || "Erro ao atualizar o produto.",
-              3000
+              3000,
             );
           }
         });
@@ -469,7 +478,7 @@ function carregarProPesquisa() {
     .then((produtos) => {
       const filtrados = produtos.filter(
         (produto) =>
-          produto.prodes && produto.prodes.toLowerCase().includes(pesquisa)
+          produto.prodes && produto.prodes.toLowerCase().includes(pesquisa),
       );
       corpoTabela.innerHTML = "";
       filtrados.forEach((produto) => {
@@ -479,6 +488,7 @@ function carregarProPesquisa() {
         tr.innerHTML = `
           <td>${produto.prodes}</td>
           <td>${formatarMoeda(produto.provl)}</td>
+          <td>${formatarMoeda(produto.procusto)}</td>
           <td>
             <button class="btn btn-primary btn-sm" onclick="editarProduto('${
               produto.procod
@@ -646,9 +656,9 @@ function carregarMarcas() {
             <button class="btn btn-sm btn-primary" onclick="editarMarca(${
               m.marcascod
             }, '${m.marcasdes.replace(
-          /'/g,
-          "\\'"
-        )}')"><i class='fa fa-edit'></i></button>
+              /'/g,
+              "\\'",
+            )}')"><i class='fa fa-edit'></i></button>
             <button class="btn btn-sm btn-danger" onclick="excluirMarca(${
               m.marcascod
             })"><i class='fa fa-trash'></i></button>
@@ -858,7 +868,7 @@ async function excluirMarca(id) {
       if (error.message === "403") {
         alertPersonalizado(
           "Sem permissão para excluir marcas. Contate o administrador.",
-          2000
+          2000,
         );
       } else {
         alert("Erro ao excluir a marca.");
@@ -897,8 +907,8 @@ function carregarModelos() {
             <button class="btn btn-sm btn-primary" onclick="editarModelo(${
               m.modcod
             }, '${m.moddes.replace(/'/g, "'")}', ${
-          m.modmarcascod
-        })"><i class='fa fa-edit'></i></button>
+              m.modmarcascod
+            })"><i class='fa fa-edit'></i></button>
             <button class="btn btn-sm btn-danger" onclick="excluirModelo(${
               m.modcod
             })"><i class='fa fa-trash'></i></button>
@@ -1010,7 +1020,7 @@ function editarModelo(id, nome, marca) {
         if (error.message === "403") {
           alertPersonalizado(
             "Sem permissão para editar modelos. Contate o administrador.",
-            2000
+            2000,
           );
         } else {
           alert("Erro ao atualizar modelo");
@@ -1087,12 +1097,12 @@ async function excluirModelo(id) {
         if (e.message === "403") {
           alertPersonalizado(
             "Sem permissão para excluir modelos. Contate o administrador.",
-            2000
+            2000,
           );
         } else if (e.message === "409") {
           alertPersonalizado(
             "Não é possível excluir este modelo pois existem produtos vinculados a ele.",
-            3000
+            3000,
           );
         } else {
           alert("Erro ao excluir modelo");
@@ -1131,9 +1141,9 @@ function carregarTipos() {
             <button class="btn btn-sm btn-primary" onclick="editarTipo(${
               t.tipocod
             }, '${t.tipodes.replace(
-          /'/g,
-          "'"
-        )}')"><i class='fa fa-edit'></i></button>
+              /'/g,
+              "'",
+            )}')"><i class='fa fa-edit'></i></button>
             <button class="btn btn-sm btn-danger" onclick="excluirTipo(${
               t.tipocod
             })"><i class='fa fa-trash'></i></button>
@@ -1294,12 +1304,12 @@ async function excluirTipo(id) {
       if (error.message === "403") {
         alertPersonalizado(
           "Sem permissão para excluir este tipo. Contate o administrador.",
-          2000
+          2000,
         );
       } else if (error.message === "409") {
         alertPersonalizado(
           "Não é possível excluir este tipo pois existem produtos vinculados a ele.",
-          3000
+          3000,
         );
       } else {
         alert("Erro ao excluir tipo");
@@ -1425,7 +1435,7 @@ function editarCor(id, nome) {
         if (error.message === "403") {
           alertPersonalizado(
             "Sem permissão para editar esta cor. Contate o administrador.",
-            2000
+            2000,
           );
         } else if (error.message === "200") {
           alert("OK");
@@ -1495,7 +1505,7 @@ async function excluirCor(id) {
       if (error.message === "403") {
         alertPersonalizado(
           "Sem permissão para excluir esta cor. Contate o administrador.",
-          2000
+          2000,
         );
       } else {
         alert("Erro ao excluir cor");
@@ -1531,19 +1541,24 @@ function carregarPecas() {
         tr.innerHTML = `
           <td>${t.prodes}</td>
           <td>${formatarMoeda(t.provl)}</td>
+          <td>${formatarMoeda(t.procusto)}</td>
           <td>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-sm btn-primary btn-editar-peca" data-id="${
-                t.procod
-              }" data-nome="${t.prodes.replace(/"/g, "&quot;")}" data-valor="${
-          t.provl
-        }">
-                <i class='fa fa-edit'></i>
+              <button
+                class="btn btn-sm btn-primary btn-editar-peca"
+                data-id="${t.procod}"
+                data-nome="${t.prodes.replace(/"/g, "&quot;")}"
+                data-valor="${t.provl}"
+                data-custo="${t.procusto}"
+              >
+                <i class="fa fa-edit"></i>
               </button>
-              <button class="btn btn-sm btn-danger btn-excluir-peca" data-id="${
-                t.procod
-              }">
-                <i class='fa fa-trash'></i>
+
+              <button
+                class="btn btn-sm btn-danger btn-excluir-peca"
+                data-id="${t.procod}"
+              >
+                <i class="fa fa-trash"></i>
               </button>
             </div>
           </td>`;
@@ -1820,7 +1835,7 @@ function toggleOrdemMarca() {
                 .map(
                   (m) =>
                     `<li class="list-group-item" data-id="${m.marcascod}"><span class="handle">☰ </span>${m.marcasdes}
-                    </li>`
+                    </li>`,
                 )
                 .join("")}
             </ul>
@@ -1908,7 +1923,7 @@ function toggleOrdemModelo() {
         .then((r) => r.json())
         .then((modelos) => {
           const modelosFiltrados = modelos.filter(
-            (m) => m.modmarcascod == marcaId
+            (m) => m.modmarcascod == marcaId,
           );
 
           const holder = popup.querySelector("#listaOrdemHolder");
@@ -1918,7 +1933,7 @@ function toggleOrdemModelo() {
                 .map(
                   (m) =>
                     `<li class="list-group-item" data-id="${m.modcod}"><span class="handle">☰ </span>${m.moddes}
-                    </li>`
+                    </li>`,
                 )
                 .join("")}
             </ul>
@@ -2103,7 +2118,7 @@ function toggleOrdemPeca() {
                 (p) =>
                   `<li class="list-group-item" data-id="${p.procod}">
                      <span class="handle">☰ </span>${p.prodes}
-                   </li>`
+                   </li>`,
               )
               .join("")}
             </ul>
@@ -2230,7 +2245,7 @@ function toggleOrdemTipoPeca() {
                 (p) =>
                   `<li class="list-group-item" data-id="${p.tipocod}">
                      <span class="handle">☰ </span>${p.tipodes}
-                   </li>`
+                   </li>`,
               )
               .join("")}
             </ul>
@@ -2339,9 +2354,12 @@ async function processCharges() {
 }
 processCharges();
 // checa 1x por dia
-setInterval(() => {
-  processCharges();
-}, 24 * 60 * 60 * 1000);
+setInterval(
+  () => {
+    processCharges();
+  },
+  24 * 60 * 60 * 1000,
+);
 
 // alertPersonalizado personalizado Tom FORMAL
 
