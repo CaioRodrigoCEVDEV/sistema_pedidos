@@ -462,6 +462,7 @@ async function addPartToGroup(partId, groupId, colorId = null) {
     }
     
     const group = groupResult.rows[0];
+    let finalGroupStock = group.stock_quantity;
     
     // Se uma cor foi especificada, busca informações da cor e seu estoque
     if (colorId) {
@@ -480,34 +481,36 @@ async function addPartToGroup(partId, groupId, colorId = null) {
         // e a cor tem estoque (procorqtde), atualiza o estoque do grupo
         if ((group.stock_quantity === null || group.stock_quantity === 0) && 
             colorResult.rows[0].procorqtde > 0) {
+          finalGroupStock = colorResult.rows[0].procorqtde;
+          
           await client.query(
             `UPDATE part_groups 
              SET stock_quantity = $1, updated_at = NOW()
              WHERE id = $2`,
-            [colorResult.rows[0].procorqtde, groupId]
+            [finalGroupStock, groupId]
           );
           
           // Cria registro de auditoria
           await client.query(
             `INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
              VALUES ($1, $2, $3, $4)`,
-            [groupId, colorResult.rows[0].procorqtde, 'colored_part_added', partId.toString()]
+            [groupId, finalGroupStock, 'colored_part_added', partId.toString()]
           );
         }
       }
     }
     
-    // Se o grupo já tem estoque definido (stock_quantity > 0),
+    // Se o grupo tem estoque definido (stock_quantity > 0 ou foi atualizado acima),
     // sincroniza o estoque da peça adicionada com o estoque do grupo
-    if (group.stock_quantity !== null && group.stock_quantity > 0) {
+    if (finalGroupStock !== null && finalGroupStock > 0) {
       await client.query(
         `UPDATE pro 
          SET proqtde = $1
          WHERE procod = $2`,
-        [group.stock_quantity, partId]
+        [finalGroupStock, partId]
       );
       
-      part.proqtde = group.stock_quantity;
+      part.proqtde = finalGroupStock;
       
       // Se há uma cor definida, também atualiza o estoque da cor
       if (colorId) {
@@ -515,7 +518,7 @@ async function addPartToGroup(partId, groupId, colorId = null) {
           `UPDATE procor 
            SET procorqtde = $1
            WHERE procorprocod = $2 AND procorcorescod = $3`,
-          [group.stock_quantity, partId, colorId]
+          [finalGroupStock, partId, colorId]
         );
       }
     }
