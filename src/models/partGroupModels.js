@@ -420,8 +420,21 @@ async function deleteGroup(groupId) {
  * @returns {Object|null} Peça atualizada ou null se não encontrada
  */
 /**
- * Adiciona uma peça a um grupo de compatibilidade
- * Se uma cor for especificada, armazena a informação para uso futuro
+ * Adiciona uma peça a um grupo de compatibilidade com sincronização automática de estoque
+ * 
+ * Comportamento:
+ * 1. Se uma cor for especificada e o grupo não tiver estoque (ou estoque = 0):
+ *    - Usa o procorqtde da cor para definir o estoque do grupo
+ *    - Sincroniza a peça com o novo estoque do grupo
+ *    - Cria registro de auditoria
+ * 
+ * 2. Se o grupo já tiver estoque definido:
+ *    - Sincroniza automaticamente a peça com o estoque do grupo
+ *    - Se uma cor foi especificada, também atualiza o procorqtde
+ * 
+ * 3. Se o grupo não tiver estoque e nenhuma cor com estoque:
+ *    - Apenas vincula a peça ao grupo sem alterar estoques
+ * 
  * @param {number} partId - ID da peça (procod)
  * @param {number} groupId - ID do grupo (INTEGER)
  * @param {number|null} colorId - ID da cor selecionada (opcional)
