@@ -14,6 +14,7 @@ let currentPage = 1;
 let totalPages = 1;
 let isLoadingMore = false;
 let searchTerm = "";
+let searchDebounceTimer = null;
 
 // Referência do modal de adicionar peça (para controle de backdrop)
 let modalAdicionarPecaInstance = null;
@@ -657,14 +658,34 @@ async function handleScroll(e) {
 }
 
 /**
- * Filtra peças disponíveis com base no termo de busca
+ * Filtra peças disponíveis com base no termo de busca (com debouncing)
  */
-async function filtrarPecas() {
-  const input = document.getElementById("pesquisaPeca");
-  searchTerm = input.value.trim();
-  currentPage = 1;
-  availableParts = [];
-  await carregarPecasDisponiveis(1, false);
+function filtrarPecas() {
+  // Limpa o timer anterior
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+  }
+  
+  // Configura novo timer de 400ms
+  searchDebounceTimer = setTimeout(async () => {
+    const input = document.getElementById("pesquisaPeca");
+    searchTerm = input.value.trim();
+    currentPage = 1;
+    availableParts = [];
+    await carregarPecasDisponiveis(1, false);
+  }, 400);
+}
+
+/**
+ * Configura event listeners para o modal de adicionar peça
+ */
+function setupModalEventListeners() {
+  const searchInput = document.getElementById("pesquisaPeca");
+  if (searchInput) {
+    // Remove listener anterior se existir
+    searchInput.removeEventListener("keyup", filtrarPecas);
+    searchInput.addEventListener("keyup", filtrarPecas);
+  }
 }
 
 /**
@@ -697,7 +718,8 @@ async function abrirModalAdicionarPeca() {
   // Carrega primeira página
   await carregarPecasDisponiveis(1);
   
-  // Setup scroll listener for infinite scroll
+  // Setup event listeners and infinite scroll
+  setupModalEventListeners();
   setupInfiniteScroll();
 }
 

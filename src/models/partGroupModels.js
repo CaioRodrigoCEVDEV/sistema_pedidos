@@ -532,18 +532,21 @@ async function getAvailableParts(currentGroupId = null) {
 async function getAvailablePart(page = 1, limit = 20, search = "") {
   const offset = (page - 1) * limit;
   
+  // Preparar termo de busca
+  const searchTerm = search && search.trim() !== "" ? `%${search.trim()}%` : null;
+  
   // Construir filtro de busca se fornecido
   let searchFilter = "";
   const params = [];
   
-  if (search && search.trim() !== "") {
+  if (searchTerm) {
     searchFilter = `AND (
       p.prodes ILIKE $${params.length + 1} OR 
       m.marcasdes ILIKE $${params.length + 1} OR 
       t.tipodes ILIKE $${params.length + 1} OR
       p.procod::text ILIKE $${params.length + 1}
     )`;
-    params.push(`%${search.trim()}%`);
+    params.push(searchTerm);
   }
   
   // Query para obter as peças com informações de cores
@@ -592,7 +595,7 @@ async function getAvailablePart(page = 1, limit = 20, search = "") {
     WHERE p.prosit = 'A' ${searchFilter}
   `;
   
-  const countParams = search && search.trim() !== "" ? [`%${search.trim()}%`] : [];
+  const countParams = searchTerm ? [searchTerm] : [];
   
   const [dataResult, countResult] = await Promise.all([
     pool.query(query, params),
