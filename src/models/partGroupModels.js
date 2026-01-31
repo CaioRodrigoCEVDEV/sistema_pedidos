@@ -428,31 +428,106 @@ async function deleteGroup(groupId) {
  * @returns {Object|null} Peça atualizada com informações do grupo e cor
  */
 async function addPartToGroup(partId, groupId, colorId = null) {
-  const result = await pool.query(
-    `
-    UPDATE pro 
-    SET part_group_id = $1
-    WHERE procod = $2
-    RETURNING procod, prodes, part_group_id
-  `,
-    [groupId, partId]
-  );
+  const client = await pool.connect();
   
-  const part = result.rows[0];
-  if (!part) return null;
-  
-  // Se uma cor foi especificada, retorna também a informação da cor
-  if (colorId) {
-    const colorResult = await pool.query(
-      `SELECT corcod, cornome FROM cores WHERE corcod = $1`,
-      [colorId]
+  try {
+    await client.query("BEGIN");
+    
+    // Atualiza a peça para associá-la ao grupo
+    const result = await client.query(
+      `
+      UPDATE pro 
+      SET part_group_id = $1
+      WHERE procod = $2
+      RETURNING procod, prodes, part_group_id, proqtde
+    `,
+      [groupId, partId]
     );
-    if (colorResult.rows.length > 0) {
-      part.selected_color = colorResult.rows[0];
+    
+    const part = result.rows[0];
+    if (!part) {
+      await client.query("ROLLBACK");
+      return null;
     }
+    
+    // Busca informações do grupo
+    const groupResult = await client.query(
+      `SELECT stock_quantity FROM part_groups WHERE id = $1`,
+      [groupId]
+    );
+    
+    if (groupResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+    
+    const group = groupResult.rows[0];
+    
+    // Se uma cor foi especificada, busca informações da cor e seu estoque
+    if (colorId) {
+      const colorResult = await client.query(
+        `SELECT c.corcod, c.cornome, pc.procorqtde 
+         FROM cores c
+         LEFT JOIN procor pc ON pc.procorcorescod = c.corcod AND pc.procorprocod = $1
+         WHERE c.corcod = $2`,
+        [partId, colorId]
+      );
+      
+      if (colorResult.rows.length > 0) {
+        part.selected_color = colorResult.rows[0];
+        
+        // Se o grupo ainda não tem estoque definido (stock_quantity é null ou 0)
+        // e a cor tem estoque (procorqtde), atualiza o estoque do grupo
+        if ((group.stock_quantity === null || group.stock_quantity === 0) && 
+            colorResult.rows[0].procorqtde > 0) {
+          await client.query(
+            `UPDATE part_groups 
+             SET stock_quantity = $1, updated_at = NOW()
+             WHERE id = $2`,
+            [colorResult.rows[0].procorqtde, groupId]
+          );
+          
+          // Cria registro de auditoria
+          await client.query(
+            `INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+             VALUES ($1, $2, $3, $4)`,
+            [groupId, colorResult.rows[0].procorqtde, 'colored_part_added', partId.toString()]
+          );
+        }
+      }
+    }
+    
+    // Se o grupo já tem estoque definido (stock_quantity > 0),
+    // sincroniza o estoque da peça adicionada com o estoque do grupo
+    if (group.stock_quantity !== null && group.stock_quantity > 0) {
+      await client.query(
+        `UPDATE pro 
+         SET proqtde = $1
+         WHERE procod = $2`,
+        [group.stock_quantity, partId]
+      );
+      
+      part.proqtde = group.stock_quantity;
+      
+      // Se há uma cor definida, também atualiza o estoque da cor
+      if (colorId) {
+        await client.query(
+          `UPDATE procor 
+           SET procorqtde = $1
+           WHERE procorprocod = $2 AND procorcorescod = $3`,
+          [group.stock_quantity, partId, colorId]
+        );
+      }
+    }
+    
+    await client.query("COMMIT");
+    return part;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
-  
-  return part;
 }
 
 /**
