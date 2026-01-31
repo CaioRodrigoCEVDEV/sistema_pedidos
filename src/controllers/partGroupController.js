@@ -159,14 +159,14 @@ exports.deleteGroup = async (req, res) => {
 // Adiciona uma peça a um grupo de compatibilidade
 exports.addPartToGroup = async (req, res) => {
   const { id } = req.params;
-  const { partId } = req.body;
+  const { partId, colorId } = req.body;
 
   if (!partId) {
     return res.status(400).json({ error: "ID da peça é obrigatório" });
   }
 
   try {
-    const result = await partGroupModels.addPartToGroup(partId, id);
+    const result = await partGroupModels.addPartToGroup(partId, id, colorId);
     if (!result) {
       return res.status(404).json({ error: "Peça não encontrada" });
     }
@@ -206,11 +206,15 @@ exports.getAvailableParts = async (req, res) => {
   }
 };
 
-// Busca todas as peças disponíveis (lista completa)
+// Busca todas as peças disponíveis com paginação
 exports.getAvailablePart = async (req, res) => {
   try {
-    const parts = await partGroupModels.getAvailablePart();
-    res.status(200).json(parts);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const search = req.query.search || "";
+    
+    const result = await partGroupModels.getAvailablePart(page, limit, search);
+    res.status(200).json(result);
   } catch (error) {
     console.error("Erro ao buscar peças disponíveis:", error);
     res.status(500).json({ error: "Erro ao buscar peças disponíveis" });

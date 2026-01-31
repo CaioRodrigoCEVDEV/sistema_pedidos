@@ -419,7 +419,15 @@ async function deleteGroup(groupId) {
  * @param {number} groupId - ID do grupo (INTEGER)
  * @returns {Object|null} Peça atualizada ou null se não encontrada
  */
-async function addPartToGroup(partId, groupId) {
+/**
+ * Adiciona uma peça a um grupo de compatibilidade
+ * Se uma cor for especificada, armazena a informação para uso futuro
+ * @param {number} partId - ID da peça (procod)
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @param {number|null} colorId - ID da cor selecionada (opcional)
+ * @returns {Object|null} Peça atualizada com informações do grupo e cor
+ */
+async function addPartToGroup(partId, groupId, colorId = null) {
   const result = await pool.query(
     `
     UPDATE pro 
@@ -429,7 +437,22 @@ async function addPartToGroup(partId, groupId) {
   `,
     [groupId, partId]
   );
-  return result.rows[0] || null;
+  
+  const part = result.rows[0];
+  if (!part) return null;
+  
+  // Se uma cor foi especificada, retorna também a informação da cor
+  if (colorId) {
+    const colorResult = await pool.query(
+      `SELECT corcod, cornome FROM cores WHERE corcod = $1`,
+      [colorId]
+    );
+    if (colorResult.rows.length > 0) {
+      part.selected_color = colorResult.rows[0];
+    }
+  }
+  
+  return part;
 }
 
 /**
@@ -500,27 +523,95 @@ async function getAvailableParts(currentGroupId = null) {
 }
 
 /**
- * Busca todas as peças disponíveis para agrupamento (lista completa)
- * @returns {Array} Lista de todas as peças
+ * Busca todas as peças disponíveis para agrupamento com paginação e informações de cor
+ * @param {number} page - Número da página (padrão: 1)
+ * @param {number} limit - Quantidade de itens por página (padrão: 20)
+ * @param {string} search - Termo de busca (opcional)
+ * @returns {Object} Objeto com dados paginados e informações de cores
  */
-async function getAvailablePart() {
+async function getAvailablePart(page = 1, limit = 20, search = "") {
+  const offset = (page - 1) * limit;
+  
+  // Construir filtro de busca se fornecido
+  let searchFilter = "";
+  const params = [];
+  
+  if (search && search.trim() !== "") {
+    searchFilter = `AND (
+      p.prodes ILIKE $${params.length + 1} OR 
+      m.marcasdes ILIKE $${params.length + 1} OR 
+      t.tipodes ILIKE $${params.length + 1} OR
+      p.procod::text ILIKE $${params.length + 1}
+    )`;
+    params.push(`%${search.trim()}%`);
+  }
+  
+  // Query para obter as peças com informações de cores
   const query = `
-      SELECT 
-        p.procod,
-        p.prodes,
-        p.provl,
-        p.proqtde,
-        p.part_group_id,
-        m.marcasdes,
-        t.tipodes
-      FROM pro p
-      LEFT JOIN marcas m ON m.marcascod = p.promarcascod
-      LEFT JOIN tipo t ON t.tipocod = p.protipocod
-      ORDER BY p.prodes
-    `;
-
-  const result = await pool.query(query);
-  return result.rows;
+    SELECT 
+      p.procod,
+      p.prodes,
+      p.provl,
+      p.proqtde,
+      p.part_group_id,
+      m.marcasdes,
+      t.tipodes,
+      CASE 
+        WHEN COUNT(pc.procorcorescod) > 0 THEN true 
+        ELSE false 
+      END as has_colors,
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'corcod', c.corcod,
+            'cornome', c.cornome,
+            'procorqtde', pc.procorqtde
+          ) ORDER BY c.cornome
+        ) FILTER (WHERE pc.procorcorescod IS NOT NULL),
+        '[]'::json
+      ) as colors
+    FROM pro p
+    LEFT JOIN marcas m ON m.marcascod = p.promarcascod
+    LEFT JOIN tipo t ON t.tipocod = p.protipocod
+    LEFT JOIN procor pc ON pc.procorprocod = p.procod
+    LEFT JOIN cores c ON c.corcod = pc.procorcorescod
+    WHERE p.prosit = 'A' ${searchFilter}
+    GROUP BY p.procod, p.prodes, p.provl, p.proqtde, p.part_group_id, m.marcasdes, t.tipodes
+    ORDER BY p.prodes
+    LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+  `;
+  
+  params.push(limit, offset);
+  
+  // Query para contar o total de peças
+  const countQuery = `
+    SELECT COUNT(DISTINCT p.procod) as total
+    FROM pro p
+    LEFT JOIN marcas m ON m.marcascod = p.promarcascod
+    LEFT JOIN tipo t ON t.tipocod = p.protipocod
+    WHERE p.prosit = 'A' ${searchFilter}
+  `;
+  
+  const countParams = search && search.trim() !== "" ? [`%${search.trim()}%`] : [];
+  
+  const [dataResult, countResult] = await Promise.all([
+    pool.query(query, params),
+    pool.query(countQuery, countParams),
+  ]);
+  
+  const total = parseInt(countResult.rows[0].total, 10);
+  const totalPages = Math.ceil(total / limit);
+  
+  return {
+    data: dataResult.rows,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasMore: page < totalPages,
+    },
+  };
 }
 
 /**

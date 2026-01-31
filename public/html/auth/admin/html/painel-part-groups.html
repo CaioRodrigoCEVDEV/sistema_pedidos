@@ -429,6 +429,7 @@
                 class="form-control"
                 id="pesquisaPeca"
                 placeholder="Pesquisar peça..."
+                onkeyup="filtrarPecas()"
               />
             </div>
             <div style="max-height: 300px; overflow-y: auto">
@@ -439,12 +440,13 @@
                     <th>Descrição</th>
                     <th>Marca</th>
                     <th>Tipo</th>
+                    <th class="text-center">Cor</th>
                     <th class="text-center">Ação</th>
                   </tr>
                 </thead>
                 <tbody id="tabela-pecas-disponiveis">
                   <tr>
-                    <td colspan="5" class="text-center">Carregando...</td>
+                    <td colspan="6" class="text-center">Carregando...</td>
                   </tr>
                 </tbody>
               </table>

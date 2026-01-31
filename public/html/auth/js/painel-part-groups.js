@@ -10,6 +10,10 @@
 let currentGroupId = null;
 let allGroups = [];
 let availableParts = [];
+let currentPage = 1;
+let totalPages = 1;
+let isLoadingMore = false;
+let searchTerm = "";
 
 // Referência do modal de adicionar peça (para controle de backdrop)
 let modalAdicionarPecaInstance = null;
@@ -545,15 +549,140 @@ function limparBackdropResidual() {
 }
 
 /**
+ * Carrega peças disponíveis com paginação
+ * @param {number} page - Número da página a carregar
+ * @param {boolean} append - Se true, adiciona à lista existente (para infinite scroll)
+ */
+async function carregarPecasDisponiveis(page = 1, append = false) {
+  if (isLoadingMore) return;
+  
+  isLoadingMore = true;
+  const tbody = document.getElementById("tabela-pecas-disponiveis");
+  
+  try {
+    const url = new URL(`${BASE_URL}/part-groups/available-part`);
+    url.searchParams.append("page", page);
+    url.searchParams.append("limit", 20);
+    if (searchTerm) {
+      url.searchParams.append("search", searchTerm);
+    }
+    
+    const res = await fetch(url, {
+      credentials: "include",
+    });
+
+    if (!res.ok) throw new Error("Erro ao buscar peças disponíveis");
+
+    const result = await res.json();
+    
+    if (append) {
+      availableParts = [...availableParts, ...result.data];
+    } else {
+      availableParts = result.data;
+    }
+    
+    currentPage = result.pagination.page;
+    totalPages = result.pagination.totalPages;
+    
+    renderPecasDisponiveis(availableParts, append);
+    
+    // Add loading indicator if there are more pages
+    if (result.pagination.hasMore) {
+      addLoadingIndicator();
+    }
+  } catch (err) {
+    console.error(err);
+    if (!append) {
+      tbody.innerHTML =
+        '<tr><td colspan="6" class="text-center text-danger">Erro ao carregar peças</td></tr>';
+    }
+  } finally {
+    isLoadingMore = false;
+  }
+}
+
+/**
+ * Adiciona um indicador de carregamento no final da tabela
+ */
+function addLoadingIndicator() {
+  const tbody = document.getElementById("tabela-pecas-disponiveis");
+  const existingIndicator = document.getElementById("loading-indicator");
+  if (existingIndicator) return;
+  
+  const tr = document.createElement("tr");
+  tr.id = "loading-indicator";
+  tr.innerHTML = `
+    <td colspan="6" class="text-center text-muted py-2">
+      <small>Role para carregar mais...</small>
+    </td>
+  `;
+  tbody.appendChild(tr);
+}
+
+/**
+ * Remove o indicador de carregamento
+ */
+function removeLoadingIndicator() {
+  const indicator = document.getElementById("loading-indicator");
+  if (indicator) indicator.remove();
+}
+
+/**
+ * Configura o infinite scroll para a tabela de peças
+ */
+function setupInfiniteScroll() {
+  const modalBody = document.querySelector("#modalAdicionarPeca .modal-body");
+  const scrollContainer = modalBody.querySelector("div[style*='overflow-y']");
+  
+  if (!scrollContainer) return;
+  
+  // Remove listener anterior se existir
+  scrollContainer.removeEventListener("scroll", handleScroll);
+  scrollContainer.addEventListener("scroll", handleScroll);
+}
+
+/**
+ * Handler do evento de scroll para infinite scroll
+ */
+async function handleScroll(e) {
+  const container = e.target;
+  const scrollPosition = container.scrollTop + container.clientHeight;
+  const scrollHeight = container.scrollHeight;
+  
+  // Se chegou perto do final (80%) e há mais páginas
+  if (scrollPosition >= scrollHeight * 0.8 && currentPage < totalPages && !isLoadingMore) {
+    removeLoadingIndicator();
+    await carregarPecasDisponiveis(currentPage + 1, true);
+  }
+}
+
+/**
+ * Filtra peças disponíveis com base no termo de busca
+ */
+async function filtrarPecas() {
+  const input = document.getElementById("pesquisaPeca");
+  searchTerm = input.value.trim();
+  currentPage = 1;
+  availableParts = [];
+  await carregarPecasDisponiveis(1, false);
+}
+
+/**
  * Abre o modal de adicionar peça ao grupo
  * Reutiliza a instância do modal para evitar múltiplos backdrops (overlay cinza)
+ * Implementa paginação e infinite scroll
  */
 async function abrirModalAdicionarPeca() {
   if (!currentGroupId) return;
 
   const tbody = document.getElementById("tabela-pecas-disponiveis");
   tbody.innerHTML =
-    '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
+    '<tr><td colspan="6" class="text-center">Carregando...</td></tr>';
+
+  // Reset pagination state
+  currentPage = 1;
+  availableParts = [];
+  searchTerm = "";
 
   // Limpa qualquer backdrop residual antes de abrir o modal
   limparBackdropResidual();
@@ -565,39 +694,46 @@ async function abrirModalAdicionarPeca() {
   }
   modalAdicionarPecaInstance.show();
 
-  try {
-    const res = await fetch(`${BASE_URL}/part-groups/available-part`, {
-      credentials: "include",
-    });
-
-    if (!res.ok) throw new Error("Erro ao buscar peças disponíveis");
-
-    availableParts = await res.json();
-    renderPecasDisponiveis(availableParts);
-  } catch (err) {
-    console.error(err);
-    tbody.innerHTML =
-      '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar peças</td></tr>';
-  }
+  // Carrega primeira página
+  await carregarPecasDisponiveis(1);
+  
+  // Setup scroll listener for infinite scroll
+  setupInfiniteScroll();
 }
 
 /**
  * Renderiza a tabela de peças disponíveis para adicionar ao grupo
  * @param {Array} pecas - Lista de peças disponíveis
+ * @param {boolean} append - Se true, apenas adiciona novas linhas (para infinite scroll)
  */
-function renderPecasDisponiveis(pecas) {
+function renderPecasDisponiveis(pecas, append = false) {
   const tbody = document.getElementById("tabela-pecas-disponiveis");
-  tbody.innerHTML = "";
+  
+  if (!append) {
+    tbody.innerHTML = "";
+  } else {
+    // Remove loading indicator se existir
+    removeLoadingIndicator();
+  }
 
   if (!pecas || pecas.length === 0) {
-    tbody.innerHTML =
-      '<tr><td colspan="5" class="text-center text-muted">Nenhuma peça disponível</td></tr>';
+    if (!append) {
+      tbody.innerHTML =
+        '<tr><td colspan="6" class="text-center text-muted">Nenhuma peça disponível</td></tr>';
+    }
     return;
   }
 
   pecas.forEach((peca) => {
+    // Se estamos fazendo append, só adiciona peças novas
+    if (append && document.querySelector(`tr[data-peca-id="${peca.procod}"]`)) {
+      return;
+    }
+    
     const tr = document.createElement("tr");
+    tr.setAttribute("data-peca-id", peca.procod);
     const isInGroup = peca.part_group_id === currentGroupId;
+    const hasColors = peca.has_colors && peca.colors && peca.colors.length > 0;
 
     tr.innerHTML = `
       <td>${peca.procod}</td>
@@ -605,19 +741,28 @@ function renderPecasDisponiveis(pecas) {
       <td>${escapeHtml(peca.marcasdes || "-")}</td>
       <td>${escapeHtml(peca.tipodes || "-")}</td>
       <td class="text-center">
+        ${hasColors ? '<i class="bi bi-palette-fill text-info" title="Produto com cores"></i>' : ''}
+      </td>
+      <td class="text-center">
         ${
           isInGroup
             ? '<span class="badge bg-success">No grupo</span>'
-            : `<button class="btn btn-sm btn-primary btn-add-part">
+            : `<button class="btn btn-sm btn-primary btn-add-part" data-part-id="${peca.procod}" data-has-colors="${hasColors}">
               <i class="bi bi-plus"></i> Adicionar
             </button>`
         }
       </td>
     `;
+    
     // Adiciona event listener (evita onclick inline para prevenir XSS)
     if (!isInGroup) {
-      tr.querySelector(".btn-add-part").addEventListener("click", () => {
-        adicionarPecaAoGrupo(peca.procod);
+      const button = tr.querySelector(".btn-add-part");
+      button.addEventListener("click", () => {
+        if (hasColors) {
+          mostrarModalSelecaoCor(peca);
+        } else {
+          adicionarPecaAoGrupo(peca.procod, null);
+        }
       });
     }
     tbody.appendChild(tr);
@@ -625,19 +770,107 @@ function renderPecasDisponiveis(pecas) {
 }
 
 /**
+ * Mostra modal para seleção de cor do produto
+ * @param {Object} peca - Objeto da peça com informações de cores
+ */
+function mostrarModalSelecaoCor(peca) {
+  const colors = peca.colors || [];
+  
+  if (colors.length === 0) {
+    // Se não há cores, adiciona direto
+    adicionarPecaAoGrupo(peca.procod, null);
+    return;
+  }
+  
+  // Cria o HTML do modal de seleção de cor
+  const modalHtml = `
+    <div class="modal fade" id="modalSelecaoCor" tabindex="-1" aria-labelledby="modalSelecaoCorLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalSelecaoCorLabel">Selecionar Cor</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p><strong>${escapeHtml(peca.prodes || "Produto")}</strong></p>
+            <p class="text-muted small">Selecione a cor para adicionar ao grupo:</p>
+            <div class="mb-3">
+              <label for="selectCor" class="form-label">Cor:</label>
+              <select class="form-select" id="selectCor" required>
+                <option value="">Selecione uma cor...</option>
+                ${colors.map(cor => `
+                  <option value="${cor.corcod}">
+                    ${escapeHtml(cor.cornome)} ${cor.procorqtde ? `(Qtd: ${cor.procorqtde})` : ''}
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+            <div class="alert alert-info small" role="alert">
+              <i class="bi bi-info-circle"></i>
+              A quantidade será controlada pelo grupo. O grupo dita a quantidade disponível para todas as peças.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmarCor">Adicionar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Remove modal anterior se existir
+  const oldModal = document.getElementById("modalSelecaoCor");
+  if (oldModal) oldModal.remove();
+  
+  // Adiciona modal ao DOM
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+  
+  const modalElement = document.getElementById("modalSelecaoCor");
+  const modal = new bootstrap.Modal(modalElement);
+  
+  // Evento de confirmar
+  document.getElementById("btnConfirmarCor").addEventListener("click", async () => {
+    const selectCor = document.getElementById("selectCor");
+    const colorId = selectCor.value;
+    
+    if (!colorId) {
+      showToast("Por favor, selecione uma cor", "error");
+      return;
+    }
+    
+    modal.hide();
+    await adicionarPecaAoGrupo(peca.procod, colorId);
+    
+    // Remove modal do DOM após fechar
+    modalElement.addEventListener("hidden.bs.modal", () => {
+      modalElement.remove();
+    });
+  });
+  
+  modal.show();
+}
+
+/**
  * Adiciona uma peça ao grupo atual
  * Atualiza a lista de peças sem fechar o modal para evitar problemas de backdrop
  * @param {number} partId - ID da peça (procod)
+ * @param {number|null} colorId - ID da cor selecionada (opcional)
  */
-async function adicionarPecaAoGrupo(partId) {
+async function adicionarPecaAoGrupo(partId, colorId = null) {
   if (!currentGroupId) return;
 
   try {
+    const body = { partId };
+    if (colorId) {
+      body.colorId = colorId;
+    }
+    
     const res = await fetch(`${BASE_URL}/part-groups/${currentGroupId}/parts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ partId }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
@@ -661,24 +894,12 @@ async function adicionarPecaAoGrupo(partId) {
 /**
  * Atualiza a lista de peças disponíveis sem reabrir o modal
  * Previne o problema de múltiplos backdrops (overlay cinza)
+ * Recarrega a primeira página mantendo o termo de busca
  */
 async function atualizarListaPecasDisponiveis() {
-  const tbody = document.getElementById("tabela-pecas-disponiveis");
-
-  try {
-    const res = await fetch(`${BASE_URL}/part-groups/available-part`, {
-      credentials: "include",
-    });
-
-    if (!res.ok) throw new Error("Erro ao buscar peças disponíveis");
-
-    availableParts = await res.json();
-    renderPecasDisponiveis(availableParts);
-  } catch (err) {
-    console.error(err);
-    tbody.innerHTML =
-      '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar peças</td></tr>';
-  }
+  currentPage = 1;
+  availableParts = [];
+  await carregarPecasDisponiveis(1, false);
 }
 
 /**
