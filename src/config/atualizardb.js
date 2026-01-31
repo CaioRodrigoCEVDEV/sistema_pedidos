@@ -78,6 +78,9 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.pro ADD if not exists proacabando bpchar(1) DEFAULT 'N'::bpchar NULL;`
     );
+    await pool.query(
+      `ALTER TABLE public.pro ADD if not exists procusto numeric(14, 4) NULL;`
+    );
     //temporatrio
     await pool.query(`
         ALTER TABLE public.procor ALTER COLUMN procorqtde SET DEFAULT 0;
