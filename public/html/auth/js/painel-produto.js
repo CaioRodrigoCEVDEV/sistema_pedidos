@@ -109,6 +109,7 @@ btnProduto.addEventListener("click", () => {
 
   descricaoProduto.value = "";
   provl.value = "";
+  procusto.value = "";
   // Limpar seleção de modelos
   const modelosHolder = document.getElementById("popupProdutoModalModelo");
   modelosHolder.innerHTML =
@@ -121,7 +122,7 @@ produtoForm.addEventListener("submit", async (ev) => {
   ev.preventDefault();
 
   const modeloSelecionado = document.getElementById(
-    "popupProdutoModalModelo"
+    "popupProdutoModalModelo",
   ).value;
 
   if (!modeloSelecionado) {
@@ -132,18 +133,19 @@ produtoForm.addEventListener("submit", async (ev) => {
   const payload = {
     prodes: descricaoProduto.value.trim(),
     promarcascod: parseInt(
-      document.getElementById("popupMarcaModalProduto").value
+      document.getElementById("popupMarcaModalProduto").value,
     ),
     provl: parseFloat(provl.value),
+    procusto: parseFloat(procusto.value),
     promodcod: parseInt(modeloSelecionado),
     protipocod: parseInt(
-      document.getElementById("popupProdutoModaltipo").value
+      document.getElementById("popupProdutoModaltipo").value,
     ),
   };
 
   // Pega todos os checkboxes marcados de cor
   const corCheckboxes = document.querySelectorAll(
-    '#selectPainelCor input[type="checkbox"]:checked'
+    '#selectPainelCor input[type="checkbox"]:checked',
   );
   const corIds = Array.from(corCheckboxes).map((cb) => cb.value);
   try {
@@ -191,7 +193,7 @@ produtoForm.addEventListener("submit", async (ev) => {
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-          }
+          },
         );
       }
     }

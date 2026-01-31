@@ -1,11 +1,11 @@
 const pool = require("../config/db");
 
 // Constants
-const CONFIRMED_ORDER_STATUS = 'S';
+const CONFIRMED_ORDER_STATUS = "S";
 
 /**
  * Modelo de Relatórios
- * 
+ *
  * Funções para gerar relatórios de vendas e análises
  */
 
@@ -19,8 +19,8 @@ const CONFIRMED_ORDER_STATUS = 'S';
  * @returns {Array} Lista de peças/grupos vendidos
  */
 async function getTopPecas(filters = {}) {
-  const { dataInicio, dataFim, marca, groupBy = 'peca' } = filters;
-  
+  const { dataInicio, dataFim, marca, groupBy = "peca" } = filters;
+
   let whereClauses = [`pvconfirmado = '${CONFIRMED_ORDER_STATUS}'`]; // Apenas pedidos confirmados
   let params = [];
   let paramIndex = 1;
@@ -46,16 +46,17 @@ async function getTopPecas(filters = {}) {
     paramIndex++;
   }
 
-  const whereClause = whereClauses.join(' AND ');
+  const whereClause = whereClauses.join(" AND ");
 
-  if (groupBy === 'grupo') {
+  if (groupBy === "grupo") {
     // Agrupado por part_group
     const query = `
       SELECT 
         pg.name as grupo,
         SUM(pviqtde) as qtde_vendida,
         STRING_AGG(DISTINCT m.moddes, ', ' ORDER BY m.moddes) as modelo,
-        STRING_AGG(DISTINCT p.prodes, ', ' ORDER BY p.prodes) as peca
+        STRING_AGG(DISTINCT p.prodes, ', ' ORDER BY p.prodes) as peca,
+        STRING_AGG(DISTINCT CASE WHEN procusto IS NULL THEN '0' ELSE procusto::text END,', ' ORDER BY CASE WHEN procusto IS NULL THEN '0' ELSE procusto::text END) AS custo
       FROM pvi
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
@@ -63,10 +64,10 @@ async function getTopPecas(filters = {}) {
       LEFT JOIN modelo m ON m.modcod = p.promodcod
       WHERE ${whereClause}
         AND p.part_group_id IS NOT NULL
-      GROUP BY pg.id, pg.name
+      GROUP BY pg.id, pg.name, procusto
       ORDER BY qtde_vendida DESC
     `;
-    
+
     const result = await pool.query(query, params);
     return result.rows;
   } else {
@@ -76,22 +77,23 @@ async function getTopPecas(filters = {}) {
         p.prodes as peca,
         SUM(pviqtde) as qtde_vendida,
         m.moddes as modelo,
-        COALESCE(pg.name, '-') as grupo
+        COALESCE(pg.name, '-') as grupo,
+        case when procusto is null then 0 else procusto end as custo
       FROM pvi
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
       LEFT JOIN modelo m ON m.modcod = p.promodcod
       LEFT JOIN part_groups pg ON p.part_group_id = pg.id
       WHERE ${whereClause}
-      GROUP BY p.procod, p.prodes, m.moddes, pg.name
+      GROUP BY p.procod, p.prodes, m.moddes, pg.name, procusto
       ORDER BY qtde_vendida DESC
     `;
-    
+
     const result = await pool.query(query, params);
     return result.rows;
   }
 }
 
 module.exports = {
-  getTopPecas
+  getTopPecas,
 };

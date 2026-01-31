@@ -51,6 +51,7 @@ function updateTableHeader() {
             <th class="text-center">Qtde Vendida</th>
             <th>Modelo</th>
             <th>Peça</th>
+            <th>Custo</th>
           </tr>
         `;
   } else {
@@ -60,6 +61,7 @@ function updateTableHeader() {
             <th class="text-center">Qtde Vendida</th>
             <th>Modelo</th>
             <th>Grupo</th>
+            <th>Custo</th>
           </tr>
         `;
   }
@@ -84,16 +86,32 @@ function renderTable(data) {
     if (groupBy === "grupo") {
       tr.innerHTML = `
         <td>${row.grupo || "-"}</td>
-        <td class="text-center">${row.qtde_vendida != null ? parseInt(row.qtde_vendida, 10) : 0}</td>
+        <td class="text-center">${row.qtde_vendida != null ? parseInt(row.qtde_vendida, 10).toLocaleString("pt-BR") : "0"}</td>
         <td>${row.modelo || "-"}</td>
         <td>${row.peca || "-"}</td>
-        `;
+        <td>${
+          row.custo !== null && row.custo !== undefined && row.custo !== ""
+            ? Number(row.custo).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })
+            : "-"
+        }</td>
+      `;
     } else {
       tr.innerHTML = `
             <td>${row.peca || "-"}</td>
             <td class="text-center">${row.qtde_vendida != null ? parseInt(row.qtde_vendida, 10) : 0}</td>
             <td>${row.modelo || "-"}</td>
             <td>${row.grupo || "-"}</td>
+            <td>${
+              row.custo !== null && row.custo !== undefined && row.custo !== ""
+                ? Number(row.custo).toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  })
+                : "-"
+            }</td>
           `;
     }
 
