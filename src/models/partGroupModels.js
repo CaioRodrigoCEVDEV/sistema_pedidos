@@ -492,9 +492,10 @@ async function addPartToGroup(partId, groupId, colorId = null) {
         
         // Se o grupo ainda não tem estoque definido (stock_quantity é null ou 0)
         // e a cor tem estoque (procorqtde), atualiza o estoque do grupo
+        const procorqtde = colorResult.rows[0].procorqtde;
         if ((group.stock_quantity === null || group.stock_quantity === 0) && 
-            colorResult.rows[0].procorqtde > 0) {
-          finalGroupStock = colorResult.rows[0].procorqtde;
+            procorqtde !== null && procorqtde !== undefined && procorqtde > 0) {
+          finalGroupStock = procorqtde;
           
           await client.query(
             `UPDATE part_groups 
