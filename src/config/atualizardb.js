@@ -180,11 +180,6 @@ async function atualizarDB() {
       END$$;
     `);
 
-    // Adiciona coluna group_cost na tabela part_groups
-    await pool.query(`
-      ALTER TABLE public.part_groups ADD COLUMN IF NOT EXISTS group_cost NUMERIC(14, 4) NULL;
-    `);
-
     // Cria tabela de auditoria para histórico de movimentações de estoque do grupo
     await pool.query(`
       CREATE TABLE IF NOT EXISTS public.part_group_audit (
