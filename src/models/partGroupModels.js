@@ -24,12 +24,13 @@ async function listAllGroups() {
       pg.id,
       pg.name,
       pg.stock_quantity,
+      pg.group_cost,
       pg.created_at,
       pg.updated_at,
       COUNT(p.procod) as parts_count
     FROM part_groups pg
     LEFT JOIN pro p ON p.part_group_id = pg.id
-    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.created_at, pg.updated_at
+    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.group_cost, pg.created_at, pg.updated_at
     ORDER BY pg.created_at
   `);
   return result.rows;
@@ -47,6 +48,7 @@ async function getGroupById(groupId) {
       pg.id,
       pg.name,
       pg.stock_quantity,
+      pg.group_cost,
       pg.created_at,
       pg.updated_at
     FROM part_groups pg
@@ -353,14 +355,14 @@ async function incrementGroupStock(
  * @param {number} stockQuantity - Quantidade inicial de estoque (padrão: 0)
  * @returns {Object} Grupo criado
  */
-async function createGroup(name, stockQuantity = 0) {
+async function createGroup(name, stockQuantity = 0, groupCost = null) {
   const result = await pool.query(
     `
-    INSERT INTO part_groups (name, stock_quantity)
-    VALUES ($1, $2)
+    INSERT INTO part_groups (name, stock_quantity, group_cost)
+    VALUES ($1, $2, $3)
     RETURNING *
   `,
-    [name, stockQuantity]
+    [name, stockQuantity, groupCost]
   );
   return result.rows[0];
 }
@@ -370,31 +372,63 @@ async function createGroup(name, stockQuantity = 0) {
  * @param {number} groupId - ID do grupo (INTEGER)
  * @param {string} name - Novo nome do grupo
  * @param {number|null} stockQuantity - Nova quantidade de estoque (opcional)
+ * @param {number|null} groupCost - Novo custo do grupo (opcional)
  * @returns {Object|null} Grupo atualizado ou null se não encontrado
  */
-async function updateGroup(groupId, name, stockQuantity = null) {
-  let query, params;
-
-  if (stockQuantity !== null) {
-    query = `
+async function updateGroup(groupId, name, stockQuantity = null, groupCost = null) {
+  const client = await pool.connect();
+  
+  try {
+    await client.query("BEGIN");
+    
+    // Build the update query dynamically based on provided fields
+    const updateFields = ["name = $1", "updated_at = NOW()"];
+    const params = [name];
+    let paramIndex = 2;
+    
+    if (stockQuantity !== null) {
+      updateFields.push(`stock_quantity = $${paramIndex}`);
+      params.push(stockQuantity);
+      paramIndex++;
+    }
+    
+    if (groupCost !== null && groupCost !== undefined) {
+      updateFields.push(`group_cost = $${paramIndex}`);
+      params.push(groupCost);
+      paramIndex++;
+    }
+    
+    params.push(groupId);
+    
+    const query = `
       UPDATE part_groups 
-      SET name = $1, stock_quantity = $2, updated_at = NOW()
-      WHERE id = $3
+      SET ${updateFields.join(", ")}
+      WHERE id = $${paramIndex}
       RETURNING *
     `;
-    params = [name, stockQuantity, groupId];
-  } else {
-    query = `
-      UPDATE part_groups 
-      SET name = $1, updated_at = NOW()
-      WHERE id = $2
-      RETURNING *
-    `;
-    params = [name, groupId];
+    
+    const result = await client.query(query, params);
+    
+    // If group_cost was updated, propagate it to all products in the group
+    if (groupCost !== null && groupCost !== undefined && result.rows[0]) {
+      await client.query(
+        `
+        UPDATE pro 
+        SET procusto = $1
+        WHERE part_group_id = $2
+      `,
+        [groupCost, groupId]
+      );
+    }
+    
+    await client.query("COMMIT");
+    return result.rows[0] || null;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
-
-  const result = await pool.query(query, params);
-  return result.rows[0] || null;
 }
 
 /**
@@ -465,7 +499,7 @@ async function addPartToGroup(partId, groupId, colorId = null) {
     
     // Busca informações do grupo
     const groupResult = await client.query(
-      `SELECT stock_quantity FROM part_groups WHERE id = $1`,
+      `SELECT stock_quantity, group_cost FROM part_groups WHERE id = $1`,
       [groupId]
     );
     
@@ -476,6 +510,14 @@ async function addPartToGroup(partId, groupId, colorId = null) {
     
     const group = groupResult.rows[0];
     let finalGroupStock = group.stock_quantity;
+    
+    // If the group has a cost defined, update the product's cost
+    if (group.group_cost !== null && group.group_cost !== undefined) {
+      await client.query(
+        `UPDATE pro SET procusto = $1 WHERE procod = $2`,
+        [group.group_cost, partId]
+      );
+    }
     
     // Se uma cor foi especificada, busca informações da cor e seu estoque
     if (colorId) {
