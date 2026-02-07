@@ -24,13 +24,12 @@ async function listAllGroups() {
       pg.id,
       pg.name,
       pg.stock_quantity,
-      pg.group_cost,
       pg.created_at,
       pg.updated_at,
       COUNT(p.procod) as parts_count
     FROM part_groups pg
     LEFT JOIN pro p ON p.part_group_id = pg.id
-    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.group_cost, pg.created_at, pg.updated_at
+    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.created_at, pg.updated_at
     ORDER BY pg.created_at
   `);
   return result.rows;
@@ -48,7 +47,6 @@ async function getGroupById(groupId) {
       pg.id,
       pg.name,
       pg.stock_quantity,
-      pg.group_cost,
       pg.created_at,
       pg.updated_at
     FROM part_groups pg
@@ -96,7 +94,6 @@ async function getGroupByPartId(partId) {
       pg.id,
       pg.name,
       pg.stock_quantity,
-      pg.group_cost,
       pg.created_at,
       pg.updated_at
     FROM part_groups pg
@@ -354,17 +351,16 @@ async function incrementGroupStock(
  * Cria um novo grupo de compatibilidade
  * @param {string} name - Nome do grupo
  * @param {number} stockQuantity - Quantidade inicial de estoque (padrão: 0)
- * @param {number|null} groupCost - Custo do grupo (padrão: null)
  * @returns {Object} Grupo criado
  */
-async function createGroup(name, stockQuantity = 0, groupCost = null) {
+async function createGroup(name, stockQuantity = 0) {
   const result = await pool.query(
     `
-    INSERT INTO part_groups (name, stock_quantity, group_cost)
-    VALUES ($1, $2, $3)
+    INSERT INTO part_groups (name, stock_quantity)
+    VALUES ($1, $2)
     RETURNING *
   `,
-    [name, stockQuantity, groupCost]
+    [name, stockQuantity]
   );
   return result.rows[0];
 }
@@ -374,47 +370,30 @@ async function createGroup(name, stockQuantity = 0, groupCost = null) {
  * @param {number} groupId - ID do grupo (INTEGER)
  * @param {string} name - Novo nome do grupo
  * @param {number|null} stockQuantity - Nova quantidade de estoque (opcional)
- * @param {number|null} groupCost - Novo custo do grupo (opcional)
  * @returns {Object|null} Grupo atualizado ou null se não encontrado
  */
-async function updateGroup(groupId, name, stockQuantity = null, groupCost = undefined) {
-  // Build query dynamically based on which parameters are provided
-  const updates = [];
-  const values = [];
-  let paramCount = 0;
+async function updateGroup(groupId, name, stockQuantity = null) {
+  let query, params;
 
-  // Name is always required and updated
-  if (!name || name.trim() === "") {
-    throw new Error("Nome do grupo é obrigatório");
+  if (stockQuantity !== null) {
+    query = `
+      UPDATE part_groups 
+      SET name = $1, stock_quantity = $2, updated_at = NOW()
+      WHERE id = $3
+      RETURNING *
+    `;
+    params = [name, stockQuantity, groupId];
+  } else {
+    query = `
+      UPDATE part_groups 
+      SET name = $1, updated_at = NOW()
+      WHERE id = $2
+      RETURNING *
+    `;
+    params = [name, groupId];
   }
-  
-  paramCount++;
-  values.push(name);
-  updates.push(`name = $${paramCount}`);
-  
-  if (stockQuantity !== null && stockQuantity !== undefined) {
-    paramCount++;
-    values.push(stockQuantity);
-    updates.push(`stock_quantity = $${paramCount}`);
-  }
-  
-  if (groupCost !== undefined) {
-    paramCount++;
-    values.push(groupCost);
-    updates.push(`group_cost = $${paramCount}`);
-  }
-  
-  paramCount++;
-  values.push(groupId);
-  
-  const query = `
-    UPDATE part_groups 
-    SET ${updates.join(', ')}, updated_at = NOW()
-    WHERE id = $${paramCount}
-    RETURNING *
-  `;
 
-  const result = await pool.query(query, values);
+  const result = await pool.query(query, params);
   return result.rows[0] || null;
 }
 
@@ -486,7 +465,7 @@ async function addPartToGroup(partId, groupId, colorId = null) {
     
     // Busca informações do grupo
     const groupResult = await client.query(
-      `SELECT stock_quantity, group_cost FROM part_groups WHERE id = $1`,
+      `SELECT stock_quantity FROM part_groups WHERE id = $1`,
       [groupId]
     );
     
@@ -556,19 +535,6 @@ async function addPartToGroup(partId, groupId, colorId = null) {
           [finalGroupStock, partId, colorId]
         );
       }
-    }
-    
-    // Se o grupo tem custo definido (group_cost não é null),
-    // sincroniza o custo da peça adicionada com o custo do grupo
-    if (group.group_cost !== null && group.group_cost !== undefined) {
-      await client.query(
-        `UPDATE pro 
-         SET procusto = $1
-         WHERE procod = $2`,
-        [group.group_cost, partId]
-      );
-      
-      part.procusto = group.group_cost;
     }
     
     await client.query("COMMIT");
@@ -872,63 +838,6 @@ async function updateAllPartsStockInGroup(groupId, quantity) {
       WHERE part_group_id = $2
     `,
       [quantity, groupId]
-    );
-
-    await client.query("COMMIT");
-
-    return {
-      success: true,
-      partsUpdated: updateResult.rowCount,
-      parts: parts.map((p) => ({
-        id: p.procod,
-        name: p.prodes,
-      })),
-    };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-
-/**
- * Atualiza o custo de TODAS as peças que pertencem a um grupo
- * 
- * Esta função é chamada quando o usuário edita o custo do grupo.
- * O novo custo é aplicado para todas as peças do grupo, mantendo
- * sincronização entre o custo do grupo e o custo individual das peças (procusto).
- * 
- * @param {number} groupId - ID do grupo
- * @param {number|null} cost - Novo custo para todas as peças
- * @returns {Object} Resultado da atualização com quantidade de peças atualizadas
- */
-async function updateAllPartsCostInGroup(groupId, cost) {
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
-    // 1. Busca todas as peças do grupo
-    const partsResult = await client.query(
-      `
-      SELECT procod, prodes
-      FROM pro
-      WHERE part_group_id = $1
-    `,
-      [groupId]
-    );
-
-    const parts = partsResult.rows;
-
-    // 2. Atualiza procusto de todas as peças para o mesmo custo do grupo
-    const updateResult = await client.query(
-      `
-      UPDATE pro
-      SET procusto = $1
-      WHERE part_group_id = $2
-    `,
-      [cost, groupId]
     );
 
     await client.query("COMMIT");
@@ -1297,6 +1206,5 @@ module.exports = {
   getGroupAuditHistory,
   updateGroupStock,
   updateAllPartsStockInGroup,
-  updateAllPartsCostInGroup,
   venderItens,
 };
