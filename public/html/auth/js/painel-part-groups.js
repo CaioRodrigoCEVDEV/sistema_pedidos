@@ -306,7 +306,7 @@ async function salvarEdicaoGrupo() {
     carregarGrupos();
 
     // Atualiza a visualização de detalhes se estiver aberta
-    if (currentGroupId == id) {
+    if (currentGroupId === parseInt(id, 10)) {
       abrirDetalhes(currentGroupId);
     }
   } catch (err) {

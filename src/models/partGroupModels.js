@@ -392,7 +392,9 @@ async function updateGroup(groupId, name, stockQuantity = null, groupCost = null
       paramIndex++;
     }
     
-    if (groupCost !== null && groupCost !== undefined) {
+    // Only update group_cost if it was explicitly provided (not undefined)
+    const shouldUpdateCost = groupCost !== undefined;
+    if (shouldUpdateCost) {
       updateFields.push(`group_cost = $${paramIndex}`);
       params.push(groupCost);
       paramIndex++;
@@ -410,7 +412,7 @@ async function updateGroup(groupId, name, stockQuantity = null, groupCost = null
     const result = await client.query(query, params);
     
     // If group_cost was updated, propagate it to all products in the group
-    if (groupCost !== null && groupCost !== undefined && result.rows[0]) {
+    if (shouldUpdateCost && result.rows[0]) {
       await client.query(
         `
         UPDATE pro 
