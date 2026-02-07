@@ -420,6 +420,111 @@ async function runTests() {
     await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
   });
 
+  // Teste: Criar grupo com custo
+  await test('Criar grupo com custo inicial', async () => {
+    const group = await partGroupModels.createGroup('Test Group Cost', 0, 25.50);
+    assertNotNull(group, 'Grupo deve ser criado');
+    assertNotNull(group.id, 'Grupo deve ter um ID');
+    assertEqual(group.name, 'Test Group Cost', 'Nome do grupo deve corresponder');
+    assert(group.group_cost !== null, 'Custo do grupo deve estar definido');
+    assertEqual(Number(group.group_cost), 25.50, 'Custo do grupo deve ser 25.50');
+  });
+
+  // Teste: Atualizar custo do grupo propaga para todos os produtos
+  await test('Atualizar custo do grupo propaga para todos os produtos', async () => {
+    // Cria um grupo sem custo
+    const group = await partGroupModels.createGroup('Test Group Cost Update', 0, null);
+    
+    // Cria 3 peças de teste vinculadas a este grupo
+    const part1Result = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde, part_group_id, procusto)
+      SELECT 'Peça Teste Cost 1', 
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             100,
+             0,
+             $1,
+             10.00
+      RETURNING procod
+    `, [group.id]);
+    
+    const part2Result = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde, part_group_id, procusto)
+      SELECT 'Peça Teste Cost 2', 
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             150,
+             0,
+             $1,
+             15.00
+      RETURNING procod
+    `, [group.id]);
+    
+    const part3Result = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde, part_group_id, procusto)
+      SELECT 'Peça Teste Cost 3', 
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             200,
+             0,
+             $1,
+             20.00
+      RETURNING procod
+    `, [group.id]);
+    
+    const partId1 = part1Result.rows[0].procod;
+    const partId2 = part2Result.rows[0].procod;
+    const partId3 = part3Result.rows[0].procod;
+    
+    // Atualiza o custo do grupo para 30.00
+    const updated = await partGroupModels.updateGroup(group.id, 'Test Group Cost Update', null, 30.00);
+    assertNotNull(updated, 'Grupo deve ser atualizado');
+    assertEqual(Number(updated.group_cost), 30.00, 'Custo do grupo deve ser 30.00');
+    
+    // Verifica se todas as peças foram atualizadas com o custo do grupo
+    const part1 = await pool.query('SELECT procusto FROM pro WHERE procod = $1', [partId1]);
+    const part2 = await pool.query('SELECT procusto FROM pro WHERE procod = $1', [partId2]);
+    const part3 = await pool.query('SELECT procusto FROM pro WHERE procod = $1', [partId3]);
+    
+    assertEqual(Number(part1.rows[0].procusto), 30.00, 'Peça 1 deve ter custo 30.00');
+    assertEqual(Number(part2.rows[0].procusto), 30.00, 'Peça 2 deve ter custo 30.00');
+    assertEqual(Number(part3.rows[0].procusto), 30.00, 'Peça 3 deve ter custo 30.00');
+    
+    // Limpa as peças de teste
+    await pool.query('DELETE FROM pro WHERE procod IN ($1, $2, $3)', [partId1, partId2, partId3]);
+  });
+
+  // Teste: Adicionar peça a grupo com custo propaga o custo
+  await test('Adicionar peça a grupo com custo propaga o custo para a peça', async () => {
+    // Cria um grupo com custo
+    const group = await partGroupModels.createGroup('Test Group Cost Add Part', 0, 45.75);
+    
+    // Cria uma peça sem grupo e sem custo
+    const partResult = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde, procusto)
+      SELECT 'Peça Teste Cost Add', 
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             100,
+             0,
+             NULL
+      RETURNING procod
+    `);
+    
+    const partId = partResult.rows[0].procod;
+    
+    // Adiciona a peça ao grupo
+    await partGroupModels.addPartToGroup(partId, group.id);
+    
+    // Verifica se a peça recebeu o custo do grupo
+    const part = await pool.query('SELECT procusto, part_group_id FROM pro WHERE procod = $1', [partId]);
+    assertEqual(part.rows[0].part_group_id, group.id, 'Peça deve estar vinculada ao grupo');
+    assertEqual(Number(part.rows[0].procusto), 45.75, 'Peça deve ter o custo do grupo (45.75)');
+    
+    // Limpa a peça de teste
+    await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
+  });
+
   // Limpeza
   await cleanup();
 
