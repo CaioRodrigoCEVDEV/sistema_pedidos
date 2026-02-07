@@ -19,6 +19,7 @@ const requireAdmin = require("../middlewares/adminMiddleware");
  * POST   /part-groups                     - Cria novo grupo
  * PUT    /part-groups/:id                 - Atualiza grupo
  * PUT    /part-groups/:id/stock           - Atualiza estoque
+ * PUT    /part-groups/:id/cost            - Atualiza custo do grupo
  * POST   /part-groups/:id/parts           - Adiciona peça ao grupo
  * DELETE /part-groups/parts/:partId       - Remove peça do grupo
  * DELETE /part-groups/:id                 - Exclui grupo
@@ -69,6 +70,13 @@ router.put(
   "/part-groups/:id/stock",
   requireAdmin,
   partGroupController.updateGroupStock
+);
+
+// Atualiza custo do grupo diretamente
+router.put(
+  "/part-groups/:id/cost",
+  requireAdmin,
+  partGroupController.updateGroupCost
 );
 
 // Adiciona peça ao grupo

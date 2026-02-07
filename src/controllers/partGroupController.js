@@ -7,7 +7,7 @@ const partGroupModels = require("../models/partGroupModels");
  * Todos os endpoints requerem autenticação de administrador.
  * 
  * Estrutura JSON de resposta dos grupos:
- * { id: number, name: string, stock_quantity: number, parts: [...], ... }
+ * { id: number, name: string, stock_quantity: number, group_cost: number, parts: [...], ... }
  */
 
 // Lista todos os grupos de compatibilidade
@@ -57,7 +57,7 @@ exports.getPartGroupStock = async (req, res) => {
 // Grupos são sempre criados com stock_quantity = 0
 // O estoque só pode ser definido após adicionar peças ao grupo
 exports.createGroup = async (req, res) => {
-  const { name } = req.body;
+  const { name, group_cost } = req.body;
 
   if (!name || name.trim() === "") {
     return res.status(400).json({ error: "Nome do grupo é obrigatório" });
@@ -65,7 +65,7 @@ exports.createGroup = async (req, res) => {
 
   try {
     // Sempre cria grupos com estoque inicial de 0
-    const group = await partGroupModels.createGroup(name.trim(), 0);
+    const group = await partGroupModels.createGroup(name.trim(), 0, group_cost || null);
     res.status(201).json(group);
   } catch (error) {
     console.error("Erro ao criar grupo de compatibilidade:", error);
@@ -76,7 +76,7 @@ exports.createGroup = async (req, res) => {
 // Atualiza um grupo de compatibilidade
 exports.updateGroup = async (req, res) => {
   const { id } = req.params;
-  const { name, stock_quantity } = req.body;
+  const { name, stock_quantity, group_cost } = req.body;
 
   if (!name || name.trim() === "") {
     return res.status(400).json({ error: "Nome do grupo é obrigatório" });
@@ -86,7 +86,8 @@ exports.updateGroup = async (req, res) => {
     const group = await partGroupModels.updateGroup(
       id,
       name.trim(),
-      stock_quantity
+      stock_quantity,
+      group_cost
     );
     if (!group) {
       return res.status(404).json({ error: "Grupo não encontrado" });
@@ -137,6 +138,52 @@ exports.updateGroupStock = async (req, res) => {
   } catch (error) {
     console.error("Erro ao atualizar estoque do grupo:", error);
     res.status(500).json({ error: "Erro ao atualizar estoque do grupo" });
+  }
+};
+
+// Atualiza o custo de um grupo diretamente
+// O custo definido será aplicado automaticamente para todas as peças do grupo
+exports.updateGroupCost = async (req, res) => {
+  const { id } = req.params;
+  const { group_cost } = req.body;
+
+  if (group_cost === undefined || group_cost === null) {
+    return res.status(400).json({ error: "Custo é obrigatório" });
+  }
+
+  if (group_cost < 0) {
+    return res.status(400).json({ error: "Custo não pode ser negativo" });
+  }
+
+  try {
+    // Busca o grupo para obter informações atuais
+    const fullGroup = await partGroupModels.getGroupById(id);
+    if (!fullGroup) {
+      return res.status(404).json({ error: "Grupo não encontrado" });
+    }
+
+    // Atualiza o grupo com o novo custo
+    const updatedGroup = await partGroupModels.updateGroup(
+      id,
+      fullGroup.name,
+      fullGroup.stock_quantity,
+      group_cost
+    );
+
+    // Distribui o custo para todas as peças do grupo
+    const partsResult = await partGroupModels.updateAllPartsCostInGroup(
+      id,
+      group_cost
+    );
+
+    res.status(200).json({
+      ...updatedGroup,
+      partsUpdated: partsResult.partsUpdated,
+      message: `Custo do grupo atualizado e distribuído para ${partsResult.partsUpdated} peça(s)`,
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar custo do grupo:", error);
+    res.status(500).json({ error: "Erro ao atualizar custo do grupo" });
   }
 };
 
