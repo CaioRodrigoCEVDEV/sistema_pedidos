@@ -102,7 +102,7 @@ exports.updateGroup = async (req, res) => {
 // A quantidade definida será aplicada automaticamente para todas as peças do grupo
 exports.updateGroupStock = async (req, res) => {
   const { id } = req.params;
-  const { stock_quantity, reason = "manual_adjustment" } = req.body;
+  const { stock_quantity, reason = "manual_adjustment", cost } = req.body;
 
   if (stock_quantity === undefined || stock_quantity === null) {
     return res.status(400).json({ error: "Quantidade é obrigatória" });
@@ -112,12 +112,21 @@ exports.updateGroupStock = async (req, res) => {
     return res.status(400).json({ error: "Quantidade não pode ser negativa" });
   }
 
+  // Validação do custo se fornecido
+  if (cost !== undefined && cost !== null) {
+    const costNum = parseFloat(cost);
+    if (isNaN(costNum) || costNum < 0) {
+      return res.status(400).json({ error: "Custo inválido" });
+    }
+  }
+
   try {
     // Atualiza o estoque do grupo
     const group = await partGroupModels.updateGroupStock(
       id,
       stock_quantity,
-      reason
+      reason,
+      cost
     );
     if (!group) {
       return res.status(404).json({ error: "Grupo não encontrado" });
