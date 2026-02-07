@@ -24,12 +24,13 @@ async function listAllGroups() {
       pg.id,
       pg.name,
       pg.stock_quantity,
+      pg.grpcusto,
       pg.created_at,
       pg.updated_at,
       COUNT(p.procod) as parts_count
     FROM part_groups pg
     LEFT JOIN pro p ON p.part_group_id = pg.id
-    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.created_at, pg.updated_at
+    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.grpcusto, pg.created_at, pg.updated_at
     ORDER BY pg.created_at
   `);
   return result.rows;
@@ -47,6 +48,7 @@ async function getGroupById(groupId) {
       pg.id,
       pg.name,
       pg.stock_quantity,
+      pg.grpcusto,
       pg.created_at,
       pg.updated_at
     FROM part_groups pg
@@ -94,6 +96,7 @@ async function getGroupByPartId(partId) {
       pg.id,
       pg.name,
       pg.stock_quantity,
+      pg.grpcusto,
       pg.created_at,
       pg.updated_at
     FROM part_groups pg
@@ -446,26 +449,9 @@ async function addPartToGroup(partId, groupId, colorId = null) {
   try {
     await client.query("BEGIN");
     
-    // Atualiza a peça para associá-la ao grupo
-    const result = await client.query(
-      `
-      UPDATE pro 
-      SET part_group_id = $1
-      WHERE procod = $2
-      RETURNING procod, prodes, part_group_id, proqtde
-    `,
-      [groupId, partId]
-    );
-    
-    const part = result.rows[0];
-    if (!part) {
-      await client.query("ROLLBACK");
-      return null;
-    }
-    
-    // Busca informações do grupo
+    // Busca informações do grupo primeiro
     const groupResult = await client.query(
-      `SELECT stock_quantity FROM part_groups WHERE id = $1`,
+      `SELECT stock_quantity, grpcusto FROM part_groups WHERE id = $1`,
       [groupId]
     );
     
@@ -475,6 +461,36 @@ async function addPartToGroup(partId, groupId, colorId = null) {
     }
     
     const group = groupResult.rows[0];
+    
+    // Atualiza a peça para associá-la ao grupo e define o custo do grupo se disponível
+    let updateQuery;
+    let updateParams;
+    
+    if (group.grpcusto !== null && group.grpcusto !== undefined) {
+      updateQuery = `
+        UPDATE pro 
+        SET part_group_id = $1, procusto = $2
+        WHERE procod = $3
+        RETURNING procod, prodes, part_group_id, proqtde
+      `;
+      updateParams = [groupId, group.grpcusto, partId];
+    } else {
+      updateQuery = `
+        UPDATE pro 
+        SET part_group_id = $1
+        WHERE procod = $2
+        RETURNING procod, prodes, part_group_id, proqtde
+      `;
+      updateParams = [groupId, partId];
+    }
+    
+    const result = await client.query(updateQuery, updateParams);
+    
+    const part = result.rows[0];
+    if (!part) {
+      await client.query("ROLLBACK");
+      return null;
+    }
     let finalGroupStock = group.stock_quantity;
     
     // Se uma cor foi especificada, busca informações da cor e seu estoque
@@ -747,7 +763,8 @@ async function getGroupAuditHistory(groupId, limit = 50) {
 async function updateGroupStock(
   groupId,
   newQuantity,
-  reason = "Ajuste_Manual"
+  reason = "Ajuste_Manual",
+  newCost = null
 ) {
   const client = await pool.connect();
 
@@ -769,16 +786,39 @@ async function updateGroupStock(
     const currentStock = currentResult.rows[0].stock_quantity;
     const change = newQuantity - currentStock;
 
-    // Atualiza o estoque
-    const updateResult = await client.query(
-      `
-      UPDATE part_groups 
-      SET stock_quantity = $1, updated_at = NOW()
-      WHERE id = $2
-      RETURNING *
-    `,
-      [newQuantity, groupId]
-    );
+    // Atualiza o estoque e custo se fornecido
+    let updateResult;
+    if (newCost !== null && newCost !== undefined) {
+      updateResult = await client.query(
+        `
+        UPDATE part_groups 
+        SET stock_quantity = $1, grpcusto = $2, updated_at = NOW()
+        WHERE id = $3
+        RETURNING *
+      `,
+        [newQuantity, newCost, groupId]
+      );
+
+      // Atualiza o custo de todos os produtos do grupo
+      await client.query(
+        `
+        UPDATE pro 
+        SET procusto = $1
+        WHERE part_group_id = $2
+      `,
+        [newCost, groupId]
+      );
+    } else {
+      updateResult = await client.query(
+        `
+        UPDATE part_groups 
+        SET stock_quantity = $1, updated_at = NOW()
+        WHERE id = $2
+        RETURNING *
+      `,
+        [newQuantity, groupId]
+      );
+    }
 
     // Cria registro de auditoria se houve alteração
     if (change !== 0) {

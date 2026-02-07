@@ -8,6 +8,7 @@
  */
 
 let currentGroupId = null;
+let currentGroupData = null; // Store current group data including cost
 let allGroups = [];
 let availableParts = [];
 let currentPage = 1;
@@ -339,6 +340,7 @@ async function abrirDetalhes(id) {
     if (!res.ok) throw new Error("Erro ao buscar detalhes do grupo");
 
     const grupo = await res.json();
+    currentGroupData = grupo; // Store group data for later use
 
     document.getElementById("nomeGrupoDetalhe").textContent = grupo.name;
     document.getElementById("estoqueGrupoDetalhe").textContent =
@@ -450,6 +452,7 @@ function renderHistorico(historico) {
  */
 function fecharDetalhes() {
   currentGroupId = null;
+  currentGroupData = null;
   document.getElementById("detalhesGrupo").style.display = "none";
 }
 
@@ -463,6 +466,11 @@ function abrirModalEditarEstoque() {
     "estoqueGrupoDetalhe"
   ).textContent;
   document.getElementById("novoEstoque").value = currentStock;
+  
+  // Set current cost if available
+  const currentCost = currentGroupData?.grpcusto || "";
+  document.getElementById("novoCusto").value = currentCost;
+  
   document.getElementById("motivoEstoque").value = "manual_adjustment";
 
   new bootstrap.Modal(document.getElementById("modalEditarEstoque")).show();
@@ -476,10 +484,27 @@ async function salvarEstoque() {
 
   const quantidade = parseInt(document.getElementById("novoEstoque").value, 10);
   const motivo = document.getElementById("motivoEstoque").value;
+  const custoValue = document.getElementById("novoCusto").value;
 
   if (isNaN(quantidade) || quantidade < 0) {
     showToast("Quantidade inválida", "error");
     return;
+  }
+
+  // Prepare request body
+  const body = { 
+    stock_quantity: quantidade, 
+    reason: motivo 
+  };
+  
+  // Add cost if provided (non-empty and valid)
+  if (custoValue && custoValue.trim() !== "") {
+    const custo = parseFloat(custoValue);
+    if (isNaN(custo) || custo < 0) {
+      showToast("Custo inválido", "error");
+      return;
+    }
+    body.cost = custo;
   }
 
   try {
@@ -487,7 +512,7 @@ async function salvarEstoque() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ stock_quantity: quantidade, reason: motivo }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {

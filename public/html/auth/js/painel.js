@@ -247,12 +247,6 @@ function editarProduto(codigo) {
             </div>
 
             <div class="mb-3">
-              <label class="form-label">💵 Valor de Custo</label>
-              <input type="number" step="0.01" class="form-control" id="editarValorCusto" required
-                value="${Number(produto[0]?.procusto).toFixed(2) || ""}">
-            </div>
-
-            <div class="mb-3">
               <label class="form-label">📥 Produto sem estoque</label><br>
               <input type="checkbox" id="editar_prosemest"
                 ${produto.some((p) => p.prosemest === "S") ? "checked" : ""}>
@@ -360,7 +354,6 @@ function editarProduto(codigo) {
             .getElementById("editarDescricao")
             .value.trim();
           const provl = document.getElementById("editarValor").value;
-          const procusto = document.getElementById("editarValorCusto").value;
           const prosemest = document.getElementById("editar_prosemest").checked
             ? "S"
             : "N";
@@ -402,7 +395,6 @@ function editarProduto(codigo) {
               body: JSON.stringify({
                 prodes,
                 provl,
-                procusto,
                 prosemest,
                 proacabando,
               }),

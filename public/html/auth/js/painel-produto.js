@@ -109,7 +109,6 @@ btnProduto.addEventListener("click", () => {
 
   descricaoProduto.value = "";
   provl.value = "";
-  procusto.value = "";
   // Limpar seleção de modelos
   const modelosHolder = document.getElementById("popupProdutoModalModelo");
   modelosHolder.innerHTML =
@@ -136,7 +135,6 @@ produtoForm.addEventListener("submit", async (ev) => {
       document.getElementById("popupMarcaModalProduto").value,
     ),
     provl: parseFloat(provl.value),
-    procusto: parseFloat(procusto.value),
     promodcod: parseInt(modeloSelecionado),
     protipocod: parseInt(
       document.getElementById("popupProdutoModaltipo").value,
