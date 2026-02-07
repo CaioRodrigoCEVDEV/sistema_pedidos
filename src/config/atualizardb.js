@@ -157,11 +157,6 @@ async function atualizarDB() {
       );
     `);
 
-    // Adiciona coluna de custo na tabela part_groups
-    await pool.query(`
-      ALTER TABLE public.part_groups ADD IF NOT EXISTS group_cost numeric(14, 4) NULL;
-    `);
-
     // Adiciona coluna part_group_id na tabela pro (FK para grupos de compatibilidade)
     await pool.query(`
       ALTER TABLE public.pro ADD IF NOT EXISTS part_group_id INTEGER NULL;

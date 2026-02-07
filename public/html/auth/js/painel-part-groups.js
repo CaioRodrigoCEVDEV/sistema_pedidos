@@ -240,28 +240,9 @@ async function criarGrupo() {
  * @param {number} id - ID do grupo
  * @param {string} nome - Nome atual do grupo
  */
-async function abrirModalEditar(id, nome) {
+function abrirModalEditar(id, nome) {
   document.getElementById("editarGrupoId").value = id;
   document.getElementById("editarNomeGrupo").value = nome;
-  
-  // Fetch group details to get the cost
-  try {
-    const res = await fetch(`${BASE_URL}/part-groups/${id}`, {
-      credentials: "include",
-    });
-    if (res.ok) {
-      const grupo = await res.json();
-      const custoInput = document.getElementById("editarCustoGrupo");
-      if (custoInput) {
-        custoInput.value = grupo.group_cost !== null && grupo.group_cost !== undefined 
-          ? Number(grupo.group_cost).toFixed(2) 
-          : "";
-      }
-    }
-  } catch (err) {
-    console.error("Erro ao carregar detalhes do grupo:", err);
-  }
-  
   new bootstrap.Modal(document.getElementById("modalEditarGrupo")).show();
 }
 
@@ -271,10 +252,6 @@ async function abrirModalEditar(id, nome) {
 async function salvarEdicaoGrupo() {
   const id = document.getElementById("editarGrupoId").value;
   const nome = document.getElementById("editarNomeGrupo").value.trim();
-  const custoInput = document.getElementById("editarCustoGrupo");
-  const custo = custoInput && custoInput.value.trim() !== "" 
-    ? parseFloat(custoInput.value) 
-    : null;
 
   if (!nome) {
     showToast("Nome do grupo é obrigatório", "error");
@@ -282,16 +259,11 @@ async function salvarEdicaoGrupo() {
   }
 
   try {
-    const body = { name: nome };
-    if (custo !== null) {
-      body.group_cost = custo;
-    }
-    
     const res = await fetch(`${BASE_URL}/part-groups/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(body),
+      body: JSON.stringify({ name: nome }),
     });
 
     if (!res.ok) {
@@ -306,8 +278,8 @@ async function salvarEdicaoGrupo() {
     carregarGrupos();
 
     // Atualiza a visualização de detalhes se estiver aberta
-    if (currentGroupId === parseInt(id, 10)) {
-      abrirDetalhes(currentGroupId);
+    if (currentGroupId === id) {
+      document.getElementById("nomeGrupoDetalhe").textContent = nome;
     }
   } catch (err) {
     console.error(err);
@@ -371,15 +343,6 @@ async function abrirDetalhes(id) {
     document.getElementById("nomeGrupoDetalhe").textContent = grupo.name;
     document.getElementById("estoqueGrupoDetalhe").textContent =
       grupo.stock_quantity || 0;
-    
-    // Display group cost
-    const custoElement = document.getElementById("custoGrupoDetalhe");
-    if (custoElement) {
-      custoElement.textContent = 
-        grupo.group_cost !== null && grupo.group_cost !== undefined
-          ? `R$ ${Number(grupo.group_cost).toFixed(2)}`
-          : "-";
-    }
 
     // Renderiza as peças do grupo
     renderPecasGrupo(grupo.parts || []);
