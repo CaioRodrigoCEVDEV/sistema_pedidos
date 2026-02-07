@@ -497,8 +497,8 @@ async function salvarEstoque() {
     reason: motivo 
   };
   
-  // Add cost if provided
-  if (custoValue !== "" && custoValue !== null && custoValue !== undefined) {
+  // Add cost if provided (non-empty and valid)
+  if (custoValue && custoValue.trim() !== "") {
     const custo = parseFloat(custoValue);
     if (isNaN(custo) || custo < 0) {
       showToast("Custo inválido", "error");

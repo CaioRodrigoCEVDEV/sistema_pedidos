@@ -462,24 +462,29 @@ async function addPartToGroup(partId, groupId, colorId = null) {
     
     const group = groupResult.rows[0];
     
-    // Atualiza a peça para associá-la ao grupo e define o custo do grupo
-    const updateFields = ['part_group_id = $1'];
-    const updateParams = [groupId, partId];
+    // Atualiza a peça para associá-la ao grupo e define o custo do grupo se disponível
+    let updateQuery;
+    let updateParams;
     
     if (group.grpcusto !== null && group.grpcusto !== undefined) {
-      updateFields.push('procusto = $3');
-      updateParams.push(group.grpcusto);
+      updateQuery = `
+        UPDATE pro 
+        SET part_group_id = $1, procusto = $2
+        WHERE procod = $3
+        RETURNING procod, prodes, part_group_id, proqtde
+      `;
+      updateParams = [groupId, group.grpcusto, partId];
+    } else {
+      updateQuery = `
+        UPDATE pro 
+        SET part_group_id = $1
+        WHERE procod = $2
+        RETURNING procod, prodes, part_group_id, proqtde
+      `;
+      updateParams = [groupId, partId];
     }
     
-    const result = await client.query(
-      `
-      UPDATE pro 
-      SET ${updateFields.join(', ')}
-      WHERE procod = $2
-      RETURNING procod, prodes, part_group_id, proqtde
-    `,
-      updateParams
-    );
+    const result = await client.query(updateQuery, updateParams);
     
     const part = result.rows[0];
     if (!part) {
