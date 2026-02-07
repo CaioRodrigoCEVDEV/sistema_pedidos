@@ -78,6 +78,9 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.pro ADD if not exists proacabando bpchar(1) DEFAULT 'N'::bpchar NULL;`
     );
+    await pool.query(
+      `ALTER TABLE public.pro ADD if not exists procusto numeric(14, 4) NULL;`
+    );
     //temporatrio
     await pool.query(`
         ALTER TABLE public.procor ALTER COLUMN procorqtde SET DEFAULT 0;
@@ -152,6 +155,11 @@ async function atualizarDB() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
+    `);
+
+    // Adiciona coluna grpcusto na tabela part_groups (custo do grupo)
+    await pool.query(`
+      ALTER TABLE public.part_groups ADD COLUMN IF NOT EXISTS grpcusto NUMERIC(14, 4) NULL;
     `);
 
     // Adiciona coluna part_group_id na tabela pro (FK para grupos de compatibilidade)
