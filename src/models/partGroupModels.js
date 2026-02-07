@@ -378,13 +378,18 @@ async function createGroup(name, stockQuantity = 0, groupCost = null) {
  * @returns {Object|null} Grupo atualizado ou null se não encontrado
  */
 async function updateGroup(groupId, name, stockQuantity = null, groupCost = undefined) {
-  let query, params;
-
   // Build query dynamically based on which parameters are provided
   const updates = [];
-  const values = [name];
-  let paramCount = 1;
+  const values = [];
+  let paramCount = 0;
 
+  // Name is always required and updated
+  if (!name || name.trim() === "") {
+    throw new Error("Nome do grupo é obrigatório");
+  }
+  
+  paramCount++;
+  values.push(name);
   updates.push(`name = $${paramCount}`);
   
   if (stockQuantity !== null && stockQuantity !== undefined) {
@@ -402,7 +407,7 @@ async function updateGroup(groupId, name, stockQuantity = null, groupCost = unde
   paramCount++;
   values.push(groupId);
   
-  query = `
+  const query = `
     UPDATE part_groups 
     SET ${updates.join(', ')}, updated_at = NOW()
     WHERE id = $${paramCount}

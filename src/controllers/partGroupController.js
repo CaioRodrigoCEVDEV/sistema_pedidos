@@ -156,19 +156,7 @@ exports.updateGroupCost = async (req, res) => {
   }
 
   try {
-    // Atualiza o custo do grupo
-    const group = await partGroupModels.updateGroup(
-      id,
-      undefined,
-      undefined,
-      group_cost
-    );
-    
-    if (!group) {
-      return res.status(404).json({ error: "Grupo não encontrado" });
-    }
-
-    // Precisa buscar o nome do grupo para passar ao updateGroup
+    // Busca o grupo para obter informações atuais
     const fullGroup = await partGroupModels.getGroupById(id);
     if (!fullGroup) {
       return res.status(404).json({ error: "Grupo não encontrado" });
