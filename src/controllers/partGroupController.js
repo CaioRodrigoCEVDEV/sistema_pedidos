@@ -57,7 +57,7 @@ exports.getPartGroupStock = async (req, res) => {
 // Grupos são sempre criados com stock_quantity = 0
 // O estoque só pode ser definido após adicionar peças ao grupo
 exports.createGroup = async (req, res) => {
-  const { name, group_cost } = req.body;
+  const { name } = req.body;
 
   if (!name || name.trim() === "") {
     return res.status(400).json({ error: "Nome do grupo é obrigatório" });
@@ -65,9 +65,7 @@ exports.createGroup = async (req, res) => {
 
   try {
     // Sempre cria grupos com estoque inicial de 0
-    // group_cost is optional and can be null
-    const groupCost = group_cost !== undefined && group_cost !== "" ? parseFloat(group_cost) : null;
-    const group = await partGroupModels.createGroup(name.trim(), 0, groupCost);
+    const group = await partGroupModels.createGroup(name.trim(), 0);
     res.status(201).json(group);
   } catch (error) {
     console.error("Erro ao criar grupo de compatibilidade:", error);
@@ -78,21 +76,17 @@ exports.createGroup = async (req, res) => {
 // Atualiza um grupo de compatibilidade
 exports.updateGroup = async (req, res) => {
   const { id } = req.params;
-  const { name, stock_quantity, group_cost } = req.body;
+  const { name, stock_quantity } = req.body;
 
   if (!name || name.trim() === "") {
     return res.status(400).json({ error: "Nome do grupo é obrigatório" });
   }
 
   try {
-    // Parse group_cost: if it's provided and not empty, convert to float, otherwise null
-    const groupCost = group_cost !== undefined && group_cost !== "" ? parseFloat(group_cost) : undefined;
-    
     const group = await partGroupModels.updateGroup(
       id,
       name.trim(),
-      stock_quantity,
-      groupCost
+      stock_quantity
     );
     if (!group) {
       return res.status(404).json({ error: "Grupo não encontrado" });
