@@ -56,7 +56,7 @@ async function getTopPecas(filters = {}) {
         SUM(pviqtde) as qtde_vendida,
         STRING_AGG(DISTINCT m.moddes, ', ' ORDER BY m.moddes) as modelo,
         STRING_AGG(DISTINCT p.prodes, ', ' ORDER BY p.prodes) as peca,
-        STRING_AGG(DISTINCT CASE WHEN procusto IS NULL THEN '0' ELSE procusto::text END,', ' ORDER BY CASE WHEN procusto IS NULL THEN '0' ELSE procusto::text END) AS custo
+        case when procusto is null then 0 else procusto end AS custo
       FROM pvi
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
