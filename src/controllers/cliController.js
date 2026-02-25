@@ -249,12 +249,7 @@ exports.remove = async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'id inválido' });
 
-  const hard = req.query.hard === '1'; // ?hard=1 para excluir de fato
   try {
-    if (!hard) {
-      await pool.query(`UPDATE public.par SET parsit = 'I', pardua = now() WHERE parcod = $1`, [id]);
-      return res.json({ ok: true, message: 'cliente inativado' });
-    }
     await pool.query(`DELETE FROM public.cli WHERE cliparcod = $1`, [id]);
     await pool.query(`DELETE FROM public.par WHERE parcod = $1`, [id]);
     return res.json({ ok: true });
