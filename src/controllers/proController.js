@@ -132,11 +132,11 @@ exports.inserirProduto = async (req, res) => {
     // Inserção simples do produto
     const result = await client.query(
       `
-        INSERT INTO pro (prodes, promarcascod, promodcod, protipocod, provl, procusto)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO pro (prodes, promarcascod, promodcod, protipocod, provl, procusto, prosemest)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
       `,
-      [prodes, promarcascod, modeloId, protipocod, provl, procusto],
+      [prodes, promarcascod, modeloId, protipocod, provl, procusto, "N"],
     );
 
     const procod = result.rows[0].procod;
