@@ -114,32 +114,39 @@ exports.inserirPvi = async (req, res) => {
   }
 
   try {
-    const results = [];
+    // Prepara arrays para INSERT em lote via unnest (elimina N+1)
+    const pvcods      = [];
+    const procods     = [];
+    const qtdes       = [];
+    const precos      = [];
+    const procorids   = [];
 
     for (const item of cart) {
       const { id: procod, qt, preco, idCorSelecionada } = item;
-      const pviprocorid = idCorSelecionada || null;
-      const codigoInteiro = parseInt(procod.split("-")[0]);
-      console.log("Inserindo item:", {
-        pvcod,
-        codigoInteiro,
-        qt,
-        preco,
-        pviprocorid,
-      });
-
-      const result = await pool.query(
-        "INSERT INTO pvi (pvipvcod, pviprocod, pviqtde, pvivl,pviprocorid) VALUES ($1, $2, $3, $4,$5) RETURNING *",
-        [pvcod, codigoInteiro, qt, preco, pviprocorid]
-      );
-
-      results.push(result.rows[0]);
+      const codigoInteiro = parseInt(String(procod).split("-")[0], 10);
+      if (isNaN(codigoInteiro) || codigoInteiro <= 0) {
+        return res.status(400).json({ error: `Código de produto inválido: ${procod}` });
+      }
+      pvcods.push(pvcod);
+      procods.push(codigoInteiro);
+      qtdes.push(qt);
+      precos.push(preco);
+      procorids.push(idCorSelecionada || null);
     }
+
+    const result = await pool.query(
+      `INSERT INTO pvi (pvipvcod, pviprocod, pviqtde, pvivl, pviprocorid)
+       SELECT * FROM unnest(
+         $1::int[], $2::int[], $3::numeric[], $4::numeric[], $5::int[]
+       ) AS t(pvipvcod, pviprocod, pviqtde, pvivl, pviprocorid)
+       RETURNING *`,
+      [pvcods, procods, qtdes, precos, procorids]
+    );
 
     res.status(200).json({
       message: "Pedido e itens inseridos com sucesso!",
       pvcod,
-      itens: results,
+      itens: result.rows,
     });
   } catch (error) {
     console.error("Erro ao inserir itens:", error);

@@ -1,6 +1,7 @@
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const express = require("express");
+const compression = require("compression");
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
@@ -10,6 +11,7 @@ const path = require("path");
 const cors = require("cors");
 const sharp = require("sharp");
 const { atualizarDB } = require("./config/atualizardb");
+const { requestTimingMiddleware } = require("./middlewares/performanceMiddleware");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +27,8 @@ const requireAdminPv = require("./middlewares/adminPvMiddleware");
 const requireAdminEst = require("./middlewares/adminEstMiddleware");
 const requireAdminPages = require("./middlewares/adminPagesMiddleware");
 app.set("views", path.join(__dirname, "views"));
+app.use(compression());
+app.use(requestTimingMiddleware);
 app.use(morgan("dev"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));

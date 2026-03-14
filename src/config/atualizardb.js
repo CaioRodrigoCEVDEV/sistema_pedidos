@@ -848,6 +848,47 @@ async function atualizarDB() {
                       NO CYCLE;`);
     //fim das sequences
 
+    // ==================================================================================================================================
+    // ÍNDICES DE PERFORMANCE — criados com IF NOT EXISTS para ser idempotente
+    // ==================================================================================================================================
+
+    // pv: filtros de status, confirmação, data e vendedor (usados em todas as listagens de pedidos)
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pv_sta          ON public.pv (pvsta);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pv_confirmado   ON public.pv (pvconfirmado);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pv_dtcad        ON public.pv (pvdtcad);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pv_rcacod       ON public.pv (pvrcacod);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pv_canal        ON public.pv (pvcanal);`);
+
+    // pvi: join com pv e com pro (chaves de join mais usadas)
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pvi_pvcod       ON public.pvi (pvipvcod);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pvi_procod      ON public.pvi (pviprocod);`);
+
+    // pro: filtros de marca, tipo, status e estoque (usados em listagens de produtos)
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pro_marcas      ON public.pro (promarcascod);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pro_tipo        ON public.pro (protipocod);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pro_sit         ON public.pro (prosit);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pro_semest      ON public.pro (prosemest);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pro_acabando    ON public.pro (proacabando);`);
+
+    // promod: join de peças com modelos (correlated subquery em proModels e proController)
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_promod_procod   ON public.promod (promodprocod);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_promod_modcod   ON public.promod (promodmodcod);`);
+
+    // par: busca textual por nome/fantasia via ILIKE — índices GIN trigram para acelerar
+    // Requer a extensão pg_trgm que já foi habilitada acima (CREATE EXTENSION IF NOT EXISTS pg_trgm)
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_par_des_trgm
+      ON public.par USING gin (pardes gin_trgm_ops);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_par_fan_trgm
+      ON public.par USING gin (parfan gin_trgm_ops);
+    `);
+
+    // ==================================================================================================================================
+    // FIM ÍNDICES DE PERFORMANCE
+    // ==================================================================================================================================
+
     await pool.query("COMMIT");
     console.log("✅ atualizardb: tabelas e registros padrão garantidos.");
   } catch (err) {
