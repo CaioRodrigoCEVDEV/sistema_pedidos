@@ -817,11 +817,7 @@ async function atualizarDB() {
         FOR EACH ROW
         EXECUTE PROCEDURE fn_marcar_prosemest();
 
-        DROP TRIGGER IF EXISTS trg_marcar_prosemest_ins ON pro;
-        CREATE TRIGGER trg_marcar_prosemest_ins
-        BEFORE INSERT ON pro
-        FOR EACH ROW
-        EXECUTE PROCEDURE fn_marcar_prosemest();
+        
 
         DROP TRIGGER IF EXISTS trg_marcar_procorsemest ON procor;
         CREATE TRIGGER trg_marcar_procorsemest
@@ -829,11 +825,7 @@ async function atualizarDB() {
         FOR EACH ROW
         EXECUTE PROCEDURE fn_marcar_procorsemest();
 
-        DROP TRIGGER IF EXISTS trg_marcar_procorsemest_ins ON procor;
-        CREATE TRIGGER trg_marcar_procorsemest_ins
-        BEFORE INSERT ON procor
-        FOR EACH ROW
-        EXECUTE PROCEDURE fn_marcar_procorsemest();
+        
     `);
     //fim das triggers
 
