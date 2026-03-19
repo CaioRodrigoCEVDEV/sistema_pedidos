@@ -748,6 +748,11 @@ async function atualizarDB() {
       CREATE OR REPLACE FUNCTION fn_marcar_prosemest()
       RETURNS TRIGGER AS $$
       BEGIN
+          -- Só recalcula prosemest em UPDATE; em INSERT o valor padrão 'N' deve ser mantido
+          IF TG_OP = 'INSERT' THEN
+              RETURN NEW;
+          END IF;
+
           IF NOT EXISTS (
               SELECT 1
               FROM procor
@@ -817,11 +822,8 @@ async function atualizarDB() {
         FOR EACH ROW
         EXECUTE PROCEDURE fn_marcar_prosemest();
 
+        -- Remove the INSERT trigger so new products keep the default 'N' for prosemest
         DROP TRIGGER IF EXISTS trg_marcar_prosemest_ins ON pro;
-        CREATE TRIGGER trg_marcar_prosemest_ins
-        BEFORE INSERT ON pro
-        FOR EACH ROW
-        EXECUTE PROCEDURE fn_marcar_prosemest();
 
         DROP TRIGGER IF EXISTS trg_marcar_procorsemest ON procor;
         CREATE TRIGGER trg_marcar_procorsemest

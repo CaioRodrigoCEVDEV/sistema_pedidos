@@ -420,6 +420,43 @@ async function runTests() {
     await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
   });
 
+  // Teste 14: prosemest deve ser 'N' por padrão ao cadastrar produto
+  await test('Cadastrar produto sem informar prosemest deve gravar prosemest = N', async () => {
+    const partResult = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, procusto)
+      SELECT 'Peça Teste prosemest',
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             99.99,
+             50.00
+      RETURNING procod, prosemest
+    `);
+
+    const part = partResult.rows[0];
+    assertEqual(part.prosemest, 'N', 'prosemest deve ser N ao cadastrar novo produto sem informar o campo');
+
+    await pool.query('DELETE FROM pro WHERE procod = $1', [part.procod]);
+  });
+
+  // Teste 15: prosemest deve ser 'S' somente quando explicitamente informado
+  await test('Cadastrar produto com prosemest = S deve persistir S', async () => {
+    const partResult = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, procusto, prosemest)
+      SELECT 'Peça Teste prosemest S',
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             99.99,
+             50.00,
+             'S'
+      RETURNING procod, prosemest
+    `);
+
+    const part = partResult.rows[0];
+    assertEqual(part.prosemest, 'S', 'prosemest deve ser S quando explicitamente informado');
+
+    await pool.query('DELETE FROM pro WHERE procod = $1', [part.procod]);
+  });
+
   // Limpeza
   await cleanup();
 
