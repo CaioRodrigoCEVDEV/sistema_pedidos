@@ -54,7 +54,7 @@ async function getGroupById(groupId) {
     FROM part_groups pg
     WHERE pg.id = $1
   `,
-    [groupId]
+    [groupId],
   );
 
   if (groupResult.rows.length === 0) {
@@ -75,7 +75,7 @@ async function getGroupById(groupId) {
     WHERE p.part_group_id = $1
     ORDER BY p.prodes
   `,
-    [groupId]
+    [groupId],
   );
 
   return {
@@ -103,7 +103,7 @@ async function getGroupByPartId(partId) {
     JOIN pro p ON p.part_group_id = pg.id
     WHERE p.procod = $1
   `,
-    [partId]
+    [partId],
   );
   return result.rows[0] || null;
 }
@@ -130,7 +130,7 @@ async function getGroupStock(partId) {
     LEFT JOIN part_groups pg ON pg.id = p.part_group_id
     WHERE p.procod = $1
   `,
-    [partId]
+    [partId],
   );
 
   if (result.rows.length === 0) {
@@ -164,7 +164,7 @@ async function decrementGroupStock(partId, qty, client = null) {
       WHERE p.procod = $1
       FOR UPDATE
     `,
-      [partId]
+      [partId],
     );
 
     if (partResult.rows.length === 0) {
@@ -182,7 +182,7 @@ async function decrementGroupStock(partId, qty, client = null) {
         WHERE procod = $2 AND proqtde >= $1
         RETURNING proqtde
       `,
-        [qty, partId]
+        [qty, partId],
       );
 
       if (updateResult.rows.length === 0) {
@@ -205,7 +205,7 @@ async function decrementGroupStock(partId, qty, client = null) {
       WHERE id = $1
       FOR UPDATE
     `,
-      [part.part_group_id]
+      [part.part_group_id],
     );
 
     if (groupResult.rows.length === 0) {
@@ -226,7 +226,7 @@ async function decrementGroupStock(partId, qty, client = null) {
       WHERE id = $2 AND stock_quantity >= $1
       RETURNING stock_quantity
     `,
-      [qty, part.part_group_id]
+      [qty, part.part_group_id],
     );
 
     if (updateResult.rows.length === 0) {
@@ -239,7 +239,7 @@ async function decrementGroupStock(partId, qty, client = null) {
       INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
       VALUES ($1, $2, $3, $4)
     `,
-      [part.part_group_id, -qty, "sale", partId.toString()]
+      [part.part_group_id, -qty, "sale", partId.toString()],
     );
 
     if (shouldCommit) await txClient.query("COMMIT");
@@ -271,7 +271,7 @@ async function incrementGroupStock(
   partId,
   qty,
   reason = "manual",
-  client = null
+  client = null,
 ) {
   const shouldCommit = !client;
   const txClient = client || (await pool.connect());
@@ -286,7 +286,7 @@ async function incrementGroupStock(
       FROM pro p
       WHERE p.procod = $1
     `,
-      [partId]
+      [partId],
     );
 
     if (partResult.rows.length === 0) {
@@ -304,7 +304,7 @@ async function incrementGroupStock(
         WHERE procod = $2
         RETURNING proqtde
       `,
-        [qty, partId]
+        [qty, partId],
       );
 
       if (shouldCommit) await txClient.query("COMMIT");
@@ -323,7 +323,7 @@ async function incrementGroupStock(
       WHERE id = $2
       RETURNING stock_quantity
     `,
-      [qty, part.part_group_id]
+      [qty, part.part_group_id],
     );
 
     // Cria registro de auditoria
@@ -332,7 +332,7 @@ async function incrementGroupStock(
       INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
       VALUES ($1, $2, $3, $4)
     `,
-      [part.part_group_id, qty, reason, partId.toString()]
+      [part.part_group_id, qty, reason, partId.toString()],
     );
 
     if (shouldCommit) await txClient.query("COMMIT");
@@ -363,7 +363,7 @@ async function createGroup(name, stockQuantity = 0) {
     VALUES ($1, $2)
     RETURNING *
   `,
-    [name, stockQuantity]
+    [name, stockQuantity],
   );
   return result.rows[0];
 }
@@ -411,7 +411,7 @@ async function deleteGroup(groupId) {
     `
     DELETE FROM part_groups WHERE id = $1 RETURNING *
   `,
-    [groupId]
+    [groupId],
   );
   return result.rows[0] || null;
 }
@@ -424,20 +424,20 @@ async function deleteGroup(groupId) {
  */
 /**
  * Adiciona uma peça a um grupo de compatibilidade com sincronização automática de estoque
- * 
+ *
  * Comportamento:
  * 1. Se uma cor for especificada e o grupo não tiver estoque (ou estoque = 0):
  *    - Usa o procorqtde da cor para definir o estoque do grupo
  *    - Sincroniza a peça com o novo estoque do grupo
  *    - Cria registro de auditoria
- * 
+ *
  * 2. Se o grupo já tiver estoque definido:
  *    - Sincroniza automaticamente a peça com o estoque do grupo
  *    - Se uma cor foi especificada, também atualiza o procorqtde
- * 
+ *
  * 3. Se o grupo não tiver estoque e nenhuma cor com estoque:
  *    - Apenas vincula a peça ao grupo sem alterar estoques
- * 
+ *
  * @param {number} partId - ID da peça (procod)
  * @param {number} groupId - ID do grupo (INTEGER)
  * @param {number|null} colorId - ID da cor selecionada (opcional)
@@ -445,27 +445,27 @@ async function deleteGroup(groupId) {
  */
 async function addPartToGroup(partId, groupId, colorId = null) {
   const client = await pool.connect();
-  
+
   try {
     await client.query("BEGIN");
-    
+
     // Busca informações do grupo primeiro
     const groupResult = await client.query(
       `SELECT stock_quantity, grpcusto FROM part_groups WHERE id = $1`,
-      [groupId]
+      [groupId],
     );
-    
+
     if (groupResult.rows.length === 0) {
       await client.query("ROLLBACK");
       return null;
     }
-    
+
     const group = groupResult.rows[0];
-    
+
     // Atualiza a peça para associá-la ao grupo e define o custo do grupo se disponível
     let updateQuery;
     let updateParams;
-    
+
     if (group.grpcusto !== null && group.grpcusto !== undefined) {
       updateQuery = `
         UPDATE pro 
@@ -483,16 +483,16 @@ async function addPartToGroup(partId, groupId, colorId = null) {
       `;
       updateParams = [groupId, partId];
     }
-    
+
     const result = await client.query(updateQuery, updateParams);
-    
+
     const part = result.rows[0];
     if (!part) {
       await client.query("ROLLBACK");
       return null;
     }
     let finalGroupStock = group.stock_quantity;
-    
+
     // Se uma cor foi especificada, busca informações da cor e seu estoque
     if (colorId) {
       const colorResult = await client.query(
@@ -500,36 +500,40 @@ async function addPartToGroup(partId, groupId, colorId = null) {
          FROM cores c
          LEFT JOIN procor pc ON pc.procorcorescod = c.corcod AND pc.procorprocod = $1
          WHERE c.corcod = $2`,
-        [partId, colorId]
+        [partId, colorId],
       );
-      
+
       if (colorResult.rows.length > 0) {
         part.selected_color = colorResult.rows[0];
-        
+
         // Se o grupo ainda não tem estoque definido (stock_quantity é null ou 0)
         // e a cor tem estoque (procorqtde), atualiza o estoque do grupo
         const procorqtde = colorResult.rows[0].procorqtde;
-        if ((group.stock_quantity === null || group.stock_quantity === 0) && 
-            procorqtde !== null && procorqtde !== undefined && procorqtde > 0) {
+        if (
+          (group.stock_quantity === null || group.stock_quantity === 0) &&
+          procorqtde !== null &&
+          procorqtde !== undefined &&
+          procorqtde > 0
+        ) {
           finalGroupStock = procorqtde;
-          
+
           await client.query(
             `UPDATE part_groups 
              SET stock_quantity = $1, updated_at = NOW()
              WHERE id = $2`,
-            [finalGroupStock, groupId]
+            [finalGroupStock, groupId],
           );
-          
+
           // Cria registro de auditoria
           await client.query(
             `INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
              VALUES ($1, $2, $3, $4)`,
-            [groupId, finalGroupStock, 'colored_part_added', partId.toString()]
+            [groupId, finalGroupStock, "colored_part_added", partId.toString()],
           );
         }
       }
     }
-    
+
     // Se o grupo tem estoque definido (stock_quantity > 0 ou foi atualizado acima),
     // sincroniza o estoque da peça adicionada com o estoque do grupo
     if (finalGroupStock !== null && finalGroupStock > 0) {
@@ -537,22 +541,22 @@ async function addPartToGroup(partId, groupId, colorId = null) {
         `UPDATE pro 
          SET proqtde = $1
          WHERE procod = $2`,
-        [finalGroupStock, partId]
+        [finalGroupStock, partId],
       );
-      
+
       part.proqtde = finalGroupStock;
-      
+
       // Se há uma cor definida, também atualiza o estoque da cor
       if (colorId) {
         await client.query(
           `UPDATE procor 
            SET procorqtde = $1
            WHERE procorprocod = $2 AND procorcorescod = $3`,
-          [finalGroupStock, partId, colorId]
+          [finalGroupStock, partId, colorId],
         );
       }
     }
-    
+
     await client.query("COMMIT");
     return part;
   } catch (error) {
@@ -576,7 +580,7 @@ async function removePartFromGroup(partId) {
     WHERE procod = $1
     RETURNING procod, prodes, part_group_id
   `,
-    [partId]
+    [partId],
   );
   return result.rows[0] || null;
 }
@@ -639,14 +643,15 @@ async function getAvailableParts(currentGroupId = null) {
  */
 async function getAvailablePart(page = 1, limit = 20, search = "") {
   const offset = (page - 1) * limit;
-  
+
   // Preparar termo de busca
-  const searchTerm = search && search.trim() !== "" ? `%${search.trim()}%` : null;
-  
+  const searchTerm =
+    search && search.trim() !== "" ? `%${search.trim()}%` : null;
+
   // Construir filtro de busca se fornecido
   let searchFilter = "";
   const params = [];
-  
+
   if (searchTerm) {
     searchFilter = `AND (
       p.prodes ILIKE $${params.length + 1} OR 
@@ -656,7 +661,7 @@ async function getAvailablePart(page = 1, limit = 20, search = "") {
     )`;
     params.push(searchTerm);
   }
-  
+
   // Query para obter as peças com informações de cores
   const query = `
     SELECT 
@@ -691,9 +696,9 @@ async function getAvailablePart(page = 1, limit = 20, search = "") {
     ORDER BY p.prodes
     LIMIT $${params.length + 1} OFFSET $${params.length + 2}
   `;
-  
+
   params.push(limit, offset);
-  
+
   // Query para contar o total de peças
   const countQuery = `
     SELECT COUNT(DISTINCT p.procod) as total
@@ -702,17 +707,17 @@ async function getAvailablePart(page = 1, limit = 20, search = "") {
     LEFT JOIN tipo t ON t.tipocod = p.protipocod
     WHERE p.prosit = 'A' ${searchFilter}
   `;
-  
+
   const countParams = searchTerm ? [searchTerm] : [];
-  
+
   const [dataResult, countResult] = await Promise.all([
     pool.query(query, params),
     pool.query(countQuery, countParams),
   ]);
-  
+
   const total = parseInt(countResult.rows[0].total, 10);
   const totalPages = Math.ceil(total / limit);
-  
+
   return {
     data: dataResult.rows,
     pagination: {
@@ -747,7 +752,7 @@ async function getGroupAuditHistory(groupId, limit = 50) {
     ORDER BY a.created_at DESC
     LIMIT $2
   `,
-    [groupId, limit]
+    [groupId, limit],
   );
   return result.rows;
 }
@@ -764,7 +769,7 @@ async function updateGroupStock(
   groupId,
   newQuantity,
   reason = "Ajuste_Manual",
-  newCost = null
+  newCost = null,
 ) {
   const client = await pool.connect();
 
@@ -776,7 +781,7 @@ async function updateGroupStock(
       `
       SELECT stock_quantity FROM part_groups WHERE id = $1 FOR UPDATE
     `,
-      [groupId]
+      [groupId],
     );
 
     if (currentResult.rows.length === 0) {
@@ -796,7 +801,7 @@ async function updateGroupStock(
         WHERE id = $3
         RETURNING *
       `,
-        [newQuantity, newCost, groupId]
+        [newQuantity, newCost, groupId],
       );
 
       // Atualiza o custo de todos os produtos do grupo
@@ -806,7 +811,7 @@ async function updateGroupStock(
         SET procusto = $1
         WHERE part_group_id = $2
       `,
-        [newCost, groupId]
+        [newCost, groupId],
       );
     } else {
       updateResult = await client.query(
@@ -816,7 +821,7 @@ async function updateGroupStock(
         WHERE id = $2
         RETURNING *
       `,
-        [newQuantity, groupId]
+        [newQuantity, groupId],
       );
     }
 
@@ -827,7 +832,7 @@ async function updateGroupStock(
         INSERT INTO part_group_audit (part_group_id, change, reason)
         VALUES ($1, $2, $3)
       `,
-        [groupId, change, reason]
+        [groupId, change, reason],
       );
     }
 
@@ -843,11 +848,11 @@ async function updateGroupStock(
 
 /**
  * Atualiza o estoque de TODAS as peças que pertencem a um grupo
- * 
+ *
  * Esta função é chamada quando o usuário edita a quantidade do grupo.
  * A nova quantidade é aplicada para todas as peças do grupo, mantendo
  * sincronização entre o estoque do grupo e o estoque individual das peças.
- * 
+ *
  * @param {number} groupId - ID do grupo
  * @param {number} quantity - Nova quantidade para todas as peças
  * @returns {Object} Resultado da atualização com quantidade de peças atualizadas
@@ -865,7 +870,7 @@ async function updateAllPartsStockInGroup(groupId, quantity) {
       FROM pro
       WHERE part_group_id = $1
     `,
-      [groupId]
+      [groupId],
     );
 
     const parts = partsResult.rows;
@@ -877,7 +882,7 @@ async function updateAllPartsStockInGroup(groupId, quantity) {
       SET proqtde = $1
       WHERE part_group_id = $2
     `,
-      [quantity, groupId]
+      [quantity, groupId],
     );
 
     await client.query("COMMIT");
@@ -940,7 +945,7 @@ async function venderItens(itens, referenceId = null) {
 
       if (!partId || !quantidade || quantidade <= 0) {
         throw new Error(
-          `Item inválido: partId=${partId}, quantidade=${quantidade}`
+          `Item inválido: partId=${partId}, quantidade=${quantidade}`,
         );
       }
 
@@ -952,7 +957,7 @@ async function venderItens(itens, referenceId = null) {
         WHERE p.procod = $1
         FOR UPDATE
       `,
-        [partId]
+        [partId],
       );
 
       if (partResult.rows.length === 0) {
@@ -967,7 +972,7 @@ async function venderItens(itens, referenceId = null) {
         if (part.proqtde < quantidade) {
           throw new Error(
             `Estoque insuficiente para a peça "${part.prodes}" (ID: ${partId}). ` +
-              `Disponível: ${part.proqtde}, Solicitado: ${quantidade}`
+              `Disponível: ${part.proqtde}, Solicitado: ${quantidade}`,
           );
         }
 
@@ -979,7 +984,7 @@ async function venderItens(itens, referenceId = null) {
           WHERE procod = $2
           RETURNING proqtde
         `,
-          [quantidade, partId]
+          [quantidade, partId],
         );
 
         resultados.push({
@@ -1025,12 +1030,12 @@ async function venderItens(itens, referenceId = null) {
         WHERE id = $1
         FOR UPDATE
       `,
-        [groupId]
+        [groupId],
       );
 
       if (groupResult.rows.length === 0) {
         throw new Error(
-          `Grupo de compatibilidade (ID: ${groupId}) não encontrado`
+          `Grupo de compatibilidade (ID: ${groupId}) não encontrado`,
         );
       }
 
@@ -1049,19 +1054,19 @@ async function venderItens(itens, referenceId = null) {
           ORDER BY proqtde DESC, procod ASC
           FOR UPDATE
         `,
-          [groupId]
+          [groupId],
         );
 
         // Calcula o estoque mínimo disponível no grupo (todas as peças devem poder decrementar)
         const estoqueMinimo = Math.min(
-          ...pecasGrupoResult.rows.map((p) => p.proqtde || 0)
+          ...pecasGrupoResult.rows.map((p) => p.proqtde || 0),
         );
 
         // Valida que o estoque mínimo é suficiente para a quantidade solicitada
         if (estoqueMinimo < quantidadeTotal) {
           throw new Error(
             `Estoque insuficiente no grupo "${group.name}". ` +
-              `Disponível: ${estoqueMinimo}, Solicitado: ${quantidadeTotal}`
+              `Disponível: ${estoqueMinimo}, Solicitado: ${quantidadeTotal}`,
           );
         }
 
@@ -1072,7 +1077,7 @@ async function venderItens(itens, referenceId = null) {
           SET proqtde = proqtde - $1
           WHERE part_group_id = $2
         `,
-          [quantidadeTotal, groupId]
+          [quantidadeTotal, groupId],
         );
 
         // Atualiza o estoque do grupo para MIN(estoque das peças)
@@ -1082,7 +1087,7 @@ async function venderItens(itens, referenceId = null) {
           FROM pro
           WHERE part_group_id = $1
         `,
-          [groupId]
+          [groupId],
         );
 
         const novoEstoqueGrupo = minEstoqueResult.rows[0].min_estoque;
@@ -1094,7 +1099,7 @@ async function venderItens(itens, referenceId = null) {
           SET stock_quantity = $1, updated_at = NOW()
           WHERE id = $2
         `,
-          [novoEstoqueGrupo, groupId]
+          [novoEstoqueGrupo, groupId],
         );
 
         // Cria registros de auditoria para cada peça vendida
@@ -1105,7 +1110,7 @@ async function venderItens(itens, referenceId = null) {
             INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
             VALUES ($1, $2, $3, $4)
           `,
-            [groupId, -itemGrupo.quantidade, "Venda", String(itemGrupo.partId)]
+            [groupId, -itemGrupo.quantidade, "Venda", String(itemGrupo.partId)],
           );
 
           resultados.push({
@@ -1132,20 +1137,20 @@ async function venderItens(itens, referenceId = null) {
           ORDER BY proqtde DESC, procod ASC
           FOR UPDATE
         `,
-          [groupId]
+          [groupId],
         );
 
         // Calcula o estoque total disponível no grupo
         const estoqueTotal = pecasGrupoResult.rows.reduce(
           (sum, p) => sum + (p.proqtde || 0),
-          0
+          0,
         );
 
         // Valida que o estoque total do grupo é suficiente
         if (estoqueTotal < quantidadeTotal) {
           throw new Error(
             `Estoque insuficiente no grupo "${group.name}". ` +
-              `Disponível (soma das peças): ${estoqueTotal}, Solicitado: ${quantidadeTotal}`
+              `Disponível (soma das peças): ${estoqueTotal}, Solicitado: ${quantidadeTotal}`,
           );
         }
 
@@ -1167,7 +1172,7 @@ async function venderItens(itens, referenceId = null) {
               SET proqtde = proqtde - $1
               WHERE procod = $2
             `,
-              [tirarDestaPeca, pecaGrupo.procod]
+              [tirarDestaPeca, pecaGrupo.procod],
             );
 
             pecasAfetadas.push({
@@ -1194,7 +1199,7 @@ async function venderItens(itens, referenceId = null) {
               -pecaAfetada.quantidadeRetirada,
               "Venda",
               String(pecaAfetada.procod),
-            ]
+            ],
           );
         }
 

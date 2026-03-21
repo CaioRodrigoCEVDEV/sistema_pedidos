@@ -146,8 +146,8 @@ function renderGrupos(grupos) {
       grupo.stock_quantity === 0
         ? "badge rounded-pill bg-danger-subtle text-danger"
         : grupo.stock_quantity < 10
-        ? "badge rounded-pill bg-warning-subtle text-warning"
-        : "badge rounded-pill bg-success-subtle text-success";
+          ? "badge rounded-pill bg-warning-subtle text-warning"
+          : "badge rounded-pill bg-success-subtle text-success";
 
     tr.innerHTML = `
       <td>
@@ -162,7 +162,7 @@ function renderGrupos(grupos) {
         }</span>
       </td>
       <td class="text-center text-muted small">${formatDate(
-        grupo.updated_at
+        grupo.created_at,
       )}</td>
       <td class="text-center">
         <div class="btn-group btn-group-sm">
@@ -226,7 +226,7 @@ async function criarGrupo() {
 
     showToast("Grupo criado com sucesso!", "success");
     bootstrap.Modal.getInstance(
-      document.getElementById("modalCriarGrupo")
+      document.getElementById("modalCriarGrupo"),
     ).hide();
     document.getElementById("formCriarGrupo").reset();
     carregarGrupos();
@@ -274,7 +274,7 @@ async function salvarEdicaoGrupo() {
 
     showToast("Grupo atualizado com sucesso!", "success");
     bootstrap.Modal.getInstance(
-      document.getElementById("modalEditarGrupo")
+      document.getElementById("modalEditarGrupo"),
     ).hide();
     carregarGrupos();
 
@@ -295,7 +295,7 @@ async function salvarEdicaoGrupo() {
 async function excluirGrupo(id) {
   if (
     !confirm(
-      "Tem certeza que deseja excluir este grupo? As peças serão desvinculadas."
+      "Tem certeza que deseja excluir este grupo? As peças serão desvinculadas.",
     )
   ) {
     return;
@@ -438,8 +438,8 @@ function renderHistorico(historico) {
     tr.innerHTML = `
       <td class="text-muted small">${formatDate(item.created_at)}</td>
       <td><span class="${changeClass} fw-semibold">${changePrefix}${
-      item.change
-    }</span></td>
+        item.change
+      }</span></td>
       <td>${escapeHtml(item.reason || "-")}</td>
       <td>${escapeHtml(item.part_name || item.reference_id || "-")}</td>
     `;
@@ -463,14 +463,14 @@ function abrirModalEditarEstoque() {
   if (!currentGroupId) return;
 
   const currentStock = document.getElementById(
-    "estoqueGrupoDetalhe"
+    "estoqueGrupoDetalhe",
   ).textContent;
   document.getElementById("novoEstoque").value = currentStock;
-  
+
   // Set current cost if available
   const currentCost = currentGroupData?.grpcusto || "";
   document.getElementById("novoCusto").value = currentCost;
-  
+
   document.getElementById("motivoEstoque").value = "manual_adjustment";
 
   new bootstrap.Modal(document.getElementById("modalEditarEstoque")).show();
@@ -492,11 +492,11 @@ async function salvarEstoque() {
   }
 
   // Prepare request body
-  const body = { 
-    stock_quantity: quantidade, 
-    reason: motivo 
+  const body = {
+    stock_quantity: quantidade,
+    reason: motivo,
   };
-  
+
   // Add cost if provided (non-empty and valid)
   if (custoValue && custoValue.trim() !== "") {
     const custo = parseFloat(custoValue);
@@ -523,7 +523,7 @@ async function salvarEstoque() {
     const result = await res.json();
     showToast(result.message || "Estoque atualizado com sucesso!", "success");
     bootstrap.Modal.getInstance(
-      document.getElementById("modalEditarEstoque")
+      document.getElementById("modalEditarEstoque"),
     ).hide();
 
     // Atualiza os detalhes do grupo
@@ -581,10 +581,10 @@ function limparBackdropResidual() {
  */
 async function carregarPecasDisponiveis(page = 1, append = false) {
   if (isLoadingMore) return;
-  
+
   isLoadingMore = true;
   const tbody = document.getElementById("tabela-pecas-disponiveis");
-  
+
   try {
     const url = new URL(`${BASE_URL}/part-groups/available-part`);
     url.searchParams.append("page", page);
@@ -592,7 +592,7 @@ async function carregarPecasDisponiveis(page = 1, append = false) {
     if (searchTerm) {
       url.searchParams.append("search", searchTerm);
     }
-    
+
     const res = await fetch(url, {
       credentials: "include",
     });
@@ -600,18 +600,18 @@ async function carregarPecasDisponiveis(page = 1, append = false) {
     if (!res.ok) throw new Error("Erro ao buscar peças disponíveis");
 
     const result = await res.json();
-    
+
     if (append) {
       availableParts = [...availableParts, ...result.data];
     } else {
       availableParts = result.data;
     }
-    
+
     currentPage = result.pagination.page;
     totalPages = result.pagination.totalPages;
-    
+
     renderPecasDisponiveis(availableParts, append);
-    
+
     // Add loading indicator if there are more pages
     if (result.pagination.hasMore) {
       addLoadingIndicator();
@@ -634,7 +634,7 @@ function addLoadingIndicator() {
   const tbody = document.getElementById("tabela-pecas-disponiveis");
   const existingIndicator = document.getElementById("loading-indicator");
   if (existingIndicator) return;
-  
+
   const tr = document.createElement("tr");
   tr.id = "loading-indicator";
   tr.innerHTML = `
@@ -659,9 +659,9 @@ function removeLoadingIndicator() {
 function setupInfiniteScroll() {
   const modalBody = document.querySelector("#modalAdicionarPeca .modal-body");
   const scrollContainer = modalBody.querySelector("div[style*='overflow-y']");
-  
+
   if (!scrollContainer) return;
-  
+
   // Remove listener anterior se existir
   scrollContainer.removeEventListener("scroll", handleScroll);
   scrollContainer.addEventListener("scroll", handleScroll);
@@ -674,9 +674,13 @@ async function handleScroll(e) {
   const container = e.target;
   const scrollPosition = container.scrollTop + container.clientHeight;
   const scrollHeight = container.scrollHeight;
-  
+
   // Se chegou perto do final (80%) e há mais páginas
-  if (scrollPosition >= scrollHeight * 0.8 && currentPage < totalPages && !isLoadingMore) {
+  if (
+    scrollPosition >= scrollHeight * 0.8 &&
+    currentPage < totalPages &&
+    !isLoadingMore
+  ) {
     removeLoadingIndicator();
     await carregarPecasDisponiveis(currentPage + 1, true);
   }
@@ -690,7 +694,7 @@ function filtrarPecas() {
   if (searchDebounceTimer) {
     clearTimeout(searchDebounceTimer);
   }
-  
+
   // Configura novo timer de 400ms
   searchDebounceTimer = setTimeout(async () => {
     const input = document.getElementById("pesquisaPeca");
@@ -742,7 +746,7 @@ async function abrirModalAdicionarPeca() {
 
   // Carrega primeira página
   await carregarPecasDisponiveis(1);
-  
+
   // Setup event listeners and infinite scroll
   setupModalEventListeners();
   setupInfiniteScroll();
@@ -755,7 +759,7 @@ async function abrirModalAdicionarPeca() {
  */
 function renderPecasDisponiveis(pecas, append = false) {
   const tbody = document.getElementById("tabela-pecas-disponiveis");
-  
+
   if (!append) {
     tbody.innerHTML = "";
   } else {
@@ -776,7 +780,7 @@ function renderPecasDisponiveis(pecas, append = false) {
     if (append && document.querySelector(`tr[data-peca-id="${peca.procod}"]`)) {
       return;
     }
-    
+
     const tr = document.createElement("tr");
     tr.setAttribute("data-peca-id", peca.procod);
     const isInGroup = peca.part_group_id === currentGroupId;
@@ -788,7 +792,7 @@ function renderPecasDisponiveis(pecas, append = false) {
       <td>${escapeHtml(peca.marcasdes || "-")}</td>
       <td>${escapeHtml(peca.tipodes || "-")}</td>
       <td class="text-center">
-        ${hasColors ? '<i class="bi bi-palette-fill text-info" title="Produto com cores"></i>' : ''}
+        ${hasColors ? '<i class="bi bi-palette-fill text-info" title="Produto com cores"></i>' : ""}
       </td>
       <td class="text-center">
         ${
@@ -800,7 +804,7 @@ function renderPecasDisponiveis(pecas, append = false) {
         }
       </td>
     `;
-    
+
     // Adiciona event listener (evita onclick inline para prevenir XSS)
     if (!isInGroup) {
       const button = tr.querySelector(".btn-add-part");
@@ -822,13 +826,13 @@ function renderPecasDisponiveis(pecas, append = false) {
  */
 function mostrarModalSelecaoCor(peca) {
   const colors = peca.colors || [];
-  
+
   if (colors.length === 0) {
     // Se não há cores, adiciona direto
     adicionarPecaAoGrupo(peca.procod, null);
     return;
   }
-  
+
   // Cria o HTML do modal de seleção de cor
   const modalHtml = `
     <div class="modal fade" id="modalSelecaoCor" tabindex="-1" aria-labelledby="modalSelecaoCorLabel" aria-hidden="true">
@@ -845,11 +849,15 @@ function mostrarModalSelecaoCor(peca) {
               <label for="selectCor" class="form-label">Cor:</label>
               <select class="form-select" id="selectCor" required>
                 <option value="">Selecione uma cor...</option>
-                ${colors.map(cor => `
+                ${colors
+                  .map(
+                    (cor) => `
                   <option value="${cor.corcod}">
-                    ${escapeHtml(cor.cornome)} ${cor.procorqtde ? `(Qtd: ${cor.procorqtde})` : ''}
+                    ${escapeHtml(cor.cornome)} ${cor.procorqtde ? `(Qtd: ${cor.procorqtde})` : ""}
                   </option>
-                `).join('')}
+                `,
+                  )
+                  .join("")}
               </select>
             </div>
             <div class="alert alert-info small" role="alert">
@@ -865,36 +873,38 @@ function mostrarModalSelecaoCor(peca) {
       </div>
     </div>
   `;
-  
+
   // Remove modal anterior se existir
   const oldModal = document.getElementById("modalSelecaoCor");
   if (oldModal) oldModal.remove();
-  
+
   // Adiciona modal ao DOM
   document.body.insertAdjacentHTML("beforeend", modalHtml);
-  
+
   const modalElement = document.getElementById("modalSelecaoCor");
   const modal = new bootstrap.Modal(modalElement);
-  
+
   // Evento de confirmar
-  document.getElementById("btnConfirmarCor").addEventListener("click", async () => {
-    const selectCor = document.getElementById("selectCor");
-    const colorId = selectCor.value;
-    
-    if (!colorId) {
-      showToast("Por favor, selecione uma cor", "error");
-      return;
-    }
-    
-    modal.hide();
-    await adicionarPecaAoGrupo(peca.procod, colorId);
-    
-    // Remove modal do DOM após fechar
-    modalElement.addEventListener("hidden.bs.modal", () => {
-      modalElement.remove();
+  document
+    .getElementById("btnConfirmarCor")
+    .addEventListener("click", async () => {
+      const selectCor = document.getElementById("selectCor");
+      const colorId = selectCor.value;
+
+      if (!colorId) {
+        showToast("Por favor, selecione uma cor", "error");
+        return;
+      }
+
+      modal.hide();
+      await adicionarPecaAoGrupo(peca.procod, colorId);
+
+      // Remove modal do DOM após fechar
+      modalElement.addEventListener("hidden.bs.modal", () => {
+        modalElement.remove();
+      });
     });
-  });
-  
+
   modal.show();
 }
 
@@ -912,7 +922,7 @@ async function adicionarPecaAoGrupo(partId, colorId = null) {
     if (colorId) {
       body.colorId = colorId;
     }
-    
+
     const res = await fetch(`${BASE_URL}/part-groups/${currentGroupId}/parts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
