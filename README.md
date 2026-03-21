@@ -54,6 +54,38 @@ DB_NAME=BASE_DADOS
 BASE_URL=http://localhost:3000
 HTTPS=false
 
+# ─── Performance / Pool de Conexões ────────────────────────────────────────────
+# Máximo de conexões no pool (reduzir em Docker com pouca RAM, ex.: 5)
+DB_POOL_MAX=10
+# Tempo (ms) que uma conexão inativa fica no pool antes de ser fechada
+DB_POOL_IDLE_TIMEOUT_MS=30000
+# Tempo (ms) máximo para obter uma conexão do pool
+DB_POOL_CONNECTION_TIMEOUT_MS=5000
+# Timeout de statement por query (ms) — previne queries travadas
+DB_STATEMENT_TIMEOUT_MS=30000
+
+# ─── Instrumentação de Performance ─────────────────────────────────────────────
+# Habilita log de tempo por request: método, rota, status e duração
+REQUEST_LOGGING=false
+# Loga queries que demoram mais que X ms (0 = desabilitado)
+LOG_SLOW_QUERIES_MS=0
+```
+
+### Como habilitar logs de performance
+
+1. Edite o `.env` e ative:
+   ```bash
+   REQUEST_LOGGING=true
+   LOG_SLOW_QUERIES_MS=200   # loga queries acima de 200ms
+   ```
+2. Reinicie o servidor. Os logs aparecem no console com prefixos `[PERF]` e `[SLOW QUERY]`.
+
+### Como validar ganho de performance
+
+Compare antes/depois para rotas pesadas:
+```bash
+# Mede tempo de resposta de uma rota (repita para comparar):
+curl -o /dev/null -s -w "%{time_total}s\n" http://localhost:3000/v2/pros
 ```
 
 ---

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -80,7 +80,24 @@
         <!-- Groups List -->
         <div class="container">
           <div class="container py-3 bg-white my-3 border rounded shadow">
-            <h2 class="h5 mb-3">Lista de Grupos</h2>
+            <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2 mb-3">
+              <h2 class="h5 mb-0">Lista de Grupos</h2>
+              <!-- Campo de busca -->
+              <div class="flex-grow-1" style="max-width: 360px">
+                <div class="input-group search-input shadow-sm rounded">
+                  <span class="input-group-text bg-white border-0">
+                    <i class="bi bi-search"></i>
+                  </span>
+                  <input
+                    class="form-control border-0"
+                    type="search"
+                    placeholder="Pesquisar por nome do grupo..."
+                    aria-label="Pesquisar grupos"
+                    id="pesquisaGrupos"
+                  />
+                </div>
+              </div>
+            </div>
             <div style="max-height: 400px; overflow-y: auto">
               <table class="table table-striped table-hover">
                 <thead
@@ -90,7 +107,7 @@
                   <tr>
                     <th scope="col">Nome do Grupo</th>
                     <th scope="col" class="text-center">Qtd. Peças</th>
-                    <th scope="col" class="text-center">Atualizado</th>
+                    <th scope="col" class="text-center">Criado</th>
                     <th scope="col" class="text-center">Ações</th>
                   </tr>
                 </thead>
@@ -354,7 +371,9 @@
           <div class="modal-body">
             <div class="alert alert-info" role="alert">
               <i class="bi bi-info-circle"></i>
-              <strong>Atenção:</strong> A quantidade definida aqui será aplicada automaticamente para <strong>todas as peças</strong> que pertencem a este grupo.
+              <strong>Atenção:</strong> A quantidade definida aqui será aplicada
+              automaticamente para <strong>todas as peças</strong> que pertencem
+              a este grupo.
             </div>
             <form id="formEditarEstoque">
               <div class="mb-3">
@@ -370,9 +389,7 @@
                 />
               </div>
               <div class="mb-3">
-                <label for="novoCusto" class="form-label"
-                  >Novo Custo</label
-                >
+                <label for="novoCusto" class="form-label">Novo Custo</label>
                 <input
                   type="number"
                   class="form-control"
