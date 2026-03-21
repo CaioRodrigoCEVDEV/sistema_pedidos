@@ -995,6 +995,22 @@ async function removerPecaGrupo(partId) {
  * Adiciona evento de input para filtrar a lista em tempo real
  */
 document.addEventListener("DOMContentLoaded", function () {
+  // Filtro de pesquisa para a lista de grupos
+  const searchGrupos = document.getElementById("pesquisaGrupos");
+  if (searchGrupos) {
+    searchGrupos.addEventListener("input", function () {
+      const query = this.value.toLowerCase().trim();
+      if (!query) {
+        renderGrupos(allGroups);
+      } else {
+        const filtered = allGroups.filter((g) =>
+          g.name.toLowerCase().includes(query),
+        );
+        renderGrupos(filtered);
+      }
+    });
+  }
+
   const searchInput = document.getElementById("pesquisaPeca");
   if (searchInput) {
     searchInput.addEventListener("input", function () {
