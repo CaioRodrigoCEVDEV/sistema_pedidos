@@ -998,8 +998,8 @@ document.addEventListener("DOMContentLoaded", function () {
   // Filtro de pesquisa para a lista de grupos
   const searchGrupos = document.getElementById("pesquisaGrupos");
   if (searchGrupos) {
-    searchGrupos.addEventListener("input", function () {
-      const query = this.value.toLowerCase().trim();
+    function aplicarFiltroGrupos() {
+      const query = searchGrupos.value.toLowerCase().trim();
       if (!query) {
         renderGrupos(allGroups);
       } else {
@@ -1007,6 +1007,15 @@ document.addEventListener("DOMContentLoaded", function () {
           g.name.toLowerCase().includes(query),
         );
         renderGrupos(filtered);
+      }
+    }
+
+    searchGrupos.addEventListener("input", aplicarFiltroGrupos);
+
+    searchGrupos.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        aplicarFiltroGrupos();
       }
     });
   }
