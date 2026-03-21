@@ -31,7 +31,7 @@ async function listAllGroups() {
     FROM part_groups pg
     LEFT JOIN pro p ON p.part_group_id = pg.id
     GROUP BY pg.id, pg.name, pg.stock_quantity, pg.grpcusto, pg.created_at, pg.updated_at
-    ORDER BY pg.created_at
+    ORDER BY pg.created_at desc
   `);
   return result.rows;
 }
