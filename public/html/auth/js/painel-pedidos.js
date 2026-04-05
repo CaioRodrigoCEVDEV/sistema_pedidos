@@ -336,7 +336,11 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             const cellProcod = tr.querySelector("[data-procod]");
             const inputQtd = tr.querySelector(".qtd-input");
             if (cellProcod && inputQtd) {
-              itens.push({ procod: Number(cellProcod.dataset.procod), pviqtde: Number(inputQtd.value) });
+              const rawCor = inputQtd.dataset.pviprocorid;
+              const pviprocorid = (rawCor === "" || rawCor === undefined || rawCor === "null" || rawCor === "0")
+                ? null
+                : Number(rawCor) || null;
+              itens.push({ procod: Number(cellProcod.dataset.procod), pviqtde: Number(inputQtd.value), pviprocorid });
             }
           });
 
