@@ -562,11 +562,13 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       <select id="select-cor">
   ${cores
     .map((cor) => {
+      const idCor = cor.corcod;
+
       const semEstoque = cor.procorsemest === "S";
       const label = `${cor.cornome}${semEstoque ? " (Sem estoque)" : ""}`;
 
       return `
-        <option value="${cor.cornome}" 
+        <option value="${idCor}" data-nome="${cor.cornome}"
           ${semEstoque ? 'disabled data-semest="S"' : ""}>
           ${label}
         </option>
@@ -608,6 +610,7 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       ].text;
     const idComCor = `${procod}-${corSelecionada}`;
     const nomeComCor = `${nome} (${corSelecionada})`;
+    const idCorSelecionada = Number(document.getElementById("select-cor").value) || null;
 
     adicionarProdutoAoCarrinho(
       idComCor,
@@ -616,7 +619,8 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       marca,
       preco,
       qtde,
-      corSelecionada
+      corSelecionada,
+      idCorSelecionada
     );
 
     modal.remove();
