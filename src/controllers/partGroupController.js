@@ -180,6 +180,9 @@ exports.addPartToGroup = async (req, res) => {
     if (!result) {
       return res.status(404).json({ error: "Variação não encontrada ou grupo inválido" });
     }
+    if (result.alreadyInGroup) {
+      return res.status(200).json({ ...result, message: "Variação já pertence a este grupo" });
+    }
     res.status(200).json(result);
   } catch (error) {
     console.error("Erro ao adicionar peça ao grupo:", error);

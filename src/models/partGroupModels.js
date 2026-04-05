@@ -497,12 +497,15 @@ async function addProcorToGroup(procorid, groupId) {
     const procor = procorResult.rows[0];
 
     // Insere na tabela de itens do grupo (ignora conflito se já existe)
-    await client.query(
+    const insertResult = await client.query(
       `INSERT INTO part_group_items (group_id, procorid)
        VALUES ($1, $2)
-       ON CONFLICT ON CONSTRAINT uq_part_group_item DO NOTHING`,
+       ON CONFLICT ON CONSTRAINT uq_part_group_item DO NOTHING
+       RETURNING id`,
       [groupId, procorid],
     );
+
+    const alreadyInGroup = insertResult.rowCount === 0;
 
     // Atualiza custo do produto se o grupo tiver custo definido
     if (group.grpcusto !== null && group.grpcusto !== undefined) {
@@ -513,7 +516,7 @@ async function addProcorToGroup(procorid, groupId) {
     }
 
     await client.query("COMMIT");
-    return procor;
+    return { ...procor, alreadyInGroup };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
