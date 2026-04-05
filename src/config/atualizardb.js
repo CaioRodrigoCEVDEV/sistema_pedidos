@@ -72,6 +72,22 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.pvi ADD if not exists pviprocorid int4 NULL;`
     );
+    // Add FK constraint from pvi.pviprocorid to procor.procorid (idempotent)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints
+          WHERE constraint_name = 'pvi_pviprocorid_fkey'
+            AND table_name = 'pvi'
+        ) THEN
+          ALTER TABLE public.pvi
+            ADD CONSTRAINT pvi_pviprocorid_fkey
+            FOREIGN KEY (pviprocorid) REFERENCES public.procor(procorid)
+            ON DELETE SET NULL ON UPDATE CASCADE;
+        END IF;
+      END $$;
+    `);
     await pool.query(
       `ALTER TABLE public.procor ADD if not exists procorsemest bpchar(1) DEFAULT 'N'::bpchar NULL;`
     );
@@ -616,7 +632,7 @@ async function atualizarDB() {
               FROM pvi i
             WHERE i.pvipvcod      = NEW.pvcod
               AND i.pviprocorid  IS NOT NULL
-              AND i.pviprocorid   = pc.procorcorescod;
+              AND i.pviprocorid   = pc.procorid;
 
             -- 2) Items WITHOUT color AND product WITHOUT variations -> decrement from pro.proqtde
             -- Only for products NOT in a compatibility group (groups are handled separately below)
@@ -714,7 +730,7 @@ async function atualizarDB() {
               FROM pvi i
             WHERE i.pvipvcod      = NEW.pvcod
               AND i.pviprocorid  IS NOT NULL
-              AND i.pviprocorid   = pc.procorcorescod;
+              AND i.pviprocorid   = pc.procorid;
 
             -- 2) Items WITHOUT color AND product WITHOUT variations -> return to pro.proqtde
             -- Only for products NOT in a compatibility group (groups are handled separately)

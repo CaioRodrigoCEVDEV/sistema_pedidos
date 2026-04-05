@@ -566,7 +566,7 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       const label = `${cor.cornome}${semEstoque ? " (Sem estoque)" : ""}`;
 
       return `
-        <option value="${cor.cornome}" 
+        <option id="${cor.procorid}" value="${cor.cornome}" 
           ${semEstoque ? 'disabled data-semest="S"' : ""}>
           ${label}
         </option>
@@ -602,11 +602,13 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
   document.body.appendChild(modal);
 
   document.getElementById("btn-confirmar-cor").onclick = function () {
-    const corSelecionada =
+    const selectedOption =
       document.getElementById("select-cor").options[
         document.getElementById("select-cor").selectedIndex
-      ].text;
-    const idComCor = `${procod}-${corSelecionada}`;
+      ];
+    const corSelecionada = selectedOption.text;
+    const idCorSelecionada = selectedOption.id;
+    const idComCor = `${procod}-${idCorSelecionada}`;
     const nomeComCor = `${nome} (${corSelecionada})`;
 
     adicionarProdutoAoCarrinho(
@@ -616,7 +618,8 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       marca,
       preco,
       qtde,
-      corSelecionada
+      corSelecionada,
+      idCorSelecionada
     );
 
     modal.remove();
@@ -636,7 +639,8 @@ function adicionarProdutoAoCarrinho(
   marca,
   preco,
   qtde,
-  corSelecionada
+  corSelecionada,
+  idCorSelecionada
 ) {
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
   // console.log("cor:", corSelecionada);
@@ -645,7 +649,7 @@ function adicionarProdutoAoCarrinho(
   if (idx > -1) {
     cart[idx].qt += qtde;
   } else {
-    cart.push({ id, nome, tipo, marca, preco, qt: qtde, corSelecionada });
+    cart.push({ id, nome, tipo, marca, preco, qt: qtde, corSelecionada, idCorSelecionada });
   }
 
   localStorage.setItem("cart", JSON.stringify(cart));

@@ -472,17 +472,22 @@ exports.listarPedidosPendentesDetalhe = async (req, res) => {
   try {
     const result = await pool.query(
       `select 
-       pvcod,
-       prodes,
-       pvvl,
-       pviprocod,
-       pvivl,
-       pviqtde,
-       pvobs
+       pv.pvcod,
+       pro.prodes,
+       pv.pvvl,
+       pvi.pviprocod,
+       pvi.pviprocorid,
+       pvi.pvivl,
+       pvi.pviqtde,
+       pv.pvobs,
+       coalesce(co.cornome, '') as cornome
        from pv
-       join pvi on pvipvcod = pvcod
-       join pro on procod = pviprocod
-       where pvcod = $1 and pvsta = 'A'`,
+       join pvi on pvi.pvipvcod = pv.pvcod
+       join pro on pro.procod = pvi.pviprocod
+       left join procor pc on pc.procorid = pvi.pviprocorid
+       left join cores co on co.corcod = pc.procorcorescod
+       where pv.pvcod = $1 and pv.pvsta = 'A'
+       order by pvi.pviprocod, pvi.pviprocorid nulls last`,
       [pvcod]
     );
     res.status(200).json(result.rows);
@@ -493,14 +498,22 @@ exports.listarPedidosPendentesDetalhe = async (req, res) => {
 };
 
 exports.cancelarItemPv = async (req, res) => {
-  const { procod } = req.body;
+  const { procod, pviprocorid } = req.body;
   const pvcod = req.params.pvcod;
 
   try {
-    const result = await pool.query(
-      "update pvi set pviqtde = 0 where pviprocod = $1 and pvipvcod = $2 RETURNING *",
-      [procod, pvcod]
-    );
+    let result;
+    if (pviprocorid != null) {
+      result = await pool.query(
+        "update pvi set pviqtde = 0 where pviprocod = $1 and pvipvcod = $2 and pviprocorid = $3 RETURNING *",
+        [procod, pvcod, pviprocorid]
+      );
+    } else {
+      result = await pool.query(
+        "update pvi set pviqtde = 0 where pviprocod = $1 and pvipvcod = $2 and pviprocorid is null RETURNING *",
+        [procod, pvcod]
+      );
+    }
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -509,16 +522,24 @@ exports.cancelarItemPv = async (req, res) => {
 };
 
 exports.confirmarItemPv = async (req, res) => {
-  const { procod, pviqtde } = req.body;
+  const { procod, pviqtde, pviprocorid } = req.body;
   const pvcod = req.params.pvcod;
 
-  console.log({ procod, pviqtde, pvcod });
+  console.log({ procod, pviqtde, pvcod, pviprocorid });
 
   try {
-    const result = await pool.query(
-      "update pvi set pviqtde = $1 where pviprocod = $2 and pvipvcod = $3 RETURNING *",
-      [pviqtde, procod, pvcod]
-    );
+    let result;
+    if (pviprocorid != null) {
+      result = await pool.query(
+        "update pvi set pviqtde = $1 where pviprocod = $2 and pvipvcod = $3 and pviprocorid = $4 RETURNING *",
+        [pviqtde, procod, pvcod, pviprocorid]
+      );
+    } else {
+      result = await pool.query(
+        "update pvi set pviqtde = $1 where pviprocod = $2 and pvipvcod = $3 and pviprocorid is null RETURNING *",
+        [pviqtde, procod, pvcod]
+      );
+    }
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -528,7 +549,9 @@ exports.confirmarItemPv = async (req, res) => {
 
 /**
  * Edita itens de um pedido já aprovado, ajustando o estoque conforme a diferença de quantidade.
- * Aceita body: { itens: [{ procod, pviqtde }] }
+ * Aceita body: { itens: [{ procod, pviqtde, pviprocorid }] }
+ * Quando pviprocorid está presente, ajusta estoque em procor.procorqtde (por cor).
+ * Quando não está, ajusta em pro.proqtde (produto sem cor).
  */
 exports.editarItensPedidoConfirmado = async (req, res) => {
   const pvcod = req.params.pvcod;
@@ -562,19 +585,28 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
     const resultadoItens = [];
 
     for (const item of itens) {
-      const { procod, pviqtde } = item;
+      const { procod, pviqtde, pviprocorid } = item;
       const novaQtde = Number(pviqtde);
+      const procorid = pviprocorid != null ? Number(pviprocorid) : null;
 
       if (isNaN(novaQtde) || novaQtde < 0) {
         await client.query("ROLLBACK");
         return res.status(400).json({ error: `Quantidade inválida para procod ${procod}` });
       }
 
-      // Busca a quantidade atual do item no pedido
-      const itemAtual = await client.query(
-        "SELECT pviqtde FROM pvi WHERE pviprocod = $1 AND pvipvcod = $2",
-        [procod, pvcod]
-      );
+      // Busca a quantidade atual do item no pedido (por procod + pviprocorid)
+      let itemAtual;
+      if (procorid != null) {
+        itemAtual = await client.query(
+          "SELECT pviqtde FROM pvi WHERE pviprocod = $1 AND pvipvcod = $2 AND pviprocorid = $3",
+          [procod, pvcod, procorid]
+        );
+      } else {
+        itemAtual = await client.query(
+          "SELECT pviqtde FROM pvi WHERE pviprocod = $1 AND pvipvcod = $2 AND pviprocorid IS NULL",
+          [procod, pvcod]
+        );
+      }
 
       if (itemAtual.rows.length === 0) {
         await client.query("ROLLBACK");
@@ -586,34 +618,62 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
 
       // Ajusta o estoque: se delta > 0, deduz mais; se delta < 0, devolve ao estoque
       if (delta !== 0) {
-        // Verifica se há estoque suficiente para aumentos
-        if (delta > 0) {
-          const estoqueResult = await client.query(
-            "SELECT COALESCE(prostoque, 0) AS prostoque FROM pro WHERE procod = $1 FOR UPDATE",
-            [procod]
-          );
-          const estoqueAtual = Number(estoqueResult.rows[0]?.prostoque ?? 0);
-          if (estoqueAtual < delta) {
-            await client.query("ROLLBACK");
-            return res.status(400).json({
-              error: `Estoque insuficiente para a peça ${procod}. Disponível: ${estoqueAtual}`,
-              tipo: "estoque_insuficiente"
-            });
+        if (procorid != null) {
+          // Item com cor: opera em procor.procorqtde
+          if (delta > 0) {
+            const estoqueResult = await client.query(
+              "SELECT COALESCE(procorqtde, 0) AS procorqtde FROM procor WHERE procorid = $1 FOR UPDATE",
+              [procorid]
+            );
+            const estoqueAtual = Number(estoqueResult.rows[0]?.procorqtde ?? 0);
+            if (estoqueAtual < delta) {
+              await client.query("ROLLBACK");
+              return res.status(400).json({
+                error: `Estoque insuficiente para a peça ${procod}. Disponível: ${estoqueAtual}`,
+                tipo: "estoque_insuficiente"
+              });
+            }
           }
+          await client.query(
+            "UPDATE procor SET procorqtde = GREATEST(COALESCE(procorqtde, 0) - $1, 0) WHERE procorid = $2",
+            [delta, procorid]
+          );
+        } else {
+          // Item sem cor: opera em pro.proqtde
+          if (delta > 0) {
+            const estoqueResult = await client.query(
+              "SELECT COALESCE(proqtde, 0) AS proqtde FROM pro WHERE procod = $1 FOR UPDATE",
+              [procod]
+            );
+            const estoqueAtual = Number(estoqueResult.rows[0]?.proqtde ?? 0);
+            if (estoqueAtual < delta) {
+              await client.query("ROLLBACK");
+              return res.status(400).json({
+                error: `Estoque insuficiente para a peça ${procod}. Disponível: ${estoqueAtual}`,
+                tipo: "estoque_insuficiente"
+              });
+            }
+          }
+          await client.query(
+            "UPDATE pro SET proqtde = GREATEST(COALESCE(proqtde, 0) - $1, 0) WHERE procod = $2",
+            [delta, procod]
+          );
         }
-
-        // Atualiza o estoque (subtrai delta: positivo = deduz, negativo = devolve)
-        await client.query(
-          "UPDATE pro SET prostoque = COALESCE(prostoque, 0) - $1 WHERE procod = $2",
-          [delta, procod]
-        );
       }
 
-      // Atualiza a quantidade no pedido
-      const updateResult = await client.query(
-        "UPDATE pvi SET pviqtde = $1 WHERE pviprocod = $2 AND pvipvcod = $3 RETURNING *",
-        [novaQtde, procod, pvcod]
-      );
+      // Atualiza a quantidade no pedido (por procod + pviprocorid)
+      let updateResult;
+      if (procorid != null) {
+        updateResult = await client.query(
+          "UPDATE pvi SET pviqtde = $1 WHERE pviprocod = $2 AND pvipvcod = $3 AND pviprocorid = $4 RETURNING *",
+          [novaQtde, procod, pvcod, procorid]
+        );
+      } else {
+        updateResult = await client.query(
+          "UPDATE pvi SET pviqtde = $1 WHERE pviprocod = $2 AND pvipvcod = $3 AND pviprocorid IS NULL RETURNING *",
+          [novaQtde, procod, pvcod]
+        );
+      }
 
       resultadoItens.push(updateResult.rows[0]);
     }

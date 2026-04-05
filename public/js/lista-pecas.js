@@ -355,7 +355,7 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       <select id="select-cor">
   ${cores
     .map((cor) => {
-      const idCor = cor.corcod;
+      const idCor = cor.procorid;
 
       console.log("Cor id:",  idCor);
       const semEstoque = cor.procorsemest === "S";

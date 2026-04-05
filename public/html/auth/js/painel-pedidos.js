@@ -187,15 +187,19 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             const preco = it.pvivl ?? 0;
             const subtotal = it.pvivl * it.pviqtde ?? 0;
             const procod = it.pviprocod || 0;
+            const pviprocorid = it.pviprocorid != null ? it.pviprocorid : "";
+            const cornome = it.cornome || "";
             const pv = it.pvcod || pvcod;
             // For confirmed orders: inputs are disabled by default (enabled when "Editar" is clicked)
             const inputDisabled = status === "confirmados" ? "disabled" : "";
+            const corLabel = cornome ? ` <span class="badge bg-secondary">${cornome}</span>` : "";
             return `<tr>
-              <td class="text-center" data-procod="${procod}">${i + 1}</td>
-              <td>${descricao}</td>
+              <td class="text-center" data-procod="${procod}" data-pviprocorid="${pviprocorid}">${i + 1}</td>
+              <td>${descricao}${corLabel}</td>
               <td style="padding: 0.2rem;">
                 <input type="number" class="form-control form-control-sm text-end qtd-input" 
                       data-procod="${procod}"
+                      data-pviprocorid="${pviprocorid}"
                       value="${Math.floor(qtd)}" 
                       min="0"
                       ${inputDisabled}
@@ -284,14 +288,15 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             if (cellProcod && inputQtd) {
               const procod = Number(cellProcod.dataset.procod);
               const qtd = Number(inputQtd.value);
-              itens.push({ procod, qtd });
+              const pviprocorid = cellProcod.dataset.pviprocorid ? Number(cellProcod.dataset.pviprocorid) : null;
+              itens.push({ procod, qtd, pviprocorid });
             }
           });
 
           // Fluxo de confirmação do pedido:
           // 1. Confirma cada item do pedido (atualiza quantidades)
           for (const item of itens) {
-            await confirmarItensPedido(pvcod, item.qtd, item.procod);
+            await confirmarItensPedido(pvcod, item.qtd, item.procod, item.pviprocorid);
           }
 
           // 2. Confirma o pedido - a saída de estoque é processada automaticamente
@@ -332,7 +337,8 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             const cellProcod = tr.querySelector("[data-procod]");
             const inputQtd = tr.querySelector(".qtd-input");
             if (cellProcod && inputQtd) {
-              itens.push({ procod: Number(cellProcod.dataset.procod), pviqtde: Number(inputQtd.value) });
+              const pviprocorid = inputQtd.dataset.pviprocorid ? Number(inputQtd.dataset.pviprocorid) : null;
+              itens.push({ procod: Number(cellProcod.dataset.procod), pviqtde: Number(inputQtd.value), pviprocorid });
             }
           });
 
@@ -465,7 +471,7 @@ async function confirmarPedido(pvcod) {
   }
 }
 
-async function confirmarItensPedido(pvcod, pviqtde, procod) {
+async function confirmarItensPedido(pvcod, pviqtde, procod, pviprocorid) {
   try {
     const response = await fetch(
       `${BASE_URL}/pedidos/itens/confirmar/${pvcod}`,
@@ -474,7 +480,7 @@ async function confirmarItensPedido(pvcod, pviqtde, procod) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ pviqtde: pviqtde, procod: procod }),
+        body: JSON.stringify({ pviqtde: pviqtde, procod: procod, pviprocorid: pviprocorid ?? null }),
       }
     );
     if (response.ok) {
