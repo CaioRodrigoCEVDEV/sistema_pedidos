@@ -324,8 +324,6 @@ exports.getPecasCadastradasPDF = async (req, res) => {
 
     // Cabeçalho da tabela
     const colX = { num: 40, marca: 65, modelo: 165, tipo: 255, peca: 325, preco: 430, custo: 480, estoque: 535 };
-    drawTableHeader(doc, doc.y);
-
     const ROW_PADDING_Y = 3;
 
     function drawTableHeader(d, y) {
@@ -343,6 +341,8 @@ exports.getPecasCadastradasPDF = async (req, res) => {
       d.moveDown(0.8);
       d.font("Helvetica").fontSize(7);
     }
+
+    drawTableHeader(doc, doc.y);
 
     let rowNum = 1;
     for (const row of data) {
