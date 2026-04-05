@@ -337,7 +337,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             const cellProcod = tr.querySelector("[data-procod]");
             const inputQtd = tr.querySelector(".qtd-input");
             if (cellProcod && inputQtd) {
-              const pviprocorid = inputQtd.dataset.pviprocorid ? Number(inputQtd.dataset.pviprocorid) : null;
+              const pviprocorid = cellProcod.dataset.pviprocorid ? Number(cellProcod.dataset.pviprocorid) : null;
               itens.push({ procod: Number(cellProcod.dataset.procod), pviqtde: Number(inputQtd.value), pviprocorid });
             }
           });
