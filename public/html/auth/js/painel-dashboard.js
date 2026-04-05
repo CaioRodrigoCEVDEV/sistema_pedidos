@@ -340,6 +340,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       carregarFaturamentoDiarioNitido();
     }, 200));
 
+    // Expõe as funções de gráfico globalmente para que o botão Aplicar possa chamá-las
+    window.carregarFaturamentoAnualVertical = carregarFaturamentoAnualVertical;
+    window.carregarFaturamentoDiarioNitido = carregarFaturamentoDiarioNitido;
 
 });
 

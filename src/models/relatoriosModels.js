@@ -138,7 +138,7 @@ async function getPecasCadastradas(filters = {}) {
       tipo.tipodes as tipo,
       COALESCE(pro.provl, 0) as preco,
       COALESCE(pro.procusto, 0) as custo,
-      COALESCE(pro.prostoque, 0) as estoque,
+      COALESCE(pro.proqtde, 0) as estoque,
       pro.prosemest
     FROM pro
     JOIN marcas ON marcas.marcascod = pro.promarcascod
