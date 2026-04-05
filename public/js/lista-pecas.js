@@ -362,7 +362,7 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       const label = `${cor.cornome}${semEstoque ? " (Sem estoque)" : ""}`;
 
       return `
-        <option id= ${idCor} value="${cor.cornome}" 
+        <option value="${idCor}" data-nome="${cor.cornome}"
           ${semEstoque ? 'disabled data-semest="S"' : ""}>
           ${label}
         </option>
@@ -424,9 +424,7 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       ].text;
     const idComCor = `${procod}-${corSelecionada}`;
     const nomeComCor = `${nome} (${corSelecionada})`;
-    var idCorSelecionada = document.getElementById("select-cor").options[
-      document.getElementById("select-cor").selectedIndex
-    ].id;
+    const idCorSelecionada = Number(document.getElementById("select-cor").value) || null;
 
     console.log("ID da cor selecionada:", idCorSelecionada);
 

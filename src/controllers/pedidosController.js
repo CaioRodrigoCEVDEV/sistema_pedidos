@@ -131,7 +131,9 @@ exports.inserirPvi = async (req, res) => {
       procods.push(codigoInteiro);
       qtdes.push(qt);
       precos.push(preco);
-      procorids.push(idCorSelecionada || null);
+      const raw = idCorSelecionada;
+      const normalized = (raw === null || raw === undefined || raw === "") ? null : Number(raw);
+      procorids.push(Number.isFinite(normalized) ? normalized : null);
     }
 
     const result = await pool.query(
