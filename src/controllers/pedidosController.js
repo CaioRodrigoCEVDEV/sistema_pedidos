@@ -478,10 +478,13 @@ exports.listarPedidosPendentesDetalhe = async (req, res) => {
        pviprocod,
        pvivl,
        pviqtde,
-       pvobs
+       pvobs,
+       pvi.pviprocorid,
+       COALESCE(c.cornome, 'Sem Cor') as cornome
        from pv
        join pvi on pvipvcod = pvcod
        join pro on procod = pviprocod
+       left join cores c on c.corescod = pvi.pviprocorid
        where pvcod = $1 and pvsta = 'A'`,
       [pvcod]
     );
@@ -493,14 +496,22 @@ exports.listarPedidosPendentesDetalhe = async (req, res) => {
 };
 
 exports.cancelarItemPv = async (req, res) => {
-  const { procod } = req.body;
+  const { procod, pviprocorid } = req.body;
   const pvcod = req.params.pvcod;
 
   try {
-    const result = await pool.query(
-      "update pvi set pviqtde = 0 where pviprocod = $1 and pvipvcod = $2 RETURNING *",
-      [procod, pvcod]
-    );
+    let result;
+    if (pviprocorid !== null && pviprocorid !== undefined) {
+      result = await pool.query(
+        "update pvi set pviqtde = 0 where pviprocod = $1 and pvipvcod = $2 and pviprocorid = $3 RETURNING *",
+        [procod, pvcod, pviprocorid]
+      );
+    } else {
+      result = await pool.query(
+        "update pvi set pviqtde = 0 where pviprocod = $1 and pvipvcod = $2 and pviprocorid IS NULL RETURNING *",
+        [procod, pvcod]
+      );
+    }
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -509,16 +520,24 @@ exports.cancelarItemPv = async (req, res) => {
 };
 
 exports.confirmarItemPv = async (req, res) => {
-  const { procod, pviqtde } = req.body;
+  const { procod, pviqtde, pviprocorid } = req.body;
   const pvcod = req.params.pvcod;
 
-  console.log({ procod, pviqtde, pvcod });
+  console.log({ procod, pviqtde, pvcod, pviprocorid });
 
   try {
-    const result = await pool.query(
-      "update pvi set pviqtde = $1 where pviprocod = $2 and pvipvcod = $3 RETURNING *",
-      [pviqtde, procod, pvcod]
-    );
+    let result;
+    if (pviprocorid !== null && pviprocorid !== undefined) {
+      result = await pool.query(
+        "update pvi set pviqtde = $1 where pviprocod = $2 and pvipvcod = $3 and pviprocorid = $4 RETURNING *",
+        [pviqtde, procod, pvcod, pviprocorid]
+      );
+    } else {
+      result = await pool.query(
+        "update pvi set pviqtde = $1 where pviprocod = $2 and pvipvcod = $3 and pviprocorid IS NULL RETURNING *",
+        [pviqtde, procod, pvcod]
+      );
+    }
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
