@@ -616,7 +616,8 @@ async function atualizarDB() {
               FROM pvi i
             WHERE i.pvipvcod      = NEW.pvcod
               AND i.pviprocorid  IS NOT NULL
-              AND i.pviprocorid   = pc.procorcorescod;
+              AND i.pviprocorid   = pc.procorcorescod
+              AND i.pviprocod     = pc.procorprocod;
 
             -- 2) Items WITHOUT color AND product WITHOUT variations -> decrement from pro.proqtde
             -- Only for products NOT in a compatibility group (groups are handled separately below)
@@ -714,7 +715,8 @@ async function atualizarDB() {
               FROM pvi i
             WHERE i.pvipvcod      = NEW.pvcod
               AND i.pviprocorid  IS NOT NULL
-              AND i.pviprocorid   = pc.procorcorescod;
+              AND i.pviprocorid   = pc.procorcorescod
+              AND i.pviprocod     = pc.procorprocod;
 
             -- 2) Items WITHOUT color AND product WITHOUT variations -> return to pro.proqtde
             -- Only for products NOT in a compatibility group (groups are handled separately)
