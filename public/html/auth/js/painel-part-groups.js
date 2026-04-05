@@ -228,9 +228,10 @@ function renderGrupos(grupos) {
           ? "badge rounded-pill bg-warning-subtle text-warning"
           : "badge rounded-pill bg-success-subtle text-success";
 
-    // Color badge
+    // Color badge (validate hex to prevent CSS injection)
+    const safeHex = /^#[0-9A-Fa-f]{3,6}$/.test(grupo.color_hex || "") ? grupo.color_hex : "#6c757d";
     const colorBadge = grupo.color_name
-      ? `<span class="badge rounded-pill" style="background:${grupo.color_hex || '#6c757d'};color:#fff;font-size:0.75em;">${escapeHtml(grupo.color_name)}</span>`
+      ? `<span class="badge rounded-pill" style="background:${safeHex};color:#fff;font-size:0.75em;">${escapeHtml(grupo.color_name)}</span>`
       : '<span class="text-muted small">—</span>';
 
     tr.innerHTML = `

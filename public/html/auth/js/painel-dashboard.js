@@ -41,7 +41,8 @@ function aplicarPresetDash(preset) {
   let start = null, end = null;
 
   if (preset === "hoje") {
-    start = end = new Date(today);
+    start = new Date(today);
+    end = new Date(today);
   } else if (preset === "ult7") {
     start = new Date(today); start.setDate(today.getDate() - 6); end = new Date(today);
   } else if (preset === "ult30") {
