@@ -324,45 +324,49 @@ exports.getPecasCadastradasPDF = async (req, res) => {
 
     // Cabeçalho da tabela
     const colX = { num: 40, marca: 65, modelo: 165, tipo: 255, peca: 325, preco: 430, custo: 480, estoque: 535 };
-    doc.fontSize(8).font("Helvetica-Bold");
-    const headerY = doc.y;
-    doc.rect(40, headerY - 2, 515, 14).fill("#DDDDDD");
-    doc.fillColor("black");
-    doc.text("#", colX.num, headerY, { width: 20 });
-    doc.text("Marca", colX.marca, headerY, { width: 95 });
-    doc.text("Modelo", colX.modelo, headerY, { width: 85 });
-    doc.text("Tipo", colX.tipo, headerY, { width: 65 });
-    doc.text("Peça", colX.peca, headerY, { width: 100 });
-    doc.text("Preço", colX.preco, headerY, { width: 45 });
-    doc.text("Custo", colX.custo, headerY, { width: 45 });
-    doc.text("Estoque", colX.estoque, headerY, { width: 45 });
-    doc.moveDown(0.8);
-    doc.font("Helvetica").fontSize(7);
+    const ROW_PADDING_Y = 3;
+
+    function drawTableHeader(d, y) {
+      d.fontSize(8).font("Helvetica-Bold");
+      d.rect(40, y - 2, 515, 14).fill("#DDDDDD");
+      d.fillColor("black");
+      d.text("#", colX.num, y, { width: 20 });
+      d.text("Marca", colX.marca, y, { width: 95 });
+      d.text("Modelo", colX.modelo, y, { width: 85 });
+      d.text("Tipo", colX.tipo, y, { width: 65 });
+      d.text("Peça", colX.peca, y, { width: 100 });
+      d.text("Preço", colX.preco, y, { width: 45 });
+      d.text("Custo", colX.custo, y, { width: 45 });
+      d.text("Estoque", colX.estoque, y, { width: 45 });
+      d.moveDown(0.8);
+      d.font("Helvetica").fontSize(7);
+    }
+
+    drawTableHeader(doc, doc.y);
 
     let rowNum = 1;
     for (const row of data) {
-      if (doc.y > PDF_PAGE_BREAK_Y) {
-        doc.addPage();
-        doc.fontSize(8).font("Helvetica-Bold");
-        const hY = doc.y;
-        doc.rect(40, hY - 2, 515, 14).fill("#DDDDDD");
-        doc.fillColor("black");
-        doc.text("#", colX.num, hY, { width: 20 });
-        doc.text("Marca", colX.marca, hY, { width: 95 });
-        doc.text("Modelo", colX.modelo, hY, { width: 85 });
-        doc.text("Tipo", colX.tipo, hY, { width: 65 });
-        doc.text("Peça", colX.peca, hY, { width: 100 });
-        doc.text("Preço", colX.preco, hY, { width: 45 });
-        doc.text("Custo", colX.custo, hY, { width: 45 });
-        doc.text("Estoque", colX.estoque, hY, { width: 45 });
-        doc.moveDown(0.8);
-        doc.font("Helvetica").fontSize(7);
-      }
-
-      const y = doc.y;
       const precoFmt = Number(row.preco).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
       const custoFmt = Number(row.custo).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+      // Calculate dynamic row height so wrapped text never overlaps the next row
+      const rowHeight = Math.max(
+        doc.heightOfString(String(rowNum), { width: 20 }),
+        doc.heightOfString(String(row.marca || "-"), { width: 95 }),
+        doc.heightOfString(String(row.modelo || "-"), { width: 85 }),
+        doc.heightOfString(String(row.tipo || "-"), { width: 65 }),
+        doc.heightOfString(String(row.peca || "-"), { width: 100 }),
+        doc.heightOfString(precoFmt, { width: 45 }),
+        doc.heightOfString(custoFmt, { width: 45 }),
+        doc.heightOfString(String(row.estoque ?? 0), { width: 45 }),
+      );
+
+      if (doc.y + rowHeight > PDF_PAGE_BREAK_Y) {
+        doc.addPage();
+        drawTableHeader(doc, doc.y);
+      }
+
+      const y = doc.y;
       doc.text(String(rowNum), colX.num, y, { width: 20 });
       doc.text(String(row.marca || "-"), colX.marca, y, { width: 95 });
       doc.text(String(row.modelo || "-"), colX.modelo, y, { width: 85 });
@@ -371,7 +375,9 @@ exports.getPecasCadastradasPDF = async (req, res) => {
       doc.text(precoFmt, colX.preco, y, { width: 45, align: "right" });
       doc.text(custoFmt, colX.custo, y, { width: 45, align: "right" });
       doc.text(String(row.estoque ?? 0), colX.estoque, y, { width: 45, align: "center" });
-      doc.moveDown(0.6);
+
+      // Advance by the tallest cell so no row ever overlaps the next
+      doc.y = y + rowHeight + ROW_PADDING_Y;
       rowNum++;
     }
 
