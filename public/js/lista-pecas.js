@@ -355,14 +355,14 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       <select id="select-cor">
   ${cores
     .map((cor) => {
-      const idCor = cor.corcod;
+      const idCor = cor.procorid;
 
-      console.log("Cor id:",  idCor);
+      console.log("Cor procorid:", idCor);
       const semEstoque = cor.procorsemest === "S";
       const label = `${cor.cornome}${semEstoque ? " (Sem estoque)" : ""}`;
 
       return `
-        <option id= ${idCor} value="${cor.cornome}" 
+        <option id="${idCor}" value="${cor.cornome}" 
           ${semEstoque ? 'disabled data-semest="S"' : ""}>
           ${label}
         </option>

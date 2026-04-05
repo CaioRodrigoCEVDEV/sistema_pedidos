@@ -478,10 +478,14 @@ exports.listarPedidosPendentesDetalhe = async (req, res) => {
        pviprocod,
        pvivl,
        pviqtde,
-       pvobs
+       pvobs,
+       pvi.pviprocorid,
+       cores.cornome
        from pv
        join pvi on pvipvcod = pvcod
        join pro on procod = pviprocod
+       left join procor on procor.procorid = pvi.pviprocorid
+       left join cores on cores.corcod = procor.procorcorescod
        where pvcod = $1 and pvsta = 'A'`,
       [pvcod]
     );
@@ -493,13 +497,16 @@ exports.listarPedidosPendentesDetalhe = async (req, res) => {
 };
 
 exports.cancelarItemPv = async (req, res) => {
-  const { procod } = req.body;
+  const { procod, pviprocorid } = req.body;
   const pvcod = req.params.pvcod;
 
   try {
     const result = await pool.query(
-      "update pvi set pviqtde = 0 where pviprocod = $1 and pvipvcod = $2 RETURNING *",
-      [procod, pvcod]
+      `update pvi set pviqtde = 0
+       where pviprocod = $1 and pvipvcod = $2
+         AND (pviprocorid IS NOT DISTINCT FROM $3)
+       RETURNING *`,
+      [procod, pvcod, pviprocorid ?? null]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -509,15 +516,18 @@ exports.cancelarItemPv = async (req, res) => {
 };
 
 exports.confirmarItemPv = async (req, res) => {
-  const { procod, pviqtde } = req.body;
+  const { procod, pviqtde, pviprocorid } = req.body;
   const pvcod = req.params.pvcod;
 
-  console.log({ procod, pviqtde, pvcod });
+  console.log({ procod, pviqtde, pvcod, pviprocorid });
 
   try {
     const result = await pool.query(
-      "update pvi set pviqtde = $1 where pviprocod = $2 and pvipvcod = $3 RETURNING *",
-      [pviqtde, procod, pvcod]
+      `update pvi set pviqtde = $1
+       where pviprocod = $2 and pvipvcod = $3
+         AND (pviprocorid IS NOT DISTINCT FROM $4)
+       RETURNING *`,
+      [pviqtde, procod, pvcod, pviprocorid ?? null]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -528,7 +538,9 @@ exports.confirmarItemPv = async (req, res) => {
 
 /**
  * Edita itens de um pedido já aprovado, ajustando o estoque conforme a diferença de quantidade.
- * Aceita body: { itens: [{ procod, pviqtde }] }
+ * Aceita body: { itens: [{ procod, pviqtde, pviprocorid? }] }
+ * - Se pviprocorid estiver presente, ajusta procorqtde (estoque por cor em procor).
+ * - Caso contrário, ajusta proqtde (estoque geral em pro).
  */
 exports.editarItensPedidoConfirmado = async (req, res) => {
   const pvcod = req.params.pvcod;
@@ -562,18 +574,21 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
     const resultadoItens = [];
 
     for (const item of itens) {
-      const { procod, pviqtde } = item;
+      const { procod, pviqtde, pviprocorid } = item;
       const novaQtde = Number(pviqtde);
+      const procorid = pviprocorid ?? null;
 
       if (isNaN(novaQtde) || novaQtde < 0) {
         await client.query("ROLLBACK");
         return res.status(400).json({ error: `Quantidade inválida para procod ${procod}` });
       }
 
-      // Busca a quantidade atual do item no pedido
+      // Busca a quantidade atual do item no pedido (identificado por procod + pviprocorid)
       const itemAtual = await client.query(
-        "SELECT pviqtde FROM pvi WHERE pviprocod = $1 AND pvipvcod = $2",
-        [procod, pvcod]
+        `SELECT pviqtde FROM pvi
+         WHERE pviprocod = $1 AND pvipvcod = $2
+           AND (pviprocorid IS NOT DISTINCT FROM $3)`,
+        [procod, pvcod, procorid]
       );
 
       if (itemAtual.rows.length === 0) {
@@ -586,33 +601,56 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
 
       // Ajusta o estoque: se delta > 0, deduz mais; se delta < 0, devolve ao estoque
       if (delta !== 0) {
-        // Verifica se há estoque suficiente para aumentos
-        if (delta > 0) {
-          const estoqueResult = await client.query(
-            "SELECT COALESCE(prostoque, 0) AS prostoque FROM pro WHERE procod = $1 FOR UPDATE",
-            [procod]
-          );
-          const estoqueAtual = Number(estoqueResult.rows[0]?.prostoque ?? 0);
-          if (estoqueAtual < delta) {
-            await client.query("ROLLBACK");
-            return res.status(400).json({
-              error: `Estoque insuficiente para a peça ${procod}. Disponível: ${estoqueAtual}`,
-              tipo: "estoque_insuficiente"
-            });
+        if (procorid !== null) {
+          // Item com cor: opera sobre procor.procorqtde
+          if (delta > 0) {
+            const estoqueResult = await client.query(
+              "SELECT COALESCE(procorqtde, 0) AS procorqtde FROM procor WHERE procorid = $1 FOR UPDATE",
+              [procorid]
+            );
+            const estoqueAtual = Number(estoqueResult.rows[0]?.procorqtde ?? 0);
+            if (estoqueAtual < delta) {
+              await client.query("ROLLBACK");
+              return res.status(400).json({
+                error: `Estoque insuficiente para a peça ${procod}. Disponível: ${estoqueAtual}`,
+                tipo: "estoque_insuficiente"
+              });
+            }
           }
+          await client.query(
+            "UPDATE procor SET procorqtde = GREATEST(COALESCE(procorqtde, 0) - $1, 0) WHERE procorid = $2",
+            [delta, procorid]
+          );
+        } else {
+          // Item sem cor: opera sobre pro.proqtde
+          if (delta > 0) {
+            const estoqueResult = await client.query(
+              "SELECT COALESCE(proqtde, 0) AS proqtde FROM pro WHERE procod = $1 FOR UPDATE",
+              [procod]
+            );
+            const estoqueAtual = Number(estoqueResult.rows[0]?.proqtde ?? 0);
+            if (estoqueAtual < delta) {
+              await client.query("ROLLBACK");
+              return res.status(400).json({
+                error: `Estoque insuficiente para a peça ${procod}. Disponível: ${estoqueAtual}`,
+                tipo: "estoque_insuficiente"
+              });
+            }
+          }
+          await client.query(
+            "UPDATE pro SET proqtde = GREATEST(COALESCE(proqtde, 0) - $1, 0) WHERE procod = $2",
+            [delta, procod]
+          );
         }
-
-        // Atualiza o estoque (subtrai delta: positivo = deduz, negativo = devolve)
-        await client.query(
-          "UPDATE pro SET prostoque = COALESCE(prostoque, 0) - $1 WHERE procod = $2",
-          [delta, procod]
-        );
       }
 
       // Atualiza a quantidade no pedido
       const updateResult = await client.query(
-        "UPDATE pvi SET pviqtde = $1 WHERE pviprocod = $2 AND pvipvcod = $3 RETURNING *",
-        [novaQtde, procod, pvcod]
+        `UPDATE pvi SET pviqtde = $1
+         WHERE pviprocod = $2 AND pvipvcod = $3
+           AND (pviprocorid IS NOT DISTINCT FROM $4)
+         RETURNING *`,
+        [novaQtde, procod, pvcod, procorid]
       );
 
       resultadoItens.push(updateResult.rows[0]);

@@ -89,6 +89,19 @@ async function atualizarDB() {
     `);
     await pool.query(`update usu set usuviuversao = 'N';`);
 
+    // Backfill: pviprocorid previously stored corcod (color FK); migrate to procorid (PK of procor).
+    // This ensures the stock-decrement trigger (atualizar_saldo) can join via procorid.
+    // Only updates rows where the stored value matches a procorcorescod for the same product.
+    await pool.query(`
+      UPDATE public.pvi i
+        SET pviprocorid = pc.procorid
+        FROM public.procor pc
+       WHERE i.pviprocorid IS NOT NULL
+         AND pc.procorprocod = i.pviprocod
+         AND pc.procorcorescod = i.pviprocorid
+         AND i.pviprocorid <> pc.procorid;
+    `);
+
     //fim temporatrio
 
     // Tabela de relacionamento muitos-para-muitos entre produtos e modelos
@@ -611,12 +624,13 @@ async function atualizarDB() {
           IF OLD.pvconfirmado = 'N' AND NEW.pvconfirmado = 'S' THEN
 
             -- 1) Items WITH color -> decrement from procor
+            -- pviprocorid stores the procorid (PK of procor), so join by procorid
             UPDATE procor pc
               SET procorqtde = GREATEST(COALESCE(pc.procorqtde, 0) - COALESCE(i.pviqtde, 0), 0)
               FROM pvi i
-            WHERE i.pvipvcod      = NEW.pvcod
+            WHERE i.pvipvcod     = NEW.pvcod
               AND i.pviprocorid  IS NOT NULL
-              AND i.pviprocorid   = pc.procorcorescod;
+              AND pc.procorid    = i.pviprocorid;
 
             -- 2) Items WITHOUT color AND product WITHOUT variations -> decrement from pro.proqtde
             -- Only for products NOT in a compatibility group (groups are handled separately below)
@@ -709,12 +723,13 @@ async function atualizarDB() {
           IF OLD.pvsta <> 'X' AND NEW.pvsta = 'X' AND NEW.pvconfirmado = 'S' THEN
 
             -- 1) Items WITH color -> return to procor
+            -- pviprocorid stores the procorid (PK of procor), so join by procorid
             UPDATE procor pc
               SET procorqtde = COALESCE(pc.procorqtde, 0) + COALESCE(i.pviqtde, 0)
               FROM pvi i
-            WHERE i.pvipvcod      = NEW.pvcod
+            WHERE i.pvipvcod     = NEW.pvcod
               AND i.pviprocorid  IS NOT NULL
-              AND i.pviprocorid   = pc.procorcorescod;
+              AND pc.procorid    = i.pviprocorid;
 
             -- 2) Items WITHOUT color AND product WITHOUT variations -> return to pro.proqtde
             -- Only for products NOT in a compatibility group (groups are handled separately)
