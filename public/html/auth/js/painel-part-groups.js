@@ -185,7 +185,7 @@ async function carregarCoresNoSelect() {
       cores.forEach((cor) => {
         const opt = document.createElement("option");
         opt.value = cor.corcod;
-        opt.textContent = cor.cordes;
+        opt.textContent = cor.cornome;
         if (cor.corhex) {
           opt.style.color = cor.corhex;
         }
