@@ -575,7 +575,9 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
     }
 
     const pedido = pedidoResult.rows[0];
-    if (pedido.pvsta !== "A") {
+    const pvsta = String(pedido.pvsta || "").trim();
+    console.log("Pedido encontrado para edição:", pedido);
+    if (pvsta  !== "A") {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "Pedido cancelado não pode ser editado" });
     }
