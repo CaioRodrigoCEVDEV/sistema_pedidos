@@ -484,7 +484,7 @@ exports.listarPedidosPendentesDetalhe = async (req, res) => {
        from pv
        join pvi on pvipvcod = pvcod
        join pro on procod = pviprocod
-       left join cores c on c.corescod = pvi.pviprocorid
+       left join cores c on c.corcod = pvi.pviprocorid
        where pvcod = $1 and pvsta = 'A'`,
       [pvcod]
     );
