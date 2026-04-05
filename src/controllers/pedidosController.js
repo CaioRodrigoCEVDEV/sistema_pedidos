@@ -525,3 +525,106 @@ exports.confirmarItemPv = async (req, res) => {
     res.status(500).json({ error: "erro ao confirmar itens pedidos pedido" });
   }
 };
+
+/**
+ * Edita itens de um pedido já aprovado, ajustando o estoque conforme a diferença de quantidade.
+ * Aceita body: { itens: [{ procod, pviqtde }] }
+ */
+exports.editarItensPedidoConfirmado = async (req, res) => {
+  const pvcod = req.params.pvcod;
+  const { itens } = req.body;
+
+  if (!Array.isArray(itens) || itens.length === 0) {
+    return res.status(400).json({ error: "Lista de itens é obrigatória" });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Verifica se o pedido existe e está aprovado
+    const pedidoResult = await client.query(
+      "SELECT pvconfirmado, pvsta FROM pv WHERE pvcod = $1",
+      [pvcod]
+    );
+
+    if (pedidoResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Pedido não encontrado" });
+    }
+
+    const pedido = pedidoResult.rows[0];
+    if (pedido.pvsta !== "A") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Pedido cancelado não pode ser editado" });
+    }
+
+    const resultadoItens = [];
+
+    for (const item of itens) {
+      const { procod, pviqtde } = item;
+      const novaQtde = Number(pviqtde);
+
+      if (isNaN(novaQtde) || novaQtde < 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: `Quantidade inválida para procod ${procod}` });
+      }
+
+      // Busca a quantidade atual do item no pedido
+      const itemAtual = await client.query(
+        "SELECT pviqtde FROM pvi WHERE pviprocod = $1 AND pvipvcod = $2",
+        [procod, pvcod]
+      );
+
+      if (itemAtual.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ error: `Item procod ${procod} não encontrado no pedido` });
+      }
+
+      const qtdeAnterior = Number(itemAtual.rows[0].pviqtde);
+      const delta = novaQtde - qtdeAnterior;
+
+      // Ajusta o estoque: se delta > 0, deduz mais; se delta < 0, devolve ao estoque
+      if (delta !== 0) {
+        // Verifica se há estoque suficiente para aumentos
+        if (delta > 0) {
+          const estoqueResult = await client.query(
+            "SELECT COALESCE(prostoque, 0) AS prostoque FROM pro WHERE procod = $1 FOR UPDATE",
+            [procod]
+          );
+          const estoqueAtual = Number(estoqueResult.rows[0]?.prostoque ?? 0);
+          if (estoqueAtual < delta) {
+            await client.query("ROLLBACK");
+            return res.status(400).json({
+              error: `Estoque insuficiente para a peça ${procod}. Disponível: ${estoqueAtual}`,
+              tipo: "estoque_insuficiente"
+            });
+          }
+        }
+
+        // Atualiza o estoque (subtrai delta: positivo = deduz, negativo = devolve)
+        await client.query(
+          "UPDATE pro SET prostoque = COALESCE(prostoque, 0) - $1 WHERE procod = $2",
+          [delta, procod]
+        );
+      }
+
+      // Atualiza a quantidade no pedido
+      const updateResult = await client.query(
+        "UPDATE pvi SET pviqtde = $1 WHERE pviprocod = $2 AND pvipvcod = $3 RETURNING *",
+        [novaQtde, procod, pvcod]
+      );
+
+      resultadoItens.push(updateResult.rows[0]);
+    }
+
+    await client.query("COMMIT");
+    res.status(200).json({ message: "Pedido editado com sucesso", itens: resultadoItens });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Erro ao editar pedido confirmado:", error);
+    res.status(500).json({ error: "Erro ao editar pedido" });
+  } finally {
+    client.release();
+  }
+};

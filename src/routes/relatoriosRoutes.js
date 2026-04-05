@@ -41,4 +41,18 @@ router.get(
   relatoriosController.getTopPecasXLS
 );
 
+// Relatório Peças Cadastradas - JSON
+router.get(
+  "/v2/relatorios/pecas-cadastradas",
+  autenticarToken,
+  relatoriosController.getPecasCadastradasJSON
+);
+
+// Relatório Peças Cadastradas - PDF
+router.get(
+  "/v2/relatorios/pecas-cadastradas/pdf",
+  autenticarToken,
+  relatoriosController.getPecasCadastradasPDF
+);
+
 module.exports = router;

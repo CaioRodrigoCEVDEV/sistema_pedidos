@@ -17,6 +17,10 @@ let isLoadingMore = false;
 let searchTerm = "";
 let searchDebounceTimer = null;
 
+// Sorting state for groups table
+let sortCol = "created_at";
+let sortDir = "desc"; // 'asc' | 'desc'
+
 // Referência do modal de adicionar peça (para controle de backdrop)
 let modalAdicionarPecaInstance = null;
 
@@ -101,7 +105,7 @@ function formatDate(dateString) {
 async function carregarGrupos() {
   const tbody = document.getElementById("tabela-grupos");
   tbody.innerHTML =
-    '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
+    '<tr><td colspan="6" class="text-center">Carregando...</td></tr>';
 
   try {
     const res = await fetch(`${BASE_URL}/part-groups`, {
@@ -110,11 +114,86 @@ async function carregarGrupos() {
     if (!res.ok) throw new Error("Erro ao buscar grupos");
 
     allGroups = await res.json();
-    renderGrupos(allGroups);
+    renderGruposFiltradosOrdenados();
+    carregarCoresNoSelect();
   } catch (err) {
     console.error(err);
     tbody.innerHTML =
-      '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar grupos</td></tr>';
+      '<tr><td colspan="6" class="text-center text-danger">Erro ao carregar grupos</td></tr>';
+  }
+}
+
+/**
+ * Aplica filtro de pesquisa + ordenação e renderiza a tabela de grupos
+ */
+function renderGruposFiltradosOrdenados() {
+  const searchEl = document.getElementById("pesquisaGrupos");
+  const query = searchEl ? searchEl.value.toLowerCase().trim() : "";
+
+  let filtered = query
+    ? allGroups.filter((g) =>
+        g.name.toLowerCase().includes(query) ||
+        (g.color_name || "").toLowerCase().includes(query)
+      )
+    : [...allGroups];
+
+  // Ordenação
+  filtered.sort((a, b) => {
+    let va = a[sortCol] ?? "";
+    let vb = b[sortCol] ?? "";
+    // Numeric sort for numbers
+    if (!isNaN(Number(va)) && !isNaN(Number(vb))) {
+      va = Number(va);
+      vb = Number(vb);
+    } else {
+      va = String(va).toLowerCase();
+      vb = String(vb).toLowerCase();
+    }
+    if (va < vb) return sortDir === "asc" ? -1 : 1;
+    if (va > vb) return sortDir === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  // Atualiza ícones de ordenação
+  document.querySelectorAll(".sort-icon").forEach((icon) => {
+    icon.className = "bi bi-arrow-down-up sort-icon";
+    icon.style.opacity = "0.4";
+  });
+  const activeIcon = document.getElementById(`sort-icon-${sortCol}`);
+  if (activeIcon) {
+    activeIcon.className = sortDir === "asc" ? "bi bi-arrow-up sort-icon" : "bi bi-arrow-down sort-icon";
+    activeIcon.style.opacity = "1";
+  }
+
+  renderGrupos(filtered);
+}
+
+/**
+ * Carrega as cores disponíveis nos selects de criar/editar grupo
+ */
+async function carregarCoresNoSelect() {
+  try {
+    const res = await fetch(`${BASE_URL}/cores`, { credentials: "include" });
+    if (!res.ok) return;
+    const cores = await res.json();
+
+    ["corGrupo", "editarCorGrupo"].forEach((selectId) => {
+      const sel = document.getElementById(selectId);
+      if (!sel) return;
+      // Mantém a opção vazia
+      sel.innerHTML = '<option value="">— Sem cor específica —</option>';
+      cores.forEach((cor) => {
+        const opt = document.createElement("option");
+        opt.value = cor.corcod;
+        opt.textContent = cor.cordes;
+        if (cor.corhex) {
+          opt.style.color = cor.corhex;
+        }
+        sel.appendChild(opt);
+      });
+    });
+  } catch (err) {
+    console.warn("Não foi possível carregar cores:", err);
   }
 }
 
@@ -128,7 +207,7 @@ function renderGrupos(grupos) {
 
   if (!grupos || grupos.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="5" class="text-center text-muted">Nenhum grupo cadastrado</td></tr>';
+      '<tr><td colspan="6" class="text-center text-muted">Nenhum grupo cadastrado</td></tr>';
     return;
   }
 
@@ -149,12 +228,22 @@ function renderGrupos(grupos) {
           ? "badge rounded-pill bg-warning-subtle text-warning"
           : "badge rounded-pill bg-success-subtle text-success";
 
+    // Color badge (validate hex to prevent CSS injection)
+    const safeHex = /^#[0-9A-Fa-f]{3,6}$/.test(grupo.color_hex || "") ? grupo.color_hex : "#6c757d";
+    const colorBadge = grupo.color_name
+      ? `<span class="badge rounded-pill" style="background:${safeHex};color:#fff;font-size:0.75em;">${escapeHtml(grupo.color_name)}</span>`
+      : '<span class="text-muted small">—</span>';
+
     tr.innerHTML = `
       <td>
         <div class="d-flex align-items-center gap-2">
           <i class="bi bi-diagram-3 text-primary"></i>
           <span class="fw-semibold">${escapeHtml(grupo.name)}</span>
         </div>
+      </td>
+      <td class="text-center">${colorBadge}</td>
+      <td class="text-center">
+        <span class="${stockClass}">${grupo.stock_quantity ?? 0}</span>
       </td>
       <td class="text-center">
         <span class="badge rounded-pill bg-secondary-subtle text-secondary">${
@@ -178,7 +267,7 @@ function renderGrupos(grupos) {
 
     // Adiciona event listeners (evita onclick inline para prevenir XSS)
     tr.querySelector(".btn-edit-group").addEventListener("click", () => {
-      abrirModalEditar(grupo.id, grupo.name);
+      abrirModalEditar(grupo.id, grupo.name, grupo.color_id);
     });
     tr.querySelector(".btn-delete-group").addEventListener("click", () => {
       excluirGrupo(grupo.id);
@@ -205,6 +294,8 @@ function escapeHtml(text) {
  */
 async function criarGrupo() {
   const nome = document.getElementById("nomeGrupo").value.trim();
+  const corEl = document.getElementById("corGrupo");
+  const colorId = corEl && corEl.value ? parseInt(corEl.value) : null;
 
   if (!nome) {
     showToast("Nome do grupo é obrigatório", "error");
@@ -216,7 +307,7 @@ async function criarGrupo() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ name: nome }),
+      body: JSON.stringify({ name: nome, colorId }),
     });
 
     if (!res.ok) {
@@ -241,9 +332,11 @@ async function criarGrupo() {
  * @param {number} id - ID do grupo
  * @param {string} nome - Nome atual do grupo
  */
-function abrirModalEditar(id, nome) {
+function abrirModalEditar(id, nome, colorId = null) {
   document.getElementById("editarGrupoId").value = id;
   document.getElementById("editarNomeGrupo").value = nome;
+  const corEl = document.getElementById("editarCorGrupo");
+  if (corEl) corEl.value = colorId || "";
   new bootstrap.Modal(document.getElementById("modalEditarGrupo")).show();
 }
 
@@ -253,6 +346,8 @@ function abrirModalEditar(id, nome) {
 async function salvarEdicaoGrupo() {
   const id = document.getElementById("editarGrupoId").value;
   const nome = document.getElementById("editarNomeGrupo").value.trim();
+  const corEl = document.getElementById("editarCorGrupo");
+  const colorId = corEl && corEl.value ? parseInt(corEl.value) : null;
 
   if (!nome) {
     showToast("Nome do grupo é obrigatório", "error");
@@ -264,7 +359,7 @@ async function salvarEdicaoGrupo() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ name: nome }),
+      body: JSON.stringify({ name: nome, colorId }),
     });
 
     if (!res.ok) {
@@ -998,27 +1093,28 @@ document.addEventListener("DOMContentLoaded", function () {
   // Filtro de pesquisa para a lista de grupos
   const searchGrupos = document.getElementById("pesquisaGrupos");
   if (searchGrupos) {
-    function aplicarFiltroGrupos() {
-      const query = searchGrupos.value.toLowerCase().trim();
-      if (!query) {
-        renderGrupos(allGroups);
-      } else {
-        const filtered = allGroups.filter((g) =>
-          g.name.toLowerCase().includes(query),
-        );
-        renderGrupos(filtered);
-      }
-    }
-
-    searchGrupos.addEventListener("input", aplicarFiltroGrupos);
-
+    searchGrupos.addEventListener("input", renderGruposFiltradosOrdenados);
     searchGrupos.addEventListener("keydown", function (e) {
       if (e.key === "Enter") {
         e.preventDefault();
-        aplicarFiltroGrupos();
+        renderGruposFiltradosOrdenados();
       }
     });
   }
+
+  // Ordenação por coluna
+  document.querySelectorAll(".sortable-col").forEach((th) => {
+    th.addEventListener("click", function () {
+      const col = this.dataset.col;
+      if (sortCol === col) {
+        sortDir = sortDir === "asc" ? "desc" : "asc";
+      } else {
+        sortCol = col;
+        sortDir = "asc";
+      }
+      renderGruposFiltradosOrdenados();
+    });
+  });
 
   const searchInput = document.getElementById("pesquisaPeca");
   if (searchInput) {

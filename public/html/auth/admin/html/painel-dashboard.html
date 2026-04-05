@@ -115,12 +115,45 @@
           </div>
         </div>
 
+        <!-- Filtros de data do dashboard -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body py-2">
+            <form id="formFiltroDashboard" class="row g-2 align-items-center" onsubmit="return false;">
+              <div class="col-auto">
+                <label class="form-label mb-0 fw-semibold"><i class="bi bi-funnel me-1"></i>Filtrar por período:</label>
+              </div>
+              <div class="col-auto">
+                <select class="form-select form-select-sm" id="dashPeriodoSelect" style="min-width:140px;">
+                  <option value="ult30" selected>Últimos 30 dias</option>
+                  <option value="hoje">Hoje</option>
+                  <option value="ult7">Últimos 7 dias</option>
+                  <option value="mesAtual">Mês atual</option>
+                  <option value="anoAtual">Ano atual</option>
+                  <option value="todos">Todos</option>
+                  <option value="personalizado">Personalizado</option>
+                </select>
+              </div>
+              <div class="col-auto">
+                <input type="date" class="form-control form-control-sm" id="dashDataInicio" placeholder="Início" disabled />
+              </div>
+              <div class="col-auto">
+                <input type="date" class="form-control form-control-sm" id="dashDataFim" placeholder="Fim" disabled />
+              </div>
+              <div class="col-auto">
+                <button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltroDash">
+                  <i class="bi bi-check-lg me-1"></i>Aplicar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
         <!-- Top Produtos do Mês -->
         <div class="col-12">
           <div class="card border-0 shadow-sm chart-card h-100">
             <div class="card-body">
               <div class="d-flex align-items-center mb-2">
-                <h5 class="mb-0 p-2">Top 10 Produtos — Últimos 30 dias</h5>
+                <h5 class="mb-0 p-2" id="tituloTopProdutos">Top 10 Produtos — Últimos 30 dias</h5>
                 <span class="badge bg-info text-dark">Por Quantidade</span>
               </div>
 
@@ -150,7 +183,7 @@
           <div class="card border-0 shadow-sm chart-card h-100">
             <div class="card-body">
               <div class="d-flex align-items-center mb-2">
-                <h5 class="mb-0 p-2">Top 10 Marcas — Últimos 30 dias</h5>
+                <h5 class="mb-0 p-2" id="tituloTopMarcas">Top 10 Marcas — Últimos 30 dias</h5>
                 <span class="badge bg-info text-dark">Por Valor</span>
               </div>
 

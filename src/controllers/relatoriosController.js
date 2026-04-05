@@ -260,3 +260,126 @@ exports.getTopPecasXLS = async (req, res) => {
     }
   }
 };
+
+/**
+ * GET /v2/relatorios/pecas-cadastradas
+ * Retorna JSON com todas as peças cadastradas
+ */
+exports.getPecasCadastradasJSON = async (req, res) => {
+  try {
+    const { marca, modelo, peca } = req.query;
+    const filters = {
+      marca: marca ? parseInt(marca) : null,
+      modelo: modelo ? parseInt(modelo) : null,
+      peca: peca || null,
+    };
+    const result = await relatoriosModels.getPecasCadastradas(filters);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Erro ao buscar peças cadastradas:", error);
+    res.status(500).json({ error: "Erro ao buscar peças cadastradas" });
+  }
+};
+
+/**
+ * GET /v2/relatorios/pecas-cadastradas/pdf
+ * Exporta peças cadastradas em PDF com filtros opcionais
+ */
+exports.getPecasCadastradasPDF = async (req, res) => {
+  try {
+    const { marca, modelo, peca } = req.query;
+    const filters = {
+      marca: marca ? parseInt(marca) : null,
+      modelo: modelo ? parseInt(modelo) : null,
+      peca: peca || null,
+    };
+
+    const data = await relatoriosModels.getPecasCadastradas(filters);
+
+    const doc = new PDFDocument({ margin: 40, size: "A4" });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="pecas-cadastradas.pdf"',
+    );
+
+    doc.pipe(res);
+
+    // Cabeçalho
+    doc.fontSize(16).font("Helvetica-Bold").text("Peças Cadastradas", { align: "center" });
+    doc.moveDown(0.3);
+    doc.fontSize(9).font("Helvetica");
+
+    // Filtros aplicados
+    const filtrosTexto = [];
+    if (marca) filtrosTexto.push(`Marca ID: ${marca}`);
+    if (modelo) filtrosTexto.push(`Modelo ID: ${modelo}`);
+    if (peca) filtrosTexto.push(`Peça: ${peca}`);
+    if (filtrosTexto.length > 0) {
+      doc.text(`Filtros: ${filtrosTexto.join(" | ")}`, { align: "center" });
+    }
+    doc.text(`Total de peças: ${data.length} | Gerado em: ${new Date().toLocaleDateString("pt-BR")}`, { align: "center" });
+    doc.moveDown(0.5);
+
+    // Cabeçalho da tabela
+    const colX = { num: 40, marca: 65, modelo: 165, tipo: 255, peca: 325, preco: 430, custo: 480, estoque: 535 };
+    doc.fontSize(8).font("Helvetica-Bold");
+    const headerY = doc.y;
+    doc.rect(40, headerY - 2, 515, 14).fill("#DDDDDD");
+    doc.fillColor("black");
+    doc.text("#", colX.num, headerY, { width: 20 });
+    doc.text("Marca", colX.marca, headerY, { width: 95 });
+    doc.text("Modelo", colX.modelo, headerY, { width: 85 });
+    doc.text("Tipo", colX.tipo, headerY, { width: 65 });
+    doc.text("Peça", colX.peca, headerY, { width: 100 });
+    doc.text("Preço", colX.preco, headerY, { width: 45 });
+    doc.text("Custo", colX.custo, headerY, { width: 45 });
+    doc.text("Estoque", colX.estoque, headerY, { width: 45 });
+    doc.moveDown(0.8);
+    doc.font("Helvetica").fontSize(7);
+
+    let rowNum = 1;
+    for (const row of data) {
+      if (doc.y > PDF_PAGE_BREAK_Y) {
+        doc.addPage();
+        doc.fontSize(8).font("Helvetica-Bold");
+        const hY = doc.y;
+        doc.rect(40, hY - 2, 515, 14).fill("#DDDDDD");
+        doc.fillColor("black");
+        doc.text("#", colX.num, hY, { width: 20 });
+        doc.text("Marca", colX.marca, hY, { width: 95 });
+        doc.text("Modelo", colX.modelo, hY, { width: 85 });
+        doc.text("Tipo", colX.tipo, hY, { width: 65 });
+        doc.text("Peça", colX.peca, hY, { width: 100 });
+        doc.text("Preço", colX.preco, hY, { width: 45 });
+        doc.text("Custo", colX.custo, hY, { width: 45 });
+        doc.text("Estoque", colX.estoque, hY, { width: 45 });
+        doc.moveDown(0.8);
+        doc.font("Helvetica").fontSize(7);
+      }
+
+      const y = doc.y;
+      const precoFmt = Number(row.preco).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+      const custoFmt = Number(row.custo).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+      doc.text(String(rowNum), colX.num, y, { width: 20 });
+      doc.text(String(row.marca || "-"), colX.marca, y, { width: 95 });
+      doc.text(String(row.modelo || "-"), colX.modelo, y, { width: 85 });
+      doc.text(String(row.tipo || "-"), colX.tipo, y, { width: 65 });
+      doc.text(String(row.peca || "-"), colX.peca, y, { width: 100 });
+      doc.text(precoFmt, colX.preco, y, { width: 45, align: "right" });
+      doc.text(custoFmt, colX.custo, y, { width: 45, align: "right" });
+      doc.text(String(row.estoque ?? 0), colX.estoque, y, { width: 45, align: "center" });
+      doc.moveDown(0.6);
+      rowNum++;
+    }
+
+    doc.end();
+  } catch (error) {
+    console.error("Erro ao gerar PDF de peças:", error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Erro ao gerar PDF de peças" });
+    }
+  }
+};

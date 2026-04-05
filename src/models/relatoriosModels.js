@@ -94,6 +94,65 @@ async function getTopPecas(filters = {}) {
   }
 }
 
+/**
+ * Busca todas as peças cadastradas com filtros opcionais
+ * @param {Object} filters - Filtros para a consulta
+ * @param {number} filters.marca - ID da marca (opcional)
+ * @param {number} filters.modelo - ID do modelo (opcional)  
+ * @param {string} filters.peca - Texto da peça para filtrar (opcional)
+ * @returns {Array} Lista de peças cadastradas
+ */
+async function getPecasCadastradas(filters = {}) {
+  const { marca, modelo, peca } = filters;
+
+  let whereClauses = ["marcassit = 'A'"];
+  let params = [];
+  let paramIndex = 1;
+
+  if (marca) {
+    whereClauses.push(`pro.promarcascod = $${paramIndex}`);
+    params.push(marca);
+    paramIndex++;
+  }
+
+  if (modelo) {
+    whereClauses.push(`(pro.promodcod = $${paramIndex} OR EXISTS (SELECT 1 FROM promod pm WHERE pm.promodprocod = pro.procod AND pm.promodmodcod = $${paramIndex}))`);
+    params.push(modelo);
+    paramIndex++;
+  }
+
+  if (peca) {
+    whereClauses.push(`LOWER(pro.prodes) LIKE LOWER($${paramIndex})`);
+    params.push(`%${peca}%`);
+    paramIndex++;
+  }
+
+  const whereClause = whereClauses.join(" AND ");
+
+  const query = `
+    SELECT 
+      pro.procod,
+      pro.prodes as peca,
+      marcas.marcasdes as marca,
+      modelo.moddes as modelo,
+      tipo.tipodes as tipo,
+      COALESCE(pro.provl, 0) as preco,
+      COALESCE(pro.procusto, 0) as custo,
+      COALESCE(pro.prostoque, 0) as estoque,
+      pro.prosemest
+    FROM pro
+    JOIN marcas ON marcas.marcascod = pro.promarcascod
+    LEFT JOIN modelo ON modelo.modcod = pro.promodcod
+    LEFT JOIN tipo ON tipo.tipocod = pro.protipocod
+    WHERE ${whereClause}
+    ORDER BY marcas.marcasdes, modelo.moddes, pro.prodes
+  `;
+
+  const result = await pool.query(query, params);
+  return result.rows;
+}
+
 module.exports = {
   getTopPecas,
+  getPecasCadastradas,
 };

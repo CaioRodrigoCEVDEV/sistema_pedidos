@@ -156,7 +156,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
       <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Detalhes do Pedido</h5>
+            <h5 class="modal-title">Detalhes do Pedido #${pvcod}${status === "confirmados" ? ' <span class="badge bg-success ms-2">Aprovado</span>' : ''}</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
           </div>
           <div class="modal-body">
@@ -167,7 +167,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             ${
               status !== "confirmados"
                 ? '<button type="button" id="btnConfirmarPedidoModal" class="btn btn-success w-25">Confirmar Pedido</button>'
-                : ""
+                : '<button type="button" id="btnEditarPedidoModal" class="btn btn-warning"><i class="bi bi-pencil-square me-1"></i>Editar Pedido</button>'
             }
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
           </div>
@@ -188,6 +188,8 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             const subtotal = it.pvivl * it.pviqtde ?? 0;
             const procod = it.pviprocod || 0;
             const pv = it.pvcod || pvcod;
+            // For confirmed orders: inputs are disabled by default (enabled when "Editar" is clicked)
+            const inputDisabled = status === "confirmados" ? "disabled" : "";
             return `<tr>
               <td class="text-center" data-procod="${procod}">${i + 1}</td>
               <td>${descricao}</td>
@@ -196,6 +198,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
                       data-procod="${procod}"
                       value="${Math.floor(qtd)}" 
                       min="0"
+                      ${inputDisabled}
                       style="width: 100%; height: auto; border-radius: 0.25rem; padding: 0.25rem;">
               </td>
               <td class="text-end">${formatarMoeda(preco)}</td>
@@ -250,6 +253,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
     // configura botões (remove listeners antigos)
     const btnConfirm = modalEl.querySelector("#btnConfirmarPedidoModal");
     const btnCancel = modalEl.querySelector("#btnCancelarPedidoModal");
+    const btnEditar = modalEl.querySelector("#btnEditarPedidoModal");
 
     // remove handlers anteriores para evitar múltiplas chamadas
     if (btnConfirm) {
@@ -258,9 +262,13 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
     if (btnCancel) {
       btnCancel.replaceWith(btnCancel.cloneNode(true));
     }
+    if (btnEditar) {
+      btnEditar.replaceWith(btnEditar.cloneNode(true));
+    }
 
     const newBtnConfirm = modalEl.querySelector("#btnConfirmarPedidoModal");
     const newBtnCancel = modalEl.querySelector("#btnCancelarPedidoModal");
+    const newBtnEditar = modalEl.querySelector("#btnEditarPedidoModal");
 
     if (newBtnConfirm) {
       newBtnConfirm.addEventListener("click", async () => {
@@ -298,6 +306,62 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
           alert("Erro ao confirmar pedido.");
         } finally {
           window.location.reload();
+        }
+      });
+    }
+
+    // Botão Editar Pedido Aprovado: habilita/desabilita edição dos inputs de quantidade
+    if (newBtnEditar) {
+      let modoEdicao = false;
+      newBtnEditar.addEventListener("click", async () => {
+        if (!modoEdicao) {
+          // Entra no modo de edição: habilita os inputs de quantidade
+          modoEdicao = true;
+          newBtnEditar.innerHTML = '<i class="bi bi-check-lg me-1"></i>Salvar Edição';
+          newBtnEditar.classList.remove("btn-warning");
+          newBtnEditar.classList.add("btn-success");
+          modalEl.querySelectorAll(".qtd-input").forEach((input) => {
+            input.disabled = false;
+            input.classList.add("border-warning");
+          });
+        } else {
+          // Salva as alterações
+          const linhas = modalEl.querySelectorAll("tbody tr");
+          const itens = [];
+          linhas.forEach((tr) => {
+            const cellProcod = tr.querySelector("[data-procod]");
+            const inputQtd = tr.querySelector(".qtd-input");
+            if (cellProcod && inputQtd) {
+              itens.push({ procod: Number(cellProcod.dataset.procod), pviqtde: Number(inputQtd.value) });
+            }
+          });
+
+          try {
+            newBtnEditar.disabled = true;
+            newBtnEditar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+
+            const resp = await fetch(`${BASE_URL}/pedidos/confirmados/${pvcod}/itens`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ itens }),
+            });
+
+            if (!resp.ok) {
+              const err = await resp.json().catch(() => ({}));
+              throw new Error(err.error || "Erro ao salvar edição");
+            }
+
+            alert("Pedido editado com sucesso!");
+            const m = bootstrap?.Modal?.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            m.hide();
+            window.location.reload();
+          } catch (err) {
+            console.error("Erro ao salvar edição:", err);
+            alert(err.message || "Erro ao salvar edição do pedido.");
+            newBtnEditar.disabled = false;
+            newBtnEditar.innerHTML = '<i class="bi bi-check-lg me-1"></i>Salvar Edição';
+          }
         }
       });
     }
