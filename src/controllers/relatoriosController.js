@@ -284,6 +284,11 @@ exports.getPecasCadastradasJSON = async (req, res) => {
 /**
  * GET /v2/relatorios/pecas-cadastradas/pdf
  * Exporta peças cadastradas em PDF com filtros opcionais
+ *
+ * Manual test note: To verify no text overlap, use long strings for "Tipo" and
+ * "Peça" (e.g. tipo = "Borracha de vedação traseira longa" or peca = "Parafuso
+ * de cabeça sextavada M10x1.5 com arruela"). Dynamic row heights computed via
+ * doc.heightOfString() prevent overlap even when cells wrap to multiple lines.
  */
 exports.getPecasCadastradasPDF = async (req, res) => {
   try {
@@ -306,7 +311,7 @@ exports.getPecasCadastradasPDF = async (req, res) => {
 
     doc.pipe(res);
 
-    // Cabeçalho
+    // Cabeçalho do documento
     doc.fontSize(16).font("Helvetica-Bold").text("Peças Cadastradas", { align: "center" });
     doc.moveDown(0.3);
     doc.fontSize(9).font("Helvetica");
@@ -322,56 +327,68 @@ exports.getPecasCadastradasPDF = async (req, res) => {
     doc.text(`Total de peças: ${data.length} | Gerado em: ${new Date().toLocaleDateString("pt-BR")}`, { align: "center" });
     doc.moveDown(0.5);
 
-    // Cabeçalho da tabela
     const colX = { num: 40, marca: 65, modelo: 165, tipo: 255, peca: 325, preco: 430, custo: 480, estoque: 535 };
-    doc.fontSize(8).font("Helvetica-Bold");
-    const headerY = doc.y;
-    doc.rect(40, headerY - 2, 515, 14).fill("#DDDDDD");
-    doc.fillColor("black");
-    doc.text("#", colX.num, headerY, { width: 20 });
-    doc.text("Marca", colX.marca, headerY, { width: 95 });
-    doc.text("Modelo", colX.modelo, headerY, { width: 85 });
-    doc.text("Tipo", colX.tipo, headerY, { width: 65 });
-    doc.text("Peça", colX.peca, headerY, { width: 100 });
-    doc.text("Preço", colX.preco, headerY, { width: 45 });
-    doc.text("Custo", colX.custo, headerY, { width: 45 });
-    doc.text("Estoque", colX.estoque, headerY, { width: 45 });
-    doc.moveDown(0.8);
-    doc.font("Helvetica").fontSize(7);
+    const CELL_PAD = 4;
+    const HEADER_RECT_H = 14;
+    const PAGE_BOTTOM = doc.page.height - doc.page.margins.bottom - 10;
+
+    // Helper: draw table header at yPos, returns y position for first data row
+    const drawTableHeader = (yPos) => {
+      doc.fontSize(8).font("Helvetica-Bold");
+      doc.rect(40, yPos - 2, 515, HEADER_RECT_H).fill("#DDDDDD");
+      doc.fillColor("black");
+      doc.text("#", colX.num, yPos, { width: 20 });
+      doc.text("Marca", colX.marca, yPos, { width: 95 });
+      doc.text("Modelo", colX.modelo, yPos, { width: 85 });
+      doc.text("Tipo", colX.tipo, yPos, { width: 65 });
+      doc.text("Peça", colX.peca, yPos, { width: 100 });
+      doc.text("Preço", colX.preco, yPos, { width: 45 });
+      doc.text("Custo", colX.custo, yPos, { width: 45 });
+      doc.text("Estoque", colX.estoque, yPos, { width: 45 });
+      doc.font("Helvetica").fontSize(7);
+      return yPos + HEADER_RECT_H + CELL_PAD;
+    };
+
+    // Draw initial table header and track current Y manually
+    let currentY = drawTableHeader(doc.y);
+    // drawTableHeader already sets Helvetica 7 at the end; keep it consistent
+    // for heightOfString measurements throughout the loop.
 
     let rowNum = 1;
     for (const row of data) {
-      if (doc.y > PDF_PAGE_BREAK_Y) {
-        doc.addPage();
-        doc.fontSize(8).font("Helvetica-Bold");
-        const hY = doc.y;
-        doc.rect(40, hY - 2, 515, 14).fill("#DDDDDD");
-        doc.fillColor("black");
-        doc.text("#", colX.num, hY, { width: 20 });
-        doc.text("Marca", colX.marca, hY, { width: 95 });
-        doc.text("Modelo", colX.modelo, hY, { width: 85 });
-        doc.text("Tipo", colX.tipo, hY, { width: 65 });
-        doc.text("Peça", colX.peca, hY, { width: 100 });
-        doc.text("Preço", colX.preco, hY, { width: 45 });
-        doc.text("Custo", colX.custo, hY, { width: 45 });
-        doc.text("Estoque", colX.estoque, hY, { width: 45 });
-        doc.moveDown(0.8);
-        doc.font("Helvetica").fontSize(7);
-      }
-
-      const y = doc.y;
       const precoFmt = Number(row.preco).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
       const custoFmt = Number(row.custo).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-      doc.text(String(rowNum), colX.num, y, { width: 20 });
-      doc.text(String(row.marca || "-"), colX.marca, y, { width: 95 });
-      doc.text(String(row.modelo || "-"), colX.modelo, y, { width: 85 });
-      doc.text(String(row.tipo || "-"), colX.tipo, y, { width: 65 });
-      doc.text(String(row.peca || "-"), colX.peca, y, { width: 100 });
-      doc.text(precoFmt, colX.preco, y, { width: 45, align: "right" });
-      doc.text(custoFmt, colX.custo, y, { width: 45, align: "right" });
-      doc.text(String(row.estoque ?? 0), colX.estoque, y, { width: 45, align: "center" });
-      doc.moveDown(0.6);
+      // Measure each cell's wrapped-text height (font already set to Helvetica 7)
+      const cellHeights = [
+        doc.heightOfString(String(rowNum), { width: 20 }),
+        doc.heightOfString(String(row.marca || "-"), { width: 95 }),
+        doc.heightOfString(String(row.modelo || "-"), { width: 85 }),
+        doc.heightOfString(String(row.tipo || "-"), { width: 65 }),
+        doc.heightOfString(String(row.peca || "-"), { width: 100 }),
+        doc.heightOfString(precoFmt, { width: 45 }),
+        doc.heightOfString(custoFmt, { width: 45 }),
+        doc.heightOfString(String(row.estoque ?? 0), { width: 45 }),
+      ];
+      const rowHeight = Math.max(...cellHeights) + CELL_PAD * 2;
+
+      // Add new page and redraw header if this row would overflow the page
+      if (currentY + rowHeight > PAGE_BOTTOM) {
+        doc.addPage();
+        currentY = drawTableHeader(doc.page.margins.top);
+      }
+
+      const cellY = currentY + CELL_PAD;
+      doc.text(String(rowNum), colX.num, cellY, { width: 20 });
+      doc.text(String(row.marca || "-"), colX.marca, cellY, { width: 95 });
+      doc.text(String(row.modelo || "-"), colX.modelo, cellY, { width: 85 });
+      doc.text(String(row.tipo || "-"), colX.tipo, cellY, { width: 65 });
+      doc.text(String(row.peca || "-"), colX.peca, cellY, { width: 100 });
+      doc.text(precoFmt, colX.preco, cellY, { width: 45, align: "right" });
+      doc.text(custoFmt, colX.custo, cellY, { width: 45, align: "right" });
+      doc.text(String(row.estoque ?? 0), colX.estoque, cellY, { width: 45, align: "center" });
+
+      currentY += rowHeight;
       rowNum++;
     }
 
