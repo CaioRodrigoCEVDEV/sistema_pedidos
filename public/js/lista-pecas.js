@@ -375,27 +375,24 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
         <button id="btn-confirmar-cor">Confirmar</button>
       </div>
     </div>
-    <script>
-      (function(){
-        const select = document.getElementById('select-cor');
-        const confirmBtn = document.getElementById('btn-confirmar-cor');
-        // Se todas as opções estiverem sem estoque, desabilita confirmar
-        if ([...select.options].every(o => o.disabled)) {
-          confirmBtn.disabled = true;
-          confirmBtn.textContent = 'Indisponível';
-          confirmBtn.style.backgroundColor = '#999';
-          confirmBtn.style.cursor = 'not-allowed';
-        } else {
-          // Seleciona automaticamente a primeira opção disponível
-          const firstAvailable = [...select.options].find(o => !o.disabled);
-          if (firstAvailable) firstAvailable.selected = true;
-        }
-      })();
-    </script>
   `;
 
   document.body.appendChild(backdrop);
   document.body.appendChild(modal);
+
+  // Inicializa o select: desabilita confirmar se todas as opções estiverem sem estoque,
+  // senão seleciona automaticamente a primeira opção disponível
+  const selectInit = document.getElementById('select-cor');
+  const confirmBtnInit = document.getElementById('btn-confirmar-cor');
+  if ([...selectInit.options].every(o => o.disabled)) {
+    confirmBtnInit.disabled = true;
+    confirmBtnInit.textContent = 'Indisponível';
+    confirmBtnInit.style.backgroundColor = '#999';
+    confirmBtnInit.style.cursor = 'not-allowed';
+  } else {
+    const firstAvailable = [...selectInit.options].find(o => !o.disabled);
+    if (firstAvailable) firstAvailable.selected = true;
+  }
 
   /**
    * Função para fechar o modal e remover o backdrop

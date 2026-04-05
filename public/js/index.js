@@ -562,11 +562,12 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       <select id="select-cor">
   ${cores
     .map((cor) => {
+      const idCor = cor.corcod;
       const semEstoque = cor.procorsemest === "S";
       const label = `${cor.cornome}${semEstoque ? " (Sem estoque)" : ""}`;
 
       return `
-        <option value="${cor.cornome}" 
+        <option value="${idCor}" data-nome="${cor.cornome}"
           ${semEstoque ? 'disabled data-semest="S"' : ""}>
           ${label}
         </option>
@@ -579,35 +580,33 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
         <button id="btn-confirmar-cor">Confirmar</button>
       </div>
     </div>
-    <script>
-      (function(){
-        const select = document.getElementById('select-cor');
-        const confirmBtn = document.getElementById('btn-confirmar-cor');
-        // Se todas as opções estiverem sem estoque, desabilita confirmar
-        if ([...select.options].every(o => o.disabled)) {
-          confirmBtn.disabled = true;
-          confirmBtn.textContent = 'Indisponível';
-          confirmBtn.style.backgroundColor = '#999';
-          confirmBtn.style.cursor = 'not-allowed';
-        } else {
-          // Seleciona automaticamente a primeira opção disponível
-          const firstAvailable = [...select.options].find(o => !o.disabled);
-          if (firstAvailable) firstAvailable.selected = true;
-        }
-      })();
-    </script>
   `;
 
   document.body.appendChild(backdrop);
   document.body.appendChild(modal);
 
+  // Inicializa o select: desabilita confirmar se todas as opções estiverem sem estoque,
+  // senão seleciona automaticamente a primeira opção disponível
+  const selectInit = document.getElementById('select-cor');
+  const confirmBtnInit = document.getElementById('btn-confirmar-cor');
+  if ([...selectInit.options].every(o => o.disabled)) {
+    confirmBtnInit.disabled = true;
+    confirmBtnInit.textContent = 'Indisponível';
+    confirmBtnInit.style.backgroundColor = '#999';
+    confirmBtnInit.style.cursor = 'not-allowed';
+  } else {
+    const firstAvailable = [...selectInit.options].find(o => !o.disabled);
+    if (firstAvailable) firstAvailable.selected = true;
+  }
+
   document.getElementById("btn-confirmar-cor").onclick = function () {
-    const corSelecionada =
-      document.getElementById("select-cor").options[
-        document.getElementById("select-cor").selectedIndex
-      ].text;
+    const select = document.getElementById("select-cor");
+    const corSelecionada = select.options[select.selectedIndex].text.trim();
+    const idCorSelecionada = Number(select.value) || null;
     const idComCor = `${procod}-${corSelecionada}`;
     const nomeComCor = `${nome} (${corSelecionada})`;
+
+    console.log("ID da cor selecionada:", idCorSelecionada);
 
     adicionarProdutoAoCarrinho(
       idComCor,
@@ -616,7 +615,8 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       marca,
       preco,
       qtde,
-      corSelecionada
+      corSelecionada,
+      idCorSelecionada
     );
 
     modal.remove();
@@ -636,16 +636,16 @@ function adicionarProdutoAoCarrinho(
   marca,
   preco,
   qtde,
-  corSelecionada
+  corSelecionada,
+  idCorSelecionada
 ) {
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  // console.log("cor:", corSelecionada);
 
   const idx = cart.findIndex((item) => item.id === id);
   if (idx > -1) {
     cart[idx].qt += qtde;
   } else {
-    cart.push({ id, nome, tipo, marca, preco, qt: qtde, corSelecionada });
+    cart.push({ id, nome, tipo, marca, preco, qt: qtde, corSelecionada, idCorSelecionada });
   }
 
   localStorage.setItem("cart", JSON.stringify(cart));
