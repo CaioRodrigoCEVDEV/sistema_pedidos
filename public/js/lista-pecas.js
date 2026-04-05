@@ -421,9 +421,9 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       ].text;
     const idComCor = `${procod}-${corSelecionada}`;
     const nomeComCor = `${nome} (${corSelecionada})`;
-    const idCorSelecionada = Number(document.getElementById("select-cor").value) || null;
-
-    console.log("ID da cor selecionada:", idCorSelecionada);
+    const idCorSelecionada = document.getElementById("select-cor").value
+      ? Number(document.getElementById("select-cor").value)
+      : null;
 
     adicionarProdutoAoCarrinho(
       idComCor,
