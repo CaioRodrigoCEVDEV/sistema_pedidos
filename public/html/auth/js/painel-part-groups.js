@@ -229,7 +229,7 @@ function renderGrupos(grupos) {
           : "badge rounded-pill bg-success-subtle text-success";
 
     // Color badge (validate hex to prevent CSS injection)
-    const safeHex = /^#[0-9A-Fa-f]{3,6}$/.test(grupo.color_hex || "") ? grupo.color_hex : "#6c757d";
+    const safeHex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(grupo.color_hex || "") ? grupo.color_hex : "#6c757d";
     const colorBadge = grupo.color_name
       ? `<span class="badge rounded-pill" style="background:${safeHex};color:#fff;font-size:0.75em;">${escapeHtml(grupo.color_name)}</span>`
       : '<span class="text-muted small">—</span>';
@@ -439,7 +439,7 @@ async function abrirDetalhes(id) {
 
     document.getElementById("nomeGrupoDetalhe").textContent = grupo.name;
     document.getElementById("estoqueGrupoDetalhe").textContent =
-      grupo.stock_quantity || 0;
+      grupo.stock_quantity ?? 0;
 
     // Renderiza as peças do grupo
     renderPecasGrupo(grupo.parts || []);
@@ -454,7 +454,7 @@ async function abrirDetalhes(id) {
 
 /**
  * Renderiza a tabela de peças do grupo
- * @param {Array} pecas - Lista de peças do grupo
+ * @param {Array} pecas - Lista de peças do grupo (com procorid, cornome, procorqtde)
  */
 function renderPecasGrupo(pecas) {
   const tbody = document.getElementById("tabela-pecas-grupo");
@@ -462,25 +462,30 @@ function renderPecasGrupo(pecas) {
 
   if (!pecas || pecas.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="4" class="text-center text-muted">Nenhuma peça no grupo</td></tr>';
+      '<tr><td colspan="5" class="text-center text-muted">Nenhuma peça no grupo</td></tr>';
     return;
   }
 
   pecas.forEach((peca) => {
     const tr = document.createElement("tr");
+    const safeHex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(peca.corhex || "") ? peca.corhex : null;
+    const colorBadge = peca.cornome
+      ? `<span class="badge rounded-pill" style="background:${safeHex || "#6c757d"};color:#fff;font-size:0.75em;">${escapeHtml(peca.cornome)}</span>`
+      : '<span class="text-muted small">—</span>';
     tr.innerHTML = `
       <td>${peca.procod}</td>
       <td>${escapeHtml(peca.prodes || "-")}</td>
-      <td>R$ ${Number(peca.provl || 0).toFixed(2)}</td>
+      <td class="text-center">${colorBadge}</td>
+      <td class="text-center">${peca.procorqtde ?? 0}</td>
       <td class="text-center">
         <button class="btn btn-sm btn-outline-danger btn-remove-part" title="Remover do grupo">
           <i class="bi bi-x-lg"></i>
         </button>
       </td>
     `;
-    // Adiciona event listener (evita onclick inline para prevenir XSS)
+    // Adiciona event listener usando procorid
     tr.querySelector(".btn-remove-part").addEventListener("click", () => {
-      removerPecaGrupo(peca.procod);
+      removerPecaGrupo(peca.procorid);
     });
     tbody.appendChild(tr);
   });
@@ -878,7 +883,6 @@ function renderPecasDisponiveis(pecas, append = false) {
 
     const tr = document.createElement("tr");
     tr.setAttribute("data-peca-id", peca.procod);
-    const isInGroup = peca.part_group_id === currentGroupId;
     const hasColors = peca.has_colors && peca.colors && peca.colors.length > 0;
 
     tr.innerHTML = `
@@ -887,27 +891,28 @@ function renderPecasDisponiveis(pecas, append = false) {
       <td>${escapeHtml(peca.marcasdes || "-")}</td>
       <td>${escapeHtml(peca.tipodes || "-")}</td>
       <td class="text-center">
-        ${hasColors ? '<i class="bi bi-palette-fill text-info" title="Produto com cores"></i>' : ""}
+        ${hasColors ? `<i class="bi bi-palette-fill text-info" title="${peca.colors.length} cor(es) disponível(is)"></i>` : ""}
       </td>
       <td class="text-center">
         ${
-          isInGroup
-            ? '<span class="badge bg-success">No grupo</span>'
-            : `<button class="btn btn-sm btn-primary btn-add-part" data-part-id="${peca.procod}" data-has-colors="${hasColors}">
+          hasColors
+            ? `<button class="btn btn-sm btn-primary btn-add-part" data-part-id="${peca.procod}">
               <i class="bi bi-plus"></i> Adicionar
             </button>`
+            : '<span class="text-muted small" title="Sem variação de cor cadastrada">—</span>'
         }
       </td>
     `;
 
     // Adiciona event listener (evita onclick inline para prevenir XSS)
-    if (!isInGroup) {
+    if (hasColors) {
       const button = tr.querySelector(".btn-add-part");
       button.addEventListener("click", () => {
-        if (hasColors) {
-          mostrarModalSelecaoCor(peca);
+        if (peca.colors.length === 1) {
+          // Apenas uma cor: adiciona diretamente pelo procorid
+          adicionarPecaAoGrupo(peca.colors[0].procorid);
         } else {
-          adicionarPecaAoGrupo(peca.procod, null);
+          mostrarModalSelecaoCor(peca);
         }
       });
     }
@@ -916,15 +921,14 @@ function renderPecasDisponiveis(pecas, append = false) {
 }
 
 /**
- * Mostra modal para seleção de cor do produto
- * @param {Object} peca - Objeto da peça com informações de cores
+ * Mostra modal para seleção de cor do produto quando há múltiplas variações
+ * @param {Object} peca - Objeto da peça com informações de cores (cada cor tem procorid)
  */
 function mostrarModalSelecaoCor(peca) {
   const colors = peca.colors || [];
 
   if (colors.length === 0) {
-    // Se não há cores, adiciona direto
-    adicionarPecaAoGrupo(peca.procod, null);
+    showToast("Produto sem variações de cor cadastradas", "error");
     return;
   }
 
@@ -939,7 +943,7 @@ function mostrarModalSelecaoCor(peca) {
           </div>
           <div class="modal-body">
             <p><strong>${escapeHtml(peca.prodes || "Produto")}</strong></p>
-            <p class="text-muted small">Selecione a cor para adicionar ao grupo:</p>
+            <p class="text-muted small">Selecione a variação de cor para adicionar ao grupo:</p>
             <div class="mb-3">
               <label for="selectCor" class="form-label">Cor:</label>
               <select class="form-select" id="selectCor" required>
@@ -947,8 +951,8 @@ function mostrarModalSelecaoCor(peca) {
                 ${colors
                   .map(
                     (cor) => `
-                  <option value="${cor.corcod}">
-                    ${escapeHtml(cor.cornome)} ${cor.procorqtde ? `(Qtd: ${cor.procorqtde})` : ""}
+                  <option value="${cor.procorid}">
+                    ${escapeHtml(cor.cornome || "Sem nome")} ${cor.procorqtde != null ? `(Estoque: ${cor.procorqtde})` : ""}
                   </option>
                 `,
                   )
@@ -957,7 +961,7 @@ function mostrarModalSelecaoCor(peca) {
             </div>
             <div class="alert alert-info small" role="alert">
               <i class="bi bi-info-circle"></i>
-              A quantidade será controlada pelo grupo. O grupo dita a quantidade disponível para todas as peças.
+              O estoque exibido é por variação de cor. Cada grupo controla o estoque da variação selecionada.
             </div>
           </div>
           <div class="modal-footer">
@@ -979,20 +983,20 @@ function mostrarModalSelecaoCor(peca) {
   const modalElement = document.getElementById("modalSelecaoCor");
   const modal = new bootstrap.Modal(modalElement);
 
-  // Evento de confirmar
+  // Evento de confirmar: usa procorid do option selecionado
   document
     .getElementById("btnConfirmarCor")
     .addEventListener("click", async () => {
       const selectCor = document.getElementById("selectCor");
-      const colorId = selectCor.value;
+      const procorid = selectCor.value;
 
-      if (!colorId) {
+      if (!procorid) {
         showToast("Por favor, selecione uma cor", "error");
         return;
       }
 
       modal.hide();
-      await adicionarPecaAoGrupo(peca.procod, colorId);
+      await adicionarPecaAoGrupo(procorid);
 
       // Remove modal do DOM após fechar
       modalElement.addEventListener("hidden.bs.modal", () => {
@@ -1004,25 +1008,18 @@ function mostrarModalSelecaoCor(peca) {
 }
 
 /**
- * Adiciona uma peça ao grupo atual
- * Atualiza a lista de peças sem fechar o modal para evitar problemas de backdrop
- * @param {number} partId - ID da peça (procod)
- * @param {number|null} colorId - ID da cor selecionada (opcional)
+ * Adiciona uma variação de cor (procorid) ao grupo atual
+ * @param {number} procorid - ID da variação procor (produto+cor)
  */
-async function adicionarPecaAoGrupo(partId, colorId = null) {
+async function adicionarPecaAoGrupo(procorid) {
   if (!currentGroupId) return;
 
   try {
-    const body = { partId };
-    if (colorId) {
-      body.colorId = colorId;
-    }
-
     const res = await fetch(`${BASE_URL}/part-groups/${currentGroupId}/parts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(body),
+      body: JSON.stringify({ procorid }),
     });
 
     if (!res.ok) {
@@ -1055,16 +1052,16 @@ async function atualizarListaPecasDisponiveis() {
 }
 
 /**
- * Remove uma peça do grupo atual
- * @param {number} partId - ID da peça (procod)
+ * Remove uma variação (procorid) do grupo atual
+ * @param {number} procorid - ID da variação procor a remover
  */
-async function removerPecaGrupo(partId) {
-  if (!confirm("Tem certeza que deseja remover esta peça do grupo?")) {
+async function removerPecaGrupo(procorid) {
+  if (!confirm("Tem certeza que deseja remover esta variação do grupo?")) {
     return;
   }
 
   try {
-    const res = await fetch(`${BASE_URL}/part-groups/parts/${partId}`, {
+    const res = await fetch(`${BASE_URL}/part-groups/parts/${procorid}`, {
       method: "DELETE",
       credentials: "include",
     });

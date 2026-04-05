@@ -166,19 +166,22 @@ exports.deleteGroup = async (req, res) => {
   }
 };
 
-// Adiciona uma peça a um grupo de compatibilidade
+// Adiciona uma variação de cor (procor) a um grupo de compatibilidade
 exports.addPartToGroup = async (req, res) => {
   const { id } = req.params;
-  const { partId, colorId } = req.body;
+  const { procorid } = req.body;
 
-  if (!partId) {
-    return res.status(400).json({ error: "ID da peça é obrigatório" });
+  if (!procorid) {
+    return res.status(400).json({ error: "ID da variação de cor (procorid) é obrigatório" });
   }
 
   try {
-    const result = await partGroupModels.addPartToGroup(partId, id, colorId);
+    const result = await partGroupModels.addProcorToGroup(procorid, id);
     if (!result) {
-      return res.status(404).json({ error: "Peça não encontrada" });
+      return res.status(404).json({ error: "Variação não encontrada ou grupo inválido" });
+    }
+    if (result.alreadyInGroup) {
+      return res.status(200).json({ ...result, message: "Variação já pertence a este grupo" });
     }
     res.status(200).json(result);
   } catch (error) {
@@ -187,14 +190,14 @@ exports.addPartToGroup = async (req, res) => {
   }
 };
 
-// Remove uma peça do seu grupo de compatibilidade
+// Remove uma variação de cor do grupo de compatibilidade
 exports.removePartFromGroup = async (req, res) => {
-  const { partId } = req.params;
+  const { procorid } = req.params;
 
   try {
-    const result = await partGroupModels.removePartFromGroup(partId);
+    const result = await partGroupModels.removeProcorFromGroup(procorid);
     if (!result) {
-      return res.status(404).json({ error: "Peça não encontrada" });
+      return res.status(404).json({ error: "Variação não encontrada no grupo" });
     }
     res.status(200).json(result);
   } catch (error) {

@@ -214,6 +214,34 @@ async function atualizarDB() {
       ON public.pro(part_group_id);
     `);
 
+    // Adiciona coluna corhex na tabela cores (código HEX opcional para exibição)
+    await pool.query(`
+      ALTER TABLE public.cores ADD COLUMN IF NOT EXISTS corhex TEXT NULL;
+    `);
+
+    // Tabela de itens do grupo de compatibilidade, vinculando grupo a uma variação procor
+    // Substitui o campo part_group_id em pro, permitindo o mesmo produto em vários grupos
+    // desde que com cores diferentes (procorid diferente).
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.part_group_items (
+        id SERIAL PRIMARY KEY,
+        group_id INTEGER NOT NULL REFERENCES public.part_groups(id) ON DELETE CASCADE,
+        procorid INTEGER NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT uq_part_group_item UNIQUE (group_id, procorid)
+      );
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_part_group_items_group_id
+      ON public.part_group_items(group_id);
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_part_group_items_procorid
+      ON public.part_group_items(procorid);
+    `);
+
     // ==================================================================================================================================
     // FIM GRUPOS DE COMPATIBILIDADE
     // ==================================================================================================================================
