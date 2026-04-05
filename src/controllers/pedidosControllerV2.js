@@ -2,7 +2,8 @@ const pedidoModels = require("../models/pedidoModels");
 
 exports.totalVendas = async (req, res) => {
   try {
-    const result = await pedidoModels.totalVendas();
+    const { dataInicio, dataFim } = req.query || {};
+    const result = await pedidoModels.totalVendas(dataInicio, dataFim);
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
@@ -11,7 +12,8 @@ exports.totalVendas = async (req, res) => {
 }
 exports.totalVendasDia = async (req, res) => {
   try {
-    const result = await pedidoModels.totalVendasDia();
+    const { dataInicio, dataFim } = req.query || {};
+    const result = await pedidoModels.totalVendasDia(dataInicio, dataFim);
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
@@ -20,7 +22,8 @@ exports.totalVendasDia = async (req, res) => {
 }
 exports.totalVendasAnual = async (req, res) => {
   try {
-    const result = await pedidoModels.totalVendasAnual();
+    const { dataInicio, dataFim } = req.query || {};
+    const result = await pedidoModels.totalVendasAnual(dataInicio, dataFim);
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
@@ -29,7 +32,8 @@ exports.totalVendasAnual = async (req, res) => {
 }
 exports.topMarcasMes = async (req, res) => {
   try {
-    const result = await pedidoModels.topMarcasMes();
+    const { dataInicio, dataFim } = req.query || {};
+    const result = await pedidoModels.topMarcasMes(dataInicio, dataFim);
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
@@ -38,7 +42,8 @@ exports.topMarcasMes = async (req, res) => {
 }
 exports.topProdutosMes = async (req, res) => {
   try {
-    const result = await pedidoModels.topProdutosMes();
+    const { dataInicio, dataFim } = req.query || {};
+    const result = await pedidoModels.topProdutosMes(dataInicio, dataFim);
     res.status(200).json(result);
   } catch (error) {
     console.error(error);

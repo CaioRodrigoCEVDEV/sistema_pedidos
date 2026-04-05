@@ -27,10 +27,14 @@ async function listAllGroups() {
       pg.grpcusto,
       pg.created_at,
       pg.updated_at,
+      pg.color_id,
+      COALESCE(co.cordes, '') AS color_name,
+      COALESCE(co.corhex, '') AS color_hex,
       COUNT(p.procod) as parts_count
     FROM part_groups pg
     LEFT JOIN pro p ON p.part_group_id = pg.id
-    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.grpcusto, pg.created_at, pg.updated_at
+    LEFT JOIN cores co ON co.corcod = pg.color_id
+    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.grpcusto, pg.created_at, pg.updated_at, pg.color_id, co.cordes, co.corhex
     ORDER BY pg.created_at desc
   `);
   return result.rows;
@@ -50,8 +54,12 @@ async function getGroupById(groupId) {
       pg.stock_quantity,
       pg.grpcusto,
       pg.created_at,
-      pg.updated_at
+      pg.updated_at,
+      pg.color_id,
+      COALESCE(co.cordes, '') AS color_name,
+      COALESCE(co.corhex, '') AS color_hex
     FROM part_groups pg
+    LEFT JOIN cores co ON co.corcod = pg.color_id
     WHERE pg.id = $1
   `,
     [groupId],
@@ -356,14 +364,14 @@ async function incrementGroupStock(
  * @param {number} stockQuantity - Quantidade inicial de estoque (padrão: 0)
  * @returns {Object} Grupo criado
  */
-async function createGroup(name, stockQuantity = 0) {
+async function createGroup(name, stockQuantity = 0, colorId = null) {
   const result = await pool.query(
     `
-    INSERT INTO part_groups (name, stock_quantity)
-    VALUES ($1, $2)
+    INSERT INTO part_groups (name, stock_quantity, color_id)
+    VALUES ($1, $2, $3)
     RETURNING *
   `,
-    [name, stockQuantity],
+    [name, stockQuantity, colorId || null],
   );
   return result.rows[0];
 }
@@ -375,26 +383,30 @@ async function createGroup(name, stockQuantity = 0) {
  * @param {number|null} stockQuantity - Nova quantidade de estoque (opcional)
  * @returns {Object|null} Grupo atualizado ou null se não encontrado
  */
-async function updateGroup(groupId, name, stockQuantity = null) {
-  let query, params;
+async function updateGroup(groupId, name, stockQuantity = null, colorId = undefined) {
+  let setClauses = ["name = $1", "updated_at = NOW()"];
+  let params = [name];
+  let paramIndex = 2;
 
   if (stockQuantity !== null) {
-    query = `
-      UPDATE part_groups 
-      SET name = $1, stock_quantity = $2, updated_at = NOW()
-      WHERE id = $3
-      RETURNING *
-    `;
-    params = [name, stockQuantity, groupId];
-  } else {
-    query = `
-      UPDATE part_groups 
-      SET name = $1, updated_at = NOW()
-      WHERE id = $2
-      RETURNING *
-    `;
-    params = [name, groupId];
+    setClauses.push(`stock_quantity = $${paramIndex}`);
+    params.push(stockQuantity);
+    paramIndex++;
   }
+
+  if (colorId !== undefined) {
+    setClauses.push(`color_id = $${paramIndex}`);
+    params.push(colorId || null);
+    paramIndex++;
+  }
+
+  params.push(groupId);
+  const query = `
+    UPDATE part_groups 
+    SET ${setClauses.join(", ")}
+    WHERE id = $${paramIndex}
+    RETURNING *
+  `;
 
   const result = await pool.query(query, params);
   return result.rows[0] || null;
