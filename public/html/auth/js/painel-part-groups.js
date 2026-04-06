@@ -1027,18 +1027,58 @@ async function adicionarPecaAoGrupo(procorid) {
       throw new Error(err.error || "Erro ao adicionar peça");
     }
 
+    const data = await res.json();
+
     showToast("Peça adicionada ao grupo!", "success");
 
     // Atualiza apenas a linha da peça adicionada sem recarregar toda a lista.
     // Isso preserva a posição de scroll do modal.
     _atualizarLinhaAposAdicionar(procorid);
 
-    // Atualiza os detalhes do grupo em segundo plano
-    abrirDetalhes(currentGroupId);
+    // Adiciona a nova peça ao painel de detalhes sem re-fetch (evita pulo de scroll).
+    if (!data.alreadyInGroup) {
+      _appendPartToGroupTable(data);
+    }
   } catch (err) {
     console.error(err);
     showToast(err.message, "error");
   }
+}
+
+/**
+ * Adiciona uma nova linha ao painel de detalhes do grupo após adicionar uma peça,
+ * sem recarregar o painel inteiro (preserva a posição de scroll do modal).
+ * @param {Object} part - Dados da variação retornados pela API (addProcorToGroup)
+ */
+function _appendPartToGroupTable(part) {
+  const tbody = document.getElementById("tabela-pecas-grupo");
+  if (!tbody) return;
+
+  // Remove linha de "Nenhuma peça" se presente
+  const placeholder = tbody.querySelector("tr td[colspan]");
+  if (placeholder) placeholder.closest("tr").remove();
+
+  const safeHex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(part.corhex || "") ? part.corhex : null;
+  const colorBadge = part.cornome
+    ? `<span class="badge rounded-pill" style="background:${safeHex || "#6c757d"};color:#fff;font-size:0.75em;">${escapeHtml(part.cornome)}</span>`
+    : '<span class="text-muted small">—</span>';
+
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${part.procorprocod}</td>
+    <td>${escapeHtml(part.prodes || "-")}</td>
+    <td class="text-center">${colorBadge}</td>
+    <td class="text-center">${part.procorqtde ?? 0}</td>
+    <td class="text-center">
+      <button class="btn btn-sm btn-outline-danger btn-remove-part" title="Remover do grupo">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </td>
+  `;
+  tr.querySelector(".btn-remove-part").addEventListener("click", () => {
+    removerPecaGrupo(part.procorid);
+  });
+  tbody.appendChild(tr);
 }
 
 /**
