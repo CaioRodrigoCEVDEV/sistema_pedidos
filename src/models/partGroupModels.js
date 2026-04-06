@@ -67,6 +67,7 @@ async function getGroupById(groupId) {
       p.procod,
       p.prodes,
       p.provl,
+      p.proqtde,
       m.marcasdes,
       t.tipodes
     FROM pro p

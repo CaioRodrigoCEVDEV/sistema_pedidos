@@ -367,16 +367,18 @@ function renderPecasGrupo(pecas) {
 
   if (!pecas || pecas.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="4" class="text-center text-muted">Nenhuma peça no grupo</td></tr>';
+      '<tr><td colspan="5" class="text-center text-muted">Nenhuma peça no grupo</td></tr>';
     return;
   }
 
   pecas.forEach((peca) => {
     const tr = document.createElement("tr");
+    const stockQty = peca.proqtde !== undefined && peca.proqtde !== null ? peca.proqtde : "-";
     tr.innerHTML = `
       <td>${peca.procod}</td>
       <td>${escapeHtml(peca.prodes || "-")}</td>
       <td>R$ ${Number(peca.provl || 0).toFixed(2)}</td>
+      <td class="text-center">${stockQty}</td>
       <td class="text-center">
         <button class="btn btn-sm btn-outline-danger btn-remove-part" title="Remover do grupo">
           <i class="bi bi-x-lg"></i>
@@ -910,12 +912,21 @@ function mostrarModalSelecaoCor(peca) {
 
 /**
  * Adiciona uma peça ao grupo atual
- * Atualiza a lista de peças sem fechar o modal para evitar problemas de backdrop
+ * Atualiza a linha da peça na tabela sem recarregar a lista (preserva posição do scroll)
  * @param {number} partId - ID da peça (procod)
  * @param {number|null} colorId - ID da cor selecionada (opcional)
  */
 async function adicionarPecaAoGrupo(partId, colorId = null) {
   if (!currentGroupId) return;
+
+  // Desabilita o botão imediatamente para evitar duplo clique
+  const btn = document.querySelector(
+    `tr[data-peca-id="${partId}"] .btn-add-part`,
+  );
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+  }
 
   try {
     const body = { partId };
@@ -937,14 +948,32 @@ async function adicionarPecaAoGrupo(partId, colorId = null) {
 
     showToast("Peça adicionada ao grupo!", "success");
 
-    // Atualiza apenas a lista de peças disponíveis (mantém o modal aberto)
-    await atualizarListaPecasDisponiveis();
+    // Atualiza apenas a linha da peça adicionada (preserva scroll e evita refresh)
+    const tr = document.querySelector(`tr[data-peca-id="${partId}"]`);
+    if (tr) {
+      const actionCell = tr.querySelector("td:last-child");
+      if (actionCell) {
+        actionCell.innerHTML = '<span class="badge bg-success">No grupo</span>';
+      }
+    }
+
+    // Atualiza o estado em memória para refletir que a peça agora está no grupo
+    const partInMemory = availableParts.find((p) => p.procod === partId);
+    if (partInMemory) {
+      partInMemory.part_group_id = currentGroupId;
+    }
 
     // Atualiza os detalhes do grupo em segundo plano
     abrirDetalhes(currentGroupId);
   } catch (err) {
     console.error(err);
     showToast(err.message, "error");
+
+    // Restaura o botão em caso de erro
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-plus"></i> Adicionar';
+    }
   }
 }
 
