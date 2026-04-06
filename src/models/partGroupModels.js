@@ -23,7 +23,7 @@ async function listAllGroups() {
     SELECT 
       pg.id,
       pg.name,
-      COALESCE(SUM(pc.procorqtde), 0) AS stock_quantity,
+      COALESCE(pg.stock_quantity, 0) AS stock_quantity,
       pg.grpcusto,
       pg.created_at,
       pg.updated_at,
@@ -33,9 +33,8 @@ async function listAllGroups() {
       COUNT(pgi.id) AS parts_count
     FROM part_groups pg
     LEFT JOIN part_group_items pgi ON pgi.group_id = pg.id
-    LEFT JOIN procor pc ON pc.procorid = pgi.procorid
     LEFT JOIN cores co ON co.corcod = pg.color_id
-    GROUP BY pg.id, pg.name, pg.grpcusto, pg.created_at, pg.updated_at, pg.color_id, co.cornome, co.corhex
+    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.grpcusto, pg.created_at, pg.updated_at, pg.color_id, co.cornome, co.corhex
     ORDER BY pg.created_at desc
   `);
   return result.rows;
@@ -70,17 +69,6 @@ async function getGroupById(groupId) {
     return null;
   }
 
-  // Compute actual stock from procorqtde of items in the group
-  const stockResult = await pool.query(
-    `
-    SELECT COALESCE(SUM(pc.procorqtde), 0) AS stock_quantity
-    FROM part_group_items pgi
-    JOIN procor pc ON pc.procorid = pgi.procorid
-    WHERE pgi.group_id = $1
-    `,
-    [groupId],
-  );
-
   const partsResult = await pool.query(
     `
     SELECT
@@ -108,7 +96,6 @@ async function getGroupById(groupId) {
 
   return {
     ...groupResult.rows[0],
-    stock_quantity: Number(stockResult.rows[0].stock_quantity),
     parts: partsResult.rows,
   };
 }
@@ -485,7 +472,7 @@ async function addProcorToGroup(procorid, groupId) {
     // Verifica se o procorid existe e busca seus dados
     const procorResult = await client.query(
       `SELECT pc.procorid, pc.procorprocod, pc.procorcorescod, pc.procorqtde,
-              p.prodes, COALESCE(co.cornome, '') AS cornome
+              p.prodes, COALESCE(co.cornome, '') AS cornome, COALESCE(co.corhex, '') AS corhex
        FROM procor pc
        JOIN pro p ON p.procod = pc.procorprocod
        LEFT JOIN cores co ON co.corcod = pc.procorcorescod
@@ -823,20 +810,9 @@ async function updateGroupStock(
   try {
     await client.query("BEGIN");
 
-    // Busca o estoque atual calculado a partir de procorqtde para calcular a diferença
-    const currentResult = await client.query(
-      `
-      SELECT COALESCE(SUM(pc.procorqtde), 0) AS stock_quantity
-      FROM part_group_items pgi
-      JOIN procor pc ON pc.procorid = pgi.procorid
-      WHERE pgi.group_id = $1
-    `,
-      [groupId],
-    );
-
-    // Verifica se o grupo existe
+    // Busca o estoque atual fixo do grupo (stock_quantity) para calcular a diferença
     const groupExists = await client.query(
-      `SELECT id FROM part_groups WHERE id = $1 FOR UPDATE`,
+      `SELECT id, COALESCE(stock_quantity, 0) AS stock_quantity FROM part_groups WHERE id = $1 FOR UPDATE`,
       [groupId],
     );
 
@@ -844,9 +820,7 @@ async function updateGroupStock(
       throw new Error("Grupo não encontrado");
     }
 
-    const currentStock = currentResult.rows.length > 0
-      ? Number(currentResult.rows[0].stock_quantity)
-      : 0;
+    const currentStock = Number(groupExists.rows[0].stock_quantity);
     const change = newQuantity - currentStock;
 
     // Atualiza stock_quantity e custo na tabela part_groups
