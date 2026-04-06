@@ -110,7 +110,7 @@ async function buscarEstoquePorPesquisa(termo) {
         item.marcasdes,
         item.moddes,
         item.tipodes,
-        item.cordes,
+        item.cornome,
       ];
       return fields.some((f) =>
         String(f || "")
@@ -165,7 +165,7 @@ async function buscarEstoquePorPesquisa(termo) {
           </td>
           <td>
             <span class="badge rounded-pill bg-dark-subtle text-dark fw-medium border px-3">
-              ${dado.cordes || "Sem Cor"}
+              ${dado.cornome || "Sem Cor"}
             </span>
           </td>
           <td>
@@ -467,7 +467,7 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
           </td>
           <td>
         <span class="badge rounded-pill bg-dark-subtle text-dark fw-medium border px-3">${
-          dado.cordes || "Sem Cor"
+          dado.cornome || "Sem Cor"
         }</span>
           </td>
           <td>
