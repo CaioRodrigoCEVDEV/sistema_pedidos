@@ -1029,8 +1029,9 @@ async function adicionarPecaAoGrupo(procorid) {
 
     showToast("Peça adicionada ao grupo!", "success");
 
-    // Atualiza apenas a lista de peças disponíveis (mantém o modal aberto)
-    await atualizarListaPecasDisponiveis();
+    // Atualiza apenas a linha da peça adicionada sem recarregar toda a lista.
+    // Isso preserva a posição de scroll do modal.
+    _atualizarLinhaAposAdicionar(procorid);
 
     // Atualiza os detalhes do grupo em segundo plano
     abrirDetalhes(currentGroupId);
@@ -1041,14 +1042,46 @@ async function adicionarPecaAoGrupo(procorid) {
 }
 
 /**
- * Atualiza a lista de peças disponíveis sem reabrir o modal
- * Previne o problema de múltiplos backdrops (overlay cinza)
- * Recarrega a primeira página mantendo o termo de busca
+ * Atualiza apenas a linha da peça recém-adicionada na tabela de peças disponíveis,
+ * sem recarregar toda a lista. Preserva a posição de scroll do modal.
+ * @param {number} procorid - ID da variação procor recém-adicionada
  */
-async function atualizarListaPecasDisponiveis() {
-  currentPage = 1;
-  availableParts = [];
-  await carregarPecasDisponiveis(1, false);
+function _atualizarLinhaAposAdicionar(procorid) {
+  const procorId = Number(procorid);
+  const partIndex = availableParts.findIndex(
+    (p) => p.colors && p.colors.some((c) => c.procorid === procorId),
+  );
+  if (partIndex === -1) return;
+
+  const part = availableParts[partIndex];
+
+  // Remove a cor adicionada do estado local
+  part.colors = part.colors.filter((c) => c.procorid !== procorId);
+
+  const row = document.querySelector(`tr[data-peca-id="${part.procod}"]`);
+  if (!row) return;
+
+  const button = row.querySelector(".btn-add-part");
+  if (!button) return;
+
+  if (part.colors.length === 0) {
+    // Todas as cores foram adicionadas: desabilita o botão
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-check-lg"></i> Adicionado';
+    button.classList.remove("btn-primary");
+    button.classList.add("btn-success");
+  } else {
+    // Ainda há cores disponíveis: rebind do handler com as cores restantes
+    const newBtn = button.cloneNode(true);
+    button.parentNode.replaceChild(newBtn, button);
+    newBtn.addEventListener("click", () => {
+      if (part.colors.length === 1) {
+        adicionarPecaAoGrupo(part.colors[0].procorid);
+      } else {
+        mostrarModalSelecaoCor(part);
+      }
+    });
+  }
 }
 
 /**

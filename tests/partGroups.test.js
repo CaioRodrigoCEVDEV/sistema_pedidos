@@ -420,6 +420,57 @@ async function runTests() {
     await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
   });
 
+  // Teste 14: addProcorToGroup herda estoque do grupo ao adicionar variação
+  await test('addProcorToGroup herda estoque do grupo ao adicionar nova variação', async () => {
+    // Cria um grupo com estoque de 30
+    const group = await partGroupModels.createGroup('Test Group Procor Inherit', 0);
+    await partGroupModels.updateGroupStock(group.id, 30, 'test_setup');
+
+    // Cria uma peça de teste
+    const partResult = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde)
+      SELECT 'Peça Teste Procor Inherit',
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             100,
+             0
+      RETURNING procod
+    `);
+    const partId = partResult.rows[0].procod;
+
+    // Cria ou reutiliza uma cor de teste
+    let colorId;
+    const existingColor = await pool.query(`SELECT corcod FROM cores WHERE cornome = 'Cor Teste Inherit'`);
+    if (existingColor.rows.length > 0) {
+      colorId = existingColor.rows[0].corcod;
+    } else {
+      const insertedColor = await pool.query(`INSERT INTO cores (cornome) VALUES ('Cor Teste Inherit') RETURNING corcod`);
+      colorId = insertedColor.rows[0].corcod;
+    }
+
+    // Insere variação procor com estoque inicial 0
+    const procorResult = await pool.query(`
+      INSERT INTO procor (procorprocod, procorcorescod, procorqtde)
+      VALUES ($1, $2, 0)
+      RETURNING procorid
+    `, [partId, colorId]);
+    const procorid = procorResult.rows[0].procorid;
+
+    // Adiciona a variação ao grupo usando addProcorToGroup
+    const result = await partGroupModels.addProcorToGroup(procorid, group.id);
+
+    assertNotNull(result, 'Deve retornar resultado da adição');
+    assertEqual(result.procorqtde, 30, 'procorqtde deve ser herdado do grupo (30)');
+
+    // Verifica no banco que procorqtde foi atualizado
+    const check = await pool.query('SELECT procorqtde FROM procor WHERE procorid = $1', [procorid]);
+    assertEqual(check.rows[0].procorqtde, 30, 'procorqtde no banco deve ser 30');
+
+    // Limpa os dados de teste
+    await pool.query('DELETE FROM procor WHERE procorid = $1', [procorid]);
+    await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
+  });
+
   // Limpeza
   await cleanup();
 

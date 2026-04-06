@@ -455,9 +455,13 @@ async function deleteGroup(groupId) {
  * Isso permite que o mesmo produto (procod) apareça em múltiplos grupos
  * desde que com cores (procorid) diferentes.
  *
+ * Quando o grupo já possui estoque definido (stock_quantity > 0), o campo
+ * procorqtde da variação recém-adicionada é atualizado para herdar esse
+ * estoque imediatamente, garantindo sincronização instantânea.
+ *
  * @param {number} procorid - ID da variação (PK de procor)
  * @param {number} groupId - ID do grupo (INTEGER)
- * @returns {Object|null} Dados da variação adicionada ou null se não encontrada
+ * @returns {Object|null} Dados da variação adicionada (com procorqtde atualizado) ou null se não encontrada
  */
 async function addProcorToGroup(procorid, groupId) {
   const client = await pool.connect();
@@ -467,7 +471,7 @@ async function addProcorToGroup(procorid, groupId) {
 
     // Verifica se o grupo existe
     const groupResult = await client.query(
-      `SELECT id, grpcusto FROM part_groups WHERE id = $1`,
+      `SELECT id, grpcusto, stock_quantity FROM part_groups WHERE id = $1`,
       [groupId],
     );
 
@@ -515,8 +519,19 @@ async function addProcorToGroup(procorid, groupId) {
       );
     }
 
+    // Herda o estoque do grupo: atualiza procorqtde da variação recém-adicionada
+    // para refletir o estoque atual do grupo, garantindo sincronização imediata.
+    let finalQtde = procor.procorqtde;
+    if (!alreadyInGroup && group.stock_quantity != null) {
+      await client.query(
+        `UPDATE procor SET procorqtde = $1 WHERE procorid = $2`,
+        [group.stock_quantity, procorid],
+      );
+      finalQtde = group.stock_quantity;
+    }
+
     await client.query("COMMIT");
-    return { ...procor, alreadyInGroup };
+    return { ...procor, procorqtde: finalQtde, alreadyInGroup };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
