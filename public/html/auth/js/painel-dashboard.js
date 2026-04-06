@@ -15,6 +15,98 @@
     const $ = (s) => document.querySelector(s);
     const toNum = (v) => Number(v ?? 0) || 0;
 
+// ---- Filtros de data do Dashboard ----
+// Retorna os parâmetros de data atuais para o filtro do dashboard
+window.dashFiltroParams = { dataInicio: null, dataFim: null };
+
+function toISODate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+function buildDashQS() {
+  const p = window.dashFiltroParams;
+  const qs = new URLSearchParams();
+  if (p.dataInicio) qs.set("dataInicio", p.dataInicio);
+  if (p.dataFim) qs.set("dataFim", p.dataFim);
+  return qs.toString() ? "?" + qs.toString() : "";
+}
+
+function aplicarPresetDash(preset) {
+  const today = new Date();
+  const inputInicio = document.getElementById("dashDataInicio");
+  const inputFim = document.getElementById("dashDataFim");
+  let start = null, end = null;
+
+  if (preset === "hoje") {
+    start = new Date(today);
+    end = new Date(today);
+  } else if (preset === "ult7") {
+    start = new Date(today); start.setDate(today.getDate() - 6); end = new Date(today);
+  } else if (preset === "ult30") {
+    start = new Date(today); start.setDate(today.getDate() - 29); end = new Date(today);
+  } else if (preset === "mesAtual") {
+    start = new Date(today.getFullYear(), today.getMonth(), 1);
+    end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  } else if (preset === "anoAtual") {
+    start = new Date(today.getFullYear(), 0, 1);
+    end = new Date(today.getFullYear(), 11, 31);
+  } else if (preset === "todos") {
+    start = end = null;
+  } else if (preset === "personalizado") {
+    // keep current values, enable inputs
+    if (inputInicio) inputInicio.disabled = false;
+    if (inputFim) inputFim.disabled = false;
+    return;
+  }
+
+  if (inputInicio) { inputInicio.disabled = true; inputInicio.value = start ? toISODate(start) : ""; }
+  if (inputFim) { inputFim.disabled = true; inputFim.value = end ? toISODate(end) : ""; }
+  window.dashFiltroParams.dataInicio = start ? toISODate(start) : null;
+  window.dashFiltroParams.dataFim = end ? toISODate(end) : null;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const periodoSel = document.getElementById("dashPeriodoSelect");
+  const inputInicio = document.getElementById("dashDataInicio");
+  const inputFim = document.getElementById("dashDataFim");
+  const btnAplicar = document.getElementById("btnAplicarFiltroDash");
+
+  if (periodoSel) {
+    periodoSel.addEventListener("change", function () {
+      aplicarPresetDash(this.value);
+    });
+    // init with default
+    aplicarPresetDash(periodoSel.value);
+  }
+
+  if (btnAplicar) {
+    btnAplicar.addEventListener("click", function () {
+      const preset = periodoSel ? periodoSel.value : "todos";
+      if (preset === "personalizado") {
+        window.dashFiltroParams.dataInicio = inputInicio ? inputInicio.value || null : null;
+        window.dashFiltroParams.dataFim = inputFim ? inputFim.value || null : null;
+      } else {
+        aplicarPresetDash(preset);
+      }
+      // Recarrega todos os gráficos
+      if (typeof carregarTopProdutosMes === "function") carregarTopProdutosMes().catch(console.error);
+      if (typeof carregarTopMarcasMes === "function") carregarTopMarcasMes().catch(console.error);
+      if (typeof carregarFaturamentoAnualVertical === "function") carregarFaturamentoAnualVertical().catch(console.error);
+      if (typeof carregarFaturamentoDiarioNitido === "function") carregarFaturamentoDiarioNitido().catch(console.error);
+
+      // Atualiza título dos gráficos
+      const periodo = periodoSel ? periodoSel.options[periodoSel.selectedIndex].text : "";
+      const tituloP = document.getElementById("tituloTopProdutos");
+      const tituloM = document.getElementById("tituloTopMarcas");
+      if (tituloP) tituloP.textContent = `Top 10 Produtos — ${periodo}`;
+      if (tituloM) tituloM.textContent = `Top 10 Marcas — ${periodo}`;
+    });
+  }
+});
+// ---- Fim Filtros Dashboard ----
 
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -68,7 +160,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const resumo = document.getElementById("resumoFaturamentoAnual");
       if (!canvas) return;
 
-      const resp = await fetch(`${BASE_URL}/v2/pedidos/total/anual`, { credentials: "include" });
+      const resp = await fetch(`${BASE_URL}/v2/pedidos/total/anual${buildDashQS()}`, { credentials: "include" });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
 
@@ -188,7 +280,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!canvas) return;
 
       // fetch (mesmo do código anterior)
-      const resp = await fetch(`${BASE_URL}/v2/pedidos/total/dia`, { credentials: "include" });
+      const resp = await fetch(`${BASE_URL}/v2/pedidos/total/dia${buildDashQS()}`, { credentials: "include" });
       const data = await resp.json();
 
       const agrupado = {};
@@ -248,6 +340,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       carregarFaturamentoDiarioNitido();
     }, 200));
 
+    // Expõe as funções de gráfico globalmente para que o botão Aplicar possa chamá-las
+    window.carregarFaturamentoAnualVertical = carregarFaturamentoAnualVertical;
+    window.carregarFaturamentoDiarioNitido = carregarFaturamentoDiarioNitido;
 
 });
 
@@ -425,7 +520,7 @@ let chartTopProdutosMes;
       if (!canvas) return;
 
       // 1) Buscar dados
-      const resp = await fetch(`${BASE_URL}/v2/top/produtos/mes`, { credentials: "include" });
+      const resp = await fetch(`${BASE_URL}/v2/top/produtos/mes${buildDashQS()}`, { credentials: "include" });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
 
@@ -537,7 +632,7 @@ let chartTopProdutosMes;
       if (!canvas) return;
 
       // Fetch
-      const resp = await fetch(`${BASE_URL}/v2/top/marcas/mes`, { credentials: "include" });
+      const resp = await fetch(`${BASE_URL}/v2/top/marcas/mes${buildDashQS()}`, { credentials: "include" });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
 

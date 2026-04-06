@@ -87,5 +87,10 @@ router.put(
   autenticarToken,
   pedidosController.confirmarItemPv
 );
+router.put(
+  "/pedidos/confirmados/:pvcod/itens",
+  autenticarToken,
+  pedidosController.editarItensPedidoConfirmado
+);
 
 module.exports = router;

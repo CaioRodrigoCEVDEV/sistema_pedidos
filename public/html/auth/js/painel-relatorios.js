@@ -213,3 +213,81 @@ document.addEventListener("DOMContentLoaded", () => {
   loadMarcas();
   updateTableHeader();
 });
+
+// ---- Peças Cadastradas PDF ----
+(function () {
+  const btnGerarPecasPDF = document.getElementById("btnGerarPecasPDF");
+  const pecaPdfMarcaEl = document.getElementById("pecaPdfMarca");
+  const pecaPdfModeloEl = document.getElementById("pecaPdfModelo");
+  const pecaPdfPecaEl = document.getElementById("pecaPdfPeca");
+  const pecasPdfInfo = document.getElementById("pecasPdfInfo");
+
+  // Carrega marcas no select de peças PDF
+  async function carregarMarcasPecaPDF() {
+    if (!pecaPdfMarcaEl) return;
+    try {
+      const res = await fetch("/marcas");
+      if (!res.ok) return;
+      const marcas = await res.json();
+      pecaPdfMarcaEl.innerHTML = '<option value="">Todas</option>';
+      marcas.forEach((m) => {
+        const opt = document.createElement("option");
+        opt.value = m.marcascod;
+        opt.textContent = m.marcasdes;
+        pecaPdfMarcaEl.appendChild(opt);
+      });
+    } catch (e) {
+      console.warn("Erro ao carregar marcas:", e);
+    }
+  }
+
+  // Atualiza modelos conforme marca selecionada
+  async function carregarModelosPecaPDF(marcaId) {
+    if (!pecaPdfModeloEl) return;
+    pecaPdfModeloEl.innerHTML = '<option value="">Todos</option>';
+    if (!marcaId) return;
+    try {
+      const res = await fetch(`/modelo/${marcaId}`);
+      if (!res.ok) return;
+      const modelos = await res.json();
+      modelos.forEach((m) => {
+        const opt = document.createElement("option");
+        opt.value = m.modcod;
+        opt.textContent = m.moddes;
+        pecaPdfModeloEl.appendChild(opt);
+      });
+    } catch (e) {
+      console.warn("Erro ao carregar modelos:", e);
+    }
+  }
+
+  if (pecaPdfMarcaEl) {
+    pecaPdfMarcaEl.addEventListener("change", function () {
+      carregarModelosPecaPDF(this.value);
+    });
+  }
+
+  if (btnGerarPecasPDF) {
+    btnGerarPecasPDF.addEventListener("click", function () {
+      const marca = pecaPdfMarcaEl ? pecaPdfMarcaEl.value : "";
+      const modelo = pecaPdfModeloEl ? pecaPdfModeloEl.value : "";
+      const peca = pecaPdfPecaEl ? pecaPdfPecaEl.value.trim() : "";
+
+      const qs = new URLSearchParams();
+      if (marca) qs.set("marca", marca);
+      if (modelo) qs.set("modelo", modelo);
+      if (peca) qs.set("peca", peca);
+
+      const url = `/v2/relatorios/pecas-cadastradas/pdf?${qs.toString()}`;
+      if (pecasPdfInfo) pecasPdfInfo.textContent = "Gerando PDF...";
+
+      // Abre o PDF em nova aba (o navegador faz download automático)
+      window.open(url, "_blank");
+      setTimeout(() => {
+        if (pecasPdfInfo) pecasPdfInfo.textContent = "PDF gerado. Verifique os downloads do seu navegador.";
+      }, 1500);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", carregarMarcasPecaPDF);
+})();

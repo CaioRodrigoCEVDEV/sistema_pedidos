@@ -105,15 +105,27 @@
                   style="position: sticky; top: 0; z-index: 10"
                 >
                   <tr>
-                    <th scope="col">Nome do Grupo</th>
-                    <th scope="col" class="text-center">Qtd. Peças</th>
-                    <th scope="col" class="text-center">Criado</th>
+                    <th scope="col" class="sortable-col" data-col="name" style="cursor:pointer;user-select:none;">
+                      Nome do Grupo <i class="bi bi-arrow-down-up sort-icon" id="sort-icon-name"></i>
+                    </th>
+                    <th scope="col" class="text-center sortable-col" data-col="color_name" style="cursor:pointer;user-select:none;">
+                      Cor <i class="bi bi-arrow-down-up sort-icon" id="sort-icon-color_name"></i>
+                    </th>
+                    <th scope="col" class="text-center sortable-col" data-col="stock_quantity" style="cursor:pointer;user-select:none;">
+                      Estoque <i class="bi bi-arrow-down-up sort-icon" id="sort-icon-stock_quantity"></i>
+                    </th>
+                    <th scope="col" class="text-center sortable-col" data-col="parts_count" style="cursor:pointer;user-select:none;">
+                      Qtd. Peças <i class="bi bi-arrow-down-up sort-icon" id="sort-icon-parts_count"></i>
+                    </th>
+                    <th scope="col" class="text-center sortable-col" data-col="created_at" style="cursor:pointer;user-select:none;">
+                      Criado <i class="bi bi-arrow-down-up sort-icon" id="sort-icon-created_at"></i>
+                    </th>
                     <th scope="col" class="text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody id="tabela-grupos">
                   <tr>
-                    <td colspan="5" class="text-center">Carregando...</td>
+                    <td colspan="6" class="text-center">Carregando...</td>
                   </tr>
                 </tbody>
               </table>
@@ -184,13 +196,14 @@
                         <tr>
                           <th>Código</th>
                           <th>Descrição</th>
-                          <th>Preço</th>
+                          <th class="text-center">Cor</th>
+                          <th class="text-center">Estoque</th>
                           <th class="text-center">Ação</th>
                         </tr>
                       </thead>
                       <tbody id="tabela-pecas-grupo">
                         <tr>
-                          <td colspan="4" class="text-center text-muted">
+                          <td colspan="5" class="text-center text-muted">
                             Nenhuma peça no grupo
                           </td>
                         </tr>
@@ -270,6 +283,13 @@
                   placeholder="Ex: Tela Samsung A50/A50s"
                 />
               </div>
+              <div class="mb-3">
+                <label for="corGrupo" class="form-label">Cor <span class="text-muted small">(opcional)</span></label>
+                <select class="form-select" id="corGrupo">
+                  <option value="">— Sem cor específica —</option>
+                </select>
+                <div class="form-text">Permite separar estoque por cor/variação para a mesma peça.</div>
+              </div>
             </form>
           </div>
           <div class="modal-footer">
@@ -324,6 +344,12 @@
                   id="editarNomeGrupo"
                   required
                 />
+              </div>
+              <div class="mb-3">
+                <label for="editarCorGrupo" class="form-label">Cor <span class="text-muted small">(opcional)</span></label>
+                <select class="form-select" id="editarCorGrupo">
+                  <option value="">— Sem cor específica —</option>
+                </select>
               </div>
             </form>
           </div>

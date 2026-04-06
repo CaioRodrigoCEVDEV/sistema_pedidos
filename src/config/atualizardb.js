@@ -162,6 +162,11 @@ async function atualizarDB() {
       ALTER TABLE public.part_groups ADD COLUMN IF NOT EXISTS grpcusto NUMERIC(14, 4) NULL;
     `);
 
+    // Adiciona coluna color_id na tabela part_groups (vincula grupo a uma cor)
+    await pool.query(`
+      ALTER TABLE public.part_groups ADD COLUMN IF NOT EXISTS color_id INTEGER NULL;
+    `);
+
     // Adiciona coluna part_group_id na tabela pro (FK para grupos de compatibilidade)
     await pool.query(`
       ALTER TABLE public.pro ADD IF NOT EXISTS part_group_id INTEGER NULL;
@@ -207,6 +212,34 @@ async function atualizarDB() {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_pro_part_group_id 
       ON public.pro(part_group_id);
+    `);
+
+    // Adiciona coluna corhex na tabela cores (código HEX opcional para exibição)
+    await pool.query(`
+      ALTER TABLE public.cores ADD COLUMN IF NOT EXISTS corhex TEXT NULL;
+    `);
+
+    // Tabela de itens do grupo de compatibilidade, vinculando grupo a uma variação procor
+    // Substitui o campo part_group_id em pro, permitindo o mesmo produto em vários grupos
+    // desde que com cores diferentes (procorid diferente).
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.part_group_items (
+        id SERIAL PRIMARY KEY,
+        group_id INTEGER NOT NULL REFERENCES public.part_groups(id) ON DELETE CASCADE,
+        procorid INTEGER NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT uq_part_group_item UNIQUE (group_id, procorid)
+      );
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_part_group_items_group_id
+      ON public.part_group_items(group_id);
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_part_group_items_procorid
+      ON public.part_group_items(procorid);
     `);
 
     // ==================================================================================================================================
@@ -583,7 +616,8 @@ async function atualizarDB() {
               FROM pvi i
             WHERE i.pvipvcod      = NEW.pvcod
               AND i.pviprocorid  IS NOT NULL
-              AND i.pviprocorid   = pc.procorcorescod;
+              AND i.pviprocorid   = pc.procorcorescod
+              AND i.pviprocod     = pc.procorprocod;
 
             -- 2) Items WITHOUT color AND product WITHOUT variations -> decrement from pro.proqtde
             -- Only for products NOT in a compatibility group (groups are handled separately below)
@@ -681,7 +715,8 @@ async function atualizarDB() {
               FROM pvi i
             WHERE i.pvipvcod      = NEW.pvcod
               AND i.pviprocorid  IS NOT NULL
-              AND i.pviprocorid   = pc.procorcorescod;
+              AND i.pviprocorid   = pc.procorcorescod
+              AND i.pviprocod     = pc.procorprocod;
 
             -- 2) Items WITHOUT color AND product WITHOUT variations -> return to pro.proqtde
             -- Only for products NOT in a compatibility group (groups are handled separately)

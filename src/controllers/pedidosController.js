@@ -131,7 +131,9 @@ exports.inserirPvi = async (req, res) => {
       procods.push(codigoInteiro);
       qtdes.push(qt);
       precos.push(preco);
-      procorids.push(idCorSelecionada || null);
+      const raw = idCorSelecionada;
+      const normalized = (raw === null || raw === undefined || raw === "") ? null : Number(raw);
+      procorids.push(Number.isFinite(normalized) ? normalized : null);
     }
 
     const result = await pool.query(
@@ -478,10 +480,13 @@ exports.listarPedidosPendentesDetalhe = async (req, res) => {
        pviprocod,
        pvivl,
        pviqtde,
-       pvobs
+       pvobs,
+       pvi.pviprocorid,
+       COALESCE(c.cornome, 'Sem Cor') as cornome
        from pv
        join pvi on pvipvcod = pvcod
        join pro on procod = pviprocod
+       left join cores c on c.corcod = pvi.pviprocorid
        where pvcod = $1 and pvsta = 'A'`,
       [pvcod]
     );
@@ -493,14 +498,22 @@ exports.listarPedidosPendentesDetalhe = async (req, res) => {
 };
 
 exports.cancelarItemPv = async (req, res) => {
-  const { procod } = req.body;
+  const { procod, pviprocorid } = req.body;
   const pvcod = req.params.pvcod;
 
   try {
-    const result = await pool.query(
-      "update pvi set pviqtde = 0 where pviprocod = $1 and pvipvcod = $2 RETURNING *",
-      [procod, pvcod]
-    );
+    let result;
+    if (pviprocorid !== null && pviprocorid !== undefined) {
+      result = await pool.query(
+        "update pvi set pviqtde = 0 where pviprocod = $1 and pvipvcod = $2 and pviprocorid = $3 RETURNING *",
+        [procod, pvcod, pviprocorid]
+      );
+    } else {
+      result = await pool.query(
+        "update pvi set pviqtde = 0 where pviprocod = $1 and pvipvcod = $2 and pviprocorid IS NULL RETURNING *",
+        [procod, pvcod]
+      );
+    }
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -509,19 +522,183 @@ exports.cancelarItemPv = async (req, res) => {
 };
 
 exports.confirmarItemPv = async (req, res) => {
-  const { procod, pviqtde } = req.body;
+  const { procod, pviqtde, pviprocorid } = req.body;
   const pvcod = req.params.pvcod;
 
-  console.log({ procod, pviqtde, pvcod });
+  console.log({ procod, pviqtde, pvcod, pviprocorid });
 
   try {
-    const result = await pool.query(
-      "update pvi set pviqtde = $1 where pviprocod = $2 and pvipvcod = $3 RETURNING *",
-      [pviqtde, procod, pvcod]
-    );
+    let result;
+    if (pviprocorid !== null && pviprocorid !== undefined) {
+      result = await pool.query(
+        "update pvi set pviqtde = $1 where pviprocod = $2 and pvipvcod = $3 and pviprocorid = $4 RETURNING *",
+        [pviqtde, procod, pvcod, pviprocorid]
+      );
+    } else {
+      result = await pool.query(
+        "update pvi set pviqtde = $1 where pviprocod = $2 and pvipvcod = $3 and pviprocorid IS NULL RETURNING *",
+        [pviqtde, procod, pvcod]
+      );
+    }
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "erro ao confirmar itens pedidos pedido" });
+  }
+};
+
+/**
+ * Edita itens de um pedido já aprovado, ajustando o estoque conforme a diferença de quantidade.
+ * Aceita body: { itens: [{ procod, pviqtde, pviprocorid? }] }
+ *
+ * Regras de estoque:
+ * - Item com cor (pviprocorid): ajusta procor.procorqtde
+ * - Item sem cor: ajusta pro.proqtde
+ */
+exports.editarItensPedidoConfirmado = async (req, res) => {
+  const pvcod = req.params.pvcod;
+  const { itens } = req.body;
+
+  if (!Array.isArray(itens) || itens.length === 0) {
+    return res.status(400).json({ error: "Lista de itens é obrigatória" });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Verifica se o pedido existe e está aprovado (aceita bpchar com espaços)
+    const pedidoResult = await client.query(
+      "SELECT pvconfirmado, pvsta FROM pv WHERE pvcod = $1",
+      [pvcod]
+    );
+
+    if (pedidoResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Pedido não encontrado" });
+    }
+
+    const pedido = pedidoResult.rows[0];
+    const pvsta = String(pedido.pvsta || "").trim();
+    const pvconfirmado = String(pedido.pvconfirmado || "").trim();
+    console.log("Pedido encontrado para edição:", pedido);
+
+    if (pvconfirmado !== "S" || pvsta !== "A") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Pedido deve estar aprovado e confirmado para ser editado" });
+    }
+
+    const resultadoItens = [];
+
+    for (const item of itens) {
+      const { procod, pviqtde } = item;
+      // Normaliza pviprocorid: null/undefined/""/0/"0"/"null" → null
+      const rawCor = item.pviprocorid;
+      const pviprocorid = (rawCor === null || rawCor === undefined || rawCor === "" || rawCor === 0 || rawCor === "0" || rawCor === "null")
+        ? null
+        : Number(rawCor);
+      const novaQtde = Number(pviqtde);
+
+      if (isNaN(novaQtde) || novaQtde < 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: `Quantidade inválida para procod ${procod}` });
+      }
+
+      // Busca a quantidade atual do item no pedido identificando também pela cor
+      let itemAtual;
+      if (pviprocorid !== null) {
+        itemAtual = await client.query(
+          "SELECT pviqtde FROM pvi WHERE pviprocod = $1 AND pvipvcod = $2 AND pviprocorid = $3",
+          [procod, pvcod, pviprocorid]
+        );
+      } else {
+        itemAtual = await client.query(
+          "SELECT pviqtde FROM pvi WHERE pviprocod = $1 AND pvipvcod = $2 AND pviprocorid IS NULL",
+          [procod, pvcod]
+        );
+      }
+
+      if (itemAtual.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ error: `Item procod ${procod} não encontrado no pedido` });
+      }
+
+      const qtdeAnterior = Number(itemAtual.rows[0].pviqtde);
+      const delta = novaQtde - qtdeAnterior;
+
+      // Ajusta o estoque: delta > 0 deduz mais; delta < 0 devolve
+      if (delta !== 0) {
+        if (pviprocorid !== null) {
+          // Item com cor: opera em procor.procorqtde
+          const estoqueResult = await client.query(
+            "SELECT COALESCE(procorqtde, 0) AS procorqtde FROM procor WHERE procorprocod = $1 AND procorcorescod = $2 FOR UPDATE",
+            [procod, pviprocorid]
+          );
+          if (estoqueResult.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({ error: `Cor ${pviprocorid} não encontrada para a peça ${procod}` });
+          }
+          if (delta > 0) {
+            const estoqueAtual = Number(estoqueResult.rows[0].procorqtde);
+            if (estoqueAtual < delta) {
+              await client.query("ROLLBACK");
+              return res.status(400).json({
+                error: `Estoque insuficiente para a peça ${procod} cor ${pviprocorid}. Disponível: ${estoqueAtual}`,
+                tipo: "estoque_insuficiente"
+              });
+            }
+          }
+          await client.query(
+            "UPDATE procor SET procorqtde = COALESCE(procorqtde, 0) - $1 WHERE procorprocod = $2 AND procorcorescod = $3",
+            [delta, procod, pviprocorid]
+          );
+        } else {
+          // Item sem cor: opera em pro.proqtde
+          const estoqueResult = await client.query(
+            "SELECT COALESCE(proqtde, 0) AS proqtde FROM pro WHERE procod = $1 FOR UPDATE",
+            [procod]
+          );
+          if (delta > 0) {
+            const estoqueAtual = Number(estoqueResult.rows[0]?.proqtde ?? 0);
+            if (estoqueAtual < delta) {
+              await client.query("ROLLBACK");
+              return res.status(400).json({
+                error: `Estoque insuficiente para a peça ${procod}. Disponível: ${estoqueAtual}`,
+                tipo: "estoque_insuficiente"
+              });
+            }
+          }
+          await client.query(
+            "UPDATE pro SET proqtde = COALESCE(proqtde, 0) - $1 WHERE procod = $2",
+            [delta, procod]
+          );
+        }
+      }
+
+      // Atualiza a quantidade no pedido usando a mesma chave (com/sem cor)
+      let updateResult;
+      if (pviprocorid !== null) {
+        updateResult = await client.query(
+          "UPDATE pvi SET pviqtde = $1 WHERE pviprocod = $2 AND pvipvcod = $3 AND pviprocorid = $4 RETURNING *",
+          [novaQtde, procod, pvcod, pviprocorid]
+        );
+      } else {
+        updateResult = await client.query(
+          "UPDATE pvi SET pviqtde = $1 WHERE pviprocod = $2 AND pvipvcod = $3 AND pviprocorid IS NULL RETURNING *",
+          [novaQtde, procod, pvcod]
+        );
+      }
+
+      resultadoItens.push(updateResult.rows[0]);
+    }
+
+    await client.query("COMMIT");
+    res.status(200).json({ message: "Pedido editado com sucesso", itens: resultadoItens });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Erro ao editar pedido confirmado:", error);
+    res.status(500).json({ error: "Erro ao editar pedido" });
+  } finally {
+    client.release();
   }
 };

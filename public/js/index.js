@@ -562,11 +562,13 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       <select id="select-cor">
   ${cores
     .map((cor) => {
+      const idCor = cor.corcod;
+
       const semEstoque = cor.procorsemest === "S";
       const label = `${cor.cornome}${semEstoque ? " (Sem estoque)" : ""}`;
 
       return `
-        <option value="${cor.cornome}" 
+        <option value="${idCor}" data-nome="${cor.cornome}"
           ${semEstoque ? 'disabled data-semest="S"' : ""}>
           ${label}
         </option>
@@ -608,6 +610,9 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       ].text;
     const idComCor = `${procod}-${corSelecionada}`;
     const nomeComCor = `${nome} (${corSelecionada})`;
+    const idCorSelecionada = Number(document.getElementById("select-cor").value) || null;
+
+    console.log("ID da cor selecionada:", idCorSelecionada);
 
     adicionarProdutoAoCarrinho(
       idComCor,
@@ -616,7 +621,8 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       marca,
       preco,
       qtde,
-      corSelecionada
+      corSelecionada,
+      idCorSelecionada
     );
 
     modal.remove();
@@ -629,6 +635,17 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
   };
 }
 
+/**
+ * Adiciona um produto ao carrinho do localStorage
+ * @param {string} id - Identificador único do produto (pode incluir cor)
+ * @param {string} nome - Nome do produto
+ * @param {string} tipo - Tipo do produto
+ * @param {string} marca - Marca do produto
+ * @param {number} preco - Preço do produto
+ * @param {number} qtde - Quantidade a adicionar
+ * @param {string} corSelecionada - Cor selecionada (opcional)
+ * @param {string} idCorSelecionada - ID da cor selecionada (opcional)
+ */
 function adicionarProdutoAoCarrinho(
   id,
   nome,
@@ -636,7 +653,8 @@ function adicionarProdutoAoCarrinho(
   marca,
   preco,
   qtde,
-  corSelecionada
+  corSelecionada,
+  idCorSelecionada
 ) {
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
   // console.log("cor:", corSelecionada);
@@ -645,7 +663,7 @@ function adicionarProdutoAoCarrinho(
   if (idx > -1) {
     cart[idx].qt += qtde;
   } else {
-    cart.push({ id, nome, tipo, marca, preco, qt: qtde, corSelecionada });
+    cart.push({ id, nome, tipo, marca, preco, qt: qtde, corSelecionada, idCorSelecionada });
   }
 
   localStorage.setItem("cart", JSON.stringify(cart));

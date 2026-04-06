@@ -19,8 +19,8 @@ const requireAdmin = require("../middlewares/adminMiddleware");
  * POST   /part-groups                     - Cria novo grupo
  * PUT    /part-groups/:id                 - Atualiza grupo
  * PUT    /part-groups/:id/stock           - Atualiza estoque
- * POST   /part-groups/:id/parts           - Adiciona peça ao grupo
- * DELETE /part-groups/parts/:partId       - Remove peça do grupo
+ * POST   /part-groups/:id/parts           - Adiciona variação (procorid) ao grupo
+ * DELETE /part-groups/parts/:procorid     - Remove variação do grupo
  * DELETE /part-groups/:id                 - Exclui grupo
  */
 
@@ -78,9 +78,9 @@ router.post(
   partGroupController.addPartToGroup
 );
 
-// Remove peça do grupo
+// Remove peça do grupo (por procorid)
 router.delete(
-  "/part-groups/parts/:partId",
+  "/part-groups/parts/:procorid",
   requireAdmin,
   partGroupController.removePartFromGroup
 );

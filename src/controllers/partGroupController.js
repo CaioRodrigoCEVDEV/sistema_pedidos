@@ -57,7 +57,7 @@ exports.getPartGroupStock = async (req, res) => {
 // Grupos são sempre criados com stock_quantity = 0
 // O estoque só pode ser definido após adicionar peças ao grupo
 exports.createGroup = async (req, res) => {
-  const { name } = req.body;
+  const { name, colorId } = req.body;
 
   if (!name || name.trim() === "") {
     return res.status(400).json({ error: "Nome do grupo é obrigatório" });
@@ -65,7 +65,7 @@ exports.createGroup = async (req, res) => {
 
   try {
     // Sempre cria grupos com estoque inicial de 0
-    const group = await partGroupModels.createGroup(name.trim(), 0);
+    const group = await partGroupModels.createGroup(name.trim(), 0, colorId || null);
     res.status(201).json(group);
   } catch (error) {
     console.error("Erro ao criar grupo de compatibilidade:", error);
@@ -76,7 +76,7 @@ exports.createGroup = async (req, res) => {
 // Atualiza um grupo de compatibilidade
 exports.updateGroup = async (req, res) => {
   const { id } = req.params;
-  const { name, stock_quantity } = req.body;
+  const { name, stock_quantity, colorId } = req.body;
 
   if (!name || name.trim() === "") {
     return res.status(400).json({ error: "Nome do grupo é obrigatório" });
@@ -86,7 +86,8 @@ exports.updateGroup = async (req, res) => {
     const group = await partGroupModels.updateGroup(
       id,
       name.trim(),
-      stock_quantity
+      stock_quantity,
+      colorId !== undefined ? colorId : undefined
     );
     if (!group) {
       return res.status(404).json({ error: "Grupo não encontrado" });
@@ -165,19 +166,22 @@ exports.deleteGroup = async (req, res) => {
   }
 };
 
-// Adiciona uma peça a um grupo de compatibilidade
+// Adiciona uma variação de cor (procor) a um grupo de compatibilidade
 exports.addPartToGroup = async (req, res) => {
   const { id } = req.params;
-  const { partId, colorId } = req.body;
+  const { procorid } = req.body;
 
-  if (!partId) {
-    return res.status(400).json({ error: "ID da peça é obrigatório" });
+  if (!procorid) {
+    return res.status(400).json({ error: "ID da variação de cor (procorid) é obrigatório" });
   }
 
   try {
-    const result = await partGroupModels.addPartToGroup(partId, id, colorId);
+    const result = await partGroupModels.addProcorToGroup(procorid, id);
     if (!result) {
-      return res.status(404).json({ error: "Peça não encontrada" });
+      return res.status(404).json({ error: "Variação não encontrada ou grupo inválido" });
+    }
+    if (result.alreadyInGroup) {
+      return res.status(200).json({ ...result, message: "Variação já pertence a este grupo" });
     }
     res.status(200).json(result);
   } catch (error) {
@@ -186,14 +190,14 @@ exports.addPartToGroup = async (req, res) => {
   }
 };
 
-// Remove uma peça do seu grupo de compatibilidade
+// Remove uma variação de cor do grupo de compatibilidade
 exports.removePartFromGroup = async (req, res) => {
-  const { partId } = req.params;
+  const { procorid } = req.params;
 
   try {
-    const result = await partGroupModels.removePartFromGroup(partId);
+    const result = await partGroupModels.removeProcorFromGroup(procorid);
     if (!result) {
-      return res.status(404).json({ error: "Peça não encontrada" });
+      return res.status(404).json({ error: "Variação não encontrada no grupo" });
     }
     res.status(200).json(result);
   } catch (error) {
