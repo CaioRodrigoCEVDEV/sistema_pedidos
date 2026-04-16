@@ -214,6 +214,12 @@ app.get("/relatorios", autenticarToken, (req, res) => {
   );
 });
 
+app.get("/estoque-grupos", autenticarToken, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-estoque-grupos.html")
+  );
+});
+
 // Caminho onde ficam os backups
 const dirPathBackups = "/home/backup";
 

@@ -41,6 +41,13 @@ router.get(
   relatoriosController.getTopPecasXLS
 );
 
+// Relatório Estoque por Grupos (Top Peças) - JSON
+router.get(
+  "/v2/relatorios/estoque-grupos",
+  autenticarToken,
+  relatoriosController.getEstoqueGruposJSON
+);
+
 // Relatório Peças Cadastradas - JSON
 router.get(
   "/v2/relatorios/pecas-cadastradas",

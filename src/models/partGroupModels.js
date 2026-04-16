@@ -1264,6 +1264,56 @@ async function venderItens(itens, referenceId = null) {
   }
 }
 
+/**
+ * Atualiza a quantidade ideal (qtde_ideal) de um grupo de compatibilidade
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @param {number|null} qtdeIdeal - Quantidade ideal de estoque (null para remover)
+ * @returns {Object|null} Grupo atualizado ou null se não encontrado
+ */
+async function updateGroupIdealQty(groupId, qtdeIdeal) {
+  const result = await pool.query(
+    `
+    UPDATE part_groups
+    SET qtde_ideal = $1, updated_at = NOW()
+    WHERE id = $2
+    RETURNING id, name, stock_quantity, qtde_ideal
+  `,
+    [qtdeIdeal, groupId],
+  );
+  return result.rows[0] || null;
+}
+
+/**
+ * Ajusta o estoque de um grupo por delta (adicionar ou reduzir)
+ * Delega para updateGroupStock após calcular o novo valor absoluto.
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @param {number} delta - Quantidade a adicionar (positivo) ou reduzir (negativo)
+ * @param {string} reason - Motivo do ajuste
+ * @returns {Object} Grupo atualizado com novo estoque
+ * @throws {Error} Se o novo estoque ficar negativo
+ */
+async function adjustGroupStock(groupId, delta, reason = "Ajuste_Manual") {
+  const groupResult = await pool.query(
+    `SELECT id, COALESCE(stock_quantity, 0) AS stock_quantity FROM part_groups WHERE id = $1`,
+    [groupId],
+  );
+
+  if (groupResult.rows.length === 0) {
+    throw new Error("Grupo não encontrado");
+  }
+
+  const currentStock = Number(groupResult.rows[0].stock_quantity);
+  const newStock = currentStock + delta;
+
+  if (newStock < 0) {
+    throw new Error(
+      `Estoque insuficiente. Estoque atual: ${currentStock}, Redução solicitada: ${Math.abs(delta)}`,
+    );
+  }
+
+  return updateGroupStock(groupId, newStock, reason);
+}
+
 module.exports = {
   listAllGroups,
   getGroupById,
@@ -1284,4 +1334,6 @@ module.exports = {
   updateGroupStock,
   updateAllPartsStockInGroup,
   venderItens,
+  updateGroupIdealQty,
+  adjustGroupStock,
 };

@@ -150,6 +150,74 @@ exports.updateGroupStock = async (req, res) => {
   }
 };
 
+// Atualiza a quantidade ideal (qtde_ideal) de um grupo de compatibilidade
+exports.updateGroupIdealQty = async (req, res) => {
+  const { id } = req.params;
+  const { qtde_ideal } = req.body;
+
+  if (qtde_ideal !== null && qtde_ideal !== undefined) {
+    const val = parseInt(qtde_ideal, 10);
+    if (isNaN(val) || val < 0) {
+      return res.status(400).json({ error: "Quantidade ideal inválida" });
+    }
+  }
+
+  try {
+    const group = await partGroupModels.updateGroupIdealQty(
+      id,
+      qtde_ideal !== null && qtde_ideal !== undefined
+        ? parseInt(qtde_ideal, 10)
+        : null,
+    );
+    if (!group) {
+      return res.status(404).json({ error: "Grupo não encontrado" });
+    }
+    res.status(200).json(group);
+  } catch (error) {
+    console.error("Erro ao atualizar quantidade ideal do grupo:", error);
+    res.status(500).json({ error: "Erro ao atualizar quantidade ideal" });
+  }
+};
+
+// Ajusta estoque do grupo por delta (adicionar ou reduzir)
+exports.adjustGroupStock = async (req, res) => {
+  const { id } = req.params;
+  const { delta, reason = "Ajuste_Manual" } = req.body;
+
+  if (delta === undefined || delta === null) {
+    return res.status(400).json({ error: "Campo delta é obrigatório" });
+  }
+
+  const deltaNum = parseInt(delta, 10);
+  if (isNaN(deltaNum) || deltaNum === 0) {
+    return res.status(400).json({ error: "Delta deve ser um numero inteiro diferente de zero" });
+  }
+
+  try {
+    const group = await partGroupModels.adjustGroupStock(id, deltaNum, reason);
+    if (!group) {
+      return res.status(404).json({ error: "Grupo não encontrado" });
+    }
+
+    const partsResult = await partGroupModels.updateAllPartsStockInGroup(
+      id,
+      group.stock_quantity,
+    );
+
+    res.status(200).json({
+      ...group,
+      partsUpdated: partsResult.partsUpdated,
+      message: `Estoque do grupo ajustado (${deltaNum > 0 ? "+" : ""}${deltaNum}) e distribuído para ${partsResult.partsUpdated} peça(s)`,
+    });
+  } catch (error) {
+    console.error("Erro ao ajustar estoque do grupo:", error);
+    if (error.message && error.message.includes("insuficiente")) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: "Erro ao ajustar estoque do grupo" });
+  }
+};
+
 // Exclui um grupo de compatibilidade
 exports.deleteGroup = async (req, res) => {
   const { id } = req.params;

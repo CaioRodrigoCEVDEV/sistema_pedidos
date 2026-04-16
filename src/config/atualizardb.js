@@ -242,6 +242,11 @@ async function atualizarDB() {
       ON public.part_group_items(procorid);
     `);
 
+    // Adiciona coluna qtde_ideal em part_groups (quantidade ideal de estoque por grupo)
+    await pool.query(`
+      ALTER TABLE public.part_groups ADD COLUMN IF NOT EXISTS qtde_ideal INTEGER NULL;
+    `);
+
     // ==================================================================================================================================
     // FIM GRUPOS DE COMPATIBILIDADE
     // ==================================================================================================================================

@@ -85,6 +85,20 @@ router.delete(
   partGroupController.removePartFromGroup
 );
 
+// Atualiza quantidade ideal de um grupo
+router.put(
+  "/part-groups/:id/ideal",
+  requireAdmin,
+  partGroupController.updateGroupIdealQty
+);
+
+// Ajusta estoque do grupo por delta (adicionar ou reduzir)
+router.post(
+  "/part-groups/:id/adjust-stock",
+  requireAdmin,
+  partGroupController.adjustGroupStock
+);
+
 // Exclui grupo de compatibilidade
 router.delete(
   "/part-groups/:id",
