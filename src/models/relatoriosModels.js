@@ -152,7 +152,64 @@ async function getPecasCadastradas(filters = {}) {
   return result.rows;
 }
 
+/**
+ * Busca grupos de compatibilidade vinculados às peças mais vendidas (Top Peças)
+ * com estoque atual e quantidade ideal para controle de estoque
+ * @param {Object} filters - Filtros para a consulta (mesmos do getTopPecas)
+ * @param {string} filters.dataInicio - Data inicial (YYYY-MM-DD)
+ * @param {string} filters.dataFim - Data final (YYYY-MM-DD)
+ * @param {number} filters.marca - ID da marca (opcional)
+ * @returns {Array} Lista de grupos com estoque atual, qtde_ideal e qtde_vendida
+ */
+async function getEstoqueGruposTopPecas(filters = {}) {
+  const { dataInicio, dataFim, marca } = filters;
+
+  let whereClauses = [`pvconfirmado = '${CONFIRMED_ORDER_STATUS}'`];
+  let params = [];
+  let paramIndex = 1;
+
+  if (dataInicio) {
+    whereClauses.push(`pvdtcad >= $${paramIndex}`);
+    params.push(dataInicio);
+    paramIndex++;
+  }
+
+  if (dataFim) {
+    whereClauses.push(`pvdtcad <= $${paramIndex}`);
+    params.push(dataFim);
+    paramIndex++;
+  }
+
+  if (marca) {
+    whereClauses.push(`promarcascod = $${paramIndex}`);
+    params.push(marca);
+    paramIndex++;
+  }
+
+  const whereClause = whereClauses.join(" AND ");
+
+  const query = `
+    SELECT
+      pg.id,
+      pg.name AS grupo,
+      COALESCE(pg.stock_quantity, 0) AS estoque_atual,
+      pg.qtde_ideal,
+      SUM(pviqtde) AS qtde_vendida
+    FROM pvi
+    JOIN pv ON pvcod = pvipvcod
+    JOIN pro p ON pviprocod = p.procod
+    JOIN part_groups pg ON p.part_group_id = pg.id
+    WHERE ${whereClause}
+    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.qtde_ideal
+    ORDER BY qtde_vendida DESC
+  `;
+
+  const result = await pool.query(query, params);
+  return result.rows;
+}
+
 module.exports = {
   getTopPecas,
   getPecasCadastradas,
+  getEstoqueGruposTopPecas,
 };
