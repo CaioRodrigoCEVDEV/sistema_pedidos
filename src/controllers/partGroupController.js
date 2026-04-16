@@ -190,7 +190,7 @@ exports.adjustGroupStock = async (req, res) => {
 
   const deltaNum = parseInt(delta, 10);
   if (isNaN(deltaNum) || deltaNum === 0) {
-    return res.status(400).json({ error: "Delta deve ser um número inteiro diferente de zero" });
+    return res.status(400).json({ error: "Delta deve ser um numero inteiro diferente de zero" });
   }
 
   try {

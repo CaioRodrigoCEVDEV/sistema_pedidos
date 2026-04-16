@@ -164,9 +164,9 @@ async function getPecasCadastradas(filters = {}) {
 async function getEstoqueGruposTopPecas(filters = {}) {
   const { dataInicio, dataFim, marca } = filters;
 
-  let whereClauses = [`pvconfirmado = '${CONFIRMED_ORDER_STATUS}'`];
-  let params = [];
-  let paramIndex = 1;
+  let whereClauses = [`pvconfirmado = $1`];
+  let params = [CONFIRMED_ORDER_STATUS];
+  let paramIndex = 2;
 
   if (dataInicio) {
     whereClauses.push(`pvdtcad >= $${paramIndex}`);
