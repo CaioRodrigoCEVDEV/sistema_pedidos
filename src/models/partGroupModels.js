@@ -8,10 +8,11 @@ const pool = require("../config/db");
  *
  * Estrutura das tabelas:
  * - part_groups: Tabela principal dos grupos (id INTEGER, name, stock_quantity)
+ * - part_group_items: Vínculo entre grupo e variação de cor (group_id, procorid)
  * - part_group_audit: Histórico de movimentações de estoque
- * - pro.part_group_id: Coluna FK que vincula uma peça a um grupo
  *
  * IMPORTANTE: O campo id usa INTEGER simples (auto increment), não UUID.
+ * O vínculo entre peça e grupo é feito via part_group_items (procorid), não via pro.part_group_id.
  */
 
 /**
@@ -116,8 +117,11 @@ async function getGroupByPartId(partId) {
       pg.created_at,
       pg.updated_at
     FROM part_groups pg
-    JOIN pro p ON p.part_group_id = pg.id
-    WHERE p.procod = $1
+    JOIN part_group_items pgi ON pgi.group_id = pg.id
+    JOIN procor pc ON pc.procorid = pgi.procorid
+    WHERE pc.procorprocod = $1
+    ORDER BY pg.id
+    LIMIT 1
   `,
     [partId],
   );
@@ -126,7 +130,7 @@ async function getGroupByPartId(partId) {
 
 /**
  * Obtém a quantidade de estoque para uma peça
- * Se a peça pertence a um grupo, retorna o estoque do grupo
+ * Se a peça pertence a um grupo (via part_group_items), retorna o estoque do grupo
  * Caso contrário, retorna o estoque individual da peça (proqtde)
  * @param {number} partId - ID da peça (procod)
  * @returns {Object|null} Informações de estoque ou null se peça não encontrada
@@ -136,15 +140,18 @@ async function getGroupStock(partId) {
     `
     SELECT 
       CASE 
-        WHEN p.part_group_id IS NOT NULL THEN pg.stock_quantity
+        WHEN pg.id IS NOT NULL THEN pg.stock_quantity
         ELSE p.proqtde
       END as stock_quantity,
-      p.part_group_id,
       pg.id as group_id,
       pg.name as group_name
     FROM pro p
-    LEFT JOIN part_groups pg ON pg.id = p.part_group_id
+    LEFT JOIN procor pc ON pc.procorprocod = p.procod
+    LEFT JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+    LEFT JOIN part_groups pg ON pg.id = pgi.group_id
     WHERE p.procod = $1
+    ORDER BY pg.id NULLS LAST
+    LIMIT 1
   `,
     [partId],
   );

@@ -49,7 +49,7 @@ async function getTopPecas(filters = {}) {
   const whereClause = whereClauses.join(" AND ");
 
   if (groupBy === "grupo") {
-    // Agrupado por part_group
+    // Agrupado por part_group — vínculo via part_group_items (procorid), sem depender de pro.part_group_id
     const query = `
       SELECT 
         pg.name as grupo,
@@ -60,10 +60,15 @@ async function getTopPecas(filters = {}) {
       FROM pvi
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
-      LEFT JOIN part_groups pg ON p.part_group_id = pg.id
+      JOIN procor pc ON pc.procorprocod = p.procod
+        AND (
+          (pvi.pviprocorid IS NOT NULL AND pc.procorcorescod = pvi.pviprocorid)
+          OR (pvi.pviprocorid IS NULL AND pc.procorcorescod IS NULL)
+        )
+      JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+      JOIN part_groups pg ON pg.id = pgi.group_id
       LEFT JOIN modelo m ON m.modcod = p.promodcod
       WHERE ${whereClause}
-        AND p.part_group_id IS NOT NULL
       GROUP BY pg.id, pg.name, procusto
       ORDER BY qtde_vendida DESC
     `;
@@ -71,7 +76,7 @@ async function getTopPecas(filters = {}) {
     const result = await pool.query(query, params);
     return result.rows;
   } else {
-    // Agrupado por peça individual
+    // Agrupado por peça individual — grupo via part_group_items, sem depender de pro.part_group_id
     const query = `
       SELECT 
         p.prodes as peca,
@@ -83,7 +88,13 @@ async function getTopPecas(filters = {}) {
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
       LEFT JOIN modelo m ON m.modcod = p.promodcod
-      LEFT JOIN part_groups pg ON p.part_group_id = pg.id
+      LEFT JOIN procor pc ON pc.procorprocod = p.procod
+        AND (
+          (pvi.pviprocorid IS NOT NULL AND pc.procorcorescod = pvi.pviprocorid)
+          OR (pvi.pviprocorid IS NULL AND pc.procorcorescod IS NULL)
+        )
+      LEFT JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+      LEFT JOIN part_groups pg ON pg.id = pgi.group_id
       WHERE ${whereClause}
       GROUP BY p.procod, p.prodes, m.moddes, pg.name, procusto
       ORDER BY qtde_vendida DESC
@@ -198,7 +209,13 @@ async function getEstoqueGruposTopPecas(filters = {}) {
     FROM pvi
     JOIN pv ON pvcod = pvipvcod
     JOIN pro p ON pviprocod = p.procod
-    JOIN part_groups pg ON p.part_group_id = pg.id
+    JOIN procor pc ON pc.procorprocod = p.procod
+      AND (
+        (pvi.pviprocorid IS NOT NULL AND pc.procorcorescod = pvi.pviprocorid)
+        OR (pvi.pviprocorid IS NULL AND pc.procorcorescod IS NULL)
+      )
+    JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+    JOIN part_groups pg ON pg.id = pgi.group_id
     WHERE ${whereClause}
     GROUP BY pg.id, pg.name, pg.stock_quantity, pg.qtde_ideal
     ORDER BY qtde_vendida DESC
