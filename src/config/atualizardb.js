@@ -921,6 +921,68 @@ async function atualizarDB() {
     // FIM ÍNDICES DE PERFORMANCE
     // ==================================================================================================================================
 
+    // ==================================================================================================================================
+    // CORREÇÃO: permitir procorcorescod NULL em procor (peças sem cor)
+    // A PK original (procorprocod, procorcorescod) exigia ambas NOT NULL, impedindo
+    // adicionar uma peça sem variação de cor ao grupo de compatibilidade.
+    // Solução: trocar PK para procorid (serial, já único) e relaxar a constraint.
+    // ==================================================================================================================================
+
+    // 1. Dropa a PK antiga somente se ainda for a composta (procorprocod, procorcorescod)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.table_constraints tc
+          JOIN information_schema.key_column_usage kcu
+            ON kcu.constraint_name = tc.constraint_name
+           AND kcu.table_name = tc.table_name
+          WHERE tc.constraint_type = 'PRIMARY KEY'
+            AND tc.table_name = 'procor'
+            AND kcu.column_name = 'procorcorescod'
+        ) THEN
+          ALTER TABLE public.procor DROP CONSTRAINT IF EXISTS pk_procor;
+        END IF;
+      END$$;
+    `);
+
+    // 2. Torna procorcorescod nullable (para peças sem cor)
+    await pool.query(`
+      ALTER TABLE public.procor ALTER COLUMN procorcorescod DROP NOT NULL;
+    `);
+
+    // 3. Adiciona PK em procorid (serial, já único por definição)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints
+          WHERE constraint_type = 'PRIMARY KEY'
+            AND table_name = 'procor'
+        ) THEN
+          ALTER TABLE public.procor ADD CONSTRAINT pk_procor_id PRIMARY KEY (procorid);
+        END IF;
+      END$$;
+    `);
+
+    // 4. Unique index para pares (produto, cor) onde cor NÃO é nula (comportamento original)
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_procor_procod_corcod
+      ON public.procor(procorprocod, procorcorescod)
+      WHERE procorcorescod IS NOT NULL;
+    `);
+
+    // 5. Unique partial index: garante no máximo um registro "sem cor" por produto
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_procor_procod_sem_cor
+      ON public.procor(procorprocod)
+      WHERE procorcorescod IS NULL;
+    `);
+
+    // ==================================================================================================================================
+    // FIM CORREÇÃO procorcorescod NULL
+    // ==================================================================================================================================
+
     await pool.query("COMMIT");
     console.log("✅ atualizardb: tabelas e registros padrão garantidos.");
   } catch (err) {

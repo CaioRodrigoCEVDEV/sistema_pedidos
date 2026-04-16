@@ -590,15 +590,30 @@ async function addProcorToGroupByProcod(procod, groupId) {
     } else {
       const insertProcor = await client.query(
         `INSERT INTO procor (procorprocod, procorcorescod) VALUES ($1, NULL)
+         ON CONFLICT DO NOTHING
          RETURNING procorid, procorprocod, procorcorescod, procorqtde`,
         [procod],
       );
-      const inserted = insertProcor.rows[0];
       // Busca também prodes para completar o objeto
       const proResult = await client.query(
         `SELECT prodes FROM pro WHERE procod = $1`,
         [procod],
       );
+      // Se ON CONFLICT DO NOTHING impediu o insert (raro), busca o registro existente
+      let inserted = insertProcor.rows[0];
+      if (!inserted) {
+        const refetch = await client.query(
+          `SELECT pc.procorid, pc.procorprocod, pc.procorcorescod, pc.procorqtde
+           FROM procor pc
+           WHERE pc.procorprocod = $1 AND pc.procorcorescod IS NULL`,
+          [procod],
+        );
+        inserted = refetch.rows[0];
+        if (!inserted) {
+          await client.query("ROLLBACK");
+          return null;
+        }
+      }
       procor = { ...inserted, prodes: proResult.rows[0].prodes, cornome: "", corhex: "" };
     }
 
