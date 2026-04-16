@@ -894,28 +894,27 @@ function renderPecasDisponiveis(pecas, append = false) {
         ${hasColors ? `<i class="bi bi-palette-fill text-info" title="${peca.colors.length} cor(es) disponível(is)"></i>` : ""}
       </td>
       <td class="text-center">
-        ${
-          hasColors
-            ? `<button class="btn btn-sm btn-primary btn-add-part" data-part-id="${peca.procod}">
-              <i class="bi bi-plus"></i> Adicionar
-            </button>`
-            : '<span class="text-muted small" title="Sem variação de cor cadastrada">—</span>'
-        }
+        <button class="btn btn-sm btn-primary btn-add-part" data-part-id="${peca.procod}">
+          <i class="bi bi-plus"></i> Adicionar
+        </button>
       </td>
     `;
 
     // Adiciona event listener (evita onclick inline para prevenir XSS)
-    if (hasColors) {
-      const button = tr.querySelector(".btn-add-part");
-      button.addEventListener("click", () => {
+    const button = tr.querySelector(".btn-add-part");
+    button.addEventListener("click", () => {
+      if (hasColors) {
         if (peca.colors.length === 1) {
           // Apenas uma cor: adiciona diretamente pelo procorid
           adicionarPecaAoGrupo(peca.colors[0].procorid);
         } else {
           mostrarModalSelecaoCor(peca);
         }
-      });
-    }
+      } else {
+        // Peça sem cor: adiciona pelo procod
+        adicionarPecaSemCor(peca.procod, tr);
+      }
+    });
     tbody.appendChild(tr);
   });
 }
@@ -1036,6 +1035,51 @@ async function adicionarPecaAoGrupo(procorid) {
     _atualizarLinhaAposAdicionar(procorid);
 
     // Adiciona a nova peça ao painel de detalhes sem re-fetch (evita pulo de scroll).
+    if (!data.alreadyInGroup) {
+      _appendPartToGroupTable(data);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast(err.message, "error");
+  }
+}
+
+/**
+ * Adiciona uma peça sem cor ao grupo atual usando o procod (produto sem variação de cor).
+ * O backend localiza ou cria um registro procor com cor nula para a peça.
+ * @param {number} procod - ID da peça (procod)
+ * @param {HTMLElement} tr - Linha da tabela de peças disponíveis
+ */
+async function adicionarPecaSemCor(procod, tr) {
+  if (!currentGroupId) return;
+
+  try {
+    const res = await fetch(`${BASE_URL}/part-groups/${currentGroupId}/parts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ procod }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Erro ao adicionar peça");
+    }
+
+    const data = await res.json();
+
+    showToast("Peça adicionada ao grupo!", "success");
+
+    // Desabilita o botão da linha para indicar que a peça foi adicionada
+    const button = tr ? tr.querySelector(".btn-add-part") : null;
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = '<i class="bi bi-check-lg"></i> Adicionado';
+      button.classList.remove("btn-primary");
+      button.classList.add("btn-success");
+    }
+
+    // Adiciona a nova peça ao painel de detalhes sem re-fetch
     if (!data.alreadyInGroup) {
       _appendPartToGroupTable(data);
     }

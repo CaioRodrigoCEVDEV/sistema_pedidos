@@ -471,6 +471,62 @@ async function runTests() {
     await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
   });
 
+  // Teste 15: addProcorToGroupByProcod permite adicionar peça sem cor ao grupo
+  await test('addProcorToGroupByProcod permite adicionar peça sem cor ao grupo', async () => {
+    // Cria um grupo com estoque de 10
+    const group = await partGroupModels.createGroup('Test Group Sem Cor', 0);
+    await partGroupModels.updateGroupStock(group.id, 10, 'test_setup');
+
+    // Cria uma peça SEM nenhuma variação de cor (sem registros em procor)
+    const partResult = await pool.query(`
+      INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde)
+      SELECT 'Peça Teste Sem Cor',
+             (SELECT marcascod FROM marcas LIMIT 1),
+             (SELECT tipocod FROM tipo LIMIT 1),
+             100,
+             0
+      RETURNING procod
+    `);
+    const partId = partResult.rows[0].procod;
+
+    // Verifica que a peça não tem registros procor
+    const procorCheck = await pool.query(
+      'SELECT procorid FROM procor WHERE procorprocod = $1',
+      [partId]
+    );
+    assertEqual(procorCheck.rows.length, 0, 'Peça não deve ter variações de cor inicialmente');
+
+    // Adiciona a peça ao grupo sem informar cor
+    const result = await partGroupModels.addProcorToGroupByProcod(partId, group.id);
+
+    assertNotNull(result, 'Deve retornar resultado da adição');
+    assert(result.procorid !== null && result.procorid !== undefined, 'Deve retornar procorid do registro criado automaticamente');
+    assertEqual(result.procorprocod, partId, 'Deve referenciar a peça correta');
+    assert(result.procorcorescod === null, 'procorcorescod deve ser nulo (sem cor)');
+    assertEqual(result.procorqtde, 10, 'procorqtde deve herdar estoque do grupo (10)');
+
+    // Verifica que foi criado um registro procor com cor nula
+    const procorCreated = await pool.query(
+      'SELECT procorid, procorcorescod FROM procor WHERE procorprocod = $1 AND procorcorescod IS NULL',
+      [partId]
+    );
+    assertEqual(procorCreated.rows.length, 1, 'Deve ter criado um registro procor com cor nula');
+
+    // Verifica que foi adicionado ao grupo
+    const groupCheck = await partGroupModels.getGroupById(group.id);
+    const partInGroup = groupCheck.parts.find(p => p.procod === partId);
+    assertNotNull(partInGroup, 'Peça deve estar no grupo');
+
+    // Testa idempotência: adicionar a mesma peça novamente deve retornar alreadyInGroup
+    const resultDup = await partGroupModels.addProcorToGroupByProcod(partId, group.id);
+    assert(resultDup.alreadyInGroup === true, 'Segunda adição deve indicar que já pertence ao grupo');
+
+    // Limpa os dados de teste
+    await pool.query('DELETE FROM part_group_items WHERE procorid = $1', [result.procorid]);
+    await pool.query('DELETE FROM procor WHERE procorprocod = $1', [partId]);
+    await pool.query('DELETE FROM pro WHERE procod = $1', [partId]);
+  });
+
   // Limpeza
   await cleanup();
 

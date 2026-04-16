@@ -528,6 +528,115 @@ async function addProcorToGroup(procorid, groupId) {
 }
 
 /**
+ * Adiciona uma peça sem cor a um grupo de compatibilidade.
+ * Localiza ou cria um registro procor com procorcorescod = NULL para a peça
+ * e então adiciona esse procorid ao grupo — tudo em uma única transação atômica.
+ *
+ * @param {number} procod - ID da peça (PK de pro)
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @returns {Object|null} Dados da variação adicionada ou null se peça/grupo não encontrado
+ */
+async function addProcorToGroupByProcod(procod, groupId) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Verifica se a peça existe e está ativa
+    const partResult = await client.query(
+      `SELECT procod FROM pro WHERE procod = $1 AND prosit = 'A'`,
+      [procod],
+    );
+
+    if (partResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    // Verifica se o grupo existe
+    const groupResult = await client.query(
+      `SELECT id, grpcusto, stock_quantity FROM part_groups WHERE id = $1`,
+      [groupId],
+    );
+
+    if (groupResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    const group = groupResult.rows[0];
+
+    // Busca ou cria registro procor com cor nula para esta peça
+    let procorSelectResult = await client.query(
+      `SELECT pc.procorid, pc.procorprocod, pc.procorcorescod, pc.procorqtde,
+              p.prodes, COALESCE(co.cornome, '') AS cornome, COALESCE(co.corhex, '') AS corhex
+       FROM procor pc
+       JOIN pro p ON p.procod = pc.procorprocod
+       LEFT JOIN cores co ON co.corcod = pc.procorcorescod
+       WHERE pc.procorprocod = $1 AND pc.procorcorescod IS NULL`,
+      [procod],
+    );
+
+    let procor;
+    if (procorSelectResult.rows.length > 0) {
+      procor = procorSelectResult.rows[0];
+    } else {
+      const insertProcor = await client.query(
+        `INSERT INTO procor (procorprocod, procorcorescod) VALUES ($1, NULL)
+         RETURNING procorid, procorprocod, procorcorescod, procorqtde`,
+        [procod],
+      );
+      const inserted = insertProcor.rows[0];
+      // Busca também prodes para completar o objeto
+      const proResult = await client.query(
+        `SELECT prodes FROM pro WHERE procod = $1`,
+        [procod],
+      );
+      procor = { ...inserted, prodes: proResult.rows[0].prodes, cornome: "", corhex: "" };
+    }
+
+    const procorid = procor.procorid;
+
+    // Insere na tabela de itens do grupo (ignora conflito se já existe)
+    const insertResult = await client.query(
+      `INSERT INTO part_group_items (group_id, procorid)
+       VALUES ($1, $2)
+       ON CONFLICT ON CONSTRAINT uq_part_group_item DO NOTHING
+       RETURNING id`,
+      [groupId, procorid],
+    );
+
+    const alreadyInGroup = insertResult.rowCount === 0;
+
+    // Atualiza custo do produto se o grupo tiver custo definido
+    if (group.grpcusto !== null && group.grpcusto !== undefined) {
+      await client.query(
+        `UPDATE pro SET procusto = $1 WHERE procod = $2`,
+        [group.grpcusto, procod],
+      );
+    }
+
+    // Herda o estoque do grupo: atualiza procorqtde da variação recém-adicionada
+    let finalQtde = procor.procorqtde;
+    if (!alreadyInGroup && group.stock_quantity != null) {
+      await client.query(
+        `UPDATE procor SET procorqtde = $1 WHERE procorid = $2`,
+        [group.stock_quantity, procorid],
+      );
+      finalQtde = group.stock_quantity;
+    }
+
+    await client.query("COMMIT");
+    return { ...procor, procorqtde: finalQtde, alreadyInGroup };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Remove uma variação de cor (procorid) de um grupo via tabela part_group_items.
  * @param {number} procorid - ID da variação (PK de procor)
  * @returns {Object|null} Registro removido ou null se não encontrado
@@ -1325,6 +1434,7 @@ module.exports = {
   updateGroup,
   deleteGroup,
   addProcorToGroup,
+  addProcorToGroupByProcod,
   removeProcorFromGroup,
   addPartToGroup,
   removePartFromGroup,

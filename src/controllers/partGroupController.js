@@ -234,17 +234,23 @@ exports.deleteGroup = async (req, res) => {
   }
 };
 
-// Adiciona uma variação de cor (procor) a um grupo de compatibilidade
+// Adiciona uma variação de cor (procor) a um grupo de compatibilidade.
+// Aceita procorid (variação com cor) ou procod (peça sem cor).
 exports.addPartToGroup = async (req, res) => {
   const { id } = req.params;
-  const { procorid } = req.body;
+  const { procorid, procod } = req.body;
 
-  if (!procorid) {
-    return res.status(400).json({ error: "ID da variação de cor (procorid) é obrigatório" });
+  if (!procorid && !procod) {
+    return res.status(400).json({ error: "ID da variação (procorid) ou ID da peça (procod) é obrigatório" });
   }
 
   try {
-    const result = await partGroupModels.addProcorToGroup(procorid, id);
+    let result;
+    if (procorid) {
+      result = await partGroupModels.addProcorToGroup(procorid, id);
+    } else {
+      result = await partGroupModels.addProcorToGroupByProcod(procod, id);
+    }
     if (!result) {
       return res.status(404).json({ error: "Variação não encontrada ou grupo inválido" });
     }
