@@ -8,10 +8,11 @@ const pool = require("../config/db");
  *
  * Estrutura das tabelas:
  * - part_groups: Tabela principal dos grupos (id INTEGER, name, stock_quantity)
+ * - part_group_items: Vínculo entre grupo e variação de cor (group_id, procorid)
  * - part_group_audit: Histórico de movimentações de estoque
- * - pro.part_group_id: Coluna FK que vincula uma peça a um grupo
  *
  * IMPORTANTE: O campo id usa INTEGER simples (auto increment), não UUID.
+ * O vínculo entre peça e grupo é feito via part_group_items (procorid), não via pro.part_group_id.
  */
 
 /**
@@ -116,8 +117,11 @@ async function getGroupByPartId(partId) {
       pg.created_at,
       pg.updated_at
     FROM part_groups pg
-    JOIN pro p ON p.part_group_id = pg.id
-    WHERE p.procod = $1
+    JOIN part_group_items pgi ON pgi.group_id = pg.id
+    JOIN procor pc ON pc.procorid = pgi.procorid
+    WHERE pc.procorprocod = $1
+    ORDER BY pg.id
+    LIMIT 1
   `,
     [partId],
   );
@@ -126,7 +130,7 @@ async function getGroupByPartId(partId) {
 
 /**
  * Obtém a quantidade de estoque para uma peça
- * Se a peça pertence a um grupo, retorna o estoque do grupo
+ * Se a peça pertence a um grupo (via part_group_items), retorna o estoque do grupo
  * Caso contrário, retorna o estoque individual da peça (proqtde)
  * @param {number} partId - ID da peça (procod)
  * @returns {Object|null} Informações de estoque ou null se peça não encontrada
@@ -136,15 +140,18 @@ async function getGroupStock(partId) {
     `
     SELECT 
       CASE 
-        WHEN p.part_group_id IS NOT NULL THEN pg.stock_quantity
+        WHEN pg.id IS NOT NULL THEN pg.stock_quantity
         ELSE p.proqtde
       END as stock_quantity,
-      p.part_group_id,
       pg.id as group_id,
       pg.name as group_name
     FROM pro p
-    LEFT JOIN part_groups pg ON pg.id = p.part_group_id
+    LEFT JOIN procor pc ON pc.procorprocod = p.procod
+    LEFT JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+    LEFT JOIN part_groups pg ON pg.id = pgi.group_id
     WHERE p.procod = $1
+    ORDER BY pg.id NULLS LAST
+    LIMIT 1
   `,
     [partId],
   );
@@ -508,6 +515,130 @@ async function addProcorToGroup(procorid, groupId) {
 
     // Herda o estoque do grupo: atualiza procorqtde da variação recém-adicionada
     // para refletir o estoque atual do grupo, garantindo sincronização imediata.
+    let finalQtde = procor.procorqtde;
+    if (!alreadyInGroup && group.stock_quantity != null) {
+      await client.query(
+        `UPDATE procor SET procorqtde = $1 WHERE procorid = $2`,
+        [group.stock_quantity, procorid],
+      );
+      finalQtde = group.stock_quantity;
+    }
+
+    await client.query("COMMIT");
+    return { ...procor, procorqtde: finalQtde, alreadyInGroup };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Adiciona uma peça sem cor a um grupo de compatibilidade.
+ * Localiza ou cria um registro procor com procorcorescod = NULL para a peça
+ * e então adiciona esse procorid ao grupo — tudo em uma única transação atômica.
+ *
+ * @param {number} procod - ID da peça (PK de pro)
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @returns {Object|null} Dados da variação adicionada ou null se peça/grupo não encontrado
+ */
+async function addProcorToGroupByProcod(procod, groupId) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Verifica se a peça existe e está ativa
+    const partResult = await client.query(
+      `SELECT procod FROM pro WHERE procod = $1 AND prosit = 'A'`,
+      [procod],
+    );
+
+    if (partResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    // Verifica se o grupo existe
+    const groupResult = await client.query(
+      `SELECT id, grpcusto, stock_quantity FROM part_groups WHERE id = $1`,
+      [groupId],
+    );
+
+    if (groupResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    const group = groupResult.rows[0];
+
+    // Busca ou cria registro procor com cor nula para esta peça
+    let procorSelectResult = await client.query(
+      `SELECT pc.procorid, pc.procorprocod, pc.procorcorescod, pc.procorqtde,
+              p.prodes, COALESCE(co.cornome, '') AS cornome, COALESCE(co.corhex, '') AS corhex
+       FROM procor pc
+       JOIN pro p ON p.procod = pc.procorprocod
+       LEFT JOIN cores co ON co.corcod = pc.procorcorescod
+       WHERE pc.procorprocod = $1 AND pc.procorcorescod IS NULL`,
+      [procod],
+    );
+
+    let procor;
+    if (procorSelectResult.rows.length > 0) {
+      procor = procorSelectResult.rows[0];
+    } else {
+      const insertProcor = await client.query(
+        `INSERT INTO procor (procorprocod, procorcorescod) VALUES ($1, NULL)
+         ON CONFLICT DO NOTHING
+         RETURNING procorid, procorprocod, procorcorescod, procorqtde`,
+        [procod],
+      );
+      // Busca também prodes para completar o objeto
+      const proResult = await client.query(
+        `SELECT prodes FROM pro WHERE procod = $1`,
+        [procod],
+      );
+      // Se ON CONFLICT DO NOTHING impediu o insert (raro), busca o registro existente
+      let inserted = insertProcor.rows[0];
+      if (!inserted) {
+        const refetch = await client.query(
+          `SELECT pc.procorid, pc.procorprocod, pc.procorcorescod, pc.procorqtde
+           FROM procor pc
+           WHERE pc.procorprocod = $1 AND pc.procorcorescod IS NULL`,
+          [procod],
+        );
+        inserted = refetch.rows[0];
+        if (!inserted) {
+          await client.query("ROLLBACK");
+          return null;
+        }
+      }
+      procor = { ...inserted, prodes: proResult.rows[0].prodes, cornome: "", corhex: "" };
+    }
+
+    const procorid = procor.procorid;
+
+    // Insere na tabela de itens do grupo (ignora conflito se já existe)
+    const insertResult = await client.query(
+      `INSERT INTO part_group_items (group_id, procorid)
+       VALUES ($1, $2)
+       ON CONFLICT ON CONSTRAINT uq_part_group_item DO NOTHING
+       RETURNING id`,
+      [groupId, procorid],
+    );
+
+    const alreadyInGroup = insertResult.rowCount === 0;
+
+    // Atualiza custo do produto se o grupo tiver custo definido
+    if (group.grpcusto !== null && group.grpcusto !== undefined) {
+      await client.query(
+        `UPDATE pro SET procusto = $1 WHERE procod = $2`,
+        [group.grpcusto, procod],
+      );
+    }
+
+    // Herda o estoque do grupo: atualiza procorqtde da variação recém-adicionada
     let finalQtde = procor.procorqtde;
     if (!alreadyInGroup && group.stock_quantity != null) {
       await client.query(
@@ -1264,6 +1395,56 @@ async function venderItens(itens, referenceId = null) {
   }
 }
 
+/**
+ * Atualiza a quantidade ideal (qtde_ideal) de um grupo de compatibilidade
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @param {number|null} qtdeIdeal - Quantidade ideal de estoque (null para remover)
+ * @returns {Object|null} Grupo atualizado ou null se não encontrado
+ */
+async function updateGroupIdealQty(groupId, qtdeIdeal) {
+  const result = await pool.query(
+    `
+    UPDATE part_groups
+    SET qtde_ideal = $1, updated_at = NOW()
+    WHERE id = $2
+    RETURNING id, name, stock_quantity, qtde_ideal
+  `,
+    [qtdeIdeal, groupId],
+  );
+  return result.rows[0] || null;
+}
+
+/**
+ * Ajusta o estoque de um grupo por delta (adicionar ou reduzir)
+ * Delega para updateGroupStock após calcular o novo valor absoluto.
+ * @param {number} groupId - ID do grupo (INTEGER)
+ * @param {number} delta - Quantidade a adicionar (positivo) ou reduzir (negativo)
+ * @param {string} reason - Motivo do ajuste
+ * @returns {Object} Grupo atualizado com novo estoque
+ * @throws {Error} Se o novo estoque ficar negativo
+ */
+async function adjustGroupStock(groupId, delta, reason = "Ajuste_Manual") {
+  const groupResult = await pool.query(
+    `SELECT id, COALESCE(stock_quantity, 0) AS stock_quantity FROM part_groups WHERE id = $1`,
+    [groupId],
+  );
+
+  if (groupResult.rows.length === 0) {
+    throw new Error("Grupo não encontrado");
+  }
+
+  const currentStock = Number(groupResult.rows[0].stock_quantity);
+  const newStock = currentStock + delta;
+
+  if (newStock < 0) {
+    throw new Error(
+      `Estoque insuficiente. Estoque atual: ${currentStock}, Redução solicitada: ${Math.abs(delta)}`,
+    );
+  }
+
+  return updateGroupStock(groupId, newStock, reason);
+}
+
 module.exports = {
   listAllGroups,
   getGroupById,
@@ -1275,6 +1456,7 @@ module.exports = {
   updateGroup,
   deleteGroup,
   addProcorToGroup,
+  addProcorToGroupByProcod,
   removeProcorFromGroup,
   addPartToGroup,
   removePartFromGroup,
@@ -1284,4 +1466,6 @@ module.exports = {
   updateGroupStock,
   updateAllPartsStockInGroup,
   venderItens,
+  updateGroupIdealQty,
+  adjustGroupStock,
 };

@@ -49,7 +49,7 @@ async function getTopPecas(filters = {}) {
   const whereClause = whereClauses.join(" AND ");
 
   if (groupBy === "grupo") {
-    // Agrupado por part_group
+    // Agrupado por part_group — vínculo via part_group_items (procorid), sem depender de pro.part_group_id
     const query = `
       SELECT 
         pg.name as grupo,
@@ -60,10 +60,15 @@ async function getTopPecas(filters = {}) {
       FROM pvi
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
-      LEFT JOIN part_groups pg ON p.part_group_id = pg.id
+      JOIN procor pc ON pc.procorprocod = p.procod
+        AND (
+          (pvi.pviprocorid IS NOT NULL AND pc.procorcorescod = pvi.pviprocorid)
+          OR (pvi.pviprocorid IS NULL AND pc.procorcorescod IS NULL)
+        )
+      JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+      JOIN part_groups pg ON pg.id = pgi.group_id
       LEFT JOIN modelo m ON m.modcod = p.promodcod
       WHERE ${whereClause}
-        AND p.part_group_id IS NOT NULL
       GROUP BY pg.id, pg.name, procusto
       ORDER BY qtde_vendida DESC
     `;
@@ -71,7 +76,7 @@ async function getTopPecas(filters = {}) {
     const result = await pool.query(query, params);
     return result.rows;
   } else {
-    // Agrupado por peça individual
+    // Agrupado por peça individual — grupo via part_group_items, sem depender de pro.part_group_id
     const query = `
       SELECT 
         p.prodes as peca,
@@ -83,7 +88,13 @@ async function getTopPecas(filters = {}) {
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
       LEFT JOIN modelo m ON m.modcod = p.promodcod
-      LEFT JOIN part_groups pg ON p.part_group_id = pg.id
+      LEFT JOIN procor pc ON pc.procorprocod = p.procod
+        AND (
+          (pvi.pviprocorid IS NOT NULL AND pc.procorcorescod = pvi.pviprocorid)
+          OR (pvi.pviprocorid IS NULL AND pc.procorcorescod IS NULL)
+        )
+      LEFT JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+      LEFT JOIN part_groups pg ON pg.id = pgi.group_id
       WHERE ${whereClause}
       GROUP BY p.procod, p.prodes, m.moddes, pg.name, procusto
       ORDER BY qtde_vendida DESC
@@ -152,7 +163,70 @@ async function getPecasCadastradas(filters = {}) {
   return result.rows;
 }
 
+/**
+ * Busca grupos de compatibilidade vinculados às peças mais vendidas (Top Peças)
+ * com estoque atual e quantidade ideal para controle de estoque
+ * @param {Object} filters - Filtros para a consulta (mesmos do getTopPecas)
+ * @param {string} filters.dataInicio - Data inicial (YYYY-MM-DD)
+ * @param {string} filters.dataFim - Data final (YYYY-MM-DD)
+ * @param {number} filters.marca - ID da marca (opcional)
+ * @returns {Array} Lista de grupos com estoque atual, qtde_ideal e qtde_vendida
+ */
+async function getEstoqueGruposTopPecas(filters = {}) {
+  const { dataInicio, dataFim, marca } = filters;
+
+  let whereClauses = [`pvconfirmado = $1`];
+  let params = [CONFIRMED_ORDER_STATUS];
+  let paramIndex = 2;
+
+  if (dataInicio) {
+    whereClauses.push(`pvdtcad >= $${paramIndex}`);
+    params.push(dataInicio);
+    paramIndex++;
+  }
+
+  if (dataFim) {
+    whereClauses.push(`pvdtcad <= $${paramIndex}`);
+    params.push(dataFim);
+    paramIndex++;
+  }
+
+  if (marca) {
+    whereClauses.push(`promarcascod = $${paramIndex}`);
+    params.push(marca);
+    paramIndex++;
+  }
+
+  const whereClause = whereClauses.join(" AND ");
+
+  const query = `
+    SELECT
+      pg.id,
+      pg.name AS grupo,
+      COALESCE(pg.stock_quantity, 0) AS estoque_atual,
+      pg.qtde_ideal,
+      SUM(pviqtde) AS qtde_vendida
+    FROM pvi
+    JOIN pv ON pvcod = pvipvcod
+    JOIN pro p ON pviprocod = p.procod
+    JOIN procor pc ON pc.procorprocod = p.procod
+      AND (
+        (pvi.pviprocorid IS NOT NULL AND pc.procorcorescod = pvi.pviprocorid)
+        OR (pvi.pviprocorid IS NULL AND pc.procorcorescod IS NULL)
+      )
+    JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+    JOIN part_groups pg ON pg.id = pgi.group_id
+    WHERE ${whereClause}
+    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.qtde_ideal
+    ORDER BY qtde_vendida DESC
+  `;
+
+  const result = await pool.query(query, params);
+  return result.rows;
+}
+
 module.exports = {
   getTopPecas,
   getPecasCadastradas,
+  getEstoqueGruposTopPecas,
 };

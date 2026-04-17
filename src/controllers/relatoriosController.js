@@ -262,9 +262,27 @@ exports.getTopPecasXLS = async (req, res) => {
 };
 
 /**
- * GET /v2/relatorios/pecas-cadastradas
- * Retorna JSON com todas as peças cadastradas
+ * GET /v2/relatorios/estoque-grupos
+ * Retorna grupos de compatibilidade vinculados às peças mais vendidas
+ * com estoque atual e quantidade ideal
  */
+exports.getEstoqueGruposJSON = async (req, res) => {
+  try {
+    const { dataInicio, dataFim, marca } = req.query;
+
+    const filters = {
+      dataInicio,
+      dataFim,
+      marca: marca ? parseInt(marca) : null,
+    };
+
+    const result = await relatoriosModels.getEstoqueGruposTopPecas(filters);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Erro ao buscar estoque de grupos:", error);
+    res.status(500).json({ error: "Erro ao buscar estoque de grupos" });
+  }
+};
 exports.getPecasCadastradasJSON = async (req, res) => {
   try {
     const { marca, modelo, peca } = req.query;

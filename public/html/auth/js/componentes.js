@@ -31,6 +31,9 @@ function createHeader() {
             <li class="nav-item" id="estoque">
               <a class="nav-link" href="estoque">Estoque</a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" href="estoque-grupos">Estoque Grupos</a>
+            </li>
             <li class="nav-item" id="users">
               <a class="nav-link" href="users">Usuários</a>
             </li>
