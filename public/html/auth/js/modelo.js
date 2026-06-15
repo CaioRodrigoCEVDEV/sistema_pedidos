@@ -1,9 +1,49 @@
 const params = new URLSearchParams(window.location.search);
-const id = params.get("id");
-const marcascod = params.get("marcascod");
+const id = parseIntegerParam(params.get("id"));
+const marcascod = parseIntegerParam(params.get("marcascod"));
+
+function parseIntegerParam(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const normalizedValue = String(value).trim().toLowerCase();
+
+  if (
+    normalizedValue === "" ||
+    normalizedValue === "null" ||
+    normalizedValue === "undefined"
+  ) {
+    return null;
+  }
+
+  const parsed = Number(normalizedValue);
+
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function buildPecasHref(modeloId, marcaId) {
+  const parsedModeloId = parseIntegerParam(modeloId);
+  const parsedMarcaId = parseIntegerParam(marcaId);
+
+  if (parsedModeloId === null || parsedMarcaId === null) {
+    return null;
+  }
+
+  const query = new URLSearchParams({
+    id: String(parsedModeloId),
+    marcascod: String(parsedMarcaId),
+  });
+
+  return `modelo/pecas?${query.toString()}`;
+}
 
 //popular table com os dados do modelo
 document.addEventListener("DOMContentLoaded", function () {
+  if (id === null) {
+    return;
+  }
+
   fetch(`${BASE_URL}/modelo/${id}`)
     .then((res) => res.json())
     .then((dados) => {
@@ -16,15 +56,20 @@ document.addEventListener("DOMContentLoaded", function () {
         return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
       });
 
-      dados.forEach((dado) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
+        dados.forEach((dado) => {
+          const tr = document.createElement("tr");
+          const href = buildPecasHref(dado.modcod, dado.modmarcascod);
+          tr.innerHTML = `
                       <td class="text-left">${dado.moddes}</td> 
                       <td class="text-center">
-                        <a href="modelo/pecas?id=${dado.modcod}&marcascod=${dado.modmarcascod}"><button class="btn btn-outline-success btn-sm">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>
+                        ${
+                          href
+                            ? `<a href="${href}"><button class="btn btn-outline-success btn-sm">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>`
+                            : '<button class="btn btn-outline-success btn-sm" disabled>Selecionar</button>'
+                        }
                       </td>
                         `;
-        corpoTabela.appendChild(tr);
+          corpoTabela.appendChild(tr);
       });
     })
     .catch((erro) => console.error(erro));
@@ -39,6 +84,11 @@ document
     const form = e.target;
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
+
+    if (marcascod === null) {
+      alert("Marca inválida ou não informada.");
+      return;
+    }
 
     data.modmarcascod = marcascod; // Adiciona o id da marca ao objeto de dados
 
@@ -74,12 +124,14 @@ document.getElementById("pesquisa").addEventListener("input", function () {
 });
 
 // Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
-fetch(`${BASE_URL}/marcas/${marcascod}`)
-  .then((res) => res.json())
-  .then((marcas) => {
-    document.getElementById("marcaTitulo").textContent =
-      marcas[0].marcasdes || "Marca não encontrada";
-  })
-  .catch(() => {
-    document.getElementById("marcaTitulo").textContent = "";
-  });
+if (marcascod !== null) {
+  fetch(`${BASE_URL}/marcas/${marcascod}`)
+    .then((res) => res.json())
+    .then((marcas) => {
+      document.getElementById("marcaTitulo").textContent =
+        marcas[0].marcasdes || "Marca não encontrada";
+    })
+    .catch(() => {
+      document.getElementById("marcaTitulo").textContent = "";
+    });
+}

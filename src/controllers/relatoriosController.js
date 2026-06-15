@@ -1,6 +1,7 @@
 const relatoriosModels = require("../models/relatoriosModels");
 const ExcelJS = require("exceljs");
 const PDFDocument = require("pdfkit");
+const { parseIntegerParam } = require("../utils/parseIntegerParam");
 
 // Constants
 const PDF_PAGE_BREAK_Y = 700;
@@ -22,7 +23,7 @@ exports.getTopPecasJSON = async (req, res) => {
     const filters = {
       dataInicio,
       dataFim,
-      marca: marca ? parseInt(marca) : null,
+      marca: parseIntegerParam(marca),
       groupBy: groupBy || "peca",
     };
 
@@ -45,7 +46,7 @@ exports.getTopPecasPDF = async (req, res) => {
     const filters = {
       dataInicio,
       dataFim,
-      marca: marca ? parseInt(marca) : null,
+      marca: parseIntegerParam(marca),
       groupBy: groupBy || "peca",
     };
 
@@ -198,7 +199,7 @@ exports.getTopPecasXLS = async (req, res) => {
     const filters = {
       dataInicio,
       dataFim,
-      marca: marca ? parseInt(marca) : null,
+      marca: parseIntegerParam(marca),
       groupBy: groupBy || "peca",
     };
 
@@ -273,7 +274,7 @@ exports.getEstoqueGruposJSON = async (req, res) => {
     const filters = {
       dataInicio,
       dataFim,
-      marca: marca ? parseInt(marca) : null,
+      marca: parseIntegerParam(marca),
     };
 
     const result = await relatoriosModels.getEstoqueGruposTopPecas(filters);
@@ -287,8 +288,8 @@ exports.getPecasCadastradasJSON = async (req, res) => {
   try {
     const { marca, modelo, peca } = req.query;
     const filters = {
-      marca: marca ? parseInt(marca) : null,
-      modelo: modelo ? parseInt(modelo) : null,
+      marca: parseIntegerParam(marca),
+      modelo: parseIntegerParam(modelo),
       peca: peca || null,
     };
     const result = await relatoriosModels.getPecasCadastradas(filters);
@@ -307,8 +308,8 @@ exports.getPecasCadastradasPDF = async (req, res) => {
   try {
     const { marca, modelo, peca } = req.query;
     const filters = {
-      marca: marca ? parseInt(marca) : null,
-      modelo: modelo ? parseInt(modelo) : null,
+      marca: parseIntegerParam(marca),
+      modelo: parseIntegerParam(modelo),
       peca: peca || null,
     };
 

@@ -1,12 +1,17 @@
 const pool = require("../config/db");
+const { parseIntegerParam } = require("../utils/parseIntegerParam");
 
 exports.listarModelo = async (req, res) => {
-  const { id } = req.params;
+  const marcaId = parseIntegerParam(req.params.id);
+
+  if (marcaId === null) {
+    return res.status(400).json({ error: "Marca invalida ou nao informada" });
+  }
 
   try {
     const result = await pool.query(
       `select * from vw_modelos where modmarcascod = $1 order by ordem`,
-      [id]
+      [marcaId]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -16,12 +21,16 @@ exports.listarModelo = async (req, res) => {
 };
 
 exports.buscarModelo = async (req, res) => {
-  const { id } = req.params;
+  const modeloId = parseIntegerParam(req.params.id);
+
+  if (modeloId === null) {
+    return res.status(400).json({ error: "Modelo invalido ou nao informado" });
+  }
 
   try {
     const result = await pool.query(
       `select * from vw_modelos WHERE modcod = $1;`,
-      [id]
+      [modeloId]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -32,42 +41,60 @@ exports.buscarModelo = async (req, res) => {
 
 exports.inserirModelo = async (req, res) => {
   const { moddes, modmarcascod } = req.body;
+  const marcaId = parseIntegerParam(modmarcascod);
+
+  if (marcaId === null) {
+    return res.status(400).json({ error: "Marca invalida ou nao informada" });
+  }
 
   try {
     const result = await pool.query(
       `insert into modelo (moddes,modmarcascod) values ($1,$2) returning *`,
-      [moddes, modmarcascod]
+      [moddes, marcaId]
     );
     res.status(200).json(result.rows);
-  } catch {
+  } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao criar modelo" });
   }
 };
 
 exports.atualizarModelo = async (req, res) => {
-  const { id } = req.params;
   const { moddes, modmarcascod } = req.body;
+  const modeloId = parseIntegerParam(req.params.id);
+  const marcaId = parseIntegerParam(modmarcascod);
+
+  if (modeloId === null) {
+    return res.status(400).json({ error: "Modelo invalido ou nao informado" });
+  }
+
+  if (marcaId === null) {
+    return res.status(400).json({ error: "Marca invalida ou nao informada" });
+  }
 
   try {
     const result = await pool.query(
       `update modelo set moddes = $1, modmarcascod = $2 where modcod = $3 returning *`,
-      [moddes, modmarcascod, id]
+      [moddes, marcaId, modeloId]
     );
     res.status(200).json(result.rows);
-  } catch {
+  } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao alterar modelo" });
   }
 };
 
 exports.deletarModelo = async (req, res) => {
-  const { id } = req.params;
+  const modeloId = parseIntegerParam(req.params.id);
+
+  if (modeloId === null) {
+    return res.status(400).json({ error: "Modelo invalido ou nao informado" });
+  }
 
   try {
     const result = await pool.query(
       `delete from modelo where modcod = $1 returning *`,
-      [id]
+      [modeloId]
     );
     res.status(200).json(result.rows);
   } catch (error){

@@ -4,6 +4,26 @@ const btnProduto = document.getElementById("dropdownProduto");
 // const btnExcluir = document.getElementById('btnDelete');
 const produtoForm = document.getElementById("produtoForm");
 const promarcascod = document.getElementById("popupMarcaModalProduto");
+
+function parseIntegerParam(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const normalizedValue = String(value).trim().toLowerCase();
+
+  if (
+    normalizedValue === "" ||
+    normalizedValue === "null" ||
+    normalizedValue === "undefined"
+  ) {
+    return null;
+  }
+
+  const parsed = Number(normalizedValue);
+
+  return Number.isInteger(parsed) ? parsed : null;
+}
 // Novo produto
 btnProduto.addEventListener("click", () => {
   async function fetchMarcas() {
@@ -26,14 +46,20 @@ btnProduto.addEventListener("click", () => {
   }
 
   const fetchModelos = async (marcascod) => {
+    const marcaId = parseIntegerParam(marcascod);
+    const modelosHolder = document.getElementById("popupProdutoModalModelo");
+
+    modelosHolder.innerHTML = '<option value="">Selecione</option>';
+
+    if (marcaId === null) {
+      return;
+    }
+
     try {
-      const response = await fetch(`${BASE_URL}/modelo/${marcascod}`);
+      const response = await fetch(`${BASE_URL}/modelo/${marcaId}`);
       if (!response.ok) throw new Error("Erro ao buscar modelos");
 
       const modelos = await response.json();
-      const modelosHolder = document.getElementById("popupProdutoModalModelo");
-
-      modelosHolder.innerHTML = '<option value="">Selecione</option>';
 
       modelos.forEach((modelo) => {
         const option = document.createElement("option");
@@ -47,13 +73,12 @@ btnProduto.addEventListener("click", () => {
   };
 
   promarcascod.addEventListener("change", (e) => {
-    const marcascod = e.target.value;
+    const marcaId = parseIntegerParam(e.target.value);
     const modelosHolder = document.getElementById("popupProdutoModalModelo");
-    if (marcascod) {
-      fetchModelos(marcascod);
+    if (marcaId !== null) {
+      fetchModelos(marcaId);
     } else {
-      modelosHolder.innerHTML =
-        '<div class="text-muted small">Selecione a marca primeiro</div>';
+      modelosHolder.innerHTML = '<option value="">Selecione</option>';
     }
   });
 
@@ -123,22 +148,35 @@ produtoForm.addEventListener("submit", async (ev) => {
   const modeloSelecionado = document.getElementById(
     "popupProdutoModalModelo",
   ).value;
+  const marcaId = parseIntegerParam(
+    document.getElementById("popupMarcaModalProduto").value,
+  );
+  const modeloId = parseIntegerParam(modeloSelecionado);
+  const tipoId = parseIntegerParam(
+    document.getElementById("popupProdutoModaltipo").value,
+  );
 
-  if (!modeloSelecionado) {
-    alert("Por favor, selecione um modelo.");
+  if (marcaId === null) {
+    alert("Marca inválida ou não informada.");
+    return;
+  }
+
+  if (modeloId === null) {
+    alert("Modelo inválido ou não informado.");
+    return;
+  }
+
+  if (tipoId === null) {
+    alert("Tipo de peça inválido ou não informado.");
     return;
   }
 
   const payload = {
     prodes: descricaoProduto.value.trim(),
-    promarcascod: parseInt(
-      document.getElementById("popupMarcaModalProduto").value,
-    ),
+    promarcascod: marcaId,
     provl: parseFloat(provl.value),
-    promodcod: parseInt(modeloSelecionado),
-    protipocod: parseInt(
-      document.getElementById("popupProdutoModaltipo").value,
-    ),
+    promodcod: modeloId,
+    protipocod: tipoId,
   };
 
   // Pega todos os checkboxes marcados de cor

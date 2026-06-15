@@ -1,12 +1,17 @@
 const pool = require("../config/db");
+const { parseIntegerParam } = require("../utils/parseIntegerParam");
 
 exports.listarTipo = async (req, res) => {
-  const { id } = req.params;
+  const modeloId = parseIntegerParam(req.params.id);
+
+  if (modeloId === null) {
+    return res.status(400).json({ error: "Modelo invalido ou nao informado" });
+  }
 
   try {
     const result = await pool.query(
       "select tipocod,tipodes, promarcascod,promodcod from vw_tipo_pecas where promodcod = $1 order by tipoordem ",
-      [id]
+      [modeloId]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -16,13 +21,21 @@ exports.listarTipo = async (req, res) => {
 };
 
 exports.buscarTipo = async (req, res) => {
-  const { id } = req.params;
-  const { modelo } = req.query;
+  const tipoId = parseIntegerParam(req.params.id);
+  const modeloId = parseIntegerParam(req.query.modelo);
+
+  if (tipoId === null) {
+    return res.status(400).json({ error: "Tipo de peca invalido ou nao informado" });
+  }
+
+  if (modeloId === null) {
+    return res.status(400).json({ error: "Modelo invalido ou nao informado" });
+  }
 
   try {
     const result = await pool.query(
       "select  tipocod,tipodes, promarcascod,promodcod from vw_tipo_pecas  where promodcod = $1 AND tipocod = $2",
-      [modelo, id]
+      [modeloId, tipoId]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -57,13 +70,17 @@ exports.inserirTipo = async (req, res) => {
 };
 
 exports.atualizarTipo = async (req, res) => {
-  const { id } = req.params;
   const { tipodes } = req.body;
+  const tipoId = parseIntegerParam(req.params.id);
+
+  if (tipoId === null) {
+    return res.status(400).json({ error: "Tipo de peca invalido ou nao informado" });
+  }
 
   try {
     const result = await pool.query(
       "update tipo set tipodes = $1 where tipocod = $2 returning *",
-      [tipodes, id]
+      [tipodes, tipoId]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -73,12 +90,16 @@ exports.atualizarTipo = async (req, res) => {
 };
 
 exports.deleteTipo = async (req, res) => {
-  const { id } = req.params;
+  const tipoId = parseIntegerParam(req.params.id);
+
+  if (tipoId === null) {
+    return res.status(400).json({ error: "Tipo de peca invalido ou nao informado" });
+  }
 
   try {
     const result = await pool.query(
       "delete from tipo where tipocod = $1 returning *",
-      [id]
+      [tipoId]
     );
     res.status(200).json(result.rows);
   } catch (error) {

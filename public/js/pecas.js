@@ -1,24 +1,68 @@
 const params = new URLSearchParams(window.location.search);
 
-const id = params.get("id");
-const marcascod = params.get("marcascod");
-const modeloscod = params.get("modeloscod");
+const id = parseIntegerParam(params.get("id"));
+const marcascod = parseIntegerParam(params.get("marcascod"));
+const modeloscod = parseIntegerParam(params.get("modeloscod"));
+
+function parseIntegerParam(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const normalizedValue = String(value).trim().toLowerCase();
+
+  if (
+    normalizedValue === "" ||
+    normalizedValue === "null" ||
+    normalizedValue === "undefined"
+  ) {
+    return null;
+  }
+
+  const parsed = Number(normalizedValue);
+
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function buildListaPecasHref(tipoId, marcaId, modeloId) {
+  const parsedTipoId = parseIntegerParam(tipoId);
+  const parsedMarcaId = parseIntegerParam(marcaId);
+  const parsedModeloId = parseIntegerParam(modeloId);
+
+  if (parsedTipoId === null || parsedMarcaId === null || parsedModeloId === null) {
+    return null;
+  }
+
+  const query = new URLSearchParams({
+    id: String(parsedTipoId),
+    marcascod: String(parsedMarcaId),
+    modelo: String(parsedModeloId),
+  });
+
+  return `lista-pecas?${query.toString()}`;
+}
 
 //Busca o nome do modelo pelo id usando fetch e exibe no elemento com id 'modeloTitulo'
-fetch(`${BASE_URL}/mod/${id}`)
-  .then((res) => res.json())
-  .then((modelo) => {
-    const nome = Array.isArray(modelo) ? modelo[0]?.moddes : modelo?.moddes;
-    document.getElementById("modeloTitulo").textContent =
-      nome || "Modelo não encontrado";
-  })
+if (id !== null) {
+  fetch(`${BASE_URL}/mod/${id}`)
+    .then((res) => res.json())
+    .then((modelo) => {
+      const nome = Array.isArray(modelo) ? modelo[0]?.moddes : modelo?.moddes;
+      document.getElementById("modeloTitulo").textContent =
+        nome || "Modelo não encontrado";
+    })
 
-  .catch(() => {
-    document.getElementById("modeloTitulo").textContent = "";
-  });
+    .catch(() => {
+      document.getElementById("modeloTitulo").textContent = "";
+    });
+}
 
 //popular table com os dados do modelo
 document.addEventListener("DOMContentLoaded", function () {
+  if (id === null) {
+    return;
+  }
+
   fetch(`${BASE_URL}/tipo/${id}`)
     .then((res) => res.json())
     .then((dados) => {
@@ -27,14 +71,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
+        const href = buildListaPecasHref(
+          dado.tipocod,
+          dado.promarcascod,
+          dado.promodcod,
+        );
         tr.innerHTML = `
                       <td style="white-space: pre-line;">${dado.tipodes}</td>
                       <td class="text-center">
-                        <a href="lista-pecas?id=${dado.tipocod}&marcascod=${dado.promarcascod}&modelo=${dado.promodcod}">
+                        ${
+                          href
+                            ? `<a href="${href}">
                           <button class="btn btn-primary btn-add">
                       Selecionar <i class="bi bi-arrow-right-short"></i>
                           </button>
-                        </a>
+                        </a>`
+                            : '<button class="btn btn-primary btn-add" disabled>Selecionar</button>'
+                        }
                       </td>
         `;
         corpoTabela.appendChild(tr);
@@ -44,15 +97,17 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
-fetch(`${BASE_URL}/marcas/${marcascod}`)
-  .then((res) => res.json())
-  .then((marcas) => {
-    document.getElementById("marcaTitulo").textContent =
-      marcas[0].marcasdes || "Marca não encontrada";
-  })
-  .catch(() => {
-    document.getElementById("marcaTitulo").textContent = "";
-  });
+if (marcascod !== null) {
+  fetch(`${BASE_URL}/marcas/${marcascod}`)
+    .then((res) => res.json())
+    .then((marcas) => {
+      document.getElementById("marcaTitulo").textContent =
+        marcas[0].marcasdes || "Marca não encontrada";
+    })
+    .catch(() => {
+      document.getElementById("marcaTitulo").textContent = "";
+    });
+}
 
 // Função para atualizar o ícone do carrinho (exibe badge com quantidade de itens)
 function atualizarIconeCarrinho() {

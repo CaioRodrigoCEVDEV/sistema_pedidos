@@ -1,8 +1,22 @@
 const pool = require("../config/db");
+const { parseIntegerParam } = require("../utils/parseIntegerParam");
 
 exports.listarProduto = async (req, res) => {
-  const { id } = req.params;
-  const { marca, modelo } = req.query;
+  const tipoId = parseIntegerParam(req.params.id);
+  const marcaId = parseIntegerParam(req.query.marca);
+  const modeloId = parseIntegerParam(req.query.modelo);
+
+  if (tipoId === null) {
+    return res.status(400).json({ error: "Tipo de peca invalido ou nao informado" });
+  }
+
+  if (marcaId === null) {
+    return res.status(400).json({ error: "Marca invalida ou nao informada" });
+  }
+
+  if (modeloId === null) {
+    return res.status(400).json({ error: "Modelo invalido ou nao informado" });
+  }
 
   try {
     // Busca produtos que estão vinculados ao modelo pela nova tabela promod
@@ -15,7 +29,7 @@ exports.listarProduto = async (req, res) => {
           and (promodmodcod = $2 OR promodcod = $2)
           and protipocod = $3
         order by proordem`,
-      [marca, modelo, id],
+      [marcaId, modeloId, tipoId],
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -52,6 +66,12 @@ exports.listarProdutos = async (req, res) => {
 };
 
 exports.listarProdutosPainelId = async (req, res) => {
+  const produtoId = parseIntegerParam(req.params.id);
+
+  if (produtoId === null) {
+    return res.status(400).json({ error: "Produto invalido ou nao informado" });
+  }
+
   try {
     const result = await pool.query(
       `select         
@@ -62,7 +82,7 @@ exports.listarProdutosPainelId = async (req, res) => {
        case when procusto is null then 0 else procusto end as procusto, 
        case when prosemest is null then 'N' else prosemest end as prosemest,
        case when proacabando is null then 'N' else proacabando end as proacabando from pro where procod = $1`,
-      [req.params.id],
+      [produtoId],
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -100,12 +120,16 @@ exports.totalProdutoEmFalta = async (req, res) => {
 };
 
 exports.listarProdutoCarrinho = async (req, res) => {
-  const { id } = req.params;
+  const produtoId = parseIntegerParam(req.params.id);
+
+  if (produtoId === null) {
+    return res.status(400).json({ error: "Produto invalido ou nao informado" });
+  }
 
   try {
     const result = await pool.query(
       "select procod, prodes, provl,tipodes from pro join tipo on tipocod = protipocod  where procod = $1",
-      [id],
+      [produtoId],
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -118,11 +142,20 @@ exports.inserirProduto = async (req, res) => {
   const { prodes, promarcascod, promodcod, protipocod, provl, procusto } =
     req.body;
 
-  console.log(req.body);
-  // Validar modelo único
-  const modeloId = parseInt(promodcod);
-  if (isNaN(modeloId)) {
-    return res.status(400).json({ error: "Modelo inválido ou não informado" });
+  const marcaId = parseIntegerParam(promarcascod);
+  const modeloId = parseIntegerParam(promodcod);
+  const tipoId = parseIntegerParam(protipocod);
+
+  if (marcaId === null) {
+    return res.status(400).json({ error: "Marca invalida ou nao informada" });
+  }
+
+  if (modeloId === null) {
+    return res.status(400).json({ error: "Modelo invalido ou nao informado" });
+  }
+
+  if (tipoId === null) {
+    return res.status(400).json({ error: "Tipo de peca invalido ou nao informado" });
   }
 
   const client = await pool.connect();
@@ -136,21 +169,18 @@ exports.inserirProduto = async (req, res) => {
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
       `,
-      [prodes, promarcascod, modeloId, protipocod, provl, procusto, "N"],
+      [prodes, marcaId, modeloId, tipoId, provl, procusto, "N"],
     );
 
     const procod = result.rows[0].procod;
 
     // inserir tabela promod (relacionamento)
-    if (promodcod && !isNaN(parseInt(promodcod))) {
-      // Insere o novo modelo
-      await client.query(
-        `INSERT INTO promod (promodprocod, promodmodcod)
+    await client.query(
+      `INSERT INTO promod (promodprocod, promodmodcod)
          VALUES ($1, $2)
          ON CONFLICT DO NOTHING`,
-        [procod, promodcod],
-      );
-    }
+      [procod, modeloId],
+    );
 
     await client.query("COMMIT");
 
@@ -166,10 +196,14 @@ exports.inserirProduto = async (req, res) => {
 
 // excluir produto
 exports.excluirProduto = async (req, res) => {
-  const { id } = req.params;
+  const produtoId = parseIntegerParam(req.params.id);
+
+  if (produtoId === null) {
+    return res.status(400).json({ error: "Produto invalido ou nao informado" });
+  }
 
   try {
-    const result = await pool.query("delete from pro where procod = $1", [id]);
+    const result = await pool.query("delete from pro where procod = $1", [produtoId]);
     if (result.rowCount > 0) {
       res.status(200).json({ message: "Produto excluído com sucesso" });
     } else {
@@ -182,9 +216,18 @@ exports.excluirProduto = async (req, res) => {
 };
 
 exports.editarProduto = async (req, res) => {
-  const { id } = req.params;
   const { prodes, provl, procusto, prosemest, promodcod, proacabando } =
     req.body;
+  const produtoId = parseIntegerParam(req.params.id);
+  const modeloId = parseIntegerParam(promodcod);
+
+  if (produtoId === null) {
+    return res.status(400).json({ error: "Produto invalido ou nao informado" });
+  }
+
+  if (modeloId === null) {
+    return res.status(400).json({ error: "Modelo invalido ou nao informado" });
+  }
 
   const client = await pool.connect();
   try {
@@ -201,22 +244,17 @@ exports.editarProduto = async (req, res) => {
              promodcod = $6
        WHERE procod = $7
        RETURNING *`,
-      [prodes, provl, procusto, prosemest, proacabando, promodcod, id],
+      [prodes, provl, procusto, prosemest, proacabando, modeloId, produtoId],
     );
 
     // Atualizar tabela promod (relacionamento)
-    if (promodcod && !isNaN(parseInt(promodcod))) {
-      // Remove qualquer modelo antigo
-      await client.query(`DELETE FROM promod WHERE promodprocod = $1`, [id]);
-
-      // Insere o novo modelo
-      await client.query(
-        `INSERT INTO promod (promodprocod, promodmodcod)
+    await client.query(`DELETE FROM promod WHERE promodprocod = $1`, [produtoId]);
+    await client.query(
+      `INSERT INTO promod (promodprocod, promodmodcod)
          VALUES ($1, $2)
          ON CONFLICT DO NOTHING`,
-        [id, promodcod],
-      );
-    }
+      [produtoId, modeloId],
+    );
 
     await client.query("COMMIT");
     res.status(200).json(result.rows);
@@ -231,7 +269,11 @@ exports.editarProduto = async (req, res) => {
 
 // Listar modelos vinculados a um produto
 exports.listarModelosProduto = async (req, res) => {
-  const { id } = req.params;
+  const marcaId = parseIntegerParam(req.params.id);
+
+  if (marcaId === null) {
+    return res.status(400).json({ error: "Marca invalida ou nao informada" });
+  }
 
   try {
     const result = await pool.query(
@@ -239,7 +281,7 @@ exports.listarModelosProduto = async (req, res) => {
          FROM pro
          JOIN modelo m ON m.modcod = pro.promodcod
          WHERE modmarcascod = $1`,
-      [id],
+      [marcaId],
     );
 
     res.status(200).json(result.rows);
@@ -262,8 +304,12 @@ exports.listarProCor = async (req, res) => {
 };
 
 exports.listarProdutoCoresDisponiveis = async (req, res) => {
-  const { id } = req.params;
+  const produtoId = parseIntegerParam(req.params.id);
   //const { marca, modelo } = req.query;
+
+  if (produtoId === null) {
+    return res.status(400).json({ error: "Produto invalido ou nao informado" });
+  }
 
   try {
     const result = await pool.query(
@@ -272,7 +318,7 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
         left join procor on procorprocod = procod
         left join cores on corcod = procorcorescod 
         where procod  = $1 `,
-      [id],
+      [produtoId],
     );
     res.status(200).json(result.rows);
   } catch (error) {
