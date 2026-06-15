@@ -1,8 +1,45 @@
 const params = new URLSearchParams(window.location.search);
 
-const id = params.get("id");
-const modelo = params.get("modelo");
-const marcascod = params.get("marcascod");
+const id = parseIntegerParam(params.get("id"));
+const modelo = parseIntegerParam(params.get("modelo"));
+const marcascod = parseIntegerParam(params.get("marcascod"));
+
+function parseIntegerParam(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const normalizedValue = String(value).trim().toLowerCase();
+
+  if (
+    normalizedValue === "" ||
+    normalizedValue === "null" ||
+    normalizedValue === "undefined"
+  ) {
+    return null;
+  }
+
+  const parsed = Number(normalizedValue);
+
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function buildProdutosUrl(tipoId, marcaId, modeloId) {
+  const parsedTipoId = parseIntegerParam(tipoId);
+  const parsedMarcaId = parseIntegerParam(marcaId);
+  const parsedModeloId = parseIntegerParam(modeloId);
+
+  if (parsedTipoId === null || parsedMarcaId === null || parsedModeloId === null) {
+    return null;
+  }
+
+  const query = new URLSearchParams({
+    marca: String(parsedMarcaId),
+    modelo: String(parsedModeloId),
+  });
+
+  return `${BASE_URL}/pro/${parsedTipoId}?${query.toString()}`;
+}
 
 // console.log("ID:", id);
 
@@ -14,7 +51,13 @@ function formatarMoeda(valor) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  fetch(`${BASE_URL}/pro/${id}?marca=${marcascod}&modelo=${modelo}`)
+  const produtosUrl = buildProdutosUrl(id, marcascod, modelo);
+
+  if (!produtosUrl) {
+    return;
+  }
+
+  fetch(produtosUrl)
     .then((res) => res.json())
     .then((dados) => {
       const corpoTabela = document.getElementById("corpoTabela");
@@ -54,6 +97,21 @@ document
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
+    if (marcascod === null) {
+      alert("Marca inválida ou não informada.");
+      return;
+    }
+
+    if (modelo === null) {
+      alert("Modelo inválido ou não informado.");
+      return;
+    }
+
+    if (id === null) {
+      alert("Tipo de peça inválido ou não informado.");
+      return;
+    }
+
     data.promarcascod = marcascod; // Adiciona o código da marca ao objeto data
     data.promodcod = modelo; // Adiciona o código do modelo ao objeto data
     data.protipocod = id; // Adiciona o código do tipo ao objeto data
@@ -89,12 +147,14 @@ document.getElementById("pesquisa").addEventListener("input", function () {
 });
 
 // Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
-fetch(`${BASE_URL}/marcas/${marcascod}`)
-  .then((res) => res.json())
-  .then((marcas) => {
-    document.getElementById("marcaTitulo").textContent =
-      marcas[0].marcasdes || "Marca não encontrada";
-  })
-  .catch(() => {
-    document.getElementById("marcaTitulo").textContent = "";
-  });
+if (marcascod !== null) {
+  fetch(`${BASE_URL}/marcas/${marcascod}`)
+    .then((res) => res.json())
+    .then((marcas) => {
+      document.getElementById("marcaTitulo").textContent =
+        marcas[0].marcasdes || "Marca não encontrada";
+    })
+    .catch(() => {
+      document.getElementById("marcaTitulo").textContent = "";
+    });
+}

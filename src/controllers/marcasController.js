@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const { parseIntegerParam } = require("../utils/parseIntegerParam");
 
 exports.listarMarcas = async (req, res) => {
   try {
@@ -13,12 +14,16 @@ exports.listarMarcas = async (req, res) => {
 };
 
 exports.listarMarcasId = async (req, res) => {
-  const { id } = req.params;
+  const marcaId = parseIntegerParam(req.params.id);
+
+  if (marcaId === null) {
+    return res.status(400).json({ error: "Marca invalida ou nao informada" });
+  }
 
   try {
     const result = await pool.query(
       "select * from vw_marcas where marcascod = $1",
-      [id]
+      [marcaId]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -42,12 +47,17 @@ exports.inserirMarcas = async (req, res) => {
 };
 
 exports.atualizarMarcas = async (req, res) => {
-  const { id } = req.params;
   const { marcasdes } = req.body;
+  const marcaId = parseIntegerParam(req.params.id);
+
+  if (marcaId === null) {
+    return res.status(400).json({ error: "Marca invalida ou nao informada" });
+  }
+
   try {
     const result = await pool.query(
       `update marcas set marcasdes = $1 where marcascod = $2 RETURNING *`,
-      [marcasdes, id]
+      [marcasdes, marcaId]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -57,11 +67,16 @@ exports.atualizarMarcas = async (req, res) => {
 };
 
 exports.atualizarMarcasStatus = async (req, res) => {
-  const { id } = req.params;
+  const marcaId = parseIntegerParam(req.params.id);
+
+  if (marcaId === null) {
+    return res.status(400).json({ error: "Marca invalida ou nao informada" });
+  }
+
   try {
     const result = await pool.query(
       `update marcas set marcassit = $1 where marcascod = $2 RETURNING *`,
-      ["I", id]
+      ["I", marcaId]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -71,11 +86,16 @@ exports.atualizarMarcasStatus = async (req, res) => {
 };
 
 exports.deletarMarcas = async (req, res) => {
-  const { id } = req.params;
+  const marcaId = parseIntegerParam(req.params.id);
+
+  if (marcaId === null) {
+    return res.status(400).json({ error: "Marca invalida ou nao informada" });
+  }
+
   try {
     const result = await pool.query(
       `delete from marcas where marcascod = $1 RETURNING *`,
-      [id]
+      [marcaId]
     );
     res.status(200).json(result.rows);
   } catch (error) {

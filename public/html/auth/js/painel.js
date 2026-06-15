@@ -16,6 +16,26 @@ let marcacodModelo = null;
 let tipo = null;
 let modelo = null;
 
+function parseIntegerParam(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const normalizedValue = String(value).trim().toLowerCase();
+
+  if (
+    normalizedValue === "" ||
+    normalizedValue === "null" ||
+    normalizedValue === "undefined"
+  ) {
+    return null;
+  }
+
+  const parsed = Number(normalizedValue);
+
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
 function formatarMoeda(valor) {
   return Number(valor).toLocaleString("pt-BR", {
     style: "currency",
@@ -52,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   holder.addEventListener("change", (e) => {
-    marcacodModelo = e.target.value;
+    marcacodModelo = parseIntegerParam(e.target.value);
   });
 });
 document.addEventListener("DOMContentLoaded", () => {
@@ -81,12 +101,23 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(console.error);
   });
   holder.addEventListener("change", (e) => {
-    marcascod = e.target.value;
-    // Só faz o fetch dos modelos ao selecionar uma marca
+    marcascod = parseIntegerParam(e.target.value);
+    const modeloHolder = document.getElementById("selectPainelModelo");
+
+    if (modeloHolder) {
+      modeloHolder.innerHTML = '<option value="">Selecione o Modelo</option>';
+    }
+
+    modelo = null;
+
+    if (marcascod === null) {
+      return;
+    }
+
+    // Só faz o fetch dos modelos ao selecionar uma marca válida
     fetch(`${BASE_URL}/modelo/${marcascod}`)
       .then((res) => res.json())
       .then((modelos) => {
-        const modeloHolder = document.getElementById("selectPainelModelo");
         if (!modeloHolder) return;
         modeloHolder.innerHTML = '<option value="">Selecione o Modelo</option>';
         modelos.forEach((modeloItem) => {
@@ -94,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         modeloHolder.addEventListener("change", (e) => {
-          modelo = e.target.value;
+          modelo = parseIntegerParam(e.target.value);
         });
       })
       .catch(console.error);
@@ -127,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
       carregarTiposPainel();
     });
     holder.addEventListener("change", (e) => {
-      tipo = e.target.value;
+      tipo = parseIntegerParam(e.target.value);
     });
   }
 });
@@ -1755,14 +1786,25 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   holder.addEventListener("change", (e) => {
-    marcascod = e.target.value;
-    // Só faz o fetch dos modelos ao selecionar uma marca
+    marcascod = parseIntegerParam(e.target.value);
+    const selectCadastro = document.getElementById("selectPainelModelo");
+
+    if (selectCadastro) {
+      selectCadastro.innerHTML = '<option value="">Selecione o Modelo</option>';
+    }
+
+    modelo = null;
+
+    if (marcascod === null) {
+      return;
+    }
+
+    // Só faz o fetch dos modelos ao selecionar uma marca válida
     fetch(`${BASE_URL}/modelo/${marcascod}`)
       .then((res) => res.json())
       .then((dados) => {
         modelosCache = dados;
 
-        const selectCadastro = document.getElementById("selectPainelModelo");
         if (selectCadastro) {
           selectCadastro.innerHTML =
             '<option value="">Selecione o Modelo</option>';
@@ -1774,7 +1816,7 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         }
         selectCadastro.addEventListener("change", (e) => {
-          modelo = e.target.value;
+          modelo = parseIntegerParam(e.target.value);
         });
       })
       .catch(console.error);
@@ -2048,9 +2090,10 @@ function toggleOrdemPeca() {
   if (!marcaSelect || !modelosSelect || !tiposSelect) return;
 
   marcaSelect.addEventListener("change", (e) => {
-    const marcaId = e.target.value;
-    if (!marcaId) {
+    const marcaId = parseIntegerParam(e.target.value);
+    if (marcaId === null) {
       modelosSelect.innerHTML = '<option value="">Selecione o modelo</option>';
+      tiposSelect.innerHTML = '<option value="">Selecione o Tipo</option>';
       return;
     }
 
@@ -2072,8 +2115,8 @@ function toggleOrdemPeca() {
 
   // Ao mudar o modelo, carrega os tipos correspondentes
   modelosSelect.addEventListener("change", async (e) => {
-    const modeloId = e.target.value;
-    if (!modeloId) {
+    const modeloId = parseIntegerParam(e.target.value);
+    if (modeloId === null) {
       tiposSelect.innerHTML = '<option value="">Selecione o Tipo</option>';
       return;
     }
@@ -2092,14 +2135,25 @@ function toggleOrdemPeca() {
 
   // Evento buscar modelos
   popup.querySelector("#btnBuscarPecasOrdem").addEventListener("click", () => {
-    const marcaId = popup.querySelector("#marcaSelectOrdem").value;
-    const modeloId = popup.querySelector("#modelosSelectOrdem").value;
-    const tipoId = popup.querySelector("#tiposSelectOrdem").value;
-    if (!marcaId) return alert("Selecione uma marca!");
-    if (!modeloId) return alert("Selecione um modelo!");
-    if (!tipoId) return alert("Selecione um tipo!");
+    const marcaId = parseIntegerParam(
+      popup.querySelector("#marcaSelectOrdem").value,
+    );
+    const modeloId = parseIntegerParam(
+      popup.querySelector("#modelosSelectOrdem").value,
+    );
+    const tipoId = parseIntegerParam(
+      popup.querySelector("#tiposSelectOrdem").value,
+    );
+    if (marcaId === null) return alert("Selecione uma marca!");
+    if (modeloId === null) return alert("Selecione um modelo!");
+    if (tipoId === null) return alert("Selecione um tipo!");
 
-    fetch(`${BASE_URL}/pro/${tipoId}?marca=${marcaId}&modelo=${modeloId}`)
+    const query = new URLSearchParams({
+      marca: String(marcaId),
+      modelo: String(modeloId),
+    });
+
+    fetch(`${BASE_URL}/pro/${tipoId}?${query.toString()}`)
       .then((r) => r.json())
       .then((produtos) => {
         const holder = popup.querySelector("#listaOrdemHolder");
@@ -2195,8 +2249,8 @@ function toggleOrdemTipoPeca() {
   if (!marcaSelect || !modelosSelect) return;
 
   marcaSelect.addEventListener("change", (e) => {
-    const marcaId = e.target.value;
-    if (!marcaId) {
+    const marcaId = parseIntegerParam(e.target.value);
+    if (marcaId === null) {
       modelosSelect.innerHTML = '<option value="">Selecione o modelo</option>';
       return;
     }
@@ -2221,12 +2275,16 @@ function toggleOrdemTipoPeca() {
   popup
     .querySelector("#btnBuscarTipoPecasOrdem")
     .addEventListener("click", () => {
-      const marcaId = popup.querySelector("#marcaSelectOrdem").value;
-      const modeloId = popup.querySelector("#modelosSelectOrdem").value;
-      if (!marcaId) return alert("Selecione uma marca!");
-      if (!modeloId) return alert("Selecione um modelo!");
+      const marcaId = parseIntegerParam(
+        popup.querySelector("#marcaSelectOrdem").value,
+      );
+      const modeloId = parseIntegerParam(
+        popup.querySelector("#modelosSelectOrdem").value,
+      );
+      if (marcaId === null) return alert("Selecione uma marca!");
+      if (modeloId === null) return alert("Selecione um modelo!");
 
-      fetch(`${BASE_URL}/tipo/${modeloId}?marca=${marcaId}`)
+      fetch(`${BASE_URL}/tipo/${modeloId}`)
         .then((r) => r.json())
         .then((tipos) => {
           const holder = popup.querySelector("#listaOrdemHolder");

@@ -1,4 +1,17 @@
 const pool = require("../config/db");
+const { parseIntegerParam } = require("../utils/parseIntegerParam");
+
+function parseOptionalInventoryFilter(value) {
+  if (typeof value === "string") {
+    const normalizedValue = value.trim().toLowerCase();
+
+    if (normalizedValue === "todos" || normalizedValue === "todas") {
+      return null;
+    }
+  }
+
+  return parseIntegerParam(value);
+}
 
 async function listarTodosProdutos() {
   const result = await pool.query(`
@@ -81,18 +94,15 @@ async function listarProdutosComEstoqueItem(marca, modelo) {
   const params = [];
   const filtros = [];
 
-  // Aceita 'todos', 'todas', null, undefined ou ''
-  const marcaValida =
-    marca && !["todos", "todas"].includes(String(marca).toLowerCase());
-  const modeloValido =
-    modelo && !["todos", "todas"].includes(String(modelo).toLowerCase());
+  const marcaId = parseOptionalInventoryFilter(marca);
+  const modeloId = parseOptionalInventoryFilter(modelo);
 
-  if (marcaValida) {
-    params.push(marca);
+  if (marcaId !== null) {
+    params.push(marcaId);
     filtros.push(`promarcascod = $${params.length}`);
   }
-  if (modeloValido) {
-    params.push(modelo);
+  if (modeloId !== null) {
+    params.push(modeloId);
     filtros.push(
       `(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`
     );
@@ -132,17 +142,15 @@ async function listarProdutosSemEstoqueItem(marca, modelo) {
   const params = [];
   const filtros = [];
 
-  const marcaValida =
-    marca && !["todos", "todas"].includes(String(marca).toLowerCase());
-  const modeloValido =
-    modelo && !["todos", "todas"].includes(String(modelo).toLowerCase());
+  const marcaId = parseOptionalInventoryFilter(marca);
+  const modeloId = parseOptionalInventoryFilter(modelo);
 
-  if (marcaValida) {
-    params.push(marca);
+  if (marcaId !== null) {
+    params.push(marcaId);
     filtros.push(`promarcascod = $${params.length}`);
   }
-  if (modeloValido) {
-    params.push(modelo);
+  if (modeloId !== null) {
+    params.push(modeloId);
     filtros.push(
       `(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`
     );
@@ -208,18 +216,15 @@ async function listarProdutosComEstoqueAcabandoItem(marca, modelo) {
   const params = [];
   const filtros = [];
 
-  // Aceita 'todos', 'todas', null, undefined ou ''
-  const marcaValida =
-    marca && !["todos", "todas"].includes(String(marca).toLowerCase());
-  const modeloValido =
-    modelo && !["todos", "todas"].includes(String(modelo).toLowerCase());
+  const marcaId = parseOptionalInventoryFilter(marca);
+  const modeloId = parseOptionalInventoryFilter(modelo);
 
-  if (marcaValida) {
-    params.push(marca);
+  if (marcaId !== null) {
+    params.push(marcaId);
     filtros.push(`promarcascod = $${params.length}`);
   }
-  if (modeloValido) {
-    params.push(modelo);
+  if (modeloId !== null) {
+    params.push(modeloId);
     filtros.push(
       `(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`
     );
@@ -284,18 +289,15 @@ async function listarProdutosEmFaltaItem(marca, modelo) {
   const params = [];
   const filtros = [];
 
-  // Aceita 'todos', 'todas', null, undefined ou ''
-  const marcaValida =
-    marca && !["todos", "todas"].includes(String(marca).toLowerCase());
-  const modeloValido =
-    modelo && !["todos", "todas"].includes(String(modelo).toLowerCase());
+  const marcaId = parseOptionalInventoryFilter(marca);
+  const modeloId = parseOptionalInventoryFilter(modelo);
 
-  if (marcaValida) {
-    params.push(marca);
+  if (marcaId !== null) {
+    params.push(marcaId);
     filtros.push(`promarcascod = $${params.length}`);
   }
-  if (modeloValido) {
-    params.push(modelo);
+  if (modeloId !== null) {
+    params.push(modeloId);
     filtros.push(
       `(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`
     );

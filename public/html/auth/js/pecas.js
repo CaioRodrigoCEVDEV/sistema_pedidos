@@ -1,10 +1,52 @@
 const params = new URLSearchParams(window.location.search);
 
-const id = params.get("id");
-const marcascod = params.get("marcascod");
+const id = parseIntegerParam(params.get("id"));
+const marcascod = parseIntegerParam(params.get("marcascod"));
+
+function parseIntegerParam(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const normalizedValue = String(value).trim().toLowerCase();
+
+  if (
+    normalizedValue === "" ||
+    normalizedValue === "null" ||
+    normalizedValue === "undefined"
+  ) {
+    return null;
+  }
+
+  const parsed = Number(normalizedValue);
+
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function buildListaPecasHref(tipoId, marcaId, modeloId) {
+  const parsedTipoId = parseIntegerParam(tipoId);
+  const parsedMarcaId = parseIntegerParam(marcaId);
+  const parsedModeloId = parseIntegerParam(modeloId);
+
+  if (parsedTipoId === null || parsedMarcaId === null || parsedModeloId === null) {
+    return null;
+  }
+
+  const query = new URLSearchParams({
+    id: String(parsedTipoId),
+    marcascod: String(parsedMarcaId),
+    modelo: String(parsedModeloId),
+  });
+
+  return `pecas/lista?${query.toString()}`;
+}
 
 //popular table com os dados do modelo
 document.addEventListener("DOMContentLoaded", function () {
+  if (id === null) {
+    return;
+  }
+
   fetch(`${BASE_URL}/tipo/${id}`)
     .then((res) => res.json())
     .then((dados) => {
@@ -13,10 +55,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
+        const href = buildListaPecasHref(
+          dado.tipocod,
+          dado.promarcascod,
+          dado.promodcod,
+        );
         tr.innerHTML = `
                       <td class="text-center">${dado.tipodes}</td>
                       <td class="text-center">
-                        <a href="pecas/lista?id=${dado.tipocod}&marcascod=${dado.promarcascod}&modelo=${dado.promodcod}"><button class="btn btn-outline-success btn-sm">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>
+                        ${
+                          href
+                            ? `<a href="${href}"><button class="btn btn-outline-success btn-sm">Selecionar <i class="bi bi-caret-right-fill"></i></button></a>`
+                            : '<button class="btn btn-outline-success btn-sm" disabled>Selecionar</button>'
+                        }
                       </td>
                         `;
         corpoTabela.appendChild(tr);
@@ -53,12 +104,14 @@ document
   });
 
 // Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
-fetch(`${BASE_URL}/marcas/${marcascod}`)
-  .then((res) => res.json())
-  .then((marcas) => {
-    document.getElementById("marcaTitulo").textContent =
-      marcas[0].marcasdes || "Marca não encontrada";
-  })
-  .catch(() => {
-    document.getElementById("marcaTitulo").textContent = "";
-  });
+if (marcascod !== null) {
+  fetch(`${BASE_URL}/marcas/${marcascod}`)
+    .then((res) => res.json())
+    .then((marcas) => {
+      document.getElementById("marcaTitulo").textContent =
+        marcas[0].marcasdes || "Marca não encontrada";
+    })
+    .catch(() => {
+      document.getElementById("marcaTitulo").textContent = "";
+    });
+}
