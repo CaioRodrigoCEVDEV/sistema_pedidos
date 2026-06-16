@@ -219,13 +219,17 @@ exports.editarProduto = async (req, res) => {
   const { prodes, provl, procusto, prosemest, promodcod, proacabando } =
     req.body;
   const produtoId = parseIntegerParam(req.params.id);
-  const modeloId = parseIntegerParam(promodcod);
+  const modeloFoiInformado = Object.prototype.hasOwnProperty.call(
+    req.body,
+    "promodcod",
+  );
+  const modeloId = modeloFoiInformado ? parseIntegerParam(promodcod) : null;
 
   if (produtoId === null) {
     return res.status(400).json({ error: "Produto invalido ou nao informado" });
   }
 
-  if (modeloId === null) {
+  if (modeloFoiInformado && modeloId === null) {
     return res.status(400).json({ error: "Modelo invalido ou nao informado" });
   }
 
@@ -233,28 +237,51 @@ exports.editarProduto = async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // Atualizar dados do produto, incluindo o modelo principal
-    const result = await client.query(
-      `UPDATE pro 
-         SET prodes = $1, 
-             provl = $2, 
-             procusto = $3,
-             prosemest = $4, 
-             proacabando = $5,
-             promodcod = $6
-       WHERE procod = $7
-       RETURNING *`,
-      [prodes, provl, procusto, prosemest, proacabando, modeloId, produtoId],
-    );
+    let modeloAtual = null;
+    if (modeloFoiInformado) {
+      const produtoAtual = await client.query(
+        `SELECT promodcod FROM pro WHERE procod = $1`,
+        [produtoId],
+      );
+      if (produtoAtual.rows.length > 0) {
+        modeloAtual = produtoAtual.rows[0].promodcod;
+      }
+    }
 
-    // Atualizar tabela promod (relacionamento)
-    await client.query(`DELETE FROM promod WHERE promodprocod = $1`, [produtoId]);
-    await client.query(
-      `INSERT INTO promod (promodprocod, promodmodcod)
-         VALUES ($1, $2)
-         ON CONFLICT DO NOTHING`,
-      [produtoId, modeloId],
-    );
+    const updateQuery = modeloFoiInformado
+      ? `UPDATE pro 
+           SET prodes = $1, 
+               provl = $2, 
+               procusto = $3,
+               prosemest = $4, 
+               proacabando = $5,
+               promodcod = $6
+         WHERE procod = $7
+         RETURNING *`
+      : `UPDATE pro 
+           SET prodes = $1, 
+               provl = $2, 
+               procusto = $3,
+               prosemest = $4, 
+               proacabando = $5
+         WHERE procod = $6
+         RETURNING *`;
+
+    const updateParams = modeloFoiInformado
+      ? [prodes, provl, procusto, prosemest, proacabando, modeloId, produtoId]
+      : [prodes, provl, procusto, prosemest, proacabando, produtoId];
+
+    const result = await client.query(updateQuery, updateParams);
+
+    if (modeloFoiInformado && modeloAtual !== modeloId) {
+      await client.query(`DELETE FROM promod WHERE promodprocod = $1`, [produtoId]);
+      await client.query(
+        `INSERT INTO promod (promodprocod, promodmodcod)
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+        [produtoId, modeloId],
+      );
+    }
 
     await client.query("COMMIT");
     res.status(200).json(result.rows);
