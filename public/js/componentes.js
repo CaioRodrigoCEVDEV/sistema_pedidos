@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", createHeaderUser);
 
 function createFooter() {
   const footer = document.getElementById("footer");
-  footer.className = "border-top py-4 bg-white shadow";
+  footer.className = "border-top py-2 bg-white shadow";
   footer.innerHTML = `
       <div class="container d-flex justify-content-center align-items-center">
       <a 
