@@ -142,6 +142,7 @@ exports.getTopPecasPDF = async (req, res) => {
     // Dados
     data.forEach((row) => {
       const qtde = Number(row.qtde_vendida);
+      const qtdeFormatada = Number.isFinite(qtde) ? String(Math.trunc(qtde)) : "0";
       const custoFormatado =
         row.custo != null
           ? Number(row.custo).toLocaleString("pt-BR", {
@@ -154,14 +155,14 @@ exports.getTopPecasPDF = async (req, res) => {
         groupBy === "grupo"
           ? [
               row.grupo || "-",
-              Number.isFinite(qtde) ? String(Math.trunc(qtde)) : "0",
+              qtdeFormatada,
               row.modelo || "-",
               row.peca || "-",
               custoFormatado,
             ]
           : [
               row.peca || "-",
-              Number.isFinite(qtde) ? String(Math.trunc(qtde)) : "0",
+              qtdeFormatada,
               row.modelo || "-",
               row.grupo || "-",
               custoFormatado,
