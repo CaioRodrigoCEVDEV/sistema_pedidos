@@ -49,27 +49,27 @@ async function getTopPecas(filters = {}) {
   const whereClause = whereClauses.join(" AND ");
 
   if (groupBy === "grupo") {
-    // Agrupado por part_group — vínculo via part_group_items (procorid), sem depender de pro.part_group_id
+    // Agrupado por part_group — busca o vínculo de grupo pela peça (qualquer variante de cor),
+    // evitando que vendas sem cor ou com cor diferente da cadastrada no grupo sejam excluídas.
     const query = `
-      SELECT 
-        pg.name as grupo,
-        SUM(pviqtde) as qtde_vendida,
-        STRING_AGG(DISTINCT m.moddes, ', ' ORDER BY m.moddes) as modelo,
-        STRING_AGG(DISTINCT p.prodes, ', ' ORDER BY p.prodes) as peca,
-        case when procusto is null then 0 else procusto end AS custo
+      SELECT
+        pg.name AS grupo,
+        SUM(pviqtde) AS qtde_vendida,
+        STRING_AGG(DISTINCT m.moddes, ', ' ORDER BY m.moddes) AS modelo,
+        STRING_AGG(DISTINCT p.prodes, ', ' ORDER BY p.prodes) AS peca,
+        COALESCE(MAX(p.procusto), 0) AS custo
       FROM pvi
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
-      JOIN procor pc ON pc.procorprocod = p.procod
-        AND (
-          (pvi.pviprocorid IS NOT NULL AND pc.procorcorescod = pvi.pviprocorid)
-          OR (pvi.pviprocorid IS NULL AND pc.procorcorescod IS NULL)
-        )
-      JOIN part_group_items pgi ON pgi.procorid = pc.procorid
-      JOIN part_groups pg ON pg.id = pgi.group_id
       LEFT JOIN modelo m ON m.modcod = p.promodcod
+      JOIN (
+        SELECT DISTINCT pc2.procorprocod, pgi2.group_id
+        FROM procor pc2
+        JOIN part_group_items pgi2 ON pgi2.procorid = pc2.procorid
+      ) grp ON grp.procorprocod = p.procod
+      JOIN part_groups pg ON pg.id = grp.group_id
       WHERE ${whereClause}
-      GROUP BY pg.id, pg.name, procusto
+      GROUP BY pg.id, pg.name
       ORDER BY qtde_vendida DESC
     `;
 
@@ -109,12 +109,13 @@ async function getTopPecas(filters = {}) {
  * Busca todas as peças cadastradas com filtros opcionais
  * @param {Object} filters - Filtros para a consulta
  * @param {number} filters.marca - ID da marca (opcional)
- * @param {number} filters.modelo - ID do modelo (opcional)  
+ * @param {number} filters.modelo - ID do modelo (opcional)
  * @param {string} filters.peca - Texto da peça para filtrar (opcional)
+ * @param {number} filters.tipo - ID do tipo de peça (opcional)
  * @returns {Array} Lista de peças cadastradas
  */
 async function getPecasCadastradas(filters = {}) {
-  const { marca, modelo, peca } = filters;
+  const { marca, modelo, peca, tipo } = filters;
 
   let whereClauses = ["marcassit = 'A'"];
   let params = [];
@@ -135,6 +136,12 @@ async function getPecasCadastradas(filters = {}) {
   if (peca) {
     whereClauses.push(`LOWER(pro.prodes) LIKE LOWER($${paramIndex})`);
     params.push(`%${peca}%`);
+    paramIndex++;
+  }
+
+  if (tipo) {
+    whereClauses.push(`pro.protipocod = $${paramIndex}`);
+    params.push(tipo);
     paramIndex++;
   }
 
