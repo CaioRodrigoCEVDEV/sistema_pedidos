@@ -286,11 +286,12 @@ exports.getEstoqueGruposJSON = async (req, res) => {
 };
 exports.getPecasCadastradasJSON = async (req, res) => {
   try {
-    const { marca, modelo, peca } = req.query;
+    const { marca, modelo, peca, tipo } = req.query;
     const filters = {
       marca: parseIntegerParam(marca),
       modelo: parseIntegerParam(modelo),
       peca: peca || null,
+      tipo: parseIntegerParam(tipo),
     };
     const result = await relatoriosModels.getPecasCadastradas(filters);
     res.status(200).json(result);
@@ -306,11 +307,12 @@ exports.getPecasCadastradasJSON = async (req, res) => {
  */
 exports.getPecasCadastradasPDF = async (req, res) => {
   try {
-    const { marca, modelo, peca } = req.query;
+    const { marca, modelo, peca, tipo } = req.query;
     const filters = {
       marca: parseIntegerParam(marca),
       modelo: parseIntegerParam(modelo),
       peca: peca || null,
+      tipo: parseIntegerParam(tipo),
     };
 
     const data = await relatoriosModels.getPecasCadastradas(filters);
@@ -335,6 +337,10 @@ exports.getPecasCadastradasPDF = async (req, res) => {
     if (marca) filtrosTexto.push(`Marca ID: ${marca}`);
     if (modelo) filtrosTexto.push(`Modelo ID: ${modelo}`);
     if (peca) filtrosTexto.push(`Peça: ${peca}`);
+    if (tipo) {
+      const tipoNome = data.length > 0 && data[0].tipo ? data[0].tipo : `ID: ${tipo}`;
+      filtrosTexto.push(`Tipo: ${tipoNome}`);
+    }
     if (filtrosTexto.length > 0) {
       doc.text(`Filtros: ${filtrosTexto.join(" | ")}`, { align: "center" });
     }
