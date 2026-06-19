@@ -219,6 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnGerarPecasPDF = document.getElementById("btnGerarPecasPDF");
   const pecaPdfMarcaEl = document.getElementById("pecaPdfMarca");
   const pecaPdfModeloEl = document.getElementById("pecaPdfModelo");
+  const pecaPdfTipoEl = document.getElementById("pecaPdfTipo");
   const pecaPdfPecaEl = document.getElementById("pecaPdfPeca");
   const pecasPdfInfo = document.getElementById("pecasPdfInfo");
 
@@ -238,6 +239,25 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } catch (e) {
       console.warn("Erro ao carregar marcas:", e);
+    }
+  }
+
+  // Carrega tipos no select de peças PDF
+  async function carregarTiposPecaPDF() {
+    if (!pecaPdfTipoEl) return;
+    try {
+      const res = await fetch("/tipos");
+      if (!res.ok) return;
+      const tipos = await res.json();
+      pecaPdfTipoEl.innerHTML = '<option value="">Todos</option>';
+      tipos.forEach((t) => {
+        const opt = document.createElement("option");
+        opt.value = t.tipocod;
+        opt.textContent = t.tipodes;
+        pecaPdfTipoEl.appendChild(opt);
+      });
+    } catch (e) {
+      console.warn("Erro ao carregar tipos:", e);
     }
   }
 
@@ -271,11 +291,13 @@ document.addEventListener("DOMContentLoaded", () => {
     btnGerarPecasPDF.addEventListener("click", function () {
       const marca = pecaPdfMarcaEl ? pecaPdfMarcaEl.value : "";
       const modelo = pecaPdfModeloEl ? pecaPdfModeloEl.value : "";
+      const tipo = pecaPdfTipoEl ? pecaPdfTipoEl.value : "";
       const peca = pecaPdfPecaEl ? pecaPdfPecaEl.value.trim() : "";
 
       const qs = new URLSearchParams();
       if (marca) qs.set("marca", marca);
       if (modelo) qs.set("modelo", modelo);
+      if (tipo) qs.set("tipo", tipo);
       if (peca) qs.set("peca", peca);
 
       const url = `/v2/relatorios/pecas-cadastradas/pdf?${qs.toString()}`;
@@ -289,5 +311,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  document.addEventListener("DOMContentLoaded", carregarMarcasPecaPDF);
+  document.addEventListener("DOMContentLoaded", () => {
+    carregarMarcasPecaPDF();
+    carregarTiposPecaPDF();
+  });
 })();
