@@ -77,105 +77,109 @@ exports.getTopPecasPDF = async (req, res) => {
     doc.text(`Agrupamento: ${groupBy === "grupo" ? "Por Grupo" : "Por Peça"}`);
     doc.moveDown();
 
-    // Cabeçalho da tabela
-    doc.fontSize(12).font("Helvetica-Bold");
-    const startY = doc.y;
+    const tableColumns =
+      groupBy === "grupo"
+        ? [
+            { header: "Grupo", key: "grupo", width: 95, align: "left" },
+            {
+              header: "Qtde Vendida",
+              key: "qtde_vendida",
+              width: 70,
+              align: "center",
+            },
+            { header: "Modelo", key: "modelo", width: 110, align: "left" },
+            { header: "Peça", key: "peca", width: 160, align: "left" },
+            { header: "Custo", key: "custo", width: 60, align: "right" },
+          ]
+        : [
+            { header: "Peça", key: "peca", width: 160, align: "left" },
+            {
+              header: "Qtde Vendida",
+              key: "qtde_vendida",
+              width: 70,
+              align: "center",
+            },
+            { header: "Modelo", key: "modelo", width: 110, align: "left" },
+            { header: "Grupo", key: "grupo", width: 95, align: "left" },
+            { header: "Custo", key: "custo", width: 60, align: "right" },
+          ];
+    const ROW_PADDING_Y = 4;
+    const tableX = doc.page.margins.left;
 
-    if (groupBy === "grupo") {
-      doc.text("Grupo", 50, startY, { width: 150, continued: false });
-      doc.text("Qtde Vendida", 210, startY, { width: 100, continued: false });
-      doc.text("Modelo", 320, startY, { width: 120, continued: false });
-      doc.text("Peça", 450, startY, { width: 100, continued: false });
-      doc.text("Custo", 550, startY, { width: 100, continued: false });
-    } else {
-      doc.text("Peça", 50, startY, { width: 180, continued: false });
-      doc.text("Qtde Vendida", 240, startY, { width: 100, continued: false });
-      doc.text("Modelo", 350, startY, { width: 120, continued: false });
-      doc.text("Grupo", 480, startY, { width: 80, continued: false });
-      doc.text("Custo", 550, startY, { width: 100, continued: false });
+    function getRowHeight(values, fontName = "Helvetica", fontSize = 10) {
+      doc.font(fontName).fontSize(fontSize);
+      return Math.max(
+        ...values.map((value, index) =>
+          doc.heightOfString(String(value), {
+            width: tableColumns[index].width,
+            align: tableColumns[index].align,
+          }),
+        ),
+      );
     }
 
-    doc.moveDown();
-    doc.font("Helvetica").fontSize(10);
+    function drawRow(values, y, fontName = "Helvetica", fontSize = 10) {
+      doc.font(fontName).fontSize(fontSize);
+      let currentX = tableX;
+
+      values.forEach((value, index) => {
+        const column = tableColumns[index];
+        doc.text(String(value), currentX, y, {
+          width: column.width,
+          align: column.align,
+        });
+        currentX += column.width;
+      });
+    }
+
+    const headerValues = tableColumns.map((column) => column.header);
+    const headerHeight = getRowHeight(headerValues, "Helvetica-Bold", 10);
+    const startY = doc.y;
+
+    drawRow(headerValues, startY, "Helvetica-Bold", 10);
+    doc.y = startY + headerHeight + ROW_PADDING_Y;
 
     // Dados
     data.forEach((row) => {
-      const currentY = doc.y;
+      const qtde = Number(row.qtde_vendida);
+      const qtdeFormatada = Number.isFinite(qtde) ? String(Math.trunc(qtde)) : "0";
+      const custoFormatado =
+        row.custo != null
+          ? Number(row.custo).toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            })
+          : "-";
 
-      // Verifica se precisa de nova página
-      if (currentY > PDF_PAGE_BREAK_Y) {
+      const rowValues =
+        groupBy === "grupo"
+          ? [
+              row.grupo || "-",
+              qtdeFormatada,
+              row.modelo || "-",
+              row.peca || "-",
+              custoFormatado,
+            ]
+          : [
+              row.peca || "-",
+              qtdeFormatada,
+              row.modelo || "-",
+              row.grupo || "-",
+              custoFormatado,
+            ];
+
+      const rowHeight = getRowHeight(rowValues);
+
+      if (doc.y + rowHeight > PDF_PAGE_BREAK_Y) {
         doc.addPage();
+        const headerY = doc.y;
+        drawRow(headerValues, headerY, "Helvetica-Bold", 10);
+        doc.y = headerY + headerHeight + ROW_PADDING_Y;
       }
 
-      if (groupBy === "grupo") {
-        doc.text(row.grupo || "-", 50, currentY, {
-          width: 150,
-          continued: false,
-        });
-        const qtde = Number(row.qtde_vendida);
-        const qtyColX = groupBy === "grupo" ? 210 : 240; // mesma origem da coluna do cabeçalho
-        doc.text(
-          Number.isFinite(qtde) ? String(Math.trunc(qtde)) : "0",
-          qtyColX,
-          currentY,
-          { width: 100, continued: false, align: "center" },
-        );
-        doc.text(row.modelo || "-", 320, currentY, {
-          width: 120,
-          continued: false,
-        });
-        doc.text(row.peca || "-", 450, currentY, {
-          width: 100,
-          continued: false,
-        });
-        const custoFormatado =
-          row.custo != null
-            ? Number(row.custo).toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })
-            : "-";
-
-        doc.text(custoFormatado, 550, currentY, {
-          width: 100,
-          continued: false,
-        });
-      } else {
-        doc.text(row.peca || "-", 50, currentY, {
-          width: 180,
-          continued: false,
-        });
-        const qtde = Number(row.qtde_vendida);
-        const qtyColX = groupBy === "grupo" ? 210 : 240; // mesma origem da coluna do cabeçalho
-        doc.text(
-          Number.isFinite(qtde) ? String(Math.trunc(qtde)) : "0",
-          qtyColX,
-          currentY,
-          { width: 100, continued: false, align: "center" },
-        );
-        doc.text(row.modelo || "-", 350, currentY, {
-          width: 120,
-          continued: false,
-        });
-        doc.text(row.grupo || "-", 480, currentY, {
-          width: 80,
-          continued: false,
-        });
-        const custoFormatado =
-          row.custo != null
-            ? Number(row.custo).toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })
-            : "-";
-
-        doc.text(custoFormatado, 550, currentY, {
-          width: 100,
-          continued: false,
-        });
-      }
-
-      doc.moveDown(0.5);
+      const currentY = doc.y;
+      drawRow(rowValues, currentY);
+      doc.y = currentY + rowHeight + ROW_PADDING_Y;
     });
 
     // Finaliza o documento
