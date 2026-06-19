@@ -93,7 +93,7 @@ function createFooter() {
         target="_blank"
         rel="noopener noreferrer"
       >
-        Desenvolvido com OrderUp
+        Desenvolvido com OrderUp 
       </a>
     </div>
   `;
