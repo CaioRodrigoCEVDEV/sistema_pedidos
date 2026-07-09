@@ -352,7 +352,7 @@ exports.getPecasCadastradasPDF = async (req, res) => {
     doc.moveDown(0.5);
 
     // Cabeçalho da tabela
-    const colX = { num: 40, marca: 65, modelo: 165, tipo: 255, peca: 325, preco: 430, custo: 480, estoque: 535 };
+    const colX = { num: 40, marca: 65, modelo: 165, tipo: 255, peca: 325, preco: 475 };
     const ROW_PADDING_Y = 3;
 
     function drawTableHeader(d, y) {
@@ -363,10 +363,8 @@ exports.getPecasCadastradasPDF = async (req, res) => {
       d.text("Marca", colX.marca, y, { width: 95 });
       d.text("Modelo", colX.modelo, y, { width: 85 });
       d.text("Tipo", colX.tipo, y, { width: 65 });
-      d.text("Peça", colX.peca, y, { width: 100 });
-      d.text("Preço", colX.preco, y, { width: 45 });
-      d.text("Custo", colX.custo, y, { width: 45 });
-      d.text("Estoque", colX.estoque, y, { width: 45 });
+      d.text("Peça", colX.peca, y, { width: 145 });
+      d.text("Preço", colX.preco, y, { width: 80 });
       d.moveDown(0.8);
       d.font("Helvetica").fontSize(7);
     }
@@ -376,7 +374,6 @@ exports.getPecasCadastradasPDF = async (req, res) => {
     let rowNum = 1;
     for (const row of data) {
       const precoFmt = Number(row.preco).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-      const custoFmt = Number(row.custo).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
       // Calculate dynamic row height so wrapped text never overlaps the next row
       const rowHeight = Math.max(
@@ -384,10 +381,8 @@ exports.getPecasCadastradasPDF = async (req, res) => {
         doc.heightOfString(String(row.marca || "-"), { width: 95 }),
         doc.heightOfString(String(row.modelo || "-"), { width: 85 }),
         doc.heightOfString(String(row.tipo || "-"), { width: 65 }),
-        doc.heightOfString(String(row.peca || "-"), { width: 100 }),
-        doc.heightOfString(precoFmt, { width: 45 }),
-        doc.heightOfString(custoFmt, { width: 45 }),
-        doc.heightOfString(String(row.estoque ?? 0), { width: 45 }),
+        doc.heightOfString(String(row.peca || "-"), { width: 145 }),
+        doc.heightOfString(precoFmt, { width: 80 }),
       );
 
       if (doc.y + rowHeight > PDF_PAGE_BREAK_Y) {
@@ -400,10 +395,8 @@ exports.getPecasCadastradasPDF = async (req, res) => {
       doc.text(String(row.marca || "-"), colX.marca, y, { width: 95 });
       doc.text(String(row.modelo || "-"), colX.modelo, y, { width: 85 });
       doc.text(String(row.tipo || "-"), colX.tipo, y, { width: 65 });
-      doc.text(String(row.peca || "-"), colX.peca, y, { width: 100 });
-      doc.text(precoFmt, colX.preco, y, { width: 45, align: "right" });
-      doc.text(custoFmt, colX.custo, y, { width: 45, align: "right" });
-      doc.text(String(row.estoque ?? 0), colX.estoque, y, { width: 45, align: "center" });
+      doc.text(String(row.peca || "-"), colX.peca, y, { width: 145 });
+      doc.text(precoFmt, colX.preco, y, { width: 80, align: "right" });
 
       // Advance by the tallest cell so no row ever overlaps the next
       doc.y = y + rowHeight + ROW_PADDING_Y;
