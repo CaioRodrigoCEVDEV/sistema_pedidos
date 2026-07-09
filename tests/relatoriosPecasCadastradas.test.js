@@ -47,7 +47,9 @@ async function testGetPecasCadastradasQuery() {
     "A consulta não deve selecionar a coluna estoque",
   );
   assert.ok(
-    capturedQuery.includes("ORDER BY\n      LOWER(TRIM(pro.prodes))"),
+    /ORDER BY\s+pro\.prodes,\s+marcas\.marcasdes,\s+COALESCE\(modelo\.moddes, ''\),\s+pro\.procod/.test(
+      capturedQuery,
+    ),
     "A consulta deve ordenar alfabeticamente pela peça",
   );
   assert.deepStrictEqual(capturedParams, [10, 20, "%Tela%", 30]);

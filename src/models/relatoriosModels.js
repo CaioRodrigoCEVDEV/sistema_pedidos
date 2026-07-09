@@ -162,9 +162,9 @@ async function getPecasCadastradas(filters = {}) {
     LEFT JOIN tipo ON tipo.tipocod = pro.protipocod
     WHERE ${whereClause}
     ORDER BY
-      LOWER(TRIM(pro.prodes)),
-      LOWER(TRIM(marcas.marcasdes)),
-      LOWER(TRIM(COALESCE(modelo.moddes, ''))),
+      pro.prodes,
+      marcas.marcasdes,
+      COALESCE(modelo.moddes, ''),
       pro.procod
   `;
 
