@@ -161,11 +161,7 @@ async function getPecasCadastradas(filters = {}) {
     LEFT JOIN modelo ON modelo.modcod = pro.promodcod
     LEFT JOIN tipo ON tipo.tipocod = pro.protipocod
     WHERE ${whereClause}
-    ORDER BY
-      pro.prodes,
-      marcas.marcasdes,
-      COALESCE(modelo.moddes, ''),
-      pro.procod
+    ORDER BY marcas.marcasdes
   `;
 
   const result = await pool.query(query, params);
