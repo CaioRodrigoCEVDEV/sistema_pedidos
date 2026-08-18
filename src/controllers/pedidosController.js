@@ -468,6 +468,25 @@ exports.cancelarPedido = async (req, res) => {
   }
 };
 
+exports.cancelarPedidos = async (req, res) => {
+  const { pvcods } = req.body;
+
+  if (!Array.isArray(pvcods) || pvcods.length === 0) {
+    return res.status(400).json({ error: "Nenhum pedido selecionado." });
+  }
+
+  try {
+    const result = await pool.query(
+      "UPDATE pv SET pvsta = 'X' WHERE pvcod = ANY($1) RETURNING *",
+      [pvcods]
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "erro ao cancelar pedidos" });
+  }
+};
+
 exports.listarPedidosPendentesDetalhe = async (req, res) => {
   const pvcod = req.params.pvcod;
 

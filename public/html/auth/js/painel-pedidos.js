@@ -543,6 +543,86 @@ async function cancelarPedido(pvcod) {
   }
 }
 
+// Cria overlay + popup no layout padrão do sistema
+function criarPopupLayout() {
+  const overlay = document.createElement("div");
+  overlay.classList.add("overlay");
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.width = "100%";
+  overlay.style.height = "100%";
+  overlay.style.background = "rgba(0,0,0,0.5)";
+  overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.zIndex = 9999;
+
+  const popup = document.createElement("div");
+  popup.classList.add("popup");
+  popup.style.background = "#fff";
+  popup.style.padding = "20px";
+  popup.style.borderRadius = "8px";
+  popup.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
+  popup.style.width = "400px";
+  popup.style.maxWidth = "90vw";
+  popup.style.zIndex = 10000;
+
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+
+  const fechar = () => {
+    overlay.remove();
+    popup.remove();
+  };
+
+  return { overlay, popup, fechar };
+}
+
+// Popup de confirmação de cancelamento
+function confirmarCancelamentoPopup(mensagem, onConfirmar) {
+  const { popup, fechar } = criarPopupLayout();
+
+  popup.innerHTML = `
+    <h4 class="mb-3"><i class="bi bi-trash me-2"></i>Cancelar Pedidos</h4>
+    <p class="mb-4">${mensagem}</p>
+    <div style="text-align:right; margin-top:10px;">
+      <button type="button" class="btn btn-secondary me-2" id="btnCancelarPopup">Voltar</button>
+      <button type="button" class="btn btn-danger" id="btnConfirmarPopup">
+        <i class="bi bi-trash me-1"></i>Cancelar
+      </button>
+    </div>
+  `;
+
+  popup
+    .querySelector("#btnCancelarPopup")
+    .addEventListener("click", fechar);
+  popup
+    .querySelector("#btnConfirmarPopup")
+    .addEventListener("click", async () => {
+      fechar();
+      if (typeof onConfirmar === "function") await onConfirmar();
+    });
+}
+
+// Popup de mensagem no layout padrão do sistema
+function mostrarPopupMensagem(mensagem, onOk) {
+  const { popup, fechar } = criarPopupLayout();
+
+  popup.innerHTML = `
+    <h4 class="mb-3"><i class="bi bi-check-circle-fill me-2 text-success"></i>Sucesso</h4>
+    <p class="mb-4">${mensagem}</p>
+    <div style="text-align:right; margin-top:10px;">
+      <button type="button" class="btn btn-success" id="btnOkPopup">OK</button>
+    </div>
+  `;
+
+  popup.querySelector("#btnOkPopup").addEventListener("click", () => {
+    fechar();
+    if (typeof onOk === "function") onOk();
+  });
+}
+
 //inicio tabela
 // PEDIDOS FINALIZADOS
 (function () {
@@ -616,10 +696,17 @@ async function cancelarPedido(pvcod) {
 
       // Preencher tabela - adapte conforme o formato de 'data' da sua API
       tabelaPendentes.innerHTML = ""; // limpa
+      if (checkAllPendentes) checkAllPendentes.checked = false;
+      atualizarContadorSelecionados();
       if (Array.isArray(data) && data.length) {
         data.forEach((dado) => {
           const tr = document.createElement("tr");
           tr.innerHTML = `
+          <td class="text-center">
+            <input type="checkbox" class="check-pedido" data-pvcod="${
+              dado.pvcod
+            }" aria-label="Selecionar pedido ${dado.pvcod}" />
+          </td>
           <td class="text-center">${dado.pvcod}</td>
           <td class="text-center">${dado.pvcanal}</td>
           <td class="text-center">${dado.usunome || "Sem Vendedor"}</td>
@@ -638,7 +725,7 @@ async function cancelarPedido(pvcod) {
         });
       } else {
         tabelaPendentes.innerHTML =
-          '<tr><td colspan="5">Nenhum pedido encontrado para o período selecionado.</td></tr>';
+          '<tr><td colspan="6">Nenhum pedido encontrado para o período selecionado.</td></tr>';
       }
     } catch (err) {
       console.error(err);
@@ -664,6 +751,71 @@ async function cancelarPedido(pvcod) {
     fetchPedidosFinalizados({ dataInicio: inicio, dataFim: fim });
     fetchPedidosPendentes({ dataInicio: inicio, dataFim: fim });
   });
+
+  // Selecão múltipla e cancelamento em lote de pedidos pendentes
+  const checkAllPendentes = document.getElementById("checkAllPendentes");
+  const btnCancelarSelecionados = document.getElementById(
+    "btnCancelarSelecionados"
+  );
+  const contSelecionados = document.getElementById("contSelecionados");
+
+  function atualizarContadorSelecionados() {
+    const selecionados = document.querySelectorAll(
+      "#corpoTabela .check-pedido:checked"
+    );
+    if (contSelecionados) contSelecionados.textContent = selecionados.length;
+    if (btnCancelarSelecionados)
+      btnCancelarSelecionados.disabled = selecionados.length === 0;
+  }
+
+  if (checkAllPendentes) {
+    checkAllPendentes.addEventListener("change", () => {
+      document
+        .querySelectorAll("#corpoTabela .check-pedido")
+        .forEach((cb) => (cb.checked = checkAllPendentes.checked));
+      atualizarContadorSelecionados();
+    });
+  }
+
+  document.addEventListener("change", (e) => {
+    if (e.target.classList.contains("check-pedido"))
+      atualizarContadorSelecionados();
+  });
+
+  if (btnCancelarSelecionados) {
+    btnCancelarSelecionados.addEventListener("click", () => {
+      const selecionados = Array.from(
+        document.querySelectorAll("#corpoTabela .check-pedido:checked")
+      ).map((cb) => Number(cb.dataset.pvcod));
+
+      if (!selecionados.length) return;
+
+      confirmarCancelamentoPopup(
+        `Tem certeza que deseja cancelar ${selecionados.length} pedido(s)?`,
+        async () => {
+          try {
+            const response = await fetch(`${BASE_URL}/pedidos/cancelar`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ pvcods: selecionados }),
+            });
+            if (response.ok) {
+              mostrarPopupMensagem(
+                `${selecionados.length} pedido(s) cancelado(s) com sucesso!`,
+                () => window.location.reload()
+              );
+            } else {
+              alert("Erro ao cancelar os pedidos.");
+            }
+          } catch (error) {
+            console.error("Erro ao cancelar pedidos selecionados:", error);
+            alert("Erro ao cancelar os pedidos.");
+          }
+        }
+      );
+    });
+  }
 
   // inicializa com últimos 7 dias (opcional). Se preferir começar com 'todos', troque para 'todos'
   select.value = "hoje";
