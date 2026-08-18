@@ -39,8 +39,43 @@ exports.listarProduto = async (req, res) => {
 };
 
 exports.listarProdutos = async (req, res) => {
-  try {
-    const result = await pool.query(`
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const pageSize = Math.min(
+    Math.max(parseInt(req.query.pageSize, 10) || 20, 1),
+    200
+  );
+  const q = (req.query.q || "").trim();
+  const marca = parseIntegerParam(req.query.marca);
+  const modelo = parseIntegerParam(req.query.modelo);
+  const tipo = parseIntegerParam(req.query.tipo);
+
+  const paginado = req.query.page !== undefined || req.query.pageSize !== undefined;
+  const off = (page - 1) * pageSize;
+
+  const filters = [];
+  const params = [];
+
+  if (marca !== null) {
+    params.push(marca);
+    filters.push(`promarcascod = $${params.length}`);
+  }
+  if (tipo !== null) {
+    params.push(tipo);
+    filters.push(`protipocod = $${params.length}`);
+  }
+  if (modelo !== null) {
+    params.push(modelo);
+    filters.push(
+      `(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`
+    );
+  }
+  if (q) {
+    params.push(`%${q}%`);
+    filters.push(`prodes ILIKE $${params.length}`);
+  }
+  const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+
+  const select = `
       select 
       procod,
       tipodes,
@@ -57,7 +92,29 @@ exports.listarProdutos = async (req, res) => {
       from pro
       join tipo on tipocod = protipocod
       join marcas on promarcascod = marcascod and marcassit = 'A'
-      order by procod desc`);
+      ${where}`;
+
+  try {
+    if (paginado) {
+      const countResult = await pool.query(
+        `select count(*) from pro ${where}`,
+        params
+      );
+      const total = parseInt(countResult.rows[0].count, 10);
+
+      const result = await pool.query(
+        `${select}
+        order by procod desc
+        limit $${params.length + 1} offset $${params.length + 2}`,
+        [...params, pageSize, off]
+      );
+
+      return res
+        .status(200)
+        .json({ page, pageSize, total, data: result.rows });
+    }
+
+    const result = await pool.query(`${select} order by procod desc`);
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);

@@ -115,3 +115,366 @@
   background-color: #f8f9fa;
   overflow-y: auto; /* caso tenha muitas cores */
 }
+
+/* =========================================================
+   Gerenciar Peças - Modal administrativo
+   ========================================================= */
+.pecas-modal {
+  width: min(90vw, 1200px);
+  height: min(85vh, 850px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+/* Header fixo */
+.pecas-modal-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  background: #fff;
+  border-bottom: 1px solid #eef0f3;
+}
+.pecas-modal-titulos {
+  min-width: 0;
+}
+.pecas-modal-titulo {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+}
+.pecas-modal-subtitulo {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+.pecas-modal-close {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #6b7280;
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.pecas-modal-close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* Seções internas (tabelaArea) */
+.pecas-modal-sections {
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Filtros fixos */
+.pecas-modal-filters {
+  flex: 0 0 auto;
+  padding: 12px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid #eef0f3;
+}
+.pecas-filters-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #334155;
+}
+.pecas-filters-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+.pecas-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 140px;
+  min-width: 130px;
+}
+.pecas-filter-busca {
+  flex: 2 1 220px;
+}
+.pecas-filter-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+.pecas-filter-item .form-select,
+.pecas-filter-item .form-control {
+  height: 38px;
+}
+.pecas-filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.pecas-filter-actions .btn {
+  height: 38px;
+  white-space: nowrap;
+}
+
+/* Corpo da tabela - ÚNICA área com scroll */
+.pecas-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  background: #fff;
+}
+
+.pecas-modal-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.pecas-modal-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+.pecas-modal-table tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+.pecas-modal-table tbody tr {
+  transition: background 0.12s ease;
+}
+.pecas-modal-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.peca-col {
+  width: 55%;
+}
+.valor-col {
+  width: 15%;
+  text-align: right;
+}
+.custo-col {
+  width: 15%;
+  text-align: right;
+}
+.acoes-col {
+  width: 15%;
+  text-align: center;
+}
+
+/* Botões de ação */
+.pecas-acoes {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.pecas-btn-acao {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.pecas-btn-editar {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+.pecas-btn-editar:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.pecas-btn-excluir {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+.pecas-btn-excluir:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Rodapé fixo */
+.pecas-modal-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  background: #fff;
+  border-top: 1px solid #eef0f3;
+}
+.pecas-paginacao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pecas-paginacao .btn {
+  white-space: nowrap;
+}
+.pecas-modal-footer #infoTotalPecas {
+  font-weight: 600;
+}
+.pecas-modal-footer .pecas-total-info {
+  font-weight: 600;
+}
+
+/* Tabelas simples (Marcas/Modelos/Tipos/Cores) */
+.pecas-modal-table.pecas-simples-table .peca-col {
+  width: 70%;
+}
+.pecas-modal-table.pecas-simples-table .acoes-col {
+  width: 30%;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  /* Modal ocupa praticamente toda a viewport (prioriza a listagem) */
+  .pecas-modal {
+    width: 96vw;
+    height: calc(100vh - 16px);
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 10px;
+  }
+
+  /* Header compacto */
+  .pecas-modal-header {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+  .pecas-modal-titulo {
+    font-size: 1rem;
+  }
+  .pecas-modal-subtitulo {
+    font-size: 0.78rem;
+  }
+
+  /* Filtros: empilhados com espaçamento compacto */
+  .pecas-modal-filters {
+    padding: 10px 14px;
+  }
+  .pecas-filters-heading {
+    margin-bottom: 6px;
+  }
+  .pecas-filters-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .pecas-filter-item {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .pecas-filter-actions {
+    gap: 8px;
+  }
+
+  /* Tabela: largura mínima e scroll horizontal próprio (sem esmagar colunas) */
+  #tabelaProdutos {
+    width: 100%;
+    min-width: 416px;
+  }
+  #tabelaProdutos .peca-col {
+    width: 150px;
+  }
+  #tabelaProdutos .valor-col,
+  #tabelaProdutos .custo-col {
+    width: 90px;
+    white-space: nowrap;
+  }
+  #tabelaProdutos .acoes-col {
+    width: 86px;
+    white-space: nowrap;
+  }
+  #tabelaProdutos .peca-col .peca-nome {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Linhas mais altas para toque */
+  .pecas-modal-table thead th {
+    padding: 13px 16px;
+    white-space: nowrap;
+  }
+  .pecas-modal-table tbody td {
+    padding: 14px 16px;
+  }
+
+  /* Botões de ação com área de toque confortável */
+  .pecas-acoes {
+    gap: 8px;
+  }
+  .pecas-btn-acao {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+
+  /* Rodapé empilhado com paginação utilizável */
+  .pecas-modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  .pecas-modal-footer .pecas-total-info,
+  .pecas-modal-footer #infoTotalPecas {
+    text-align: center;
+  }
+  .pecas-paginacao {
+    justify-content: center;
+    gap: 8px;
+  }
+  .pecas-modal-footer > .btn {
+    width: 100%;
+  }
+}

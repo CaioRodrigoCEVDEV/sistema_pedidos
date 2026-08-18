@@ -165,68 +165,56 @@ document.addEventListener("DOMContentLoaded", () => {
 
 const inputPesquisa = document.getElementById("pesquisa");
 const tabelaArea = document.getElementById("tabelaArea");
-const cardsArea = document.getElementById("cardsArea");
 const corpoTabela = document.getElementById("corpoTabela");
+const tabelaAreaOrigem = tabelaArea ? tabelaArea.parentElement : null;
+
+// Estado da listagem de peças (tabela do painel)
+let pecasPage = 1;
+let pecasPageSize = 20;
+let pecasTotal = 0;
+let pecasQ = "";
+let pecasMarca = null;
+let pecasModelo = null;
+let pecasTipo = null;
+let pecasDebounce = null;
+let pecasPopupAberto = false;
+
+// Estado dos popups de gestão (marcas/modelos/tipos/cores)
+let gestaoPopupAberto = false;
+const gestaoOrigem = {};
+["areaMarcas", "areaModelos", "areaTipos", "areaCores"].forEach((id) => {
+  const el = document.getElementById(id);
+  if (el) gestaoOrigem[id] = el.parentElement;
+});
+
+// Filtros dos popups de gestão (marcas/modelos/tipos/cores)
+let marcasLista = [];
+let marcasQ = "";
+let marcasDebounce = null;
+let modelosLista = [];
+let modelosQ = "";
+let modelosMarca = null;
+let modelosDebounce = null;
+let tiposLista = [];
+let tiposQ = "";
+let tiposDebounce = null;
+let coresLista = [];
+let coresQ = "";
+let coresDebounce = null;
 
 inputPesquisa.addEventListener("input", function () {
   const pesquisa = this.value.trim().toLowerCase();
+  pecasQ = pesquisa;
 
-  if (!pesquisa) {
-    tabelaArea.style.display = "none"; // esconde tabela
-    cardsArea.style.display = "block"; // mostra cards
-    corpoTabela.innerHTML = ""; // limpa tabela
-    return;
-  }
-
-  fetch(`${BASE_URL}/pros/`)
-    .then((res) => res.json())
-    .then((produtos) => {
-      const filtrados = produtos.filter(
-        (produto) =>
-          produto.prodes && produto.prodes.toLowerCase().includes(pesquisa),
-      );
-
-      if (filtrados.length === 0) {
-        tabelaArea.style.display = "none"; // esconde tabela se nada encontrado
-        cardsArea.style.display = "block"; // mostra cards
-        corpoTabela.innerHTML = "";
-        return;
-      }
-
-      corpoTabela.innerHTML = "";
-      filtrados.forEach((produto) => {
-        const tr = document.createElement("tr");
-        tr.dataset.preco = produto.provl;
-        tr.id = `produto-${produto.procod}`; // <- aqui
-        tr.innerHTML = `
-          <td>${produto.prodes}</td>
-          <td>${formatarMoeda(produto.provl)}</td>
-          <td>${formatarMoeda(produto.procusto)}</td>
-          <td>
-            <button class="btn btn-primary btn-sm" onclick="editarProduto('${
-              produto.procod
-            }')">
-              <i class="fa fa-edit"></i>
-            </button>
-            <button class="btn btn-danger btn-sm" onclick="excluirProduto('${
-              produto.procod
-            }')">
-              <i class="fa fa-trash"></i>
-            </button>
-          </td>
-        `;
-        corpoTabela.appendChild(tr);
-      });
-
-      tabelaArea.style.display = "block"; // mostra tabela
-      cardsArea.style.display = "none"; // esconde cards
-    })
-    .catch((error) => {
-      console.error("Erro no fetch:", error);
-      tabelaArea.style.display = "none";
-      cardsArea.style.display = "block";
-      corpoTabela.innerHTML = "";
-    });
+  clearTimeout(pecasDebounce);
+  pecasDebounce = setTimeout(() => {
+    if (!pesquisa) {
+      if (pecasPopupAberto) carregarPecas(1);
+      return;
+    }
+    abrirPopupPecas();
+    carregarPecas(1);
+  }, 300);
 });
 
 function editarProduto(codigo) {
@@ -496,38 +484,7 @@ function editarProduto(codigo) {
 }
 
 function carregarProPesquisa() {
-  fetch(`${BASE_URL}/pros/`)
-    .then((res) => res.json())
-    .then((produtos) => {
-      const filtrados = produtos.filter(
-        (produto) =>
-          produto.prodes && produto.prodes.toLowerCase().includes(pesquisa),
-      );
-      corpoTabela.innerHTML = "";
-      filtrados.forEach((produto) => {
-        const tr = document.createElement("tr");
-        tr.dataset.preco = produto.provl;
-        tr.id = `produto-${produto.procod}`; // <- aqui
-        tr.innerHTML = `
-          <td>${produto.prodes}</td>
-          <td>${formatarMoeda(produto.provl)}</td>
-          <td>${formatarMoeda(produto.procusto)}</td>
-          <td>
-            <button class="btn btn-primary btn-sm" onclick="editarProduto('${
-              produto.procod
-            }')">
-              <i class="fa fa-edit"></i>
-            </button>
-            <button class="btn btn-danger btn-sm" onclick="excluirProduto('${
-              produto.procod
-            }')">
-              <i class="fa fa-trash"></i>
-            </button>
-          </td>
-        `;
-        corpoTabela.appendChild(tr);
-      });
-    });
+  carregarPecas(pecasPage);
 }
 
 async function excluirProduto(id) {
@@ -610,13 +567,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       fetch(`${BASE_URL}/marcas`).then((r) => r.json()),
       fetch(`${BASE_URL}/modelos`).then((r) => r.json()),
       fetch(`${BASE_URL}/tipos`).then((r) => r.json()),
-      fetch(`${BASE_URL}/pros`).then((r) => r.json()),
+      fetch(`${BASE_URL}/pros?page=1&pageSize=1`).then((r) => r.json()),
     ]);
 
     document.getElementById("totalMarcas").textContent = marcas.length;
     document.getElementById("totalModelos").textContent = modelos.length;
     document.getElementById("totalTipos").textContent = tipos.length;
-    document.getElementById("totalPecas").textContent = pecas.length;
+    document.getElementById("totalPecas").textContent = pecas.total || 0;
   } catch (err) {
     console.error("Erro ao carregar totais", err);
   }
@@ -649,47 +606,116 @@ function mostrarArea(id, loadFn) {
   }
 }
 
+// ------- POPUP DE GESTÃO (mesma família visual do Gerenciar Peças) ---------
+function abrirPopupGestao(areaId, titulo, subtitulo) {
+  if (gestaoPopupAberto) return;
+  const area = document.getElementById(areaId);
+  if (!area) return;
+
+  const overlay = criarOverlay();
+  const popup = document.createElement("div");
+  popup.className = "popup pecas-modal";
+
+  const header = document.createElement("div");
+  header.className = "pecas-modal-header";
+  header.innerHTML = `
+    <div class="pecas-modal-titulos">
+      <h4 class="pecas-modal-titulo">${titulo}</h4>
+      <p class="pecas-modal-subtitulo">${subtitulo}</p>
+    </div>
+    <button
+      type="button"
+      class="pecas-modal-close"
+      onclick="fecharPopupGestao(this, '${areaId}')"
+      aria-label="Fechar"
+    >
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  `;
+  popup.appendChild(header);
+
+  area.style.display = "flex";
+  popup.appendChild(area);
+
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+  gestaoPopupAberto = true;
+}
+
+function fecharPopupGestao(btn, areaId) {
+  const popup = btn.closest(".popup");
+  if (!popup) return;
+
+  const area = document.getElementById(areaId);
+  if (area) {
+    if (area.parentElement === popup) {
+      const origem = gestaoOrigem[areaId];
+      if (origem) origem.appendChild(area);
+    }
+    area.style.display = "none";
+  }
+
+  gestaoPopupAberto = false;
+  popup.remove();
+  const overlay = document.querySelector(".overlay");
+  if (overlay) overlay.remove();
+}
+
 // ------- GESTÃO MARCAS ---------
 function toggleMarcas() {
-  mostrarArea("areaMarcas", () => {
-    carregarMarcas();
-
-    // Aguarda o DOM atualizar para aplicar o scroll
-    setTimeout(() => {
-      const area = document.getElementById("areaMarcas");
-      if (area) {
-        area.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 50); // tempo suficiente para garantir que o display foi aplicado
-  });
+  abrirPopupGestao(
+    "areaMarcas",
+    "🏷️ Gerenciar Marcas",
+    "Gerencie, consulte e edite as marcas cadastradas no sistema.",
+  );
+  carregarMarcas();
 }
 
 function carregarMarcas() {
   fetch(`${BASE_URL}/marcas`)
     .then((r) => r.json())
     .then((dados) => {
-      const tbody = document.getElementById("listaMarcas");
-      tbody.innerHTML = "";
-      dados.forEach((m) => {
-        const tr = document.createElement("tr");
-        tr.setAttribute("data-marca-id", m.marcascod);
-        tr.innerHTML = `
-          <td class="marca-des">${m.marcasdes}</td>
-          <td>
-            <button class="btn btn-sm btn-primary" onclick="editarMarca(${
-              m.marcascod
-            }, '${m.marcasdes.replace(
-              /'/g,
-              "\\'",
-            )}')"><i class='fa fa-edit'></i></button>
-            <button class="btn btn-sm btn-danger" onclick="excluirMarca(${
-              m.marcascod
-            })"><i class='fa fa-trash'></i></button>
-          </td>`;
-        tbody.appendChild(tr);
-      });
+      marcasLista = dados;
+      renderMarcas();
     })
     .catch(console.error);
+}
+
+function renderMarcas() {
+  const tbody = document.getElementById("listaMarcas");
+  tbody.innerHTML = "";
+  const q = marcasQ.toLowerCase();
+  const filtradas = q
+    ? marcasLista.filter((m) =>
+        (m.marcasdes || "").toLowerCase().includes(q),
+      )
+    : marcasLista;
+
+  filtradas.forEach((m) => {
+    const tr = document.createElement("tr");
+    tr.setAttribute("data-marca-id", m.marcascod);
+    tr.innerHTML = `
+          <td class="peca-col marca-des">${m.marcasdes}</td>
+          <td class="acoes-col">
+            <div class="pecas-acoes">
+              <button class="pecas-btn-acao pecas-btn-editar" title="Editar marca"
+                onclick="editarMarca(${m.marcascod}, '${m.marcasdes.replace(
+                  /'/g,
+                  "\\'",
+                )}')">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button class="pecas-btn-acao pecas-btn-excluir" title="Excluir marca"
+                onclick="excluirMarca(${m.marcascod})">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>`;
+    tbody.appendChild(tr);
+  });
+
+  const info = document.getElementById("infoTotalMarcas");
+  if (info) info.textContent = `${filtradas.length} marca(s)`;
 }
 
 function editarMarca(id, nome) {
@@ -903,43 +929,64 @@ async function excluirMarca(id) {
 
 // ------- GESTÃO MODELOS ---------
 function toggleModelos() {
-  mostrarArea("areaModelos", () => {
-    carregarModelos();
-
-    // Aguarda o DOM atualizar para aplicar o scroll
-    setTimeout(() => {
-      const area = document.getElementById("areaModelos");
-      if (area) {
-        area.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 50); // tempo suficiente para garantir que o display foi aplicado
-  });
+  abrirPopupGestao(
+    "areaModelos",
+    "📱 Gerenciar Modelos",
+    "Gerencie, consulte e edite os modelos cadastrados no sistema.",
+  );
+  carregarModelos();
 }
 
 function carregarModelos() {
   fetch(`${BASE_URL}/modelos`)
     .then((r) => r.json())
     .then((dados) => {
-      const tbody = document.getElementById("listaModelos");
-      tbody.innerHTML = "";
-      dados.forEach((m) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${m.moddes}</td>
-          <td>
-            <button class="btn btn-sm btn-primary" onclick="editarModelo(${
-              m.modcod
-            }, '${m.moddes.replace(/'/g, "'")}', ${
-              m.modmarcascod
-            })"><i class='fa fa-edit'></i></button>
-            <button class="btn btn-sm btn-danger" onclick="excluirModelo(${
-              m.modcod
-            })"><i class='fa fa-trash'></i></button>
-          </td>`;
-        tbody.appendChild(tr);
-      });
+      modelosLista = dados;
+      renderModelos();
     })
     .catch(console.error);
+}
+
+function renderModelos() {
+  const tbody = document.getElementById("listaModelos");
+  tbody.innerHTML = "";
+  const q = modelosQ.toLowerCase();
+
+  const filtradas = modelosLista.filter((m) => {
+    if (
+      modelosMarca !== null &&
+      String(m.modmarcascod) !== String(modelosMarca)
+    ) {
+      return false;
+    }
+    if (q && !(m.moddes || "").toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  filtradas.forEach((m) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+          <td class="peca-col">${m.moddes}</td>
+          <td class="acoes-col">
+            <div class="pecas-acoes">
+              <button class="pecas-btn-acao pecas-btn-editar" title="Editar modelo"
+                onclick="editarModelo(${m.modcod}, '${m.moddes.replace(
+                  /'/g,
+                  "'",
+                )}', ${m.modmarcascod})">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button class="pecas-btn-acao pecas-btn-excluir" title="Excluir modelo"
+                onclick="excluirModelo(${m.modcod})">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>`;
+    tbody.appendChild(tr);
+  });
+
+  const info = document.getElementById("infoTotalModelos");
+  if (info) info.textContent = `${filtradas.length} modelo(s)`;
 }
 
 function editarModelo(id, nome, marca) {
@@ -1137,44 +1184,58 @@ async function excluirModelo(id) {
 
 // ------- GESTÃO TIPOS ---------
 function toggleTipos() {
-  mostrarArea("areaTipos", () => {
-    carregarTipos();
-
-    // Aguarda o DOM atualizar para aplicar o scroll
-    setTimeout(() => {
-      const area = document.getElementById("areaTipos");
-      if (area) {
-        area.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 50); // tempo suficiente para garantir que o display foi aplicado
-  });
+  abrirPopupGestao(
+    "areaTipos",
+    "📋 Gerenciar Tipos de Peça",
+    "Gerencie, consulte e edite os tipos de peça cadastrados no sistema.",
+  );
+  carregarTipos();
 }
 
 function carregarTipos() {
   fetch(`${BASE_URL}/tipos`)
     .then((r) => r.json())
     .then((dados) => {
-      const tbody = document.getElementById("listaTipos");
-      tbody.innerHTML = "";
-      dados.forEach((t) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${t.tipodes}</td>
-          <td>
-            <button class="btn btn-sm btn-primary" onclick="editarTipo(${
-              t.tipocod
-            }, '${t.tipodes.replace(
-              /'/g,
-              "'",
-            )}')"><i class='fa fa-edit'></i></button>
-            <button class="btn btn-sm btn-danger" onclick="excluirTipo(${
-              t.tipocod
-            })"><i class='fa fa-trash'></i></button>
-          </td>`;
-        tbody.appendChild(tr);
-      });
+      tiposLista = dados;
+      renderTipos();
     })
     .catch(console.error);
+}
+
+function renderTipos() {
+  const tbody = document.getElementById("listaTipos");
+  tbody.innerHTML = "";
+  const q = tiposQ.toLowerCase();
+  const filtradas = q
+    ? tiposLista.filter((t) =>
+        (t.tipodes || "").toLowerCase().includes(q),
+      )
+    : tiposLista;
+
+  filtradas.forEach((t) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+          <td class="peca-col">${t.tipodes}</td>
+          <td class="acoes-col">
+            <div class="pecas-acoes">
+              <button class="pecas-btn-acao pecas-btn-editar" title="Editar tipo"
+                onclick="editarTipo(${t.tipocod}, '${t.tipodes.replace(
+                  /'/g,
+                  "'",
+                )}')">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button class="pecas-btn-acao pecas-btn-excluir" title="Excluir tipo"
+                onclick="excluirTipo(${t.tipocod})">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>`;
+    tbody.appendChild(tr);
+  });
+
+  const info = document.getElementById("infoTotalTipos");
+  if (info) info.textContent = `${filtradas.length} tipo(s)`;
 }
 
 function editarTipo(id, nome) {
@@ -1344,41 +1405,63 @@ async function excluirTipo(id) {
 
 // ------- GESTÃO CORES ---------
 function toggleCores() {
-  mostrarArea("areaCores", () => {
-    carregarCores();
-
-    setTimeout(() => {
-      const area = document.getElementById("areaCores");
-      if (area) {
-        area.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 50);
-  });
+  abrirPopupGestao(
+    "areaCores",
+    "🎨 Gerenciar Cores",
+    "Gerencie, consulte e edite as cores cadastradas no sistema.",
+  );
+  carregarCores();
 }
 
 function carregarCores() {
   fetch(`${BASE_URL}/cores`)
     .then((r) => r.json())
     .then((dados) => {
-      const tbody = document.getElementById("listaCores");
-      tbody.innerHTML = "";
-      dados.forEach((c) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${c.cornome}</td>
-          <td>
-            <button class="btn btn-sm btn-primary" 
-            data-cod="${c.corcod}" 
-            data-nome="${c.cornome.replace(/"/g, "&quot;")}" 
-            onclick="editarCor(this.dataset.cod, this.dataset.nome)"><i class='fa fa-edit'></i></button>
-            <button class="btn btn-sm btn-danger" onclick="excluirCor(${
-              c.corcod
-            })"><i class='fa fa-trash'></i></button>
-          </td>`;
-        tbody.appendChild(tr);
-      });
+      coresLista = dados;
+      renderCores();
     })
     .catch(console.error);
+}
+
+function renderCores() {
+  const tbody = document.getElementById("listaCores");
+  tbody.innerHTML = "";
+  const q = coresQ.toLowerCase();
+  const filtradas = q
+    ? coresLista.filter((c) =>
+        (c.cornome || "").toLowerCase().includes(q),
+      )
+    : coresLista;
+
+  filtradas.forEach((c) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+          <td class="peca-col">${c.cornome}</td>
+          <td class="acoes-col">
+            <div class="pecas-acoes">
+              <button
+                class="pecas-btn-acao pecas-btn-editar"
+                title="Editar cor"
+                data-cod="${c.corcod}"
+                data-nome="${c.cornome.replace(/"/g, "&quot;")}"
+                onclick="editarCor(this.dataset.cod, this.dataset.nome)"
+              >
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button
+                class="pecas-btn-acao pecas-btn-excluir"
+                title="Excluir cor"
+                onclick="excluirCor(${c.corcod})"
+              >
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>`;
+    tbody.appendChild(tr);
+  });
+
+  const info = document.getElementById("infoTotalCores");
+  if (info) info.textContent = `${filtradas.length} cor(es)`;
 }
 
 function editarCor(id, nome) {
@@ -1540,56 +1623,394 @@ async function excluirCor(id) {
 
 // ------- GESTÃO PEÇAS ---------
 function togglePecas() {
-  mostrarArea("tabelaArea", () => {
-    carregarPecas();
-
-    // Aguarda o DOM atualizar para aplicar o scroll
-    setTimeout(() => {
-      const area = document.getElementById("tabelaArea");
-      if (area) {
-        area.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 50); // tempo suficiente para garantir que o display foi aplicado
-  });
+  pecasQ = "";
+  const busca = document.getElementById("pesquisa");
+  if (busca) busca.value = "";
+  abrirPopupPecas();
 }
 
-function carregarPecas() {
-  fetch(`${BASE_URL}/pros`)
-    .then((r) => r.json())
-    .then((dados) => {
-      const tbody = document.getElementById("corpoTabela");
-      tbody.innerHTML = "";
-      dados.forEach((t) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${t.prodes}</td>
-          <td>${formatarMoeda(t.provl)}</td>
-          <td>${formatarMoeda(t.procusto)}</td>
-          <td>
-            <div style="display: flex; gap: 6px;">
+function abrirPopupPecas() {
+  if (pecasPopupAberto) return;
+
+  const overlay = criarOverlay();
+  const popup = document.createElement("div");
+  popup.className = "popup pecas-modal";
+  popup.id = "popupPecas";
+
+  const header = document.createElement("div");
+  header.className = "pecas-modal-header";
+  header.innerHTML = `
+    <div class="pecas-modal-titulos">
+      <h4 class="pecas-modal-titulo">🧩 Gerenciar Peças</h4>
+      <p class="pecas-modal-subtitulo">Gerencie, consulte e edite as peças cadastradas no sistema.</p>
+    </div>
+    <button
+      type="button"
+      class="pecas-modal-close"
+      onclick="fecharPopupPecas(this)"
+      aria-label="Fechar"
+    >
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  `;
+  popup.appendChild(header);
+
+  if (tabelaArea) {
+    tabelaArea.style.display = "flex";
+    popup.appendChild(tabelaArea);
+  }
+
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+  pecasPopupAberto = true;
+
+  const buscaCampo = document.getElementById("pecasBusca");
+  if (buscaCampo) buscaCampo.value = pecasQ;
+
+  popularFiltrosPecas();
+  carregarPecas(1);
+}
+
+function fecharPopupPecas(btn) {
+  const popup = btn.closest(".popup");
+  if (!popup) return;
+
+  if (tabelaArea) {
+    if (tabelaAreaOrigem) tabelaAreaOrigem.appendChild(tabelaArea);
+    tabelaArea.style.display = "none";
+  }
+
+  pecasPopupAberto = false;
+  pecasQ = "";
+  const busca = document.getElementById("pesquisa");
+  if (busca) busca.value = "";
+  const buscaCampo = document.getElementById("pecasBusca");
+  if (buscaCampo) buscaCampo.value = "";
+
+  popup.remove();
+  const overlay = document.querySelector(".overlay");
+  if (overlay) overlay.remove();
+}
+
+function popularFiltrosPecas() {
+  const selMarca = document.getElementById("filtroMarcaPeca");
+  const selModelo = document.getElementById("filtroModeloPeca");
+  const selTipo = document.getElementById("filtroTipoPeca");
+  if (!selMarca || !selModelo || !selTipo) return;
+
+  selModelo.innerHTML = '<option value="">Todos os modelos</option>';
+
+  if (marcasCache.length) {
+    selMarca.innerHTML = '<option value="">Todas as marcas</option>';
+    marcasCache.forEach((m) => {
+      const opt = document.createElement("option");
+      opt.value = m.marcascod;
+      opt.textContent = m.marcasdes;
+      selMarca.appendChild(opt);
+    });
+  }
+  if (tiposCache.length) {
+    selTipo.innerHTML = '<option value="">Todos os tipos</option>';
+    tiposCache.forEach((t) => {
+      const opt = document.createElement("option");
+      opt.value = t.tipocod;
+      opt.textContent = t.tipodes;
+      selTipo.appendChild(opt);
+    });
+  }
+}
+
+async function carregarModelosFiltro(marcascod) {
+  const selModelo = document.getElementById("filtroModeloPeca");
+  if (!selModelo) return;
+  selModelo.innerHTML = '<option value="">Todos os modelos</option>';
+
+  if (marcascod === null) return;
+
+  try {
+    const res = await fetch(`${BASE_URL}/modelo/${marcascod}`);
+    const dados = await res.json();
+    if (!res.ok) throw new Error("Erro ao buscar modelos");
+    dados.forEach((m) => {
+      const opt = document.createElement("option");
+      opt.value = m.modcod;
+      opt.textContent = m.moddes;
+      selModelo.appendChild(opt);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function carregarPecas(page = 1) {
+  pecasPage = page;
+  const params = new URLSearchParams({
+    page: String(pecasPage),
+    pageSize: String(pecasPageSize),
+  });
+  if (pecasQ) params.set("q", pecasQ);
+  if (pecasMarca !== null) params.set("marca", String(pecasMarca));
+  if (pecasModelo !== null) params.set("modelo", String(pecasModelo));
+  if (pecasTipo !== null) params.set("tipo", String(pecasTipo));
+
+  const tbody = document.getElementById("corpoTabela");
+  tbody.innerHTML =
+    '<tr><td colspan="4" class="text-center">Carregando...</td></tr>';
+
+  try {
+    const res = await fetch(`${BASE_URL}/pros?${params.toString()}`);
+    const dados = await res.json();
+    if (!res.ok) throw new Error(dados?.error || `Erro ${res.status}`);
+
+    pecasTotal = dados.total || 0;
+    renderPecas(dados.data || []);
+    atualizarPaginacao();
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML =
+      '<tr><td colspan="4" class="text-center">Erro ao carregar peças</td></tr>';
+  }
+}
+
+function renderPecas(dados) {
+  const tbody = document.getElementById("corpoTabela");
+  tbody.innerHTML = "";
+
+  if (!dados.length) {
+    tbody.innerHTML =
+      '<tr><td colspan="4" class="text-center">Nenhuma peça encontrada</td></tr>';
+    return;
+  }
+
+  dados.forEach((t) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+          <td class="peca-col"><span class="peca-nome">${t.prodes}</span></td>
+          <td class="valor-col">${formatarMoeda(t.provl)}</td>
+          <td class="custo-col">${formatarMoeda(t.procusto)}</td>
+          <td class="acoes-col">
+            <div class="pecas-acoes">
               <button
-                class="btn btn-sm btn-primary btn-editar-peca"
+                class="pecas-btn-acao pecas-btn-editar btn-editar-peca"
                 data-id="${t.procod}"
                 data-nome="${t.prodes.replace(/"/g, "&quot;")}"
                 data-valor="${t.provl}"
                 data-custo="${t.procusto}"
+                title="Editar peça"
               >
-                <i class="fa fa-edit"></i>
+                <i class="fa-solid fa-pen"></i>
               </button>
 
               <button
-                class="btn btn-sm btn-danger btn-excluir-peca"
+                class="pecas-btn-acao pecas-btn-excluir btn-excluir-peca"
                 data-id="${t.procod}"
+                title="Excluir peça"
               >
-                <i class="fa fa-trash"></i>
+                <i class="fa-solid fa-trash"></i>
               </button>
             </div>
           </td>`;
-        tbody.appendChild(tr);
-      });
-    })
-    .catch(console.error);
+    tbody.appendChild(tr);
+  });
 }
+
+function atualizarPaginacao() {
+  const btnAnterior = document.getElementById("btnPaginaAnterior");
+  const btnProxima = document.getElementById("btnPaginaProxima");
+  const infoPagina = document.getElementById("infoPaginaPecas");
+  const infoTotal = document.getElementById("infoTotalPecas");
+  if (!btnAnterior || !btnProxima || !infoPagina || !infoTotal) return;
+
+  const totalPages = Math.max(Math.ceil(pecasTotal / pecasPageSize), 1);
+  btnAnterior.disabled = pecasPage <= 1;
+  btnProxima.disabled = pecasPage >= totalPages;
+  infoPagina.textContent = `Página ${pecasPage} de ${totalPages}`;
+  infoTotal.textContent = `${pecasTotal} peça(s)`;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const selMarca = document.getElementById("filtroMarcaPeca");
+  const selModelo = document.getElementById("filtroModeloPeca");
+  const selTipo = document.getElementById("filtroTipoPeca");
+  const inputBusca = document.getElementById("pecasBusca");
+  const btnAplicar = document.getElementById("btnAplicarFiltroPeca");
+  const btnLimpar = document.getElementById("btnLimparFiltroPeca");
+  const btnAnterior = document.getElementById("btnPaginaAnterior");
+  const btnProxima = document.getElementById("btnPaginaProxima");
+
+  if (selMarca && selModelo) {
+    selMarca.addEventListener("change", (e) => {
+      pecasModelo = null;
+      selModelo.value = "";
+      carregarModelosFiltro(parseIntegerParam(e.target.value));
+    });
+  }
+  if (inputBusca) {
+    inputBusca.addEventListener("input", () => {
+      clearTimeout(pecasDebounce);
+      pecasDebounce = setTimeout(() => {
+        pecasQ = inputBusca.value.trim().toLowerCase();
+        carregarPecas(1);
+      }, 300);
+    });
+  }
+  if (btnAplicar) {
+    btnAplicar.addEventListener("click", () => {
+      pecasMarca = parseIntegerParam(selMarca?.value);
+      pecasModelo = parseIntegerParam(selModelo?.value);
+      pecasTipo = parseIntegerParam(selTipo?.value);
+      carregarPecas(1);
+    });
+  }
+  if (btnLimpar) {
+    btnLimpar.addEventListener("click", () => {
+      pecasMarca = null;
+      pecasModelo = null;
+      pecasTipo = null;
+      pecasQ = "";
+      if (selMarca) selMarca.value = "";
+      if (selModelo) {
+        selModelo.value = "";
+        selModelo.innerHTML = '<option value="">Todos os modelos</option>';
+      }
+      if (selTipo) selTipo.value = "";
+      if (inputBusca) inputBusca.value = "";
+      const busca = document.getElementById("pesquisa");
+      if (busca) busca.value = "";
+      carregarPecas(1);
+    });
+  }
+  if (btnAnterior) {
+    btnAnterior.addEventListener("click", () =>
+      carregarPecas(Math.max(pecasPage - 1, 1))
+    );
+  }
+  if (btnProxima) {
+    btnProxima.addEventListener("click", () => carregarPecas(pecasPage + 1));
+  }
+});
+
+// Filtros dos popups de gestão (Marcas/Modelos/Tipos/Cores)
+document.addEventListener("DOMContentLoaded", () => {
+  // ---- Marcas ----
+  const marcasBusca = document.getElementById("marcasBusca");
+  const btnAplicarMarcas = document.getElementById("btnAplicarFiltroMarcas");
+  const btnLimparMarcas = document.getElementById("btnLimparFiltroMarcas");
+  if (marcasBusca) {
+    marcasBusca.addEventListener("input", () => {
+      clearTimeout(marcasDebounce);
+      marcasDebounce = setTimeout(() => {
+        marcasQ = marcasBusca.value.trim().toLowerCase();
+        renderMarcas();
+      }, 300);
+    });
+  }
+  if (btnAplicarMarcas) {
+    btnAplicarMarcas.addEventListener("click", () => {
+      marcasQ = marcasBusca?.value.trim().toLowerCase() || "";
+      renderMarcas();
+    });
+  }
+  if (btnLimparMarcas) {
+    btnLimparMarcas.addEventListener("click", () => {
+      marcasQ = "";
+      if (marcasBusca) marcasBusca.value = "";
+      renderMarcas();
+    });
+  }
+
+  // ---- Modelos ----
+  const selMarcaModelo = document.getElementById("filtroModeloGestao");
+  const modelosBusca = document.getElementById("modelosBusca");
+  const btnAplicarModelos = document.getElementById("btnAplicarFiltroModelos");
+  const btnLimparModelos = document.getElementById("btnLimparFiltroModelos");
+  if (selMarcaModelo) {
+    selMarcaModelo.addEventListener("change", () => {
+      const v = selMarcaModelo.value;
+      modelosMarca = v === "" || v === null ? null : parseIntegerParam(v);
+    });
+  }
+  if (modelosBusca) {
+    modelosBusca.addEventListener("input", () => {
+      clearTimeout(modelosDebounce);
+      modelosDebounce = setTimeout(() => {
+        modelosQ = modelosBusca.value.trim().toLowerCase();
+        renderModelos();
+      }, 300);
+    });
+  }
+  if (btnAplicarModelos) {
+    btnAplicarModelos.addEventListener("click", () => {
+      const v = selMarcaModelo?.value;
+      modelosMarca = v === "" || v === null ? null : parseIntegerParam(v);
+      modelosQ = modelosBusca?.value.trim().toLowerCase() || "";
+      renderModelos();
+    });
+  }
+  if (btnLimparModelos) {
+    btnLimparModelos.addEventListener("click", () => {
+      modelosMarca = null;
+      modelosQ = "";
+      if (selMarcaModelo) selMarcaModelo.value = "";
+      if (modelosBusca) modelosBusca.value = "";
+      renderModelos();
+    });
+  }
+
+  // ---- Tipos ----
+  const tiposBusca = document.getElementById("tiposBusca");
+  const btnAplicarTipos = document.getElementById("btnAplicarFiltroTipos");
+  const btnLimparTipos = document.getElementById("btnLimparFiltroTipos");
+  if (tiposBusca) {
+    tiposBusca.addEventListener("input", () => {
+      clearTimeout(tiposDebounce);
+      tiposDebounce = setTimeout(() => {
+        tiposQ = tiposBusca.value.trim().toLowerCase();
+        renderTipos();
+      }, 300);
+    });
+  }
+  if (btnAplicarTipos) {
+    btnAplicarTipos.addEventListener("click", () => {
+      tiposQ = tiposBusca?.value.trim().toLowerCase() || "";
+      renderTipos();
+    });
+  }
+  if (btnLimparTipos) {
+    btnLimparTipos.addEventListener("click", () => {
+      tiposQ = "";
+      if (tiposBusca) tiposBusca.value = "";
+      renderTipos();
+    });
+  }
+
+  // ---- Cores ----
+  const coresBusca = document.getElementById("coresBusca");
+  const btnAplicarCores = document.getElementById("btnAplicarFiltroCores");
+  const btnLimparCores = document.getElementById("btnLimparFiltroCores");
+  if (coresBusca) {
+    coresBusca.addEventListener("input", () => {
+      clearTimeout(coresDebounce);
+      coresDebounce = setTimeout(() => {
+        coresQ = coresBusca.value.trim().toLowerCase();
+        renderCores();
+      }, 300);
+    });
+  }
+  if (btnAplicarCores) {
+    btnAplicarCores.addEventListener("click", () => {
+      coresQ = coresBusca?.value.trim().toLowerCase() || "";
+      renderCores();
+    });
+  }
+  if (btnLimparCores) {
+    btnLimparCores.addEventListener("click", () => {
+      coresQ = "";
+      if (coresBusca) coresBusca.value = "";
+      renderCores();
+    });
+  }
+});
 
 // Delegação de eventos para os botões de editar/excluir peças
 document.getElementById("corpoTabela").addEventListener("click", function (e) {
@@ -1692,6 +2113,19 @@ document.addEventListener("DOMContentLoaded", () => {
           opt.value = m.marcascod;
           opt.textContent = m.marcasdes;
           selectCadastro.appendChild(opt);
+        });
+      }
+
+      // Preenche o filtro "Marca" do popup de Modelos
+      const selMarcaModelo = document.getElementById("filtroModeloGestao");
+      if (selMarcaModelo) {
+        selMarcaModelo.innerHTML =
+          '<option value="">Todas as marcas</option>';
+        dados.forEach((m) => {
+          const opt = document.createElement("option");
+          opt.value = m.marcascod;
+          opt.textContent = m.marcasdes;
+          selMarcaModelo.appendChild(opt);
         });
       }
     })
