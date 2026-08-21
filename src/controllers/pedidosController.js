@@ -409,45 +409,140 @@ exports.listarPvPendentes = async (req, res) => {
 
 exports.confirmarPedido = async (req, res) => {
   const pvcod = req.params.pvcod;
-
-  console.log(pvcod);
+  const body = req.body || {};
+  const itens = Array.isArray(body.itens) ? body.itens : null;
+  let client;
 
   try {
-    // Check if the order is already confirmed to prevent re-confirmation
-    // and avoid triggering the stock deduction again
-    const checkResult = await pool.query(
-      "SELECT pvconfirmado FROM pv WHERE pvcod = $1",
+    client = await pool.connect();
+    await client.query("BEGIN");
+
+    // Bloqueia o pedido para que edição dos itens, validação de estoque e
+    // confirmação aconteçam na mesma transação.
+    const checkResult = await client.query(
+      "SELECT pvconfirmado FROM pv WHERE pvcod = $1 FOR UPDATE",
       [pvcod]
     );
 
     if (checkResult.rows.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Pedido não encontrado." });
     }
 
-    if (checkResult.rows[0].pvconfirmado === 'S') {
-      // Order already confirmed - return success without modifying
-      return res.status(200).json({ 
+    if (String(checkResult.rows[0].pvconfirmado).trim() === "S") {
+      await client.query("COMMIT");
+      return res.status(200).json({
         message: "Pedido já confirmado.",
-        alreadyConfirmed: true 
+        alreadyConfirmed: true,
       });
     }
 
-    const result = await pool.query(
+    if (itens) {
+      if (itens.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: "O pedido não possui itens para confirmar." });
+      }
+
+      for (const item of itens) {
+        const procod = Number(item.procod);
+        const quantidade = Number(item.qtd ?? item.pviqtde);
+        const rawCor = item.pviprocorid;
+        const pviprocorid =
+          rawCor === null ||
+          rawCor === undefined ||
+          rawCor === "" ||
+          rawCor === 0 ||
+          rawCor === "0" ||
+          rawCor === "null"
+            ? null
+            : Number(rawCor);
+
+        if (!Number.isInteger(procod) || procod <= 0) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({ error: `Código de peça inválido: ${item.procod}` });
+        }
+
+        if (!Number.isInteger(quantidade) || quantidade < 0) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({
+            error: `Quantidade inválida para a peça ${procod}. Informe um número inteiro não negativo.`,
+          });
+        }
+
+        if (pviprocorid !== null && (!Number.isInteger(pviprocorid) || pviprocorid <= 0)) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({ error: `Cor inválida para a peça ${procod}.` });
+        }
+
+        const itemResult = pviprocorid === null
+          ? await client.query(
+              `UPDATE pvi
+               SET pviqtde = $1
+               WHERE pviprocod = $2 AND pvipvcod = $3 AND pviprocorid IS NULL
+               RETURNING pviprocod`,
+              [quantidade, procod, pvcod],
+            )
+          : await client.query(
+              `UPDATE pvi
+               SET pviqtde = $1
+               WHERE pviprocod = $2 AND pvipvcod = $3 AND pviprocorid = $4
+               RETURNING pviprocod`,
+              [quantidade, procod, pvcod, pviprocorid],
+            );
+
+        if (itemResult.rows.length === 0) {
+          await client.query("ROLLBACK");
+          return res.status(404).json({
+            error: `Item da peça ${procod} não encontrado neste pedido.`,
+          });
+        }
+      }
+    }
+
+    // O trigger atualizar_saldo valida e movimenta o estoque dentro desta
+    // mesma transação. Qualquer insuficiência desfaz também as edições acima.
+    const result = await client.query(
       "UPDATE pv SET pvconfirmado = 'S', pvrcacod = $2 WHERE pvcod = $1 AND pvconfirmado = 'N' RETURNING *",
-      [pvcod, req.body.pvrcacod]
+      [pvcod, body.pvrcacod]
     );
-    
+
     if (result.rows.length === 0) {
-      return res.status(200).json({ 
+      await client.query("COMMIT");
+      return res.status(200).json({
         message: "Pedido já confirmado.",
-        alreadyConfirmed: true 
+        alreadyConfirmed: true,
       });
     }
-    
+
+    await client.query("COMMIT");
     res.status(200).json(result.rows);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "erro ao confirmar pedido" });
+    if (client) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Erro ao desfazer confirmação do pedido:", rollbackError);
+      }
+    }
+    const mensagem = String(error.message || "");
+    if (mensagem.toLowerCase().includes("estoque insuficiente")) {
+      return res.status(409).json({
+        error: mensagem,
+        tipo: "estoque_insuficiente",
+      });
+    }
+
+    if (
+      mensagem.includes("Quantidade inválida") ||
+      mensagem.includes("Variação de cor inválida")
+    ) {
+      return res.status(400).json({ error: mensagem, tipo: "item_invalido" });
+    }
+
+    console.error("Erro ao confirmar pedido:", error);
+    res.status(500).json({ error: "Erro ao confirmar pedido." });
+  } finally {
+    if (client) client.release();
   }
 };
 
@@ -571,8 +666,9 @@ exports.confirmarItemPv = async (req, res) => {
  * Aceita body: { itens: [{ procod, pviqtde, pviprocorid? }] }
  *
  * Regras de estoque:
- * - Item com cor (pviprocorid): ajusta procor.procorqtde
- * - Item sem cor: ajusta pro.proqtde
+ * - Item em grupo: ajusta o saldo compartilhado e sincroniza todos os membros
+ * - Item com cor fora de grupo: ajusta procor.procorqtde
+ * - Item sem cor fora de grupo: ajusta pro.proqtde
  */
 exports.editarItensPedidoConfirmado = async (req, res) => {
   const pvcod = req.params.pvcod;
@@ -618,7 +714,7 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
         : Number(rawCor);
       const novaQtde = Number(pviqtde);
 
-      if (isNaN(novaQtde) || novaQtde < 0) {
+      if (!Number.isInteger(novaQtde) || novaQtde < 0) {
         await client.query("ROLLBACK");
         return res.status(400).json({ error: `Quantidade inválida para procod ${procod}` });
       }
@@ -647,7 +743,61 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
 
       // Ajusta o estoque: delta > 0 deduz mais; delta < 0 devolve
       if (delta !== 0) {
-        if (pviprocorid !== null) {
+        const grupoResult = await client.query(
+          `SELECT pg.id, pg.name, pg.stock_quantity
+           FROM procor pc
+           JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+           JOIN part_groups pg ON pg.id = pgi.group_id
+           WHERE pc.procorprocod = $1
+             AND pc.procorcorescod IS NOT DISTINCT FROM $2::INTEGER
+           ORDER BY pg.id
+           LIMIT 1
+           FOR UPDATE OF pg`,
+          [procod, pviprocorid],
+        );
+
+        if (grupoResult.rows.length > 0) {
+          const grupo = grupoResult.rows[0];
+          const estoqueAtual = Number(grupo.stock_quantity);
+          if (delta > 0 && estoqueAtual < delta) {
+            await client.query("ROLLBACK");
+            return res.status(400).json({
+              error: `Estoque insuficiente no grupo "${grupo.name}". Disponível: ${estoqueAtual}, Solicitado adicional: ${delta}`,
+              tipo: "estoque_insuficiente",
+            });
+          }
+
+          const novoEstoque = estoqueAtual - delta;
+          await client.query(
+            "UPDATE part_groups SET stock_quantity = $1, updated_at = NOW() WHERE id = $2",
+            [novoEstoque, grupo.id],
+          );
+          await client.query(
+            `UPDATE procor pc
+             SET procorqtde = $1
+             FROM part_group_items pgi
+             WHERE pgi.group_id = $2 AND pgi.procorid = pc.procorid`,
+            [novoEstoque, grupo.id],
+          );
+          await client.query(
+            `UPDATE pro p
+             SET proqtde = $1
+             WHERE EXISTS (
+               SELECT 1
+               FROM part_group_items pgi
+               JOIN procor pc ON pc.procorid = pgi.procorid
+               WHERE pgi.group_id = $2
+                 AND pc.procorprocod = p.procod
+                 AND pc.procorcorescod IS NULL
+             )`,
+            [novoEstoque, grupo.id],
+          );
+          await client.query(
+            `INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+             VALUES ($1, $2, 'Edição de pedido', $3)`,
+            [grupo.id, -delta, String(pvcod)],
+          );
+        } else if (pviprocorid !== null) {
           // Item com cor: opera em procor.procorqtde
           const estoqueResult = await client.query(
             "SELECT COALESCE(procorqtde, 0) AS procorqtde FROM procor WHERE procorprocod = $1 AND procorcorescod = $2 FOR UPDATE",

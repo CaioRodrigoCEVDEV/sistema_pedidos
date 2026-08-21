@@ -276,6 +276,9 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
     if (newBtnConfirm) {
       newBtnConfirm.addEventListener("click", async () => {
         try {
+          newBtnConfirm.disabled = true;
+          newBtnConfirm.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Confirmando...';
+
           // Pega todas as linhas de itens
           const linhas = modalEl.querySelectorAll("tbody tr");
           const itens = [];
@@ -292,24 +295,19 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             }
           });
 
-          // Fluxo de confirmação do pedido:
-          // 1. Confirma cada item do pedido (atualiza quantidades)
-          for (const item of itens) {
-            await confirmarItensPedido(pvcod, item.qtd, item.procod, item.pviprocorid);
-          }
+          // Atualiza os itens, valida o estoque e confirma o pedido em uma única
+          // transação. Se faltar estoque, nenhuma dessas alterações é mantida.
+          await confirmarPedido(pvcod, itens);
 
-          // 2. Confirma o pedido - a saída de estoque é processada automaticamente
-          // pelo trigger de banco de dados (public.atualizar_saldo)
-          await confirmarPedido(pvcod);
-
-          // 4. Fecha o modal ao fim
+          // Fecha o modal somente após a confirmação ter sido concluída.
           const m = bootstrap.Modal.getInstance(modalEl);
           m.hide();
+          window.location.reload();
         } catch (err) {
           console.error("Erro ao confirmar via modal:", err);
-          alert("Erro ao confirmar pedido.");
-        } finally {
-          window.location.reload();
+          alert(err.message || "Erro ao confirmar pedido.");
+          newBtnConfirm.disabled = false;
+          newBtnConfirm.innerHTML = '<i class="bi bi-check-lg me-1"></i>Confirmar';
         }
       });
     }
@@ -456,21 +454,24 @@ async function cancelarPv(pvcod) {
 }
 
 // confirmação de pedidos
-async function confirmarPedido(pvcod) {
-  try {
-    const response = await fetch(`${BASE_URL}/pedidos/confirmar/${pvcod}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        pvrcacod: await buscarUsuario(),
-      }),
-    });
-  } catch (error) {
-    console.error("Erro ao confirmar o pedido:", error);
-    alert("Erro ao confirmar o pedido.");
+async function confirmarPedido(pvcod, itens = null) {
+  const response = await fetch(`${BASE_URL}/pedidos/confirmar/${pvcod}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      pvrcacod: await buscarUsuario(),
+      itens,
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "Erro ao confirmar o pedido.");
   }
+
+  return data;
 }
 
 async function confirmarItensPedido(pvcod, pviqtde, procod, pviprocorid) {
