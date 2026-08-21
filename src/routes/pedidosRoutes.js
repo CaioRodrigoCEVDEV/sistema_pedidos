@@ -72,6 +72,11 @@ router.put(
   autenticarToken,
   pedidosController.cancelarPedido
 );
+router.put(
+  "/pedidos/cancelar",
+  autenticarToken,
+  pedidosController.cancelarPedidos
+);
 router.get(
   "/pedido/detalhe/:pvcod",
   autenticarToken,

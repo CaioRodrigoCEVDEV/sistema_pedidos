@@ -590,16 +590,9 @@ async function atualizarDB() {
 
     `);
 
-    // Trigger function to decrement stock when order is confirmed
-    // IDEMPOTENT: Only executes when pvconfirmado transitions from 'N' to 'S'
-    //
-    // Stock decrement strategy:
-    // 1) Items WITH color (pviprocorid) -> decrement from procor table
-    // 2) Items WITHOUT color and product WITHOUT variations -> decrement from pro.proqtde
-    // 3) Products belonging to a compatibility group (part_groups):
-    //    - Decrement stock for the sold product
-    //    - Decrement stock for ALL members of the same group (shared/compatible parts)
-    //    - Create audit records for traceability
+    // Baixa o estoque somente quando o pedido passa de pendente para confirmado.
+    // O vínculo atual de grupos é part_group_items -> procor. O campo legado
+    // pro.part_group_id não deve ser usado para decidir o estoque compartilhado.
     await pool.query(`
       CREATE OR REPLACE FUNCTION public.atualizar_saldo()
         RETURNS trigger
@@ -607,87 +600,163 @@ async function atualizarDB() {
         AS $function$
         DECLARE
           r RECORD;
-          member_rec RECORD;
-          v_group_id INTEGER;
-          v_qty NUMERIC;
+          v_available NUMERIC;
+          v_group_name TEXT;
+          v_new_stock INTEGER;
         BEGIN
-          -- IDEMPOTENT CHECK: Only execute if transitioning from 'N' to 'S'
-          -- This prevents double stock deductions on re-confirmation attempts
           IF OLD.pvconfirmado = 'N' AND NEW.pvconfirmado = 'S' THEN
-
-            -- 1) Items WITH color -> decrement from procor
-            UPDATE procor pc
-              SET procorqtde = GREATEST(COALESCE(pc.procorqtde, 0) - COALESCE(i.pviqtde, 0), 0)
+            IF EXISTS (
+              SELECT 1
               FROM pvi i
-            WHERE i.pvipvcod      = NEW.pvcod
-              AND i.pviprocorid  IS NOT NULL
-              AND i.pviprocorid   = pc.procorcorescod
-              AND i.pviprocod     = pc.procorprocod;
-
-            -- 2) Items WITHOUT color AND product WITHOUT variations -> decrement from pro.proqtde
-            -- Only for products NOT in a compatibility group (groups are handled separately below)
-            UPDATE pro pr
-              SET proqtde = GREATEST(COALESCE(pr.proqtde, 0) - COALESCE(i.pviqtde, 0), 0)
-              FROM pvi i
-            WHERE i.pvipvcod = NEW.pvcod
-              AND i.pviprocod = pr.procod
-              AND i.pviprocorid IS NULL
-              AND pr.part_group_id IS NULL
-              AND NOT EXISTS (
-                    SELECT 1
-                      FROM procor pc
-                      WHERE pc.procorprocod = pr.procod
-                  );
-
-            -- 3) COMPATIBILITY GROUPS: For products in a group, decrement stock for ALL group members
-            -- This ensures that when product A is sold, the stock of compatible parts B, C, etc.
-            -- in the same group is also decremented.
-            -- 
-            -- Table structure assumed for part_groups:
-            -- - part_groups(id, name, stock_quantity, ...) - main group table
-            -- - pro.part_group_id - FK linking product to a group
-            -- - part_group_audit - audit trail for stock movements
-            -- 
-            -- NOTE: We aggregate quantities by group_id first to handle cases where
-            -- an order contains multiple products from the same group
-            FOR r IN 
-              SELECT 
-                pr.part_group_id,
-                SUM(COALESCE(i.pviqtde, 0)) as total_qty
-              FROM pvi i
-              JOIN pro pr ON pr.procod = i.pviprocod
               WHERE i.pvipvcod = NEW.pvcod
-                AND pr.part_group_id IS NOT NULL
-              GROUP BY pr.part_group_id
+                AND (
+                  COALESCE(i.pviqtde, 0) < 0
+                  OR COALESCE(i.pviqtde, 0) <> TRUNC(COALESCE(i.pviqtde, 0))
+                )
+            ) THEN
+              RAISE EXCEPTION 'Quantidade inválida no pedido %. Use apenas quantidades inteiras e não negativas.', NEW.pvcod;
+            END IF;
+
+            -- Uma cor informada no pedido precisa existir para aquela peça.
+            IF EXISTS (
+              SELECT 1
+              FROM pvi i
+              WHERE i.pvipvcod = NEW.pvcod
+                AND i.pviprocorid IS NOT NULL
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM procor pc
+                  WHERE pc.procorprocod = i.pviprocod
+                    AND pc.procorcorescod = i.pviprocorid
+                )
+            ) THEN
+              RAISE EXCEPTION 'Variação de cor inválida em um dos itens do pedido %.', NEW.pvcod;
+            END IF;
+
+            -- Grupos: soma todos os itens que consomem o mesmo estoque compartilhado,
+            -- bloqueia o grupo, valida e baixa uma única vez.
+            FOR r IN
+              SELECT pgi.group_id, SUM(COALESCE(i.pviqtde, 0)) AS total_qty
+              FROM pvi i
+              JOIN procor sold_pc
+                ON sold_pc.procorprocod = i.pviprocod
+               AND sold_pc.procorcorescod IS NOT DISTINCT FROM i.pviprocorid
+              JOIN part_group_items pgi ON pgi.procorid = sold_pc.procorid
+              WHERE i.pvipvcod = NEW.pvcod
+                AND COALESCE(i.pviqtde, 0) > 0
+              GROUP BY pgi.group_id
+              ORDER BY pgi.group_id
             LOOP
-              v_group_id := r.part_group_id;
-              v_qty := r.total_qty;
+              SELECT pg.stock_quantity, pg.name
+                INTO v_available, v_group_name
+              FROM part_groups pg
+              WHERE pg.id = r.group_id
+              FOR UPDATE;
 
-              -- Update the group's shared stock_quantity
-              UPDATE part_groups 
-              SET stock_quantity = GREATEST(stock_quantity - v_qty, 0),
-                  updated_at = NOW()
-              WHERE id = v_group_id;
+              IF NOT FOUND THEN
+                RAISE EXCEPTION 'Grupo de estoque % não encontrado.', r.group_id;
+              END IF;
 
-              -- Decrement stock for ALL members of the compatibility group
-              -- This includes both the sold product and all other compatible parts
-              FOR member_rec IN
-                SELECT procod, prodes
-                FROM pro
-                WHERE part_group_id = v_group_id
-              LOOP
-                -- Decrement the individual product stock (pro.proqtde)
-                UPDATE pro
-                SET proqtde = GREATEST(COALESCE(proqtde, 0) - v_qty, 0)
-                WHERE procod = member_rec.procod;
+              IF v_available < r.total_qty THEN
+                RAISE EXCEPTION 'Estoque insuficiente no grupo "%". Disponível: %, Solicitado: %',
+                  v_group_name, v_available, r.total_qty;
+              END IF;
 
-                -- Create audit record for each member affected
-                -- reference_id stores the product code (procod) for frontend display
-                INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
-                VALUES (v_group_id, -v_qty, 'sale', member_rec.procod::text);
-              END LOOP;
+              v_new_stock := v_available::INTEGER - r.total_qty::INTEGER;
+
+              UPDATE part_groups
+              SET stock_quantity = v_new_stock, updated_at = NOW()
+              WHERE id = r.group_id;
+
+              -- Todas as variações do grupo refletem exatamente o saldo compartilhado.
+              UPDATE procor pc
+              SET procorqtde = v_new_stock
+              FROM part_group_items pgi
+              WHERE pgi.group_id = r.group_id
+                AND pgi.procorid = pc.procorid;
+
+              -- Peças sem cor são exibidas pelo saldo de pro.proqtde no catálogo.
+              UPDATE pro pr
+              SET proqtde = v_new_stock
+              WHERE EXISTS (
+                SELECT 1
+                FROM part_group_items pgi
+                JOIN procor pc ON pc.procorid = pgi.procorid
+                WHERE pgi.group_id = r.group_id
+                  AND pc.procorprocod = pr.procod
+                  AND pc.procorcorescod IS NULL
+              );
+
+              INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+              VALUES (r.group_id, -r.total_qty::INTEGER, 'Venda', NEW.pvcod::TEXT);
             END LOOP;
 
+            -- Variações com cor que não pertencem a grupo usam procor.procorqtde.
+            FOR r IN
+              SELECT pc.procorid, p.prodes, SUM(COALESCE(i.pviqtde, 0)) AS total_qty
+              FROM pvi i
+              JOIN pro p ON p.procod = i.pviprocod
+              JOIN procor pc
+                ON pc.procorprocod = i.pviprocod
+               AND pc.procorcorescod = i.pviprocorid
+              WHERE i.pvipvcod = NEW.pvcod
+                AND i.pviprocorid IS NOT NULL
+                AND COALESCE(i.pviqtde, 0) > 0
+                AND NOT EXISTS (
+                  SELECT 1 FROM part_group_items pgi WHERE pgi.procorid = pc.procorid
+                )
+              GROUP BY pc.procorid, p.prodes
+              ORDER BY pc.procorid
+            LOOP
+              SELECT COALESCE(pc.procorqtde, 0)
+                INTO v_available
+              FROM procor pc
+              WHERE pc.procorid = r.procorid
+              FOR UPDATE;
+
+              IF v_available < r.total_qty THEN
+                RAISE EXCEPTION 'Estoque insuficiente para a peça "%". Disponível: %, Solicitado: %',
+                  r.prodes, v_available, r.total_qty;
+              END IF;
+
+              UPDATE procor
+              SET procorqtde = procorqtde - r.total_qty
+              WHERE procorid = r.procorid;
+            END LOOP;
+
+            -- Peças sem cor e sem grupo usam pro.proqtde.
+            FOR r IN
+              SELECT p.procod, p.prodes, SUM(COALESCE(i.pviqtde, 0)) AS total_qty
+              FROM pvi i
+              JOIN pro p ON p.procod = i.pviprocod
+              WHERE i.pvipvcod = NEW.pvcod
+                AND i.pviprocorid IS NULL
+                AND COALESCE(i.pviqtde, 0) > 0
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM procor pc
+                  JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+                  WHERE pc.procorprocod = i.pviprocod
+                    AND pc.procorcorescod IS NULL
+                )
+              GROUP BY p.procod, p.prodes
+              ORDER BY p.procod
+            LOOP
+              SELECT COALESCE(p.proqtde, 0)
+                INTO v_available
+              FROM pro p
+              WHERE p.procod = r.procod
+              FOR UPDATE;
+
+              IF v_available < r.total_qty THEN
+                RAISE EXCEPTION 'Estoque insuficiente para a peça "%". Disponível: %, Solicitado: %',
+                  r.prodes, v_available, r.total_qty;
+              END IF;
+
+              UPDATE pro
+              SET proqtde = proqtde - r.total_qty
+              WHERE procod = r.procod;
+            END LOOP;
           END IF;
 
           RETURN NEW;
@@ -696,9 +765,7 @@ async function atualizarDB() {
   
     `);
 
-    // Trigger function to return stock when a confirmed order is cancelled
-    // IDEMPOTENT: Only executes when pvsta transitions to 'X' for a confirmed order
-    // Mirrors the logic of atualizar_saldo but returns stock instead of decrementing
+    // Devolve o estoque usando a mesma resolução peça/cor/grupo da aprovação.
     await pool.query(`
       CREATE OR REPLACE FUNCTION public.retornar_saldo()
         RETURNS trigger
@@ -706,77 +773,86 @@ async function atualizarDB() {
         AS $function$
         DECLARE
           r RECORD;
-          member_rec RECORD;
-          v_group_id INTEGER;
-          v_qty NUMERIC;
+          v_new_stock INTEGER;
         BEGIN
-          -- Only return stock if the order was confirmed AND is being cancelled
-          -- Check that we're transitioning from non-cancelled to cancelled state
           IF OLD.pvsta <> 'X' AND NEW.pvsta = 'X' AND NEW.pvconfirmado = 'S' THEN
-
-            -- 1) Items WITH color -> return to procor
-            UPDATE procor pc
-              SET procorqtde = COALESCE(pc.procorqtde, 0) + COALESCE(i.pviqtde, 0)
+            FOR r IN
+              SELECT pgi.group_id, SUM(COALESCE(i.pviqtde, 0)) AS total_qty
               FROM pvi i
-            WHERE i.pvipvcod      = NEW.pvcod
-              AND i.pviprocorid  IS NOT NULL
-              AND i.pviprocorid   = pc.procorcorescod
-              AND i.pviprocod     = pc.procorprocod;
-
-            -- 2) Items WITHOUT color AND product WITHOUT variations -> return to pro.proqtde
-            -- Only for products NOT in a compatibility group (groups are handled separately)
-            UPDATE pro pr
-              SET proqtde = COALESCE(pr.proqtde, 0) + COALESCE(i.pviqtde, 0)
-              FROM pvi i
-            WHERE i.pvipvcod = NEW.pvcod
-              AND i.pviprocod = pr.procod
-              AND i.pviprocorid IS NULL
-              AND pr.part_group_id IS NULL
-              AND NOT EXISTS (
-                    SELECT 1
-                      FROM procor pc
-                      WHERE pc.procorprocod = pr.procod
-                  );
-
-            -- 3) COMPATIBILITY GROUPS: Return stock for ALL members of the group
-            -- NOTE: We aggregate quantities by group_id first to handle cases where
-            -- an order contains multiple products from the same group
-            FOR r IN 
-              SELECT 
-                pr.part_group_id,
-                SUM(COALESCE(i.pviqtde, 0)) as total_qty
-              FROM pvi i
-              JOIN pro pr ON pr.procod = i.pviprocod
+              JOIN procor sold_pc
+                ON sold_pc.procorprocod = i.pviprocod
+               AND sold_pc.procorcorescod IS NOT DISTINCT FROM i.pviprocorid
+              JOIN part_group_items pgi ON pgi.procorid = sold_pc.procorid
               WHERE i.pvipvcod = NEW.pvcod
-                AND pr.part_group_id IS NOT NULL
-              GROUP BY pr.part_group_id
+                AND COALESCE(i.pviqtde, 0) > 0
+              GROUP BY pgi.group_id
+              ORDER BY pgi.group_id
             LOOP
-              v_group_id := r.part_group_id;
-              v_qty := r.total_qty;
+              SELECT pg.stock_quantity + r.total_qty::INTEGER
+                INTO v_new_stock
+              FROM part_groups pg
+              WHERE pg.id = r.group_id
+              FOR UPDATE;
 
-              -- Return stock to the group's shared stock_quantity
-              UPDATE part_groups 
-              SET stock_quantity = stock_quantity + v_qty,
-                  updated_at = NOW()
-              WHERE id = v_group_id;
+              UPDATE part_groups
+              SET stock_quantity = v_new_stock, updated_at = NOW()
+              WHERE id = r.group_id;
 
-              -- Return stock to ALL members of the compatibility group
-              FOR member_rec IN
-                SELECT procod, prodes
-                FROM pro
-                WHERE part_group_id = v_group_id
-              LOOP
-                -- Return the individual product stock (pro.proqtde)
-                UPDATE pro
-                SET proqtde = COALESCE(proqtde, 0) + v_qty
-                WHERE procod = member_rec.procod;
+              UPDATE procor pc
+              SET procorqtde = v_new_stock
+              FROM part_group_items pgi
+              WHERE pgi.group_id = r.group_id
+                AND pgi.procorid = pc.procorid;
 
-                -- Create audit record for each member affected
-                INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
-                VALUES (v_group_id, v_qty, 'Cancelado', member_rec.procod::text);
-              END LOOP;
+              UPDATE pro pr
+              SET proqtde = v_new_stock
+              WHERE EXISTS (
+                SELECT 1
+                FROM part_group_items pgi
+                JOIN procor pc ON pc.procorid = pgi.procorid
+                WHERE pgi.group_id = r.group_id
+                  AND pc.procorprocod = pr.procod
+                  AND pc.procorcorescod IS NULL
+              );
+
+              INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
+              VALUES (r.group_id, r.total_qty::INTEGER, 'Cancelado', NEW.pvcod::TEXT);
             END LOOP;
 
+            UPDATE procor pc
+            SET procorqtde = COALESCE(pc.procorqtde, 0) + sold.total_qty
+            FROM (
+              SELECT pc2.procorid, SUM(COALESCE(i.pviqtde, 0)) AS total_qty
+              FROM pvi i
+              JOIN procor pc2
+                ON pc2.procorprocod = i.pviprocod
+               AND pc2.procorcorescod = i.pviprocorid
+              WHERE i.pvipvcod = NEW.pvcod
+                AND i.pviprocorid IS NOT NULL
+                AND NOT EXISTS (
+                  SELECT 1 FROM part_group_items pgi WHERE pgi.procorid = pc2.procorid
+                )
+              GROUP BY pc2.procorid
+            ) sold
+            WHERE pc.procorid = sold.procorid;
+
+            UPDATE pro pr
+            SET proqtde = COALESCE(pr.proqtde, 0) + sold.total_qty
+            FROM (
+              SELECT i.pviprocod, SUM(COALESCE(i.pviqtde, 0)) AS total_qty
+              FROM pvi i
+              WHERE i.pvipvcod = NEW.pvcod
+                AND i.pviprocorid IS NULL
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM procor pc
+                  JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+                  WHERE pc.procorprocod = i.pviprocod
+                    AND pc.procorcorescod IS NULL
+                )
+              GROUP BY i.pviprocod
+            ) sold
+            WHERE pr.procod = sold.pviprocod;
           END IF;
 
           RETURN NEW;

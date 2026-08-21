@@ -39,8 +39,43 @@ exports.listarProduto = async (req, res) => {
 };
 
 exports.listarProdutos = async (req, res) => {
-  try {
-    const result = await pool.query(`
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const pageSize = Math.min(
+    Math.max(parseInt(req.query.pageSize, 10) || 20, 1),
+    200
+  );
+  const q = (req.query.q || "").trim();
+  const marca = parseIntegerParam(req.query.marca);
+  const modelo = parseIntegerParam(req.query.modelo);
+  const tipo = parseIntegerParam(req.query.tipo);
+
+  const paginado = req.query.page !== undefined || req.query.pageSize !== undefined;
+  const off = (page - 1) * pageSize;
+
+  const filters = [];
+  const params = [];
+
+  if (marca !== null) {
+    params.push(marca);
+    filters.push(`promarcascod = $${params.length}`);
+  }
+  if (tipo !== null) {
+    params.push(tipo);
+    filters.push(`protipocod = $${params.length}`);
+  }
+  if (modelo !== null) {
+    params.push(modelo);
+    filters.push(
+      `(promodcod = $${params.length} OR EXISTS (SELECT 1 FROM promod WHERE promodprocod = pro.procod AND promodmodcod = $${params.length}))`
+    );
+  }
+  if (q) {
+    params.push(`%${q}%`);
+    filters.push(`prodes ILIKE $${params.length}`);
+  }
+  const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+
+  const select = `
       select 
       procod,
       tipodes,
@@ -57,7 +92,29 @@ exports.listarProdutos = async (req, res) => {
       from pro
       join tipo on tipocod = protipocod
       join marcas on promarcascod = marcascod and marcassit = 'A'
-      order by procod desc`);
+      ${where}`;
+
+  try {
+    if (paginado) {
+      const countResult = await pool.query(
+        `select count(*) from pro ${where}`,
+        params
+      );
+      const total = parseInt(countResult.rows[0].count, 10);
+
+      const result = await pool.query(
+        `${select}
+        order by procod desc
+        limit $${params.length + 1} offset $${params.length + 2}`,
+        [...params, pageSize, off]
+      );
+
+      return res
+        .status(200)
+        .json({ page, pageSize, total, data: result.rows });
+    }
+
+    const result = await pool.query(`${select} order by procod desc`);
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -219,13 +276,17 @@ exports.editarProduto = async (req, res) => {
   const { prodes, provl, procusto, prosemest, promodcod, proacabando } =
     req.body;
   const produtoId = parseIntegerParam(req.params.id);
-  const modeloId = parseIntegerParam(promodcod);
+  const modeloFoiInformado = Object.prototype.hasOwnProperty.call(
+    req.body,
+    "promodcod",
+  );
+  const modeloId = modeloFoiInformado ? parseIntegerParam(promodcod) : null;
 
   if (produtoId === null) {
     return res.status(400).json({ error: "Produto invalido ou nao informado" });
   }
 
-  if (modeloId === null) {
+  if (modeloFoiInformado && modeloId === null) {
     return res.status(400).json({ error: "Modelo invalido ou nao informado" });
   }
 
@@ -233,28 +294,51 @@ exports.editarProduto = async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // Atualizar dados do produto, incluindo o modelo principal
-    const result = await client.query(
-      `UPDATE pro 
-         SET prodes = $1, 
-             provl = $2, 
-             procusto = $3,
-             prosemest = $4, 
-             proacabando = $5,
-             promodcod = $6
-       WHERE procod = $7
-       RETURNING *`,
-      [prodes, provl, procusto, prosemest, proacabando, modeloId, produtoId],
-    );
+    let modeloAtual = null;
+    if (modeloFoiInformado) {
+      const produtoAtual = await client.query(
+        `SELECT promodcod FROM pro WHERE procod = $1`,
+        [produtoId],
+      );
+      if (produtoAtual.rows.length > 0) {
+        modeloAtual = produtoAtual.rows[0].promodcod;
+      }
+    }
 
-    // Atualizar tabela promod (relacionamento)
-    await client.query(`DELETE FROM promod WHERE promodprocod = $1`, [produtoId]);
-    await client.query(
-      `INSERT INTO promod (promodprocod, promodmodcod)
-         VALUES ($1, $2)
-         ON CONFLICT DO NOTHING`,
-      [produtoId, modeloId],
-    );
+    const updateQuery = modeloFoiInformado
+      ? `UPDATE pro 
+           SET prodes = $1, 
+               provl = $2, 
+               procusto = $3,
+               prosemest = $4, 
+               proacabando = $5,
+               promodcod = $6
+         WHERE procod = $7
+         RETURNING *`
+      : `UPDATE pro 
+           SET prodes = $1, 
+               provl = $2, 
+               procusto = $3,
+               prosemest = $4, 
+               proacabando = $5
+         WHERE procod = $6
+         RETURNING *`;
+
+    const updateParams = modeloFoiInformado
+      ? [prodes, provl, procusto, prosemest, proacabando, modeloId, produtoId]
+      : [prodes, provl, procusto, prosemest, proacabando, produtoId];
+
+    const result = await client.query(updateQuery, updateParams);
+
+    if (modeloFoiInformado && modeloAtual !== modeloId) {
+      await client.query(`DELETE FROM promod WHERE promodprocod = $1`, [produtoId]);
+      await client.query(
+        `INSERT INTO promod (promodprocod, promodmodcod)
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+        [produtoId, modeloId],
+      );
+    }
 
     await client.query("COMMIT");
     res.status(200).json(result.rows);

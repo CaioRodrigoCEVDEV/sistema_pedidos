@@ -521,6 +521,12 @@ async function addProcorToGroup(procorid, groupId) {
         `UPDATE procor SET procorqtde = $1 WHERE procorid = $2`,
         [group.stock_quantity, procorid],
       );
+      if (procor.procorcorescod === null) {
+        await client.query(
+          `UPDATE pro SET proqtde = $1 WHERE procod = $2`,
+          [group.stock_quantity, procor.procorprocod],
+        );
+      }
       finalQtde = group.stock_quantity;
     }
 
@@ -644,6 +650,10 @@ async function addProcorToGroupByProcod(procod, groupId) {
       await client.query(
         `UPDATE procor SET procorqtde = $1 WHERE procorid = $2`,
         [group.stock_quantity, procorid],
+      );
+      await client.query(
+        `UPDATE pro SET proqtde = $1 WHERE procod = $2`,
+        [group.stock_quantity, procod],
       );
       finalQtde = group.stock_quantity;
     }
@@ -1027,7 +1037,7 @@ async function updateGroupStock(
 
 /**
  * Atualiza o estoque de TODAS as variações procor vinculadas a um grupo via part_group_items.
- * Também atualiza proqtde dos produtos correspondentes.
+ * Para itens sem cor, também sincroniza pro.proqtde, que é o saldo exibido no catálogo.
  *
  * @param {number} groupId - ID do grupo
  * @param {number} quantity - Nova quantidade para todas as variações
@@ -1046,6 +1056,22 @@ async function updateAllPartsStockInGroup(groupId, quantity) {
       SET procorqtde = $1
       FROM part_group_items pgi
       WHERE pgi.group_id = $2 AND pgi.procorid = pc.procorid
+    `,
+      [quantity, groupId],
+    );
+
+    await client.query(
+      `
+      UPDATE pro p
+      SET proqtde = $1
+      WHERE EXISTS (
+        SELECT 1
+        FROM part_group_items pgi
+        JOIN procor pc ON pc.procorid = pgi.procorid
+        WHERE pgi.group_id = $2
+          AND pc.procorprocod = p.procod
+          AND pc.procorcorescod IS NULL
+      )
     `,
       [quantity, groupId],
     );
