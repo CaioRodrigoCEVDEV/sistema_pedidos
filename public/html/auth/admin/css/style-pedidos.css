@@ -1,19 +1,48 @@
 .tabela-scroll,
-.table-scroll {
+.table-scroll,
+.scroll-tabela {
   max-height: 300px; /* altura aproximada para 5 linhas */
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto; /* tabela larga rola dentro do card, sem estourar a página no mobile */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* melhora o visual da barra de rolagem */
 .tabela-scroll::-webkit-scrollbar,
-.table-scroll::-webkit-scrollbar {
+.table-scroll::-webkit-scrollbar,
+.scroll-tabela::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 .tabela-scroll::-webkit-scrollbar-thumb,
-.table-scroll::-webkit-scrollbar-thumb {
+.table-scroll::-webkit-scrollbar-thumb,
+.scroll-tabela::-webkit-scrollbar-thumb {
   background-color: #ccc;
   border-radius: 4px;
+}
+
+/* impede que as colunas/tabela empurrem o conteúdo para fora da tela no mobile */
+.scroll-tabela .table {
+  margin-bottom: 0;
+}
+
+.scroll-tabela {
+  min-width: 0;
+}
+
+@media (max-width: 767.98px) {
+  .row.g-3 > [class*="col"],
+  .row.g-3 > .col,
+  .card {
+    min-width: 0;
+  }
+  .card-title {
+    flex-wrap: wrap;
+  }
+  .card-title .btn {
+    white-space: normal;
+    min-width: 0;
+  }
 }
 
