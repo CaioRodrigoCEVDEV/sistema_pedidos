@@ -158,8 +158,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       const data = await fetchReleasesFromAPI();
-      // Filtrar apenas as 2 releases mais recentes (assumindo que a API retorna em ordem decrescente)
-      const latestReleases = data.slice(0, 2);
+      // Mostrar apenas a última release (assumindo que a API retorna em ordem decrescente)
+      const latestReleases = data.slice(0, 1);
       releasesData = latestReleases.map(r => ({
         id: r.id ?? 0,
         tag_name: r.tag_name || '',
