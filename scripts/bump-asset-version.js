@@ -1,12 +1,16 @@
 // Bump da versão de cache-busting em todas as referências locais de CSS/JS.
 //
 // Uso:
-//   node scripts/bump-asset-version.js            -> usa a data atual (YYYY.MM.DD)
+//   node scripts/bump-asset-version.js            -> usa data + hora atual (YYYY.MM.DD.HHmmss)
 //   node scripts/bump-asset-version.js 2026.09.01 -> força uma versão específica
 //
 // Para cada <link href="..."> e <script src="..."> local (.css/.js), garante
 // que exista um ?v=<versao> no final da URL. Referências externas/CDN são
 // ignoradas. Rode a cada release antes de commitar.
+//
+// A versão inclui a hora para que duas alterações no mesmo dia gerem URLs
+// diferentes (evita servir assets em cache antigos quando há mais de um
+// release no mesmo dia).
 const fs = require("fs");
 const path = require("path");
 
@@ -19,7 +23,9 @@ const RE_REF = /(href|src)="([^"]+?\.(?:css|js))(?:\?[^"]*)?"/g;
 function hoje() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(
+    d.getDate()
+  )}.${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
 
 function isExternal(url) {
