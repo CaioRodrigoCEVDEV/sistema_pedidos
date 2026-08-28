@@ -435,7 +435,17 @@
             style="display: none"
           >
             <div class="pecas-modal-filters">
-              <h6 class="pecas-filters-heading">🔎 Filtros</h6>
+              <h6 class="pecas-filters-heading">
+                <span class="pecas-filters-heading-text">🔎 Filtros</span>
+                <button
+                  type="button"
+                  class="pecas-filters-toggle"
+                  aria-expanded="false"
+                  aria-label="Mostrar filtros"
+                >
+                  <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+              </h6>
               <div class="pecas-filters-inner">
                 <div class="pecas-filter-item pecas-filter-busca">
                   <label class="pecas-filter-label" for="marcasBusca"
@@ -477,16 +487,6 @@
                 <tbody id="listaMarcas"></tbody>
               </table>
             </div>
-            <div class="pecas-modal-footer">
-              <small class="pecas-total-info text-muted" id="infoTotalMarcas"></small>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                onclick="fecharPopupGestao(this, 'areaMarcas')"
-              >
-                Fechar
-              </button>
-            </div>
           </div>
           <div
             id="areaModelos"
@@ -494,7 +494,17 @@
             style="display: none"
           >
             <div class="pecas-modal-filters">
-              <h6 class="pecas-filters-heading">🔎 Filtros</h6>
+              <h6 class="pecas-filters-heading">
+                <span class="pecas-filters-heading-text">🔎 Filtros</span>
+                <button
+                  type="button"
+                  class="pecas-filters-toggle"
+                  aria-expanded="false"
+                  aria-label="Mostrar filtros"
+                >
+                  <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+              </h6>
               <div class="pecas-filters-inner">
                 <div class="pecas-filter-item">
                   <label class="pecas-filter-label" for="filtroModeloGestao"
@@ -546,16 +556,6 @@
                 <tbody id="listaModelos"></tbody>
               </table>
             </div>
-            <div class="pecas-modal-footer">
-              <small class="pecas-total-info text-muted" id="infoTotalModelos"></small>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                onclick="fecharPopupGestao(this, 'areaModelos')"
-              >
-                Fechar
-              </button>
-            </div>
           </div>
           <div
             id="areaTipos"
@@ -563,7 +563,17 @@
             style="display: none"
           >
             <div class="pecas-modal-filters">
-              <h6 class="pecas-filters-heading">🔎 Filtros</h6>
+              <h6 class="pecas-filters-heading">
+                <span class="pecas-filters-heading-text">🔎 Filtros</span>
+                <button
+                  type="button"
+                  class="pecas-filters-toggle"
+                  aria-expanded="false"
+                  aria-label="Mostrar filtros"
+                >
+                  <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+              </h6>
               <div class="pecas-filters-inner">
                 <div class="pecas-filter-item pecas-filter-busca">
                   <label class="pecas-filter-label" for="tiposBusca"
@@ -605,16 +615,6 @@
                 <tbody id="listaTipos"></tbody>
               </table>
             </div>
-            <div class="pecas-modal-footer">
-              <small class="pecas-total-info text-muted" id="infoTotalTipos"></small>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                onclick="fecharPopupGestao(this, 'areaTipos')"
-              >
-                Fechar
-              </button>
-            </div>
           </div>
           <div
             id="areaCores"
@@ -622,7 +622,17 @@
             style="display: none"
           >
             <div class="pecas-modal-filters">
-              <h6 class="pecas-filters-heading">🔎 Filtros</h6>
+              <h6 class="pecas-filters-heading">
+                <span class="pecas-filters-heading-text">🔎 Filtros</span>
+                <button
+                  type="button"
+                  class="pecas-filters-toggle"
+                  aria-expanded="false"
+                  aria-label="Mostrar filtros"
+                >
+                  <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+              </h6>
               <div class="pecas-filters-inner">
                 <div class="pecas-filter-item pecas-filter-busca">
                   <label class="pecas-filter-label" for="coresBusca"
@@ -664,16 +674,6 @@
                 <tbody id="listaCores"></tbody>
               </table>
             </div>
-            <div class="pecas-modal-footer">
-              <small class="pecas-total-info text-muted" id="infoTotalCores"></small>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                onclick="fecharPopupGestao(this, 'areaCores')"
-              >
-                Fechar
-              </button>
-            </div>
           </div>
           <div
             class="management-area pecas-modal-sections"
@@ -681,7 +681,17 @@
             style="display: none"
           >
             <div class="pecas-modal-filters">
-              <h6 class="pecas-filters-heading">🔎 Filtros</h6>
+              <h6 class="pecas-filters-heading">
+                <span class="pecas-filters-heading-text">🔎 Filtros</span>
+                <button
+                  type="button"
+                  class="pecas-filters-toggle"
+                  aria-expanded="false"
+                  aria-label="Mostrar filtros"
+                >
+                  <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+              </h6>
               <div class="pecas-filters-inner">
                 <div class="pecas-filter-item">
                   <label class="pecas-filter-label" for="filtroMarcaPeca"
@@ -755,34 +765,6 @@
                 </thead>
                 <tbody id="corpoTabela"></tbody>
               </table>
-            </div>
-
-            <div class="pecas-modal-footer">
-              <small class="text-muted" id="infoTotalPecas"></small>
-              <div class="pecas-paginacao">
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary btn-sm"
-                  id="btnPaginaAnterior"
-                >
-                  Anterior
-                </button>
-                <small id="infoPaginaPecas" class="text-muted"></small>
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary btn-sm"
-                  id="btnPaginaProxima"
-                >
-                  Próxima
-                </button>
-              </div>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                onclick="fecharPopupPecas(this)"
-              >
-                Fechar
-              </button>
             </div>
           </div>
         </div>
