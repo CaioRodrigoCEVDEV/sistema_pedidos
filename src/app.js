@@ -16,8 +16,28 @@ const { requestTimingMiddleware } = require("./middlewares/performanceMiddleware
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Páginas HTML sempre revalidadas (no-cache), para o navegador buscar o HTML
+// novo a cada release e carregar os assets com ?v= atualizados.
+const sendFileOriginal = express.response.sendFile;
+express.response.sendFile = function (filePath, options, callback) {
+  if (typeof filePath === "string" && filePath.endsWith(".html")) {
+    this.set("Cache-Control", "no-cache, no-store, must-revalidate");
+  }
+  return sendFileOriginal.call(this, filePath, options, callback);
+};
+
 // Middleware para servir arquivos estáticos (inclui uploads)
-app.use(express.static(path.join(__dirname, "../public")));
+// Assets têm cache curto (as URLs mudam via ?v= a cada release).
+app.use(
+  express.static(path.join(__dirname, "../public"), {
+    maxAge: "7d",
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".html")) {
+        res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+      }
+    },
+  })
+);
 app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // <-- pasta onde salva imagens
 
 // Middlewares
