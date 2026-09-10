@@ -1,6 +1,42 @@
 const pool = require("../config/db");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
 
+// No catalogo, o estoque do grupo de compatibilidade e a fonte da verdade.
+// Para produtos com variacoes, o produto fica disponivel se ao menos uma
+// variacao estiver disponivel. Variacoes fora de grupo preservam o controle
+// manual existente por procorsemest.
+const disponibilidadeProdutoSql = `
+  CASE
+    WHEN EXISTS (
+      SELECT 1 FROM procor pc_existente
+      WHERE pc_existente.procorprocod = pro.procod
+    ) THEN
+      CASE WHEN EXISTS (
+        SELECT 1
+        FROM procor pc_disponivel
+        WHERE pc_disponivel.procorprocod = pro.procod
+          AND (
+            EXISTS (
+              SELECT 1
+              FROM part_group_items pgi_disponivel
+              JOIN part_groups pg_disponivel
+                ON pg_disponivel.id = pgi_disponivel.group_id
+              WHERE pgi_disponivel.procorid = pc_disponivel.procorid
+                AND COALESCE(pg_disponivel.stock_quantity, 0) > 0
+            )
+            OR (
+              NOT EXISTS (
+                SELECT 1 FROM part_group_items pgi_vinculo
+                WHERE pgi_vinculo.procorid = pc_disponivel.procorid
+              )
+              AND COALESCE(TRIM(pc_disponivel.procorsemest), 'N') <> 'S'
+            )
+          )
+      ) THEN 'N' ELSE 'S' END
+    ELSE COALESCE(TRIM(pro.prosemest), 'N')
+  END
+`;
+
 exports.listarProduto = async (req, res) => {
   const tipoId = parseIntegerParam(req.params.id);
   const marcaId = parseIntegerParam(req.query.marca);
@@ -22,7 +58,8 @@ exports.listarProduto = async (req, res) => {
     // Busca produtos que estão vinculados ao modelo pela nova tabela promod
     // ou pelo campo legado promodcod (para compatibilidade)
     const result = await pool.query(
-      `select distinct procod, prodes, provl,procusto, tipodes, prosemest, proordem from pro 
+      `select distinct procod, prodes, provl, procusto, tipodes,
+        ${disponibilidadeProdutoSql} as prosemest, proordem from pro
         join tipo on tipocod = protipocod
         left join promod on promodprocod = procod
         where promarcascod = $1 
@@ -83,6 +120,7 @@ exports.listarProdutos = async (req, res) => {
       case when prodes is null then '' else prodes end as prodes, 
       case when provl is null then 0 else provl end as provl,
       case when procusto is null then 0 else procusto end as procusto,
+      ${disponibilidadeProdutoSql} as prosemest,
       (
         SELECT string_agg(m.moddes, ', ' ORDER BY m.moddes)
         FROM promod pm
@@ -397,7 +435,24 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `select procod, prodes, provl, tipodes, corcod, case when cornome is null then '' else cornome end as cornome, procorsemest from pro
+      `select procod, prodes, provl, tipodes, corcod,
+        case when cornome is null then '' else cornome end as cornome,
+        CASE
+          WHEN procor.procorid IS NULL THEN COALESCE(TRIM(pro.prosemest), 'N')
+          WHEN EXISTS (
+            SELECT 1 FROM part_group_items pgi_vinculo
+            WHERE pgi_vinculo.procorid = procor.procorid
+          ) THEN
+            CASE WHEN EXISTS (
+              SELECT 1
+              FROM part_group_items pgi_estoque
+              JOIN part_groups pg_estoque ON pg_estoque.id = pgi_estoque.group_id
+              WHERE pgi_estoque.procorid = procor.procorid
+                AND COALESCE(pg_estoque.stock_quantity, 0) > 0
+            ) THEN 'N' ELSE 'S' END
+          ELSE COALESCE(TRIM(procor.procorsemest), 'N')
+        END AS procorsemest
+        from pro
         join tipo on tipocod = protipocod
         left join procor on procorprocod = procod
         left join cores on corcod = procorcorescod 

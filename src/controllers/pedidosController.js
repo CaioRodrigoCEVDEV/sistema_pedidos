@@ -163,14 +163,14 @@ exports.listarPv = async (req, res) => {
       `       
         select 
             pvcod,
-            pvvl,
+            COALESCE(SUM(COALESCE(pviqtde, 0) * COALESCE(pvivl, 0)), 0) AS pvvl,
             pvobs,
             pvcanal,
             pvconfirmado,
             pvsta,
             pvipvcod,
             pvrcacod,
-            sum(pvivl) as pvvltotal,
+            COALESCE(SUM(COALESCE(pviqtde, 0) * COALESCE(pvivl, 0)), 0) AS pvvltotal,
             usunome
             from pv 
             left join pvi on pvipvcod = pvcod
@@ -181,7 +181,6 @@ exports.listarPv = async (req, res) => {
             and pviprocod is not null 
             group by 
             pvcod,
-            pvvl,
             pvobs,
             pvcanal,
             pvconfirmado,
@@ -307,14 +306,14 @@ exports.listarPvConfirmados = async (req, res) => {
     const result = await pool.query(
       ` SELECT 
         pv.pvcod,
-        pv.pvvl,
+        COALESCE(SUM(COALESCE(pvi.pviqtde, 0) * COALESCE(pvi.pvivl, 0)), 0) AS pvvl,
         pv.pvobs,
         pv.pvcanal,
         pv.pvconfirmado,
         pv.pvsta,
         pvipvcod,
         pv.pvrcacod,
-        SUM(pvi.pvivl) AS pvvltotal,
+        COALESCE(SUM(COALESCE(pvi.pviqtde, 0) * COALESCE(pvi.pvivl, 0)), 0) AS pvvltotal,
         usu.usunome
     FROM pv
     LEFT JOIN pvi ON pvipvcod = pvcod
@@ -331,7 +330,6 @@ exports.listarPvConfirmados = async (req, res) => {
     AND pv.pvdtcad BETWEEN $3 AND $4
     GROUP BY 
     pv.pvcod,
-    pv.pvvl,
     pv.pvobs,
     pv.pvcanal,
     pv.pvconfirmado,
@@ -363,14 +361,14 @@ exports.listarPvPendentes = async (req, res) => {
     const result = await pool.query(
       ` SELECT 
         pv.pvcod,
-        pv.pvvl,
+        COALESCE(SUM(COALESCE(pvi.pviqtde, 0) * COALESCE(pvi.pvivl, 0)), 0) AS pvvl,
         pv.pvobs,
         pv.pvcanal,
         pv.pvconfirmado,
         pv.pvsta,
         pvipvcod,
         pv.pvrcacod,
-        SUM(pvi.pvivl) AS pvvltotal,
+        COALESCE(SUM(COALESCE(pvi.pviqtde, 0) * COALESCE(pvi.pvivl, 0)), 0) AS pvvltotal,
         usu.usunome
     FROM pv
     LEFT JOIN pvi ON pvipvcod = pvcod
@@ -387,7 +385,6 @@ exports.listarPvPendentes = async (req, res) => {
     AND pv.pvdtcad BETWEEN $3 AND $4
     GROUP BY 
     pv.pvcod,
-    pv.pvvl,
     pv.pvobs,
     pv.pvcanal,
     pv.pvconfirmado,
@@ -498,6 +495,17 @@ exports.confirmarPedido = async (req, res) => {
         }
       }
     }
+
+    await client.query(
+      `UPDATE pv
+       SET pvvl = COALESCE((
+         SELECT SUM(COALESCE(i.pviqtde, 0) * COALESCE(i.pvivl, 0))
+         FROM pvi i
+         WHERE i.pvipvcod = pv.pvcod
+       ), 0)
+       WHERE pvcod = $1`,
+      [pvcod],
+    );
 
     // O trigger atualizar_saldo valida e movimenta o estoque dentro desta
     // mesma transação. Qualquer insuficiência desfaz também as edições acima.
@@ -749,8 +757,13 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
            JOIN part_group_items pgi ON pgi.procorid = pc.procorid
            JOIN part_groups pg ON pg.id = pgi.group_id
            WHERE pc.procorprocod = $1
-             AND pc.procorcorescod IS NOT DISTINCT FROM $2::INTEGER
-           ORDER BY pg.id
+             AND (
+               pc.procorcorescod IS NOT DISTINCT FROM $2::INTEGER
+               OR ($2::INTEGER IS NULL AND pc.procorcorescod = 0)
+             )
+           ORDER BY
+             CASE WHEN pc.procorcorescod IS NOT DISTINCT FROM $2::INTEGER THEN 0 ELSE 1 END,
+             pg.id
            LIMIT 1
            FOR UPDATE OF pg`,
           [procod, pviprocorid],
@@ -861,8 +874,26 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
       resultadoItens.push(updateResult.rows[0]);
     }
 
+    // pvivl representa o preco unitario. Ao alterar a quantidade, recalcula o
+    // valor do cabecalho usado na tabela de pedidos finalizados.
+    const totalResult = await client.query(
+      `UPDATE pv
+       SET pvvl = COALESCE((
+         SELECT SUM(COALESCE(i.pviqtde, 0) * COALESCE(i.pvivl, 0))
+         FROM pvi i
+         WHERE i.pvipvcod = pv.pvcod
+       ), 0)
+       WHERE pvcod = $1
+       RETURNING pvvl`,
+      [pvcod],
+    );
+
     await client.query("COMMIT");
-    res.status(200).json({ message: "Pedido editado com sucesso", itens: resultadoItens });
+    res.status(200).json({
+      message: "Pedido editado com sucesso",
+      itens: resultadoItens,
+      total: totalResult.rows[0]?.pvvl ?? 0,
+    });
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Erro ao editar pedido confirmado:", error);

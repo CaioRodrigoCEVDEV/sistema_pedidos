@@ -144,6 +144,96 @@ async function run() {
     assert(aggregateError, "A soma 9 deve ser recusada para um grupo com estoque 8");
     assert.match(aggregateError.message, /Disponível: 8, Solicitado: 9/);
 
+    // Compatibilidade com cadastros antigos: algumas peças sem cor foram
+    // gravadas com procorcorescod = 0, enquanto o pedido envia NULL.
+    const legacyGroupResult = await client.query(
+      `INSERT INTO part_groups (name, stock_quantity)
+       VALUES ('Teste grupo legado cor zero', 2)
+       RETURNING id`,
+    );
+    const legacyGroupId = legacyGroupResult.rows[0].id;
+    const legacyPart = await createPart(client, "Teste legado cor zero", 2);
+    const legacyProcorResult = await client.query(
+      `INSERT INTO procor (procorprocod, procorcorescod, procorqtde, procorsemest)
+       VALUES ($1, 0, 2, 'N')
+       RETURNING procorid`,
+      [legacyPart],
+    );
+    await client.query(
+      "INSERT INTO part_group_items (group_id, procorid) VALUES ($1, $2)",
+      [legacyGroupId, legacyProcorResult.rows[0].procorid],
+    );
+
+    const legacyOrder = await createOrder(client, [
+      { procod: legacyPart, quantity: 2, colorId: null },
+    ]);
+    await client.query(
+      "UPDATE pv SET pvconfirmado = 'S' WHERE pvcod = $1",
+      [legacyOrder],
+    );
+    const legacyState = await client.query(
+      `SELECT pg.stock_quantity, pc.procorqtde,
+              TRIM(pc.procorsemest) AS procorsemest,
+              p.proqtde, TRIM(p.prosemest) AS prosemest
+       FROM part_groups pg
+       JOIN part_group_items pgi ON pgi.group_id = pg.id
+       JOIN procor pc ON pc.procorid = pgi.procorid
+       JOIN pro p ON p.procod = pc.procorprocod
+       WHERE pg.id = $1`,
+      [legacyGroupId],
+    );
+    assert.strictEqual(Number(legacyState.rows[0].stock_quantity), 0);
+    assert.strictEqual(Number(legacyState.rows[0].procorqtde), 0);
+    assert.strictEqual(Number(legacyState.rows[0].proqtde), 0);
+    assert.strictEqual(legacyState.rows[0].procorsemest, "S");
+    assert.strictEqual(legacyState.rows[0].prosemest, "S");
+
+    // Produto com cor real: o grupo e a quantidade da cor devem zerar juntos.
+    const colorResult = await client.query(
+      "SELECT corcod FROM cores WHERE corcod > 0 ORDER BY corcod LIMIT 1",
+    );
+    assert(colorResult.rows.length > 0, "O teste precisa de uma cor cadastrada");
+    const colorId = colorResult.rows[0].corcod;
+    const colorGroupResult = await client.query(
+      `INSERT INTO part_groups (name, stock_quantity)
+       VALUES ('Teste grupo com cor', 3)
+       RETURNING id`,
+    );
+    const colorGroupId = colorGroupResult.rows[0].id;
+    const coloredPart = await createPart(client, "Teste grupo com cor", 0);
+    const coloredProcorResult = await client.query(
+      `INSERT INTO procor (procorprocod, procorcorescod, procorqtde, procorsemest)
+       VALUES ($1, $2, 3, 'N')
+       RETURNING procorid`,
+      [coloredPart, colorId],
+    );
+    await client.query(
+      "INSERT INTO part_group_items (group_id, procorid) VALUES ($1, $2)",
+      [colorGroupId, coloredProcorResult.rows[0].procorid],
+    );
+    const coloredOrder = await createOrder(client, [
+      { procod: coloredPart, quantity: 3, colorId },
+    ]);
+    await client.query(
+      "UPDATE pv SET pvconfirmado = 'S' WHERE pvcod = $1",
+      [coloredOrder],
+    );
+    const coloredState = await client.query(
+      `SELECT pg.stock_quantity, pc.procorqtde,
+              TRIM(pc.procorsemest) AS procorsemest,
+              TRIM(p.prosemest) AS prosemest
+       FROM part_groups pg
+       JOIN part_group_items pgi ON pgi.group_id = pg.id
+       JOIN procor pc ON pc.procorid = pgi.procorid
+       JOIN pro p ON p.procod = pc.procorprocod
+       WHERE pg.id = $1`,
+      [colorGroupId],
+    );
+    assert.strictEqual(Number(coloredState.rows[0].stock_quantity), 0);
+    assert.strictEqual(Number(coloredState.rows[0].procorqtde), 0);
+    assert.strictEqual(coloredState.rows[0].procorsemest, "S");
+    assert.strictEqual(coloredState.rows[0].prosemest, "S");
+
     await client.query("ROLLBACK");
     console.log("✅ aprovacaoEstoqueGrupo.integration.test.js passou");
   } catch (error) {

@@ -244,15 +244,22 @@ inputPesquisa.addEventListener("input", function () {
           const item = document.createElement("div");
           item.className = "cart-item";
           item.dataset.preco = peca.provl;
+          const isDisabled = peca.prosemest === "S";
           item.innerHTML = `
             <div class="item-name">${peca.prodes}</div>
             <div class="item-tipo">${peca.tipodes}</div>
             <div class="item-marca">${peca.marcasdes}</div>
-            <div class="item-price">${formatarMoeda(
-              peca.provl
-            )} <button class="btn btn-success btn-sm btn-add" onclick="adicionarAoCarrinho('${
-            peca.procod
-          }')">Adicionar</button></div>
+            <div class="item-price">${formatarMoeda(peca.provl)}
+              <button class="${
+                isDisabled
+                  ? "btn btn-danger btn-sm btn-add"
+                  : "btn btn-success btn-sm btn-add"
+              }" ${
+                isDisabled
+                  ? 'disabled title="Em Falta"'
+                  : `onclick="adicionarAoCarrinho('${peca.procod}')"`
+              }>${isDisabled ? "Em Falta" : "Adicionar"}</button>
+            </div>
 
           `;
           corpoTabela.appendChild(item);

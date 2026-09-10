@@ -703,6 +703,55 @@ async function addPartToGroup(partId, groupId, colorId = null) {
     }
 
     const group = groupResult.rows[0];
+    let selectedColor = null;
+
+    // Compatibilidade com a API antiga: quando uma cor e informada, tambem
+    // cria o vinculo atual via part_group_items. Se o grupo ainda esta zerado,
+    // o estoque inicial vem da variacao escolhida.
+    if (colorId !== null && colorId !== undefined) {
+      const colorResult = await client.query(
+        `SELECT pc.procorid, pc.procorqtde, pc.procorcorescod,
+                c.cornome, c.corhex
+         FROM procor pc
+         LEFT JOIN cores c ON c.corcod = pc.procorcorescod
+         WHERE pc.procorprocod = $1 AND pc.procorcorescod = $2
+         LIMIT 1`,
+        [partId, colorId],
+      );
+
+      if (colorResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+
+      selectedColor = colorResult.rows[0];
+      await client.query(
+        `INSERT INTO part_group_items (group_id, procorid)
+         VALUES ($1, $2)
+         ON CONFLICT (group_id, procorid) DO NOTHING`,
+        [groupId, selectedColor.procorid],
+      );
+
+      if (Number(group.stock_quantity) === 0 && Number(selectedColor.procorqtde) > 0) {
+        group.stock_quantity = Number(selectedColor.procorqtde);
+        await client.query(
+          `UPDATE part_groups
+           SET stock_quantity = $1, updated_at = NOW()
+           WHERE id = $2`,
+          [group.stock_quantity, groupId],
+        );
+        await client.query(
+          `INSERT INTO part_group_audit (part_group_id, change, reason)
+           VALUES ($1, $2, 'colored_part_added')`,
+          [groupId, group.stock_quantity],
+        );
+      } else {
+        await client.query(
+          "UPDATE procor SET procorqtde = $1 WHERE procorid = $2",
+          [group.stock_quantity, selectedColor.procorid],
+        );
+      }
+    }
 
     let updateQuery;
     let updateParams;
@@ -710,19 +759,19 @@ async function addPartToGroup(partId, groupId, colorId = null) {
     if (group.grpcusto !== null && group.grpcusto !== undefined) {
       updateQuery = `
         UPDATE pro 
-        SET part_group_id = $1, procusto = $2
-        WHERE procod = $3
+        SET part_group_id = $1, procusto = $2, proqtde = $3
+        WHERE procod = $4
         RETURNING procod, prodes, part_group_id, proqtde
       `;
-      updateParams = [groupId, group.grpcusto, partId];
+      updateParams = [groupId, group.grpcusto, group.stock_quantity, partId];
     } else {
       updateQuery = `
         UPDATE pro 
-        SET part_group_id = $1
-        WHERE procod = $2
+        SET part_group_id = $1, proqtde = $2
+        WHERE procod = $3
         RETURNING procod, prodes, part_group_id, proqtde
       `;
-      updateParams = [groupId, partId];
+      updateParams = [groupId, group.stock_quantity, partId];
     }
 
     const result = await client.query(updateQuery, updateParams);
@@ -733,7 +782,7 @@ async function addPartToGroup(partId, groupId, colorId = null) {
     }
 
     await client.query("COMMIT");
-    return part;
+    return selectedColor ? { ...part, selected_color: selectedColor } : part;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -1049,8 +1098,25 @@ async function updateAllPartsStockInGroup(groupId, quantity) {
   try {
     await client.query("BEGIN");
 
+    const membersResult = await client.query(
+      `
+      SELECT COUNT(DISTINCT membros.procod)::INTEGER AS total
+      FROM (
+        SELECT pc.procorprocod AS procod
+        FROM part_group_items pgi
+        JOIN procor pc ON pc.procorid = pgi.procorid
+        WHERE pgi.group_id = $1
+        UNION
+        SELECT p.procod
+        FROM pro p
+        WHERE p.part_group_id = $1
+      ) membros
+    `,
+      [groupId],
+    );
+
     // Atualiza procorqtde de todas as variações vinculadas ao grupo
-    const updateResult = await client.query(
+    await client.query(
       `
       UPDATE procor pc
       SET procorqtde = $1
@@ -1070,8 +1136,9 @@ async function updateAllPartsStockInGroup(groupId, quantity) {
         JOIN procor pc ON pc.procorid = pgi.procorid
         WHERE pgi.group_id = $2
           AND pc.procorprocod = p.procod
-          AND pc.procorcorescod IS NULL
+          AND COALESCE(pc.procorcorescod, 0) = 0
       )
+      OR p.part_group_id = $2
     `,
       [quantity, groupId],
     );
@@ -1080,7 +1147,7 @@ async function updateAllPartsStockInGroup(groupId, quantity) {
 
     return {
       success: true,
-      partsUpdated: updateResult.rowCount,
+      partsUpdated: Number(membersResult.rows[0]?.total || 0),
     };
   } catch (error) {
     await client.query("ROLLBACK");

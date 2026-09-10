@@ -75,6 +75,9 @@ app.use(coresRoutes);
 const pedidosRoutes = require("./routes/pedidosRoutes");
 app.use(pedidosRoutes);
 
+const devolucoesRoutes = require("./routes/devolucoesRoutes");
+app.use(devolucoesRoutes);
+
 const estoqueRoutes = require("./routes/estoqueRoutes");
 app.use(estoqueRoutes);
 
@@ -152,6 +155,11 @@ app.get("/painel", autenticarToken, (req, res) => {
 app.get("/pedidos", requireAdminPv, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-pedidos.html")
+  );
+});
+app.get("/devolucoes", requireAdminPv, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-devolucoes.html")
   );
 });
 app.get("/estoque", requireAdminEst, (req, res) => {

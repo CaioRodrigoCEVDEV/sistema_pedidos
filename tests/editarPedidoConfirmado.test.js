@@ -165,6 +165,13 @@ async function runTests() {
     // delta = 1 - 3 = -2  →  proqtde = 10 - (-2) = 12
     assertEqual(Number(r.rows[0].proqtde), 12, "proqtde deve ser 12");
 
+    const pedidoAtualizado = await pool.query(
+      "SELECT pvvl FROM pv WHERE pvcod = $1",
+      [pvcod]
+    );
+    assertEqual(Number(pedidoAtualizado.rows[0].pvvl), 50, "Total do pedido deve ser recalculado para 50");
+    assertEqual(Number(resp.body.total), 50, "Resposta deve retornar o novo total");
+
     await cleanup(pvcod, [procod]);
   });
 

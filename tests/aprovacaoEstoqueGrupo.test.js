@@ -113,8 +113,18 @@ function testTriggerUsesCurrentGroupRelationship() {
   );
   assert.match(
     source,
-    /pc\.procorcorescod IS NULL[\s\S]*SET proqtde = v_new_stock/,
+    /COALESCE\(pc\.procorcorescod, 0\) = 0[\s\S]*SET proqtde = v_new_stock/,
     "Peças sem cor também devem refletir o estoque compartilhado",
+  );
+  assert.match(
+    source,
+    /i\.pviprocorid IS NULL AND pc_resolvida\.procorcorescod = 0/,
+    "Cadastros antigos que usam cor 0 devem consumir o mesmo estoque de grupo",
+  );
+  assert.match(
+    source,
+    /CREATE TRIGGER trg_sincronizar_estoque_grupo[\s\S]*AFTER UPDATE OF stock_quantity ON part_groups/,
+    "Alterar o saldo do grupo deve propagar automaticamente para as peças",
   );
 }
 
@@ -129,6 +139,9 @@ async function testConfirmationIsAtomic() {
       }
       if (sql.startsWith("UPDATE pvi")) {
         return { rows: [{ pviprocod: 10 }] };
+      }
+      if (sql.startsWith("UPDATE pv SET pvvl")) {
+        return { rows: [] };
       }
       if (sql.startsWith("UPDATE pv SET pvconfirmado")) {
         return { rows: [{ pvcod: 123, pvconfirmado: "S" }] };
@@ -145,6 +158,7 @@ async function testConfirmationIsAtomic() {
   const statements = queries.map(({ sql }) => sql);
   assert.strictEqual(statements[0], "BEGIN");
   assert.ok(statements.some((sql) => sql.startsWith("UPDATE pvi")));
+  assert.ok(statements.some((sql) => sql.startsWith("UPDATE pv SET pvvl")));
   assert.ok(statements.some((sql) => sql.startsWith("UPDATE pv SET pvconfirmado")));
   assert.ok(statements.indexOf("COMMIT") > statements.findIndex((sql) => sql.startsWith("UPDATE pv SET pvconfirmado")));
   assert.strictEqual(statements.at(-1), "RELEASE");
@@ -159,6 +173,9 @@ async function testInsufficientStockRollsBackApproval() {
       }
       if (sql.startsWith("UPDATE pvi")) {
         return { rows: [{ pviprocod: 10 }] };
+      }
+      if (sql.startsWith("UPDATE pv SET pvvl")) {
+        return { rows: [] };
       }
       if (sql.startsWith("UPDATE pv SET pvconfirmado")) {
         throw new Error(

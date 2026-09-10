@@ -324,6 +324,43 @@ async function atualizarDB() {
       );
     `);
 
+    // Devolucoes sao registradas separadamente para preservar a venda
+    // original e permitir devolucoes parciais com rastreabilidade.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.devolucoes (
+        devcod BIGSERIAL PRIMARY KEY,
+        devpvcod INT4 NOT NULL REFERENCES public.pv(pvcod),
+        devdtcad TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        devusucod INT4 NULL,
+        devmotivo VARCHAR(80) NOT NULL,
+        devobs VARCHAR(254) NULL,
+        devsta BPCHAR(1) NOT NULL DEFAULT 'A',
+        CONSTRAINT devolucoes_status_check CHECK (devsta IN ('A', 'X'))
+      );
+
+      CREATE TABLE IF NOT EXISTS public.devolucao_itens (
+        devicod BIGSERIAL PRIMARY KEY,
+        devidevcod BIGINT NOT NULL REFERENCES public.devolucoes(devcod) ON DELETE CASCADE,
+        deviprocod INT4 NOT NULL,
+        deviprocorid INT4 NULL,
+        deviqtde INT4 NOT NULL,
+        devivl NUMERIC(14, 4) NOT NULL DEFAULT 0,
+        deviprodes VARCHAR(254) NOT NULL,
+        devicornome VARCHAR(80) NULL,
+        devirepor_estoque BOOLEAN NOT NULL DEFAULT TRUE,
+        CONSTRAINT devolucao_itens_qtde_check CHECK (deviqtde > 0)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_devolucoes_pedido
+        ON public.devolucoes(devpvcod);
+      CREATE INDEX IF NOT EXISTS idx_devolucoes_data
+        ON public.devolucoes(devdtcad DESC);
+      CREATE INDEX IF NOT EXISTS idx_devolucao_itens_busca
+        ON public.devolucao_itens(deviprocod, deviprocorid);
+      CREATE INDEX IF NOT EXISTS idx_devolucao_itens_devolucao
+        ON public.devolucao_itens(devidevcod);
+    `);
+
     //Estrutura para cadastro de clientes:
 
     await pool.query(`
@@ -638,9 +675,20 @@ async function atualizarDB() {
             FOR r IN
               SELECT pgi.group_id, SUM(COALESCE(i.pviqtde, 0)) AS total_qty
               FROM pvi i
-              JOIN procor sold_pc
-                ON sold_pc.procorprocod = i.pviprocod
-               AND sold_pc.procorcorescod IS NOT DISTINCT FROM i.pviprocorid
+              JOIN LATERAL (
+                SELECT pc_resolvida.procorid
+                FROM procor pc_resolvida
+                WHERE pc_resolvida.procorprocod = i.pviprocod
+                  AND (
+                    pc_resolvida.procorcorescod IS NOT DISTINCT FROM i.pviprocorid
+                    OR (i.pviprocorid IS NULL AND pc_resolvida.procorcorescod = 0)
+                  )
+                ORDER BY
+                  CASE WHEN pc_resolvida.procorcorescod IS NOT DISTINCT FROM i.pviprocorid
+                    THEN 0 ELSE 1 END,
+                  pc_resolvida.procorid
+                LIMIT 1
+              ) sold_pc ON TRUE
               JOIN part_group_items pgi ON pgi.procorid = sold_pc.procorid
               WHERE i.pvipvcod = NEW.pvcod
                 AND COALESCE(i.pviqtde, 0) > 0
@@ -684,7 +732,7 @@ async function atualizarDB() {
                 JOIN procor pc ON pc.procorid = pgi.procorid
                 WHERE pgi.group_id = r.group_id
                   AND pc.procorprocod = pr.procod
-                  AND pc.procorcorescod IS NULL
+                  AND COALESCE(pc.procorcorescod, 0) = 0
               );
 
               INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
@@ -737,7 +785,7 @@ async function atualizarDB() {
                   FROM procor pc
                   JOIN part_group_items pgi ON pgi.procorid = pc.procorid
                   WHERE pc.procorprocod = i.pviprocod
-                    AND pc.procorcorescod IS NULL
+                    AND COALESCE(pc.procorcorescod, 0) = 0
                 )
               GROUP BY p.procod, p.prodes
               ORDER BY p.procod
@@ -779,9 +827,20 @@ async function atualizarDB() {
             FOR r IN
               SELECT pgi.group_id, SUM(COALESCE(i.pviqtde, 0)) AS total_qty
               FROM pvi i
-              JOIN procor sold_pc
-                ON sold_pc.procorprocod = i.pviprocod
-               AND sold_pc.procorcorescod IS NOT DISTINCT FROM i.pviprocorid
+              JOIN LATERAL (
+                SELECT pc_resolvida.procorid
+                FROM procor pc_resolvida
+                WHERE pc_resolvida.procorprocod = i.pviprocod
+                  AND (
+                    pc_resolvida.procorcorescod IS NOT DISTINCT FROM i.pviprocorid
+                    OR (i.pviprocorid IS NULL AND pc_resolvida.procorcorescod = 0)
+                  )
+                ORDER BY
+                  CASE WHEN pc_resolvida.procorcorescod IS NOT DISTINCT FROM i.pviprocorid
+                    THEN 0 ELSE 1 END,
+                  pc_resolvida.procorid
+                LIMIT 1
+              ) sold_pc ON TRUE
               JOIN part_group_items pgi ON pgi.procorid = sold_pc.procorid
               WHERE i.pvipvcod = NEW.pvcod
                 AND COALESCE(i.pviqtde, 0) > 0
@@ -812,7 +871,7 @@ async function atualizarDB() {
                 JOIN procor pc ON pc.procorid = pgi.procorid
                 WHERE pgi.group_id = r.group_id
                   AND pc.procorprocod = pr.procod
-                  AND pc.procorcorescod IS NULL
+                  AND COALESCE(pc.procorcorescod, 0) = 0
               );
 
               INSERT INTO part_group_audit (part_group_id, change, reason, reference_id)
@@ -848,7 +907,7 @@ async function atualizarDB() {
                   FROM procor pc
                   JOIN part_group_items pgi ON pgi.procorid = pc.procorid
                   WHERE pc.procorprocod = i.pviprocod
-                    AND pc.procorcorescod IS NULL
+                    AND COALESCE(pc.procorcorescod, 0) = 0
                 )
               GROUP BY i.pviprocod
             ) sold
@@ -881,7 +940,7 @@ async function atualizarDB() {
       $$ LANGUAGE plpgsql;
 
     `);
-   await pool.query(`
+    await pool.query(`
       CREATE OR REPLACE FUNCTION fn_marcar_procorsemest()
       RETURNS TRIGGER AS $$
       BEGIN
@@ -895,6 +954,81 @@ async function atualizarDB() {
       END;
       $$ LANGUAGE plpgsql;
 
+    `);
+
+    // Qualquer alteracao no saldo principal do grupo e propagada para os seus
+    // membros. Assim, part_groups.stock_quantity permanece a fonte da verdade
+    // mesmo quando o grupo for atualizado por uma nova tela ou integracao.
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION fn_sincronizar_estoque_grupo()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        UPDATE procor pc
+        SET procorqtde = NEW.stock_quantity
+        FROM part_group_items pgi
+        WHERE pgi.group_id = NEW.id
+          AND pgi.procorid = pc.procorid;
+
+        UPDATE pro pr
+        SET proqtde = NEW.stock_quantity
+        WHERE EXISTS (
+          SELECT 1
+          FROM part_group_items pgi
+          JOIN procor pc ON pc.procorid = pgi.procorid
+          WHERE pgi.group_id = NEW.id
+            AND pc.procorprocod = pr.procod
+            AND COALESCE(pc.procorcorescod, 0) = 0
+        );
+
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+
+    // Mantem o indicador geral da peca coerente com as variacoes. Para uma
+    // variacao agrupada, a disponibilidade vem diretamente do estoque do grupo.
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION fn_sincronizar_prosemest_por_cor()
+      RETURNS TRIGGER AS $$
+      DECLARE
+        v_procod INTEGER;
+      BEGIN
+        IF TG_OP = 'DELETE' THEN
+          v_procod := OLD.procorprocod;
+        ELSE
+          v_procod := NEW.procorprocod;
+        END IF;
+
+        UPDATE pro pr
+        SET prosemest = CASE WHEN EXISTS (
+          SELECT 1
+          FROM procor pc
+          WHERE pc.procorprocod = v_procod
+            AND (
+              EXISTS (
+                SELECT 1
+                FROM part_group_items pgi
+                JOIN part_groups pg ON pg.id = pgi.group_id
+                WHERE pgi.procorid = pc.procorid
+                  AND COALESCE(pg.stock_quantity, 0) > 0
+              )
+              OR (
+                NOT EXISTS (
+                  SELECT 1 FROM part_group_items pgi
+                  WHERE pgi.procorid = pc.procorid
+                )
+                AND COALESCE(TRIM(pc.procorsemest), 'N') <> 'S'
+              )
+            )
+        ) THEN 'N' ELSE 'S' END
+        WHERE pr.procod = v_procod;
+
+        IF TG_OP = 'DELETE' THEN
+          RETURN OLD;
+        END IF;
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
     `);
 
 
@@ -941,7 +1075,88 @@ async function atualizarDB() {
         FOR EACH ROW
         EXECUTE PROCEDURE fn_marcar_procorsemest();
 
+        DROP TRIGGER IF EXISTS trg_sincronizar_estoque_grupo ON part_groups;
+        CREATE TRIGGER trg_sincronizar_estoque_grupo
+        AFTER UPDATE OF stock_quantity ON part_groups
+        FOR EACH ROW
+        WHEN (OLD.stock_quantity IS DISTINCT FROM NEW.stock_quantity)
+        EXECUTE PROCEDURE fn_sincronizar_estoque_grupo();
+
+        DROP TRIGGER IF EXISTS trg_sincronizar_prosemest_por_cor ON procor;
+        CREATE TRIGGER trg_sincronizar_prosemest_por_cor
+        AFTER INSERT OR DELETE OR UPDATE OF procorqtde, procorsemest ON procor
+        FOR EACH ROW
+        EXECUTE PROCEDURE fn_sincronizar_prosemest_por_cor();
+
         
+    `);
+
+    // Reconcilia cadastros anteriores usando o grupo como fonte da verdade.
+    // Depois desta migracao, toda alteracao de stock_quantity sera propagada
+    // automaticamente pelo trigger trg_sincronizar_estoque_grupo.
+    await pool.query(`
+      UPDATE procor pc
+      SET procorqtde = pg.stock_quantity
+      FROM part_group_items pgi
+      JOIN part_groups pg ON pg.id = pgi.group_id
+      WHERE pgi.procorid = pc.procorid
+        AND pc.procorqtde IS DISTINCT FROM pg.stock_quantity;
+
+      UPDATE pro pr
+      SET proqtde = pg.stock_quantity
+      FROM part_group_items pgi
+      JOIN procor pc ON pc.procorid = pgi.procorid
+      JOIN part_groups pg ON pg.id = pgi.group_id
+      WHERE pc.procorprocod = pr.procod
+        AND COALESCE(pc.procorcorescod, 0) = 0
+        AND pr.proqtde IS DISTINCT FROM pg.stock_quantity;
+    `);
+
+    // Corrige os indicadores atuais. Isso faz grupos que ja estao zerados
+    // aparecerem imediatamente como indisponiveis.
+    await pool.query(`
+      UPDATE pro pr
+      SET prosemest = CASE WHEN EXISTS (
+        SELECT 1
+        FROM procor pc
+        WHERE pc.procorprocod = pr.procod
+          AND (
+            EXISTS (
+              SELECT 1
+              FROM part_group_items pgi
+              JOIN part_groups pg ON pg.id = pgi.group_id
+              WHERE pgi.procorid = pc.procorid
+                AND COALESCE(pg.stock_quantity, 0) > 0
+            )
+            OR (
+              NOT EXISTS (
+                SELECT 1 FROM part_group_items pgi
+                WHERE pgi.procorid = pc.procorid
+              )
+              AND COALESCE(TRIM(pc.procorsemest), 'N') <> 'S'
+            )
+          )
+      ) THEN 'N' ELSE 'S' END
+      WHERE EXISTS (
+        SELECT 1 FROM procor pc_existente
+        WHERE pc_existente.procorprocod = pr.procod
+      );
+    `);
+
+    // pvivl e o preco unitario; mantem o total persistido coerente com as
+    // quantidades atuais, inclusive para pedidos editados antes desta correcao.
+    await pool.query(`
+      UPDATE pv pedido
+      SET pvvl = totais.total
+      FROM (
+        SELECT pv_base.pvcod,
+               COALESCE(SUM(COALESCE(i.pviqtde, 0) * COALESCE(i.pvivl, 0)), 0) AS total
+        FROM pv pv_base
+        LEFT JOIN pvi i ON i.pvipvcod = pv_base.pvcod
+        GROUP BY pv_base.pvcod
+      ) totais
+      WHERE pedido.pvcod = totais.pvcod
+        AND pedido.pvvl IS DISTINCT FROM totais.total;
     `);
     //fim das triggers
 
