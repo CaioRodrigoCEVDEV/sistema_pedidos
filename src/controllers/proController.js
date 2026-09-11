@@ -3,6 +3,7 @@ const { parseIntegerParam } = require("../utils/parseIntegerParam");
 const {
   disponibilidadeProdutoSql,
 } = require("../utils/disponibilidadeProdutoSql");
+const catalogoCache = require("../utils/catalogoCache");
 
 exports.listarProduto = async (req, res) => {
   const tipoId = parseIntegerParam(req.params.id);
@@ -246,6 +247,7 @@ exports.inserirProduto = async (req, res) => {
 
     await client.query("COMMIT");
 
+    catalogoCache.invalidate();
     res.status(200).json(result.rows[0]);
   } catch (error) {
     await client.query("ROLLBACK");
@@ -267,6 +269,7 @@ exports.excluirProduto = async (req, res) => {
   try {
     const result = await pool.query("delete from pro where procod = $1", [produtoId]);
     if (result.rowCount > 0) {
+      catalogoCache.invalidate();
       res.status(200).json({ message: "Produto excluído com sucesso" });
     } else {
       res.status(404).json({ error: "Produto não encontrado" });
@@ -346,6 +349,7 @@ exports.editarProduto = async (req, res) => {
     }
 
     await client.query("COMMIT");
+    catalogoCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     await client.query("ROLLBACK");
@@ -468,6 +472,7 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
       `insert into procor (procorprocod,procorcorescod,procorsemest) values($1,$2,$3) RETURNING *`,
       [id, req.query.corescod, procorsemest],
     );
+    catalogoCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -536,6 +541,7 @@ exports.deletarProdutoCoresDisponiveis = async (req, res) => {
       `delete from procor where procorprocod = $1 and procorcorescod = $2 RETURNING *`,
       [id, corescod],
     );
+    catalogoCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -557,6 +563,7 @@ exports.alterarProdutoCoresDisponiveis = async (req, res) => {
         req.query.corescod,
       ],
     );
+    catalogoCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -582,6 +589,7 @@ exports.atualizarOrdemProdutos = async (req, res) => {
       [ids, ordens]
     );
 
+    catalogoCache.invalidate();
     return res.status(200).json({ message: "Ordem atualizada com sucesso!" });
   } catch (error) {
     console.error("Erro ao atualizar ordem:", error);
@@ -680,6 +688,7 @@ exports.gravarEstoqueProduto = async (req, res) => {
       ]);
     }
 
+    catalogoCache.invalidate();
     res.json({ sucesso: true });
   } catch (err) {
     console.error(err);

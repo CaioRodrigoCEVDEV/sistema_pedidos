@@ -1,9 +1,23 @@
 const proModels = require("../models/proModels");
+const catalogoCache = require("../utils/catalogoCache");
 
 exports.listarTodosProdutos = async (req, res) => {
   try {
-    const result = await proModels.listarTodosProdutos();
-    res.status(200).json(result);
+    let entry = catalogoCache.get();
+
+    if (!entry) {
+      const result = await proModels.listarTodosProdutos();
+      entry = catalogoCache.set(result);
+    }
+
+    res.set("ETag", entry.etag);
+    res.set("Cache-Control", "private, max-age=0, must-revalidate");
+
+    if (req.headers["if-none-match"] === entry.etag) {
+      return res.status(304).end();
+    }
+
+    res.type("application/json").status(200).send(entry.body);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao buscar produtos" });
