@@ -38,6 +38,11 @@ router.get(
   pedidosController.listarPvBalcaoNow
 );
 router.get(
+  "/pedidos/vendaNow",
+  autenticarToken,
+  pedidosController.listarPvVendaNow
+);
+router.get(
   "/pedidos/entregaNow",
   autenticarToken,
   pedidosController.listarPvEntregaNow
