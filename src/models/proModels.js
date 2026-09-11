@@ -1,5 +1,8 @@
 const pool = require("../config/db");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
+const {
+  disponibilidadeProdutoSql,
+} = require("../utils/disponibilidadeProdutoSql");
 
 function parseOptionalInventoryFilter(value) {
   if (typeof value === "string") {
@@ -26,6 +29,8 @@ async function listarTodosProdutos() {
           WHERE pm.promodprocod = pro.procod
         ) as moddes,
         tipodes,
+        case when provl is null then 0 else provl end as provl,
+        ${disponibilidadeProdutoSql} as prosemest,
         coalesce(cornome, 'Sem Cor') as cordes,
         case when procorcorescod is null then proqtde else procorqtde end as qtde,
         procorcorescod
