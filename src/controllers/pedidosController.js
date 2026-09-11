@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const partGroupModels = require("../models/partGroupModels");
+const catalogoCache = require("../utils/catalogoCache");
 
 exports.sequencia = async (req, res) => {
   try {
@@ -535,6 +536,7 @@ exports.confirmarPedido = async (req, res) => {
     }
 
     await client.query("COMMIT");
+    catalogoCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     if (client) {
@@ -576,6 +578,7 @@ exports.cancelarPedido = async (req, res) => {
       "update pv set pvsta = 'X' where pvcod = $1 RETURNING *",
       [pvcod]
     );
+    catalogoCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -595,6 +598,7 @@ exports.cancelarPedidos = async (req, res) => {
       "UPDATE pv SET pvsta = 'X' WHERE pvcod = ANY($1) RETURNING *",
       [pvcods]
     );
+    catalogoCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -901,6 +905,7 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
     );
 
     await client.query("COMMIT");
+    catalogoCache.invalidate();
     res.status(200).json({
       message: "Pedido editado com sucesso",
       itens: resultadoItens,

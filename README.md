@@ -63,6 +63,8 @@ DB_POOL_IDLE_TIMEOUT_MS=30000
 DB_POOL_CONNECTION_TIMEOUT_MS=5000
 # Timeout de statement por query (ms) — previne queries travadas
 DB_STATEMENT_TIMEOUT_MS=30000
+# TTL (ms) do cache em memória do catálogo usado por GET /v2/pros (0 = desabilitado)
+CATALOGO_CACHE_TTL_MS=30000
 
 # ─── Instrumentação de Performance ─────────────────────────────────────────────
 # Habilita log de tempo por request: método, rota, status e duração
