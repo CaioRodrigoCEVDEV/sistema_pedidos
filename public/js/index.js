@@ -218,7 +218,7 @@ inputPesquisa.addEventListener("input", function () {
   }
 
   if (usuarioLogado) {
-    fetch(`${BASE_URL}/pros`)
+    fetch(`${BASE_URL}/v2/pros`, { credentials: "include" })
       .then((res) => res.json())
       .then((pecas) => {
         const filtrados = pecas.filter(
