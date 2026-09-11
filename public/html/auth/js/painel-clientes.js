@@ -71,7 +71,9 @@ const cobPedido = qs("cobPedido");
 const pedidoDrawer = qs("pedidoDrawer");
 const pedidoDrawerTitulo = qs("pedidoDrawerTitulo");
 const pedidoDrawerSubtitulo = qs("pedidoDrawerSubtitulo");
+const pedidoDrawerStatus = qs("pedidoDrawerStatus");
 const pedidoDrawerConteudo = qs("pedidoDrawerConteudo");
+const pedidoDrawerRodape = qs("pedidoDrawerRodape");
 const vincularDrawer = qs("vincularDrawer");
 const alertaTelefone = qs("alertaTelefone");
 
@@ -656,28 +658,38 @@ async function carregarMovimentacoes(id) {
   try {
     const lista = await api(`/cli/${id}/movimentacoes`);
     if (!lista.length) {
-      movLista.innerHTML = '<div class="ficha-vazio">Nenhuma movimentação registrada.</div>';
+      movLista.innerHTML = `
+        <div class="ficha-vazio">
+          <i class="fa-solid fa-receipt fs-3 d-block mb-2 text-muted"></i>
+          <div class="fw-semibold text-dark">Nenhuma movimentação</div>
+          <div class="small">Créditos, débitos e ajustes aparecerão aqui.</div>
+        </div>`;
       return;
     }
     movLista.innerHTML = "";
     lista.forEach((m) => {
       const delta = toNum(m.movvalor);
+      const saldo = toNum(m.movsaldo);
       const cor = delta > 0 ? "text-danger" : delta < 0 ? "text-success" : "text-muted";
       const sinal = delta > 0 ? "+" : delta < 0 ? "−" : "";
+      const saldoTxt =
+        saldo > 0
+          ? `Saldo devedor: ${fmtMoney(saldo)}`
+          : saldo < 0
+          ? `Crédito: ${fmtMoney(Math.abs(saldo))}`
+          : "Saldo: R$ 0,00";
       const div = document.createElement("div");
-      div.className = "list-group-item py-2";
+      div.className = "ou-mov-item";
       div.innerHTML = `
-        <div class="d-flex justify-content-between align-items-center gap-2">
-          <div class="min-w-0">
-            <div class="fw-semibold">${escapeHtml(MOV_LABEL[m.movtipo] || m.movtipo || "Movimentação")}</div>
-            <div class="text-muted small text-truncate">
-              ${fmtDate(m.movdtcad)}${m.movdesc ? " · " + escapeHtml(m.movdesc) : ""}${m.movref ? " · " + escapeHtml(m.movref) : ""}
-            </div>
-          </div>
-          <div class="text-end">
-            <div class="fw-semibold ${cor}">${sinal} ${fmtMoney(Math.abs(delta))}</div>
-            <div class="text-muted small">Saldo: ${fmtMoney(m.movsaldo)}</div>
-          </div>
+        <div class="min-w-0">
+          <div class="ou-mov-tipo">${escapeHtml(MOV_LABEL[m.movtipo] || m.movtipo || "Movimentação")}</div>
+          <div class="ou-mov-meta">${fmtDate(m.movdtcad)}${
+            m.movdesc ? " · " + escapeHtml(m.movdesc) : ""
+          }${m.movref ? " · " + escapeHtml(m.movref) : ""}</div>
+        </div>
+        <div class="ou-mov-valores">
+          <div class="ou-mov-valor ${cor}">${sinal} ${fmtMoney(Math.abs(delta))}</div>
+          <div class="ou-mov-saldo">${saldoTxt}</div>
         </div>
       `;
       movLista.appendChild(div);
@@ -862,7 +874,10 @@ function fecharDrawer(el) {
 function drawerAberto() {
   return document.querySelector(".ficha-drawer.aberto");
 }
-function fecharDrawerPedido() { fecharDrawer(pedidoDrawer); }
+function fecharDrawerPedido() {
+  fecharDrawer(pedidoDrawer);
+  pedidoDrawerRodape.classList.add("d-none");
+}
 function fecharDrawerVincular() { fecharDrawer(vincularDrawer); }
 
 async function verDetalhesPedido(pvcod) {
@@ -871,13 +886,18 @@ async function verDetalhesPedido(pvcod) {
 
   pedidoDrawerTitulo.textContent = `Pedido #${pvcod}`;
   pedidoDrawerSubtitulo.textContent = pedido
-    ? `${pedido.pvcanal || "—"} · ${fmtDate(pedido.pvdtcad)}`
+    ? `${fmtCanal(pedido.pvcanal)} · ${fmtDate(pedido.pvdtcad)}`
     : "";
+  pedidoDrawerStatus.innerHTML = badge(st.cls, st.label);
+  pedidoDrawerRodape.classList.add("d-none");
+  pedidoDrawerRodape.innerHTML = "";
   pedidoDrawerConteudo.innerHTML = `
-    <div class="p-3">
-      <div class="mb-3">${badge(st.cls, st.label)}</div>
-      <div class="fw-semibold mb-2">Produtos</div>
-      <div class="js-pedido-itens">
+    <div class="p-3 p-md-4">
+      <div class="d-flex justify-content-between align-items-baseline mb-1">
+        <span class="ou-detalhe-secao-titulo">Produtos</span>
+        <span class="text-muted small js-itens-contador"></span>
+      </div>
+      <div class="ou-detalhe-itens js-pedido-itens">
         <div class="ficha-vazio"><span class="spinner-border spinner-border-sm"></span></div>
       </div>
     </div>`;
@@ -886,41 +906,55 @@ async function verDetalhesPedido(pvcod) {
   try {
     const itens = await api(`/pedido/detalhe/${pvcod}`);
     const container = pedidoDrawerConteudo.querySelector(".js-pedido-itens");
+    const contador = pedidoDrawerConteudo.querySelector(".js-itens-contador");
     if (!container) return;
     if (!Array.isArray(itens) || !itens.length) {
       container.innerHTML = '<div class="ficha-vazio">Sem itens para exibir (pedido cancelado ou não encontrado).</div>';
+      if (contador) contador.textContent = "";
       return;
     }
-    const total = itens.reduce((s, i) => s + toNum(i.pviqtde) * toNum(i.pvivl), 0);
-    container.innerHTML =
-      itens
-        .map((i) => {
-          const subtotal = toNum(i.pviqtde) * toNum(i.pvivl);
-          return `
-            <div class="border rounded p-3 mb-2">
-              <div class="fw-semibold">${escapeHtml(i.prodes || "")}</div>
-              <div class="text-muted small mb-2">Cor: ${escapeHtml(i.cornome || "Sem Cor")}</div>
-              <div class="row g-2 text-center">
-                <div class="col-4">
-                  <div class="text-muted small">Quantidade</div>
-                  <div>${toNum(i.pviqtde)}</div>
-                </div>
-                <div class="col-4">
-                  <div class="text-muted small">Valor unit.</div>
-                  <div>${fmtMoney(i.pvivl)}</div>
-                </div>
-                <div class="col-4">
-                  <div class="text-muted small">Subtotal</div>
-                  <div class="fw-semibold">${fmtMoney(subtotal)}</div>
-                </div>
+    if (contador) contador.textContent = `${itens.length} ${itens.length === 1 ? "item" : "itens"}`;
+
+    container.innerHTML = itens
+      .map((i) => {
+        const qtd = toNum(i.pviqtde);
+        const unit = toNum(i.pvivl);
+        const subtotal = qtd * unit;
+        const cor = i.cornome && String(i.cornome).trim() ? i.cornome : "Sem cor";
+        return `
+          <div class="ou-detalhe-item">
+            <div class="ou-detalhe-item-top">
+              <span class="ou-detalhe-item-nome">${escapeHtml(i.prodes || "")}</span>
+              <span class="ou-detalhe-item-subtotal">${fmtMoney(subtotal)}</span>
+            </div>
+            <div class="ou-detalhe-item-cor">${escapeHtml(cor)}</div>
+            <div class="ou-detalhe-metricas">
+              <div class="ou-detalhe-metrica">
+                <span class="ou-detalhe-label">Quantidade</span>
+                <span class="ou-detalhe-numero">${qtd}</span>
               </div>
-            </div>`;
-        })
-        .join("") +
-      `<div class="d-flex justify-content-between align-items-center border-top pt-3 mt-2">
-         <span class="fw-semibold">Total</span>
-         <span class="fw-semibold">${fmtMoney(pedido ? pedido.pvvl : total)}</span>
-       </div>`;
+              <div class="ou-detalhe-metrica">
+                <span class="ou-detalhe-label">Valor unitário</span>
+                <span class="ou-detalhe-numero">${fmtMoney(unit)}</span>
+              </div>
+              <div class="ou-detalhe-metrica">
+                <span class="ou-detalhe-label">Subtotal</span>
+                <span class="ou-detalhe-numero">${fmtMoney(subtotal)}</span>
+              </div>
+            </div>
+          </div>`;
+      })
+      .join("");
+
+    const total = pedido
+      ? toNum(pedido.pvvl)
+      : itens.reduce((s, i) => s + toNum(i.pviqtde) * toNum(i.pvivl), 0);
+    pedidoDrawerRodape.innerHTML = `
+      <div class="ou-detalhe-total">
+        <span class="ou-detalhe-total-label">Total do pedido</span>
+        <span class="ou-detalhe-total-valor">${fmtMoney(total)}</span>
+      </div>`;
+    pedidoDrawerRodape.classList.remove("d-none");
   } catch (err) {
     const container = pedidoDrawerConteudo.querySelector(".js-pedido-itens");
     if (container) container.innerHTML = '<div class="ficha-vazio text-danger">Erro ao carregar o pedido.</div>';
@@ -1076,29 +1110,32 @@ async function carregarCobrancas(id) {
     cobrancasLista.innerHTML = "";
     lista.forEach((c) => {
       const st = statusCobranca(c);
-      const div = document.createElement("div");
-      div.className = "list-group-item d-flex flex-wrap align-items-center gap-2 py-3";
-      div.innerHTML = `
-        <div class="me-auto min-w-0">
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <span class="fw-semibold">${fmtMoney(c.cobvalor)}</span>
+      const partes = [
+        c.cobpvcod ? `Pedido #${c.cobpvcod}` : "Cobrança avulsa",
+        c.cobvenc ? `Vence ${fmtDate(c.cobvenc)}` : "Sem vencimento",
+      ];
+      if (c.cobobs) partes.push(escapeHtml(c.cobobs));
+
+      const item = document.createElement("div");
+      item.className = "ou-cobranca-item";
+      item.innerHTML = `
+        <div class="ou-cobranca-info">
+          <div class="ou-cobranca-head">
+            <span class="ou-cobranca-valor">${fmtMoney(c.cobvalor)}</span>
             ${badge(st.cls, st.label)}
           </div>
-          <div class="text-muted small">
-            ${c.cobpvcod ? `Pedido #${c.cobpvcod} · ` : ""}
-            ${c.cobvenc ? `Vence ${fmtDate(c.cobvenc)}` : "Sem vencimento"}
-            ${c.cobobs ? " · " + escapeHtml(c.cobobs) : ""}
-          </div>
+          <div class="ou-cobranca-meta">${partes.join(" · ")}</div>
         </div>
       `;
+
       const acoes = document.createElement("div");
-      acoes.className = "d-flex gap-1 flex-wrap";
+      acoes.className = "ou-cobranca-acoes";
 
       // "Cobrar" existe apenas para cobranças abertas ou vencidas.
       if (c.cobsta === "A") {
         const btnZap = document.createElement("button");
         btnZap.type = "button";
-        btnZap.className = "btn btn-sm btn-outline-success";
+        btnZap.className = "btn btn-sm btn-success";
         btnZap.innerHTML = '<i class="fa-brands fa-whatsapp me-1"></i> Cobrar';
         btnZap.title = "Cobrar pelo WhatsApp";
         btnZap.addEventListener("click", () => cobrarWhatsApp(c));
@@ -1119,8 +1156,8 @@ async function carregarCobrancas(id) {
         acoes.appendChild(btnCancelar);
       }
 
-      div.appendChild(acoes);
-      cobrancasLista.appendChild(div);
+      if (acoes.children.length) item.appendChild(acoes);
+      cobrancasLista.appendChild(item);
     });
   } catch (err) {
     console.error(err);
