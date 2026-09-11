@@ -561,7 +561,7 @@ function criarPopupLayout() {
 
   const popup = document.createElement("div");
   popup.classList.add("popup");
-  popup.style.background = "#fff";
+  popup.style.background = "var(--ou-surface)";
   popup.style.padding = "20px";
   popup.style.borderRadius = "8px";
   popup.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";

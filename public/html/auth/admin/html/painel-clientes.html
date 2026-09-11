@@ -2,25 +2,207 @@
 <html lang="pt-BR">
 
 <head>
-  <meta charset="UTF-8" />
+<meta charset="UTF-8" />
+  <script src="/js/theme-manager.js?v=2026.09.11.195308"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title id="title">Painel de Clientes</title>
   <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
   <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png" />
 
-  <!-- Styles do seu projeto -->
-  <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.10.233855" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.10.233855" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-usuario-Tooltip.css?v=2026.09.10.233855" />
+  <!-- Styles do projeto -->
+  <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.11.195308" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.11.195308" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-usuario-Tooltip.css?v=2026.09.11.195308" />
 
   <!-- Bootstrap + ícones -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
-    crossorigin="anonymous" />
-  <link rel="stylesheet" href="../../../../css/tema-bootstrap.css?v=2026.09.10.233855" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="../../../../css/tema-bootstrap.css?v=2026.09.11.195308" />
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-    crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    /* Ficha com altura fixa: alternar abas não redimensiona a janela. */
+    #cliForm { height: calc(100vh - 3.5rem); position: relative; }
+    #cliForm .modal-body { overflow-y: auto; }
+    /* Navegação das abas: sem scroll vertical; horizontal apenas se faltar espaço. */
+    .ou-tabs-nav {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: var(--ou-surface);
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+    .ou-tabs-nav #cliTabs { margin-bottom: 0; }
+    /* Painel lateral dentro do contexto do cliente (detalhes, vínculo etc.). */
+    .ficha-drawer {
+      position: absolute;
+      inset: 0;
+      z-index: 1080;
+      display: flex;
+      flex-direction: column;
+      background: var(--ou-surface);
+      border-radius: inherit;
+      visibility: hidden;
+      transform: translateX(100%);
+      transition: transform .22s ease, visibility .22s ease;
+    }
+    .ficha-drawer.aberto { transform: translateX(0); visibility: visible; }
+    .ficha-drawer-body { flex: 1 1 auto; overflow-y: auto; }
+    #cliAvatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #6ea8fe, #3b82f6);
+      color: #fff;
+      font-weight: 600;
+      flex: 0 0 48px;
+      font-size: 0.95rem;
+    }
+    .cliente-linha {
+      cursor: pointer;
+      transition: background-color .12s ease;
+    }
+    .cliente-linha:hover { background-color: var(--ou-surface-2); }
+    .ficha-lista .list-group-item { border-left: 0; border-right: 0; }
+    .ficha-lista .list-group-item:first-child { border-top: 0; }
+    .ficha-lista .list-group-item:last-child { border-bottom: 0; }
+    .ficha-vazio {
+      padding: 2rem 1rem;
+      text-align: center;
+      color: var(--ou-text-muted);
+    }
+    .min-w-0 { min-width: 0; }
+
+    /* Lista de pedidos disponíveis para vinculação */
+    .ou-vincular-lista {
+      border: 1px solid var(--bs-border-color);
+      border-radius: .5rem;
+      overflow: hidden;
+    }
+    .ou-vincular-item {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .7rem .85rem;
+      border-bottom: 1px solid var(--bs-border-color);
+      background-color: var(--bs-body-bg);
+      transition: background-color .12s ease;
+    }
+    .ou-vincular-item:nth-child(odd) { background-color: var(--bs-tertiary-bg); }
+    .ou-vincular-item:last-child { border-bottom: 0; }
+    .ou-vincular-item:hover,
+    .ou-vincular-item:focus-within { background-color: var(--bs-secondary-bg); }
+    .ou-vincular-main {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      flex: 1 1 auto;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+    .ou-vincular-num { font-weight: 700; }
+    .ou-vincular-meta { color: var(--bs-secondary-color); font-size: .85rem; }
+    .ou-vincular-right {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex: 0 0 auto;
+    }
+    .ou-vincular-valor {
+      font-weight: 600;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      min-width: 92px;
+      text-align: right;
+    }
+    .ou-vincular-btn { min-width: 96px; }
+    @media (max-width: 575.98px) {
+      .ou-vincular-item { flex-wrap: wrap; }
+      .ou-vincular-main { flex-basis: 100%; }
+      .ou-vincular-right { width: 100%; justify-content: space-between; }
+    }
+
+    /* Histórico de pedidos do cliente */
+    .ou-pedidos-lista {
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+    }
+    .ou-pedido-item {
+      border: 1px solid var(--bs-border-color);
+      border-left: 3px solid transparent;
+      border-radius: .6rem;
+      padding: .85rem 1rem;
+      background-color: var(--bs-body-bg);
+      transition: background-color .12s ease, border-color .12s ease,
+        box-shadow .12s ease;
+    }
+    .ou-pedido-item:hover {
+      background-color: var(--bs-tertiary-bg);
+      border-left-color: var(--ou-primary);
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    }
+    [data-theme="dark"] .ou-pedido-item:hover {
+      box-shadow: none;
+    }
+    .ou-pedido-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+    }
+    .ou-pedido-num {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: .01em;
+    }
+    .ou-pedido-valor {
+      font-weight: 600;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .ou-pedido-mid {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-top: .3rem;
+      min-width: 0;
+    }
+    .ou-pedido-meta {
+      color: var(--bs-secondary-color);
+      font-size: .875rem;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ou-pedido-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: .5rem;
+      margin-top: .55rem;
+    }
+    .ou-pedido-actions .btn-link {
+      text-decoration: none;
+      padding: 0;
+    }
+    .ou-pedido-actions .btn-link:hover { text-decoration: underline; }
+    @media (max-width: 575.98px) {
+      .ou-pedido-item { padding: .75rem .85rem; }
+      .ou-pedido-num { font-size: 1rem; }
+    }
+    @media (max-width: 575.98px) {
+      #cliForm { height: 100%; }
+    }
+  </style>
+  <link rel="stylesheet" href="/css/theme.css?v=2026.09.11.195308" />
 </head>
 
 <body class="bg-light">
@@ -37,12 +219,12 @@
               </div>
               <div>
                 <h1 class="h4 mb-0">Painel de Clientes</h1>
-                <div class="text-muted small">Gerencie cadastro, bloqueio e limite de crédito.</div>
+                <div class="text-muted small">Cadastro, pedidos, conta e cobranças em um só lugar.</div>
               </div>
             </div>
             <div class="ms-md-auto d-flex flex-wrap gap-2 align-items-center">
-              <button id="btnNew" class="button-color-1">
-                <i class="fa-solid fa-user-plus"></i> Novo cliente
+              <button id="btnNew" class="btn btn-primary">
+                <i class="fa-solid fa-user-plus me-1"></i> Novo cliente
               </button>
             </div>
           </div>
@@ -53,157 +235,390 @@
         <div class="app-container">
           <div class="card shadow-sm">
             <div class="card-header d-flex align-items-center gap-3 flex-wrap">
-              <div class="d-flex gap-2 w-100 align-items-center">
-                <input id="searchInput" class="form-control search" type="search"
-                  placeholder="Buscar por nome, fantasia ou documento..." aria-label="Buscar clientes" />
+              <div class="input-group search-input shadow-sm">
+                <span class="input-group-text bg-white border-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input id="searchInput" class="form-control border-0" type="search"
+                  placeholder="Buscar por nome, fantasia, documento ou telefone..." aria-label="Buscar clientes" />
               </div>
             </div>
 
             <div class="card-body p-0">
               <div class="table-responsive">
-                <table id="cliTable" class="table table-hover table-striped mb-0">
+                <table id="cliTable" class="table table-hover mb-0 align-middle">
                   <thead class="table-light">
                     <tr>
-                      <th style="width: 90px;">Código</th>
-                      <th>Nome/Razão</th>
-                      <th>Fantasia</th>
+                      <th style="width: 80px;">Código</th>
+                      <th>Cliente</th>
                       <th>Documento</th>
                       <th>Cidade/UF</th>
-                      <th>Telefone</th>
-                      <th>E-mail</th>
-                      <th style="width: 90px;">Bloq</th>
-                      <th style="width: 110px;">Limite</th>
-                      <th style="width: 120px;">Status</th>
+                      <th>Contato</th>
+                      <th style="width: 130px;" class="text-end">Em aberto</th>
+                      <th style="width: 110px;">Situação</th>
                     </tr>
                   </thead>
                   <tbody id="cliTbody"><!-- via JS --></tbody>
                 </table>
               </div>
-              <div id="emptyState" class="no-data" style="display:none">Nenhum cliente encontrado.</div>
+              <div id="emptyState" class="ficha-vazio" style="display:none">Nenhum cliente encontrado.</div>
             </div>
 
-            <div class="card-footer text-muted d-flex justify-content-between">
+            <div class="card-footer text-muted d-flex justify-content-between align-items-center">
               <small id="resultsInfo">0 clientes</small>
               <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-secondary" id="btnPrev">Anterior</button>
-                <button class="btn btn-sm btn-outline-secondary" id="btnNext">Próxima</button>
+                <button class="btn btn-sm btn-outline-secondary" id="btnPrev" type="button">Anterior</button>
+                <button class="btn btn-sm btn-outline-secondary" id="btnNext" type="button">Próxima</button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Modal: Detalhe/Edição -->
-      <div class="modal fade" id="cliModal" tabindex="-1" aria-labelledby="cliModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+      <!-- ================== FICHA DO CLIENTE ================== -->
+      <div class="modal fade" id="cliModal" tabindex="-1" aria-labelledby="cliTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
           <form id="cliForm" class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="cliModalLabel">👩‍💼 Dados do cliente</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            <!-- Cabeçalho de identidade (sempre visível) -->
+            <div class="modal-header d-block pb-2">
+              <div class="d-flex align-items-start justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-3 min-w-0">
+                  <div id="cliAvatar" aria-hidden="true">?</div>
+                  <div class="min-w-0">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <h5 class="modal-title mb-0 text-truncate" id="cliTitulo">Novo cliente</h5>
+                      <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle d-none"
+                        id="cliSituacaoBadge">Ativo</span>
+                    </div>
+                    <div class="text-muted small text-truncate" id="cliSubtitulo">Preencha os dados do cliente</div>
+                  </div>
+                </div>
+                <button type="button" class="btn-close mt-1" data-bs-dismiss="modal" aria-label="Fechar"></button>
+              </div>
+
+              <div class="d-flex flex-wrap align-items-center gap-4 mt-3" id="cliResumo" style="display:none">
+                <div>
+                  <div class="text-muted small">Em aberto</div>
+                  <div class="fw-semibold text-danger" id="cliResumoSaldo">R$ 0,00</div>
+                </div>
+                <div>
+                  <div class="text-muted small">Crédito</div>
+                  <div class="fw-semibold text-success" id="cliResumoCredito">R$ 0,00</div>
+                </div>
+                <div>
+                  <div class="text-muted small">Pedidos</div>
+                  <div class="fw-semibold" id="cliResumoPedidos">0</div>
+                </div>
+                <div class="ms-auto">
+                  <button type="button" class="btn btn-sm btn-outline-success" id="cliWhatsApp" disabled>
+                    <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="alertaTelefone" class="alert alert-warning rounded-0 border-start-0 border-end-0 mb-0 py-2 d-none" role="alert">
+              <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div class="flex-grow-1 small">Este cliente não possui um número de WhatsApp cadastrado.</div>
+                <button type="button" class="btn btn-sm btn-warning text-nowrap" id="btnIrTelefone">Preencher telefone</button>
+              </div>
             </div>
 
             <div class="modal-body">
               <input type="hidden" id="parcod" />
 
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Nome/Razão</label>
-                  <input id="pardes" class="form-control" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Fantasia</label>
-                  <input id="parfan" class="form-control" />
-                </div>
+              <div class="ou-tabs-nav">
+                <ul class="nav nav-tabs flex-nowrap" id="cliTabs" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tabDadosBtn" data-bs-toggle="tab" data-bs-target="#tabDados"
+                      type="button" role="tab"><i class="fa-regular fa-id-card me-1"></i> Dados</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link tab-extra" id="tabPedidosBtn" data-bs-toggle="tab" data-bs-target="#tabPedidos"
+                      type="button" role="tab" disabled><i class="fa-solid fa-box me-1"></i> Pedidos</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link tab-extra" id="tabContaBtn" data-bs-toggle="tab" data-bs-target="#tabConta"
+                      type="button" role="tab" disabled><i class="fa-solid fa-wallet me-1"></i> Conta</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link tab-extra" id="tabCobrancasBtn" data-bs-toggle="tab"
+                      data-bs-target="#tabCobrancas" type="button" role="tab" disabled>
+                      <i class="fa-solid fa-file-invoice-dollar me-1"></i> Cobranças
+                    </button>
+                  </li>
+                </ul>
+              </div>
 
-                <div class="col-md-6">
-                  <label class="form-label">CPF/CNPJ</label>
-                  <input id="parcnpjcpf" class="form-control" placeholder="Somente números" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">RG/IE</label>
-                  <input id="parierg" class="form-control" />
-                </div>
+              <div class="tab-content pt-3">
+                <!-- ============ DADOS ============ -->
+                <div class="tab-pane fade show active" id="tabDados" role="tabpanel">
+                  <h6 class="text-uppercase text-muted fw-semibold small mb-3">Identificação</h6>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Nome/Razão Social <span class="text-danger">*</span></label>
+                      <input id="pardes" class="form-control" maxlength="120" required />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Nome Fantasia</label>
+                      <input id="parfan" class="form-control" maxlength="120" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">CPF/CNPJ <span class="text-danger">*</span></label>
+                      <input id="parcnpjcpf" class="form-control" placeholder="Somente números" required />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Situação</label>
+                      <select id="parsit" class="form-select">
+                        <option value="A">Ativo</option>
+                        <option value="I">Inativo</option>
+                      </select>
+                    </div>
+                  </div>
 
-                <div class="col-md-6">
-                  <label class="form-label">E-mail</label>
-                  <input id="paremail" class="form-control" type="email" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Telefone</label>
-                  <input id="parfone" class="form-control" placeholder="(DDD) 99999-9999" />
-                </div>
+                  <hr class="my-4" />
+                  <h6 class="text-uppercase text-muted fw-semibold small mb-3">Contato</h6>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Telefone/WhatsApp <span class="text-danger">*</span></label>
+                      <input id="parfone" class="form-control" placeholder="(DDD) 99999-9999" required />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">E-mail</label>
+                      <input id="paremail" class="form-control" type="email" />
+                    </div>
+                  </div>
 
-                <div class="col-md-4">
-                  <label class="form-label">CEP</label>
-                  <input id="parcep" class="form-control" placeholder="00000-000" />
-                </div>
-                <div class="col-md-8">
-                  <label class="form-label">Rua</label>
-                  <input id="parrua" class="form-control" />
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label">Bairro</label>
-                  <input id="parbai" class="form-control" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Município</label>
-                  <input id="parmuncodcod" style="display: none;"/>
-                  <input id="parmuncod" class="form-control" list="listaMunicipios" required />
-                  <datalist id="listaMunicipios"></datalist>
-                </div>
-
-
-                <div class="col-md-4">
-                  <label class="form-label">Limite de Crédito</label>
-                  <input id="clilim" class="form-control" type="number" step="0.01" />
-                </div>
-                <div class="col-md-4 d-flex align-items-center mt-3">
-                  <div class="form-check">
-                    <input id="clibloq" type="checkbox" class="form-check-input" />
-                    <label class="form-check-label" for="clibloq">Bloqueado</label>
-                    <i class="fa-solid fa-circle-question info-icon"></i>
-                    <span class="tooltip-text" role="tooltip">
-                      Se marcado, o cliente fica impedido de realizar novas compras.
-                    </span>
+                  <hr class="my-4" />
+                  <h6 class="text-uppercase text-muted fw-semibold small mb-3">Endereço</h6>
+                  <div class="row g-3">
+                    <div class="col-md-3">
+                      <label class="form-label">CEP</label>
+                      <input id="parcep" class="form-control" placeholder="00000-000" />
+                    </div>
+                    <div class="col-md-9">
+                      <label class="form-label">Logradouro</label>
+                      <input id="parrua" class="form-control" maxlength="80" placeholder="Rua e número" />
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Bairro</label>
+                      <input id="parbai" class="form-control" maxlength="40" />
+                    </div>
+                    <div class="col-md-8">
+                      <label class="form-label">Cidade/UF</label>
+                      <div class="position-relative" id="cidadeCombobox">
+                        <div class="input-group">
+                          <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                          <input id="parmuncod" class="form-control" type="text"
+                            placeholder="Digite a cidade ou a UF" autocomplete="off" role="combobox"
+                            aria-expanded="false" aria-controls="cidadeLista" aria-autocomplete="list" />
+                          <button type="button" id="btnLimparCidade" class="btn btn-outline-secondary"
+                            title="Limpar cidade" style="display:none;"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div id="cidadeLista" class="list-group position-absolute w-100 shadow d-none" role="listbox"
+                          style="z-index:1080; max-height: 240px; overflow-y: auto;"></div>
+                        <div class="form-text" id="cidadeSelecionada"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label">Status</label>
-                  <select id="parsit" class="form-select">
-                    <option value="">—</option>
-                    <option value="A">Ativo</option>
-                    <option value="I">Inativo</option>
-                  </select>
+
+                <!-- ============ PEDIDOS ============ -->
+                <div class="tab-pane fade" id="tabPedidos" role="tabpanel">
+                  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div>
+                      <h6 class="mb-0">Pedidos deste cliente</h6>
+                      <div class="text-muted small">
+                        <span id="pedidosCount">0</span> pedidos vinculados
+                        · <span id="pedidosTotal">R$ 0,00</span> em pedidos
+                      </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-grow-1 justify-content-end" style="max-width: 460px;">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                        <input id="filtroPedidosCliente" class="form-control" placeholder="Buscar por número do pedido" />
+                      </div>
+                      <button type="button" id="btnAbrirVincular" class="btn btn-sm btn-outline-primary text-nowrap">
+                        <i class="fa-solid fa-plus me-1"></i> Vincular pedido
+                      </button>
+                    </div>
+                  </div>
+                  <div id="pedidosLista" class="ou-pedidos-lista"></div>
+                </div>
+
+                <!-- ============ CONTA ============ -->
+                <div class="tab-pane fade" id="tabConta" role="tabpanel">
+                  <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                      <div class="card text-center h-100 border-danger-subtle">
+                        <div class="card-body py-3">
+                          <div class="text-muted small">Em aberto</div>
+                          <div class="fs-4 fw-semibold text-danger" id="contaDevedor">R$ 0,00</div>
+                          <div class="text-muted small" id="contaCobrancasSub">0 cobrança(s) em aberto</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="card text-center h-100 border-success-subtle">
+                        <div class="card-body py-3">
+                          <div class="text-muted small">Crédito disponível</div>
+                          <div class="fs-4 fw-semibold text-success" id="contaCredito">R$ 0,00</div>
+                          <div class="text-muted small">Saldo a favor do cliente</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0">Movimentações</h6>
+                    <div class="d-flex gap-2">
+                      <button type="button" id="btnIrCobranca" class="btn btn-sm btn-outline-primary">
+                        <i class="fa-solid fa-file-invoice-dollar me-1"></i> Cobrança
+                      </button>
+                      <button type="button" id="btnNovoLancamento" class="btn btn-sm btn-outline-secondary">
+                        <i class="fa-solid fa-plus me-1"></i> Lançamento
+                      </button>
+                    </div>
+                  </div>
+
+                  <div id="lancamentoForm" class="card card-body bg-light border-0 mb-3 d-none">
+                    <div class="row g-2 align-items-end">
+                      <div class="col-12 col-md-3">
+                        <label class="form-label mb-0 small">Tipo</label>
+                        <select id="movTipo" class="form-select form-select-sm">
+                          <option value="DEBITO">Débito (aumenta a dívida)</option>
+                          <option value="CREDITO">Crédito (a favor do cliente)</option>
+                          <option value="PAGAMENTO">Pagamento</option>
+                          <option value="AJUSTE">Ajuste</option>
+                        </select>
+                      </div>
+                      <div class="col-6 col-md-2">
+                        <label class="form-label mb-0 small">Valor</label>
+                        <input id="movValor" type="number" step="0.01" min="0" class="form-control form-control-sm" />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <label class="form-label mb-0 small">Descrição</label>
+                        <input id="movDescricao" class="form-control form-control-sm" maxlength="254" />
+                      </div>
+                      <div class="col-6 col-md-3 d-flex gap-2">
+                        <button type="button" id="btnAddMov" class="btn btn-sm btn-primary flex-grow-1">Lançar</button>
+                        <button type="button" id="btnCancelarLancamento" class="btn btn-sm btn-light">Cancelar</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div id="movLista" class="border rounded ficha-lista"></div>
+                </div>
+
+                <!-- ============ COBRANÇAS ============ -->
+                <div class="tab-pane fade" id="tabCobrancas" role="tabpanel">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                      <h6 class="mb-0">Cobranças</h6>
+                      <div class="text-muted small"><span id="cobrancasCount">0</span> cobrança(s)</div>
+                    </div>
+                    <button type="button" id="btnNovaCobranca" class="btn btn-sm btn-outline-primary">
+                      <i class="fa-solid fa-plus me-1"></i> Nova cobrança
+                    </button>
+                  </div>
+
+                  <div id="cobrancaForm" class="card card-body bg-light border-0 mb-3 d-none">
+                    <div class="row g-2 align-items-end">
+                      <div class="col-6 col-md-2">
+                        <label class="form-label mb-0 small">Valor</label>
+                        <input id="cobValor" type="number" step="0.01" min="0" class="form-control form-control-sm" />
+                      </div>
+                      <div class="col-6 col-md-2">
+                        <label class="form-label mb-0 small">Vencimento</label>
+                        <input id="cobVenc" type="date" class="form-control form-control-sm" />
+                      </div>
+                      <div class="col-12 col-md-3">
+                        <label class="form-label mb-0 small">Pedido (opcional)</label>
+                        <select id="cobPedido" class="form-select form-select-sm"></select>
+                      </div>
+                      <div class="col-12 col-md-3">
+                        <label class="form-label mb-0 small">Observação</label>
+                        <input id="cobObs" class="form-control form-control-sm" maxlength="254" />
+                      </div>
+                      <div class="col-12 col-md-2 d-flex gap-2">
+                        <button type="button" id="btnAddCobranca" class="btn btn-sm btn-primary flex-grow-1">Gerar</button>
+                        <button type="button" id="btnCancelarCobranca" class="btn btn-sm btn-light">Cancelar</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div id="cobrancasLista" class="border rounded ficha-lista"></div>
                 </div>
               </div>
             </div>
 
-            <div class="modal-footer">
-              <button type="button" id="btnInativar" class="btn btn-outline-warning me-auto">Inativar</button>
-              <button type="button" id="btnExcluir" class="btn btn-outline-danger">Excluir</button>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-              <button type="submit" class="button-color-1 w-25">Salvar</button>
+            <div class="modal-footer justify-content-between flex-wrap gap-2">
+              <div class="d-flex gap-2">
+                <button type="button" id="btnInativar" class="btn btn-sm btn-outline-warning">
+                  <i class="fa-solid fa-ban me-1"></i> Inativar
+                </button>
+                <button type="button" id="btnExcluir" class="btn btn-sm btn-outline-danger">
+                  <i class="fa-regular fa-trash-can me-1"></i> Excluir
+                </button>
+              </div>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary px-4">Salvar</button>
+              </div>
+            </div>
+
+            <!-- ===== PAINEL LATERAL: DETALHES DO PEDIDO (dentro do contexto do cliente) ===== -->
+            <div id="pedidoDrawer" class="ficha-drawer" role="region" aria-label="Detalhes do pedido" aria-hidden="true">
+              <div class="d-flex align-items-center gap-2 border-bottom p-3">
+                <button type="button" id="btnFecharDrawer" class="btn btn-sm btn-light" aria-label="Voltar para os pedidos">
+                  <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div class="min-w-0">
+                  <div class="fw-semibold text-truncate" id="pedidoDrawerTitulo">Pedido</div>
+                  <div class="text-muted small text-truncate" id="pedidoDrawerSubtitulo">—</div>
+                </div>
+                <button type="button" class="btn-close ms-auto" id="btnFecharDrawer2" aria-label="Fechar"></button>
+              </div>
+              <div class="ficha-drawer-body" id="pedidoDrawerConteudo"></div>
+            </div>
+
+            <!-- ===== PAINEL LATERAL: VINCULAR PEDIDO (dentro do contexto do cliente) ===== -->
+            <div id="vincularDrawer" class="ficha-drawer" role="region" aria-label="Vincular pedido" aria-hidden="true">
+              <div class="d-flex align-items-center gap-2 border-bottom p-3">
+                <button type="button" id="btnFecharVincular" class="btn btn-sm btn-light" aria-label="Voltar para os pedidos">
+                  <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div class="min-w-0">
+                  <div class="fw-semibold text-truncate">Vincular pedido</div>
+                  <div class="text-muted small text-truncate">Pedidos ainda sem cliente</div>
+                </div>
+                <button type="button" class="btn-close ms-auto" id="btnFecharVincular2" aria-label="Fechar"></button>
+              </div>
+              <div class="ficha-drawer-body">
+                <div class="p-3">
+                  <div class="input-group mb-3">
+                    <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input id="buscaPedidoDisponivel" class="form-control" placeholder="Número do pedido ou observação"
+                      aria-label="Buscar pedido por número ou observação" />
+                    <button type="button" id="btnBuscarPedidoDisponivel" class="btn btn-outline-secondary">Buscar</button>
+                  </div>
+                  <div id="pedidosDisponiveisLista" class="ou-vincular-lista"></div>
+                </div>
+              </div>
             </div>
           </form>
         </div>
       </div>
+
     </main>
 
     <footer id="footer"><!-- preenchido via JS global --></footer>
   </div>
 
-  <!-- JS globais -->
-  <script src="html/auth/js/componentes.js?v=2026.09.10.233855"></script>
-  <script src="/config.js?v=2026.09.10.233855"></script>
-  <script src="../js/nomeEmpresa.js?v=2026.09.10.233855"></script>
-
-  <!-- Bootstrap -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-    crossorigin="anonymous"></script>
-
-  <!-- Página -->
-  <script src="/html/auth/js/painel-clientes.js?v=2026.09.10.233855"></script>
+  <script src="html/auth/js/componentes.js?v=2026.09.11.195308"></script>
+  <script src="/config.js?v=2026.09.11.195308"></script>
+  <script src="../js/nomeEmpresa.js?v=2026.09.11.195308"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/html/auth/js/painel-clientes.js?v=2026.09.11.195308"></script>
 </body>
 
 </html>

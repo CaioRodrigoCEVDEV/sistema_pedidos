@@ -1,0 +1,512 @@
+/* ==========================================================================
+   OrderUp — Sistema de tema (Claro / Escuro / Automático)
+   A preferência é aplicada em <html data-theme="light|dark"> e
+   <html data-bs-theme="light|dark"> pelo public/js/theme-manager.js.
+   Este arquivo centraliza as variáveis e os ajustes de componentes.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Variáveis do sistema
+   -------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  --ou-bg: #f3f5f9;
+  --ou-surface: #ffffff;
+  --ou-surface-2: #f8fafc;
+  --ou-surface-3: #eef2f7;
+  --ou-border: #e2e8f0;
+  --ou-text: #0f172a;
+  --ou-text-muted: #64748b;
+  --ou-primary: #3b82f6;
+  --ou-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ou-bg: #0f172a;
+  --ou-surface: #1f2937;
+  --ou-surface-2: #263244;
+  --ou-surface-3: #2f3d52;
+  --ou-border: #374151;
+  --ou-text: #f9fafb;
+  --ou-text-muted: #9ca3af;
+  --ou-primary: #60a5fa;
+  --ou-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   2. Variáveis do Bootstrap (5.3 color mode)
+   -------------------------------------------------------------------------- */
+[data-bs-theme="dark"] {
+  --bs-body-bg: var(--ou-bg);
+  --bs-body-color: var(--ou-text);
+  --bs-secondary-bg: var(--ou-surface);
+  --bs-tertiary-bg: var(--ou-surface-2);
+  --bs-border-color: var(--ou-border);
+  --bs-secondary-color: var(--ou-text-muted);
+  --bs-emphasis-color: var(--ou-text);
+  --bs-link-color: #93c5fd;
+  --bs-link-hover-color: #bfdbfe;
+  --bs-highlight-color: var(--ou-text);
+  --bs-highlight-bg: #3b4a63;
+}
+
+/* --------------------------------------------------------------------------
+   3. Base
+   -------------------------------------------------------------------------- */
+html {
+  background-color: var(--ou-bg);
+}
+
+body {
+  background-color: var(--ou-bg) !important;
+  color: var(--ou-text);
+}
+
+body,
+.card,
+.modal-content,
+.dropdown-menu,
+.list-group-item,
+.table,
+.navbar,
+.panel-hero,
+.form-control,
+.form-select,
+.input-group-text {
+  transition: background-color 0.18s ease, border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+[data-theme="dark"] .bg-white {
+  background-color: var(--ou-surface) !important;
+}
+[data-theme="dark"] .bg-light {
+  background-color: var(--ou-bg) !important;
+}
+[data-theme="dark"] .text-dark,
+[data-theme="dark"] .text-body {
+  color: var(--ou-text) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Cards / superfícies
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] .card {
+  --bs-card-bg: var(--ou-surface);
+  --bs-card-cap-bg: var(--ou-surface-2);
+  --bs-card-border-color: var(--ou-border);
+  --bs-card-color: var(--ou-text);
+  background-color: var(--ou-surface);
+  color: var(--ou-text);
+}
+[data-theme="dark"] .card-header,
+[data-theme="dark"] .card-footer {
+  background-color: var(--ou-surface-2);
+  border-color: var(--ou-border);
+  color: var(--ou-text);
+}
+
+/* --------------------------------------------------------------------------
+   5. Tabelas
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] .table {
+  --bs-table-color: var(--ou-text);
+  --bs-table-bg: transparent;
+  --bs-table-border-color: var(--ou-border);
+  --bs-table-striped-color: var(--ou-text);
+  --bs-table-hover-color: var(--ou-text);
+  color: var(--ou-text);
+}
+[data-theme="dark"] .table-light,
+[data-theme="dark"] .table thead.table-light th,
+[data-theme="dark"] .table-light > th,
+[data-theme="dark"] .table-light > td {
+  --bs-table-bg: var(--ou-surface-2);
+  --bs-table-color: var(--ou-text);
+  background-color: var(--ou-surface-2) !important;
+  color: var(--ou-text) !important;
+  border-color: var(--ou-border) !important;
+}
+[data-theme="dark"] .thead-dark th,
+[data-theme="dark"] thead.thead-dark th {
+  background-color: var(--ou-surface-3) !important;
+  color: var(--ou-text) !important;
+  border-color: var(--ou-border) !important;
+}
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+  --bs-table-accent-bg: rgba(255, 255, 255, 0.03);
+}
+[data-theme="dark"] .table-hover > tbody > tr:hover > * {
+  --bs-table-accent-bg: rgba(255, 255, 255, 0.05);
+}
+
+/* --------------------------------------------------------------------------
+   6. Formulários
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .input-group-text,
+[data-theme="dark"] .form-check-input {
+  background-color: var(--ou-surface-2);
+  border-color: var(--ou-border);
+  color: var(--ou-text);
+}
+[data-theme="dark"] .form-control::placeholder {
+  color: var(--ou-text-muted);
+  opacity: 1;
+}
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+  background-color: var(--ou-surface-2);
+  color: var(--ou-text);
+  border-color: var(--ou-primary);
+  box-shadow: 0 0 0 0.2rem rgba(96, 165, 250, 0.25);
+}
+[data-theme="dark"] .form-control.bg-white,
+[data-theme="dark"] .form-select.bg-white,
+[data-theme="dark"] .input-group-text.bg-white {
+  background-color: var(--ou-surface-2) !important;
+  color: var(--ou-text) !important;
+}
+[data-theme="dark"] .form-control:disabled,
+[data-theme="dark"] .form-select:disabled {
+  background-color: var(--ou-surface-3);
+  color: var(--ou-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   7. Dropdowns / navbar / modais
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] .dropdown-menu {
+  --bs-dropdown-bg: var(--ou-surface);
+  --bs-dropdown-link-color: var(--ou-text);
+  --bs-dropdown-link-hover-bg: var(--ou-surface-2);
+  --bs-dropdown-link-hover-color: var(--ou-text);
+  --bs-dropdown-link-active-bg: var(--ou-primary);
+  --bs-dropdown-divider-bg: var(--ou-border);
+  --bs-dropdown-header-color: var(--ou-text-muted);
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .navbar,
+[data-theme="dark"] .navbar.bg-light,
+[data-theme="dark"] .navbar.bg-white {
+  background-color: var(--ou-surface) !important;
+  color: var(--ou-text);
+}
+[data-theme="dark"] .navbar-light {
+  --bs-navbar-color: rgba(249, 250, 251, 0.85);
+  --bs-navbar-hover-color: #ffffff;
+  --bs-navbar-brand-color: #f9fafb;
+  --bs-navbar-brand-hover-color: #ffffff;
+  --bs-navbar-toggler-border-color: rgba(249, 250, 251, 0.2);
+}
+[data-theme="dark"] .modal-content {
+  background-color: var(--ou-surface);
+  color: var(--ou-text);
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer {
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+[data-theme="dark"] .list-group-item {
+  background-color: var(--ou-surface);
+  color: var(--ou-text);
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .offcanvas {
+  background-color: var(--ou-surface);
+  color: var(--ou-text);
+}
+
+/* --------------------------------------------------------------------------
+   8. Componentes do projeto
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] .panel-hero {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.14),
+    rgba(99, 102, 241, 0.05)
+  );
+  box-shadow: var(--ou-shadow);
+}
+[data-theme="dark"] .panel-hero .icon-circle {
+  background: var(--ou-surface-2);
+}
+[data-theme="dark"] .subtle,
+[data-theme="dark"] .card-sub {
+  color: var(--ou-text-muted);
+}
+
+/* Painel de produtos/gestão (modal grande) */
+[data-theme="dark"] .pecas-modal,
+[data-theme="dark"] .pecas-modal-header,
+[data-theme="dark"] .pecas-modal-sections,
+[data-theme="dark"] .pecas-modal-body {
+  background: var(--ou-surface);
+}
+[data-theme="dark"] .pecas-modal-header,
+[data-theme="dark"] .pecas-modal-filters,
+[data-theme="dark"] .pecas-modal-table thead th,
+[data-theme="dark"] .pecas-modal-table tbody td {
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .pecas-modal-titulo {
+  color: var(--ou-text);
+}
+[data-theme="dark"] .pecas-modal-subtitulo,
+[data-theme="dark"] .pecas-modal-total,
+[data-theme="dark"] .pecas-filter-label,
+[data-theme="dark"] .pecas-filters-heading {
+  color: var(--ou-text-muted);
+}
+[data-theme="dark"] .pecas-modal-close {
+  color: var(--ou-text-muted);
+}
+[data-theme="dark"] .pecas-modal-close:hover {
+  background: var(--ou-surface-3);
+  color: var(--ou-text);
+}
+[data-theme="dark"] .pecas-modal-filters {
+  background: var(--ou-surface-2);
+}
+[data-theme="dark"] .pecas-filters-toggle {
+  background: var(--ou-surface-2);
+  color: var(--ou-text);
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .pecas-modal-table thead th {
+  background: var(--ou-surface-3);
+  color: var(--ou-text-muted);
+}
+[data-theme="dark"] .pecas-modal-table tbody td {
+  color: var(--ou-text);
+}
+[data-theme="dark"] .pecas-modal-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+[data-theme="dark"] #produtoModal #selectPainelCor {
+  background-color: var(--ou-surface-2);
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .popup {
+  background: var(--ou-surface);
+  color: var(--ou-text);
+}
+
+/* Dashboard */
+[data-theme="dark"] #cardsArea .manage-card {
+  background: linear-gradient(180deg, var(--ou-surface), var(--ou-surface-2));
+}
+[data-theme="dark"] #cardsArea .card-title {
+  color: var(--ou-text);
+}
+[data-theme="dark"] .chart-wrapper {
+  background-color: var(--ou-surface-2);
+}
+[data-theme="dark"] .chart-wrapper canvas {
+  background-color: var(--ou-surface) !important;
+}
+[data-theme="dark"] .skeleton-overlay {
+  background: var(--ou-surface);
+}
+
+/* Releases */
+[data-theme="dark"] .release-card {
+  background: linear-gradient(180deg, var(--ou-surface), var(--ou-surface-2));
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .release-title h5 {
+  color: var(--ou-text);
+}
+[data-theme="dark"] .release-desc {
+  color: #d1d5db;
+}
+[data-theme="dark"] .author-avatar {
+  background: linear-gradient(135deg, #2b3a52, #24303f);
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .version-badge,
+[data-theme="dark"] .fav-pill {
+  background: rgba(96, 165, 250, 0.14);
+  border-color: rgba(96, 165, 250, 0.25);
+  color: #bfdbfe;
+}
+
+/* Backups */
+[data-theme="dark"] .toolbar input[type="search"],
+[data-theme="dark"] .toolbar select {
+  background-color: var(--ou-surface-2);
+  border-color: var(--ou-border);
+  color: var(--ou-text);
+}
+[data-theme="dark"] table th,
+[data-theme="dark"] table td {
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .toolbar .btn {
+  background: var(--ou-surface-2);
+  border-color: var(--ou-border);
+  color: var(--ou-text);
+}
+[data-theme="dark"] .muted {
+  color: var(--ou-text-muted);
+}
+
+/* Login / perfil / configurações */
+[data-theme="dark"] .login-card,
+[data-theme="dark"] .perfil-container,
+[data-theme="dark"] .container-config {
+  background-color: var(--ou-surface) !important;
+  color: var(--ou-text);
+}
+[data-theme="dark"] .login-card label,
+[data-theme="dark"] .login-card .form-check-label {
+  color: #d1d5db;
+}
+
+/* --------------------------------------------------------------------------
+   8b. Componentes do Bootstrap e ações internas
+   -------------------------------------------------------------------------- */
+
+/* Abas (nav-tabs) */
+[data-bs-theme="dark"] .nav-tabs {
+  --bs-nav-tabs-border-color: var(--ou-border);
+  --bs-nav-tabs-link-hover-border-color: var(--ou-border);
+  --bs-nav-tabs-link-active-color: var(--ou-text);
+  --bs-nav-tabs-link-active-bg: var(--ou-surface);
+  --bs-nav-tabs-link-active-border-color: var(--ou-border) var(--ou-border)
+    var(--ou-surface);
+}
+[data-theme="dark"] .nav-tabs .nav-link {
+  color: var(--ou-text-muted);
+}
+[data-theme="dark"] .nav-tabs .nav-link:hover,
+[data-theme="dark"] .nav-tabs .nav-link:focus {
+  color: var(--ou-text);
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .nav-tabs .nav-link.active {
+  color: var(--ou-text);
+  background-color: var(--ou-surface);
+  border-color: var(--ou-border) var(--ou-border) var(--ou-surface);
+}
+
+/* Overlay do modal */
+[data-theme="dark"] .modal-backdrop.show {
+  opacity: 0.7;
+}
+
+/* Paginação, accordion, popover, tooltip, toast, breadcrumb */
+[data-theme="dark"] .pagination {
+  --bs-pagination-bg: var(--ou-surface);
+  --bs-pagination-color: var(--ou-text);
+  --bs-pagination-border-color: var(--ou-border);
+  --bs-pagination-hover-bg: var(--ou-surface-2);
+  --bs-pagination-hover-color: var(--ou-text);
+  --bs-pagination-focus-bg: var(--ou-surface-2);
+  --bs-pagination-focus-color: var(--ou-text);
+  --bs-pagination-disabled-bg: var(--ou-surface);
+  --bs-pagination-disabled-color: var(--ou-text-muted);
+  --bs-pagination-disabled-border-color: var(--ou-border);
+}
+[data-theme="dark"] .accordion {
+  --bs-accordion-bg: var(--ou-surface);
+  --bs-accordion-color: var(--ou-text);
+  --bs-accordion-border-color: var(--ou-border);
+  --bs-accordion-btn-color: var(--ou-text);
+  --bs-accordion-btn-bg: var(--ou-surface);
+  --bs-accordion-active-bg: var(--ou-surface-2);
+  --bs-accordion-active-color: var(--ou-text);
+  --bs-accordion-btn-focus-box-shadow: 0 0 0 0.2rem rgba(96, 165, 250, 0.25);
+}
+[data-theme="dark"] .popover {
+  --bs-popover-bg: var(--ou-surface);
+  --bs-popover-border-color: var(--ou-border);
+  --bs-popover-header-bg: var(--ou-surface-2);
+  --bs-popover-header-color: var(--ou-text);
+  --bs-popover-body-color: var(--ou-text);
+}
+[data-theme="dark"] .tooltip {
+  --bs-tooltip-bg: #334155;
+  --bs-tooltip-color: #f8fafc;
+}
+[data-theme="dark"] .toast {
+  --bs-toast-bg: var(--ou-surface);
+  --bs-toast-color: var(--ou-text);
+  --bs-toast-border-color: var(--ou-border);
+  --bs-toast-header-bg: var(--ou-surface-2);
+  --bs-toast-header-color: var(--ou-text);
+}
+[data-theme="dark"] .breadcrumb {
+  --bs-breadcrumb-bg: transparent;
+  --bs-breadcrumb-divider-color: var(--ou-text-muted);
+}
+[data-theme="dark"] .progress {
+  --bs-progress-bg: var(--ou-surface-2);
+  --bs-progress-bar-color: #fff;
+}
+
+/* Botões de ação do painel de produtos */
+[data-theme="dark"] .pecas-btn-editar {
+  background: rgba(37, 99, 235, 0.16);
+  color: #93c5fd;
+  border-color: rgba(96, 165, 250, 0.3);
+}
+[data-theme="dark"] .pecas-btn-editar:hover {
+  background: rgba(37, 99, 235, 0.28);
+  color: #bfdbfe;
+}
+[data-theme="dark"] .pecas-btn-excluir {
+  background: rgba(220, 38, 38, 0.16);
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+[data-theme="dark"] .pecas-btn-excluir:hover {
+  background: rgba(220, 38, 38, 0.28);
+  color: #fecaca;
+}
+
+/* Variáveis próprias da tela de releases */
+[data-theme="dark"] {
+  --card-bg: var(--ou-surface);
+  --muted: var(--ou-text-muted);
+  --accent: #60a5fa;
+  --glass: rgba(31, 41, 55, 0.7);
+}
+
+/* --------------------------------------------------------------------------
+   9. Seletor de aparência no menu do usuário
+   -------------------------------------------------------------------------- */
+.ou-theme-switcher .btn {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.4rem;
+}
+.ou-theme-switcher .btn.active {
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   10. Acessibilidade: respeita "reduzir movimento"
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  body,
+  .card,
+  .modal-content,
+  .dropdown-menu,
+  .list-group-item,
+  .table,
+  .navbar,
+  .panel-hero,
+  .form-control,
+  .form-select,
+  .input-group-text {
+    transition: none !important;
+  }
+}

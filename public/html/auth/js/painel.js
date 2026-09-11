@@ -248,7 +248,7 @@ function editarProduto(codigo) {
 
       popup.innerHTML = `
         <div style="
-          background:#fff;padding:24px;border-radius:8px;
+          background:var(--ou-surface);padding:24px;border-radius:8px;
           min-width:300px;width:40vw;max-height:80vh;overflow:auto;
         ">
           <h5>📦 Editar Produto</h5>
@@ -506,7 +506,7 @@ async function excluirProduto(id) {
   popup.style.zIndex = "9999";
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
       <h5>Excluir Tipo</h5>
       <p>Tem certeza que deseja excluir este Produto?</p>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -736,7 +736,7 @@ function editarMarca(id, nome) {
   popup.style.zIndex = "9999";
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;width:40vw;">
+    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;width:40vw;">
       <h5>🏷️ Editar Marca</h5>
       <hr style="width:100%; border:1px solid #ddd;">
 
@@ -874,7 +874,7 @@ async function excluirMarca(id) {
   }
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
       ${mensagem}
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button type="button" class="btn btn-secondary" id="cancelarExcluirMarca">Cancelar</button>
@@ -1004,7 +1004,7 @@ function editarModelo(id, nome, marca) {
   popup.style.zIndex = "9999";
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
       <h5>📱 Editar Modelo</h5>
       <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
       <form id="formEditarModelo">
@@ -1115,7 +1115,7 @@ async function excluirModelo(id) {
   popup.style.zIndex = "9999";
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
       <h5>Excluir Modelo</h5>
       <p>Tem certeza que deseja excluir este modelo?</p>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -1249,7 +1249,7 @@ function editarTipo(id, nome) {
   popup.style.zIndex = "9999";
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;width:40vw;">
+    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;width:40vw;">
       <h5>📋 Editar Tipo</h5>
       <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
       <form id="formEditarTipo">
@@ -1335,7 +1335,7 @@ async function excluirTipo(id) {
   popup.style.zIndex = "9999";
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
       <h5>Excluir Tipo</h5>
       <p>Tem certeza que deseja excluir este tipo?</p>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -1470,7 +1470,7 @@ function editarCor(id, nome) {
   popup.style.zIndex = "9999";
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
       <h5>🎨 Editar Cor</h5>
       <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
       <form id="formEditarCor">
@@ -1559,7 +1559,7 @@ async function excluirCor(id) {
   popup.style.zIndex = "9999";
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
       <h5>Excluir Cor</h5>
       <p>Tem certeza que deseja excluir esta cor?</p>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -2116,7 +2116,7 @@ async function excluirPro(id) {
   popup.style.zIndex = "9999";
 
   popup.innerHTML = `
-    <div style="background:#fff;padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
+    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
       <h5>Excluir Peça</h5>
       <p>Tem certeza que deseja excluir esta peça?</p>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -2229,7 +2229,7 @@ function criarOverlay() {
 function criarPopup(titulo) {
   const popup = document.createElement("div");
   popup.classList.add("popup");
-  popup.style.background = "#fff";
+  popup.style.background = "var(--ou-surface)";
   popup.style.padding = "20px";
   popup.style.borderRadius = "8px";
   popup.style.maxHeight = "80vh";
@@ -2535,7 +2535,7 @@ function toggleOrdemModelo() {
 function criarPopupPeca(titulo) {
   const popup = document.createElement("div");
   popup.classList.add("popup");
-  popup.style.background = "#fff";
+  popup.style.background = "var(--ou-surface)";
   popup.style.padding = "20px";
   popup.style.borderRadius = "8px";
   popup.style.maxHeight = "80vh";

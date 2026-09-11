@@ -6,7 +6,7 @@
       position: relative;
       border-radius: 8px;
       overflow: hidden;
-      background-color: #f8f9fa;
+      background-color: var(--ou-surface-2);
       width: 100%;
       /* 🔥 garante 100% da largura do card */
       height: 100%;
@@ -19,7 +19,7 @@
     .chart-wrapper canvas {
       width: 100% !important;
       height: 320px !important;
-      background-color: #fff !important;
+      background-color: var(--ou-surface) !important;
       border-radius: 8px;
       display: block;
     }
@@ -29,7 +29,7 @@
       position: absolute;
       inset: 0;
       padding: 20px;
-      background: #fff;
+      background: var(--ou-surface);
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
@@ -48,6 +48,6 @@
     }
 
     .subtle {
-      color: #6c757d;
+      color: var(--ou-text-muted);
       font-size: .82rem;
     }

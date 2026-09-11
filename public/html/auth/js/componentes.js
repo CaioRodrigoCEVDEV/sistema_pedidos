@@ -1,5 +1,6 @@
 function createHeader() {
   const header = document.getElementById("header-admin");
+  if (!header) return;
   header.innerHTML = `
   <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm bg-white rounded p-2 m-1">
         <a class="navbar-brand" href="index" id="nomeEmpresa"><img src="/uploads/logo.jpg" width="30" height="30"
@@ -79,6 +80,11 @@ function createHeader() {
         window.location.href = "/index";
       });
     });
+  }
+
+  // Injeta o seletor de aparência no menu do usuário (se o tema estiver ativo).
+  if (window.OrderUpTheme && typeof window.OrderUpTheme.mount === "function") {
+    window.OrderUpTheme.mount();
   }
 }
 

@@ -1,132 +1,150 @@
 const pool = require("../config/db");
+const {
+  onlyDigits,
+  validarCliente,
+} = require("../utils/clienteValidacao");
 
-exports.cadastrarCliente = async (req, res) => {
-  try {
-    const result = await cliModels.cadastrarCliente();
-    res.status(200).json(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erro ao buscar produtos estoque" });
-  }
+const parseId = (value) => {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : null;
 };
 
-// Utils rápidos
-const onlyDigits = (s) => (s || '').replace(/\D/g, '');
-const isCpf = (d) => d && d.length === 11;
-const isCnpj = (d) => d && d.length === 14;
-const isEmail = (s) => !s || /^[^@]+@[^@]+\.[^@]+$/.test(s);
-const isCep = (s) => !s || /^[0-9]{5}-?[0-9]{3}$/.test(s);
-
-// (Opcional) validação de CPF/CNPJ por dígitos verificadores — simples e eficiente:
-function validaCPF(cpf) {
-  cpf = onlyDigits(cpf);
-  if (!isCpf(cpf) || /^(\d)\1+$/.test(cpf)) return false;
-  let sum=0; for (let i=0;i<9;i++) sum+=parseInt(cpf[i])*(10-i);
-  let d1 = 11 - (sum % 11); d1 = d1 >= 10 ? 0 : d1;
-  sum=0; for (let i=0;i<10;i++) sum+=parseInt(cpf[i])*(11-i);
-  let d2 = 11 - (sum % 11); d2 = d2 >= 10 ? 0 : d2;
-  return d1 === parseInt(cpf[9]) && d2 === parseInt(cpf[10]);
-}
-function validaCNPJ(cnpj) {
-  cnpj = onlyDigits(cnpj);
-  if (!isCnpj(cnpj) || /^(\d)\1+$/.test(cnpj)) return false;
-  const calc = (base) => {
-    let len = base.length, pos = len - 7, sum = 0;
-    for (let i = len; i >= 1; i--) {
-      sum += base[len - i] * pos--;
-      if (pos < 2) pos = 9;
-    }
-    const r = sum % 11;
-    return r < 2 ? 0 : 11 - r;
-  };
-  const b = cnpj.slice(0, 12).split('').map(Number);
-  const d1 = calc(b);
-  const d2 = calc([...b, d1]);
-  return d1 === parseInt(cnpj[12]) && d2 === parseInt(cnpj[13]);
-}
-const validaDoc = (doc) => {
-  const d = onlyDigits(doc);
-  return (isCpf(d) && validaCPF(d)) || (isCnpj(d) && validaCNPJ(d));
+// Sinal aplicado ao saldo devedor do cliente:
+//   positivo -> aumenta o que o cliente deve
+//   negativo -> reduz o que o cliente deve (crédito/pagamento/estorno)
+const SINAL_MOVIMENTO = {
+  DEBITO: 1,
+  COBRANCA: 1,
+  PAGAMENTO: -1,
+  CREDITO: -1,
+  ESTORNO: -1,
+  AJUSTE: 1,
 };
 
-// CREATE: insere em par + cli (transação)
+const TIPOS_MOVIMENTO = Object.keys(SINAL_MOVIMENTO);
+
+// Registra uma movimentação e atualiza o saldo dentro da MESMA transação.
+// O saldo nunca é sobrescrito sem o respectivo lançamento no histórico.
+async function registrarMovimentacao(client, { parcod, tipo, valor, descricao, ref, usucod }) {
+  const sinal = SINAL_MOVIMENTO[tipo];
+  const magnit = Number(valor);
+  const delta = Number((Math.abs(magnit) * sinal).toFixed(2));
+
+  const contaResult = await client.query(
+    `INSERT INTO public.cli_conta (cliparcod, contasaldo)
+     VALUES ($1, 0)
+     ON CONFLICT (cliparcod) DO NOTHING
+     RETURNING cliparcod`,
+    [parcod]
+  );
+  void contaResult;
+
+  const atual = await client.query(
+    `SELECT contasaldo FROM public.cli_conta WHERE cliparcod = $1 FOR UPDATE`,
+    [parcod]
+  );
+  const saldoAnterior = Number(atual.rows[0]?.contasaldo || 0);
+  const saldoNovo = Number((saldoAnterior + delta).toFixed(2));
+
+  const mov = await client.query(
+    `INSERT INTO public.cli_mov
+       (movparcod, movtipo, movvalor, movsaldo, movdesc, movref, movusucod)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
+     RETURNING *`,
+    [parcod, tipo, delta, saldoNovo, descricao || null, ref || null, usucod || null]
+  );
+
+  await client.query(
+    `UPDATE public.cli_conta
+     SET contasaldo = $1, contadtua = now()
+     WHERE cliparcod = $2`,
+    [saldoNovo, parcod]
+  );
+
+  return mov.rows[0];
+}
+
+// CREATE: insere em par + cli + cli_conta (transação)
 exports.create = async (req, res) => {
-  const {
-    parcnpjcpf, parierg, pardes, parfan, parrua, parbai,
-    parmuncod, parcep, parfone, paremail,
-    clibloq = false, clilim = 0
-  } = req.body || {};
+  const { ok, errors, data } = validarCliente(req.body || {});
+  if (!ok) return res.status(400).json({ error: errors.join(" ") });
 
+  const client = await pool.connect();
   try {
-    // validações mínimas
-    const doc = onlyDigits(parcnpjcpf);
-    if (!pardes || !doc) return res.status(400).json({ error: 'pardes e parcnpjcpf são obrigatórios' });
-    if (!validaDoc(doc)) return res.status(400).json({ error: 'CPF/CNPJ inválido' });
-    if (!Number.isInteger(parmuncod)) return res.status(400).json({ error: 'parmuncod inválido' });
-    if (!isEmail(paremail)) return res.status(400).json({ error: 'email inválido' });
-    if (!isCep(parcep)) return res.status(400).json({ error: 'CEP inválido' });
+    await client.query("BEGIN");
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
+    const insertPar = `
+      INSERT INTO public.par
+        (parcnpjcpf, parierg, pardes, parfan, parrua, parbai, parmuncod, parcep, parfone, paremail, parsit)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      RETURNING *`;
+    const { rows: r1 } = await client.query(insertPar, [
+      data.parcnpjcpf,
+      data.parierg ?? null,
+      data.pardes,
+      data.parfan ?? null,
+      data.parrua ?? null,
+      data.parbai ?? null,
+      data.parmuncod ?? null,
+      data.parcep ?? null,
+      data.parfone,
+      data.paremail ?? null,
+      data.parsit ?? "A",
+    ]);
+    const par = r1[0];
 
-      const insertPar = `
-        INSERT INTO public.par
-          (parcnpjcpf, parierg, pardes, parfan, parrua, parbai, parmuncod, parcep, parfone, paremail)
-        VALUES
-          ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-        RETURNING parcod, pardes, parfan, parcnpjcpf, parmuncod, parcep, parfone, paremail, pardcad, parsit`;
-      const parValues = [doc, parierg || null, pardes, parfan || null, parrua || null, parbai || null,
-                         parmuncod, parcep || null, parfone || null, paremail || null];
-      const { rows: r1 } = await client.query(insertPar, parValues);
-      const par = r1[0];
+    await client.query(
+      `INSERT INTO public.cli (cliparcod, clibloq, clilim) VALUES ($1, false, 0)`,
+      [par.parcod]
+    );
+    await client.query(
+      `INSERT INTO public.cli_conta (cliparcod, contasaldo) VALUES ($1, 0)`,
+      [par.parcod]
+    );
 
-      const insertCli = `
-        INSERT INTO public.cli (cliparcod, clibloq, clilim)
-        VALUES ($1,$2,$3)
-        RETURNING cliparcod, clibloq, clilim`;
-      const { rows: r2 } = await client.query(insertCli, [par.parcod, !!clibloq, Number(clilim) || 0]);
-
-      await client.query('COMMIT');
-      return res.status(201).json({ ...par, ...r2[0] });
-    } catch (e) {
-      await client.query('ROLLBACK');
-      // violação de unique (doc/email)
-      if (e.code === '23505') return res.status(409).json({ error: 'Documento ou e-mail já cadastrado' });
-      if (e.code === '23503') return res.status(400).json({ error: 'Município inválido (FK)' });
-      throw e;
-    } finally {
-      client.release();
-    }
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'erro ao criar cliente' });
+    await client.query("COMMIT");
+    return res.status(201).json({ ...par, clibloq: false, clilim: 0, contasaldo: 0 });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    if (e.code === "23505") return res.status(409).json({ error: "CPF/CNPJ já cadastrado." });
+    if (e.code === "23503") return res.status(400).json({ error: "Município inválido." });
+    console.error(e);
+    return res.status(500).json({ error: "Erro ao criar cliente." });
+  } finally {
+    client.release();
   }
 };
 
-// LIST: paginação + busca por nome/fantasia/doc
+// LIST: paginação + busca por nome/fantasia/doc/telefone
 exports.list = async (req, res) => {
-  const page = Math.max(parseInt(req.query.page) || 1, 1);
-  const pageSize = Math.min(Math.max(parseInt(req.query.pageSize) || 20, 1), 200);
-  const q = (req.query.q || '').trim();
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const pageSize = Math.min(Math.max(parseInt(req.query.pageSize, 10) || 20, 1), 200);
+  const q = (req.query.q || "").trim();
   const off = (page - 1) * pageSize;
 
-  // filtro flexível: ILIKE; se tiver pg_trgm e quiser, dá pra usar similarity
-  const filters = [];
   const params = [];
+  let where = "";
   if (q) {
-    params.push(`%${q}%`);
-    params.push(`%${q}%`);
-    params.push(onlyDigits(q)); // busca por doc sem máscara
-    filters.push(`(p.pardes ILIKE $${params.length-2} OR p.parfan ILIKE $${params.length-1} OR p.parcnpjcpf = $${params.length})`);
+    const like = `%${q}%`;
+    params.push(like, like);
+    const doc = onlyDigits(q);
+    params.push(doc ? doc : null);
+    const phone = onlyDigits(q);
+    params.push(phone ? `%${phone}%` : null);
+    where = `WHERE (
+      p.pardes ILIKE $1 OR
+      COALESCE(p.parfan, '') ILIKE $2 OR
+      ($3::text IS NOT NULL AND p.parcnpjcpf = $3) OR
+      ($4::text IS NOT NULL AND regexp_replace(COALESCE(p.parfone, ''), '\\D', '', 'g') LIKE $4)
+    )`;
   }
-  const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
   const base = `
     FROM public.par p
     JOIN public.cli c ON c.cliparcod = p.parcod
-    JOIN public.mun m ON m.muncod = p.parmuncod
-    JOIN public.uf u  ON u.ufsigla = m.munufsigla
+    LEFT JOIN public.cli_conta ct ON ct.cliparcod = p.parcod
+    LEFT JOIN public.mun m ON m.muncod = p.parmuncod
+    LEFT JOIN public.uf u  ON u.ufsigla = m.munufsigla
   `;
 
   try {
@@ -136,8 +154,13 @@ exports.list = async (req, res) => {
 
     const dataSql = `
       SELECT p.parcod, p.pardes, p.parfan, p.parcnpjcpf, p.parrua, p.parbai, p.parcep, p.parfone, p.paremail,
-             m.muncod, m.mundes, u.ufsigla,
-             c.clibloq, c.clilim, p.pardcad, p.pardua, p.parsit
+             p.parmuncod, m.mundes, u.ufsigla,
+             c.clibloq, c.clilim, COALESCE(ct.contasaldo, 0) AS contasaldo,
+             COALESCE((SELECT SUM(cb.cobvalor) FROM public.cli_cobranca cb
+                       WHERE cb.cobparcod = p.parcod AND cb.cobsta = 'A'), 0) AS em_aberto,
+             p.pardcad, p.pardua, p.parsit,
+             (SELECT COUNT(*) FROM public.pv
+               WHERE pv.pvparcod = p.parcod AND COALESCE(pv.pvsta, 'A') <> 'X') AS pedidos_vinculados
       ${base} ${where}
       ORDER BY p.pardes ASC
       LIMIT ${pageSize} OFFSET ${off}`;
@@ -146,116 +169,516 @@ exports.list = async (req, res) => {
     return res.json({ page, pageSize, total, data: rows });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'erro ao listar clientes' });
+    return res.status(500).json({ error: "Erro ao listar clientes." });
   }
 };
 
 // GET by ID
 exports.getById = async (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'id inválido' });
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: "id inválido" });
 
   const sql = `
     SELECT p.parcod, p.pardes, p.parfan, p.parcnpjcpf, p.parrua, p.parbai, p.parcep, p.parfone, p.paremail,
            p.parierg, p.parmuncod, m.mundes, u.ufsigla,
-           c.clibloq, c.clilim, p.pardcad, p.pardua, p.parsit
+           c.clibloq, c.clilim, COALESCE(ct.contasaldo, 0) AS contasaldo,
+           p.pardcad, p.pardua, p.parsit
     FROM public.par p
     JOIN public.cli c ON c.cliparcod = p.parcod
-    JOIN public.mun m ON m.muncod = p.parmuncod
-    JOIN public.uf u  ON u.ufsigla = m.munufsigla
+    LEFT JOIN public.cli_conta ct ON ct.cliparcod = p.parcod
+    LEFT JOIN public.mun m ON m.muncod = p.parmuncod
+    LEFT JOIN public.uf u  ON u.ufsigla = m.munufsigla
     WHERE p.parcod = $1
   `;
   try {
     const { rows } = await pool.query(sql, [id]);
-    if (!rows.length) return res.status(404).json({ error: 'cliente não encontrado' });
+    if (!rows.length) return res.status(404).json({ error: "Cliente não encontrado." });
     return res.json(rows[0]);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'erro ao buscar cliente' });
+    return res.status(500).json({ error: "Erro ao buscar cliente." });
   }
 };
 
-// UPDATE: atualiza campos de PAR e CLI
+// UPDATE: atualiza PAR/CLI (campos legados clibloq/clilim continuam aceitos)
 exports.update = async (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'id inválido' });
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: "id inválido" });
 
-  const {
-    parcnpjcpf, parierg, pardes, parfan, parrua, parbai,
-    parmuncod, parcep, parfone, paremail,
-    clibloq, clilim, parsit
-  } = req.body || {};
-
-  // validações pontuais se vierem no body
-  if (parcnpjcpf && !validaDoc(parcnpjcpf)) return res.status(400).json({ error: 'CPF/CNPJ inválido' });
-  if (paremail && !isEmail(paremail)) return res.status(400).json({ error: 'email inválido' });
-  if (parcep && !isCep(parcep)) return res.status(400).json({ error: 'CEP inválido' });
+  const { ok, errors, data } = validarCliente(req.body || {}, { partial: true });
+  if (!ok) return res.status(400).json({ error: errors.join(" ") });
 
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
-    // Update PAR (só campos enviados)
-    const fieldsPar = [];
-    const valuesPar = [];
-    const push = (col, val) => { valuesPar.push(val); fieldsPar.push(`${col} = $${valuesPar.length}`); };
+    const fields = [];
+    const values = [];
+    const push = (col, val) => {
+      values.push(val);
+      fields.push(`${col} = $${values.length}`);
+    };
 
-    if (parcnpjcpf) push('parcnpjcpf', onlyDigits(parcnpjcpf));
-    if (parierg !== undefined) push('parierg', parierg || null);
-    if (pardes) push('pardes', pardes);
-    if (parfan !== undefined) push('parfan', parfan || null);
-    if (parrua !== undefined) push('parrua', parrua || null);
-    if (parbai !== undefined) push('parbai', parbai || null);
-    if (Number.isInteger(parmuncod)) push('parmuncod', parmuncod);
-    if (parcep !== undefined) push('parcep', parcep || null);
-    if (parfone !== undefined) push('parfone', parfone || null);
-    if (paremail !== undefined) push('paremail', paremail || null);
-    if (parsit !== undefined) push('parsit', parsit);
-
-    if (fieldsPar.length) {
-      // pardua atualiza via trigger; se não criou trigger, atualize aqui:
-      fieldsPar.push(`pardua = now()`);
-      valuesPar.push(id);
-      const sqlPar = `UPDATE public.par SET ${fieldsPar.join(', ')} WHERE parcod = $${valuesPar.length}`;
-      await client.query(sqlPar, valuesPar);
+    for (const [col, val] of Object.entries({
+      parcnpjcpf: data.parcnpjcpf,
+      parierg: data.parierg,
+      pardes: data.pardes,
+      parfan: data.parfan,
+      parrua: data.parrua,
+      parbai: data.parbai,
+      parmuncod: data.parmuncod,
+      parcep: data.parcep,
+      parfone: data.parfone,
+      paremail: data.paremail,
+      parsit: data.parsit,
+    })) {
+      if (Object.prototype.hasOwnProperty.call(data, col)) push(col, val);
     }
 
-    // Update CLI
-    const fieldsCli = [];
-    const valuesCli = [];
-    if (clibloq !== undefined) { valuesCli.push(!!clibloq); fieldsCli.push(`clibloq = $${valuesCli.length}`); }
-    if (clilim !== undefined)  { valuesCli.push(Number(clilim) || 0); fieldsCli.push(`clilim = $${valuesCli.length}`); }
-    if (fieldsCli.length) {
-      valuesCli.push(id);
-      const sqlCli = `UPDATE public.cli SET ${fieldsCli.join(', ')} WHERE cliparcod = $${valuesCli.length}`;
-      await client.query(sqlCli, valuesCli);
+    if (fields.length) {
+      fields.push(`pardua = now()`);
+      values.push(id);
+      await client.query(
+        `UPDATE public.par SET ${fields.join(", ")} WHERE parcod = $${values.length}`,
+        values
+      );
     }
 
-    await client.query('COMMIT');
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "clibloq")) {
+      await client.query(`UPDATE public.cli SET clibloq = $1 WHERE cliparcod = $2`, [
+        !!req.body.clibloq,
+        id,
+      ]);
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "clilim")) {
+      await client.query(`UPDATE public.cli SET clilim = $1 WHERE cliparcod = $2`, [
+        Number(req.body.clilim) || 0,
+        id,
+      ]);
+    }
+
+    await client.query("COMMIT");
     return exports.getById(req, res);
   } catch (e) {
-    await client.query('ROLLBACK');
-    if (e.code === '23505') return res.status(409).json({ error: 'Documento ou e-mail já cadastrado' });
-    if (e.code === '23503') return res.status(400).json({ error: 'Município inválido (FK)' });
+    await client.query("ROLLBACK");
+    if (e.code === "23505") return res.status(409).json({ error: "CPF/CNPJ já cadastrado." });
+    if (e.code === "23503") return res.status(400).json({ error: "Município inválido." });
     console.error(e);
-    return res.status(500).json({ error: 'erro ao atualizar cliente' });
+    return res.status(500).json({ error: "Erro ao atualizar cliente." });
   } finally {
     client.release();
   }
 };
 
-// DELETE: opcionalmente marque inativo em vez de excluir
+// DELETE: inativa (soft delete). ?hard=1 remove definitivamente se não houver vínculos.
 exports.remove = async (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'id inválido' });
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: "id inválido" });
+
+  const hard = req.query.hard === "1" || req.query.hard === "true";
 
   try {
-    await pool.query(`DELETE FROM public.cli WHERE cliparcod = $1`, [id]);
-    await pool.query(`DELETE FROM public.par WHERE parcod = $1`, [id]);
-    return res.json({ ok: true });
+    if (!hard) {
+      const { rowCount } = await pool.query(
+        `UPDATE public.par SET parsit = 'I', pardua = now() WHERE parcod = $1`,
+        [id]
+      );
+      if (!rowCount) return res.status(404).json({ error: "Cliente não encontrado." });
+      return res.json({ ok: true, inativado: true });
+    }
+
+    const vinculos = await pool.query(
+      `SELECT
+         (SELECT COUNT(*) FROM public.pv WHERE pvparcod = $1) AS pedidos,
+         (SELECT COUNT(*) FROM public.cli_mov WHERE movparcod = $1) AS movimentacoes,
+         (SELECT COUNT(*) FROM public.cli_cobranca WHERE cobparcod = $1) AS cobrancas`,
+      [id]
+    );
+    const v = vinculos.rows[0];
+    if (Number(v.pedidos) || Number(v.movimentacoes) || Number(v.cobrancas)) {
+      return res.status(409).json({
+        error: "Cliente possui vínculos (pedidos, movimentações ou cobranças). Inative em vez de excluir.",
+      });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(`DELETE FROM public.cli_mov WHERE movparcod = $1`, [id]);
+      await client.query(`DELETE FROM public.cli WHERE cliparcod = $1`, [id]);
+      await client.query(`DELETE FROM public.par WHERE parcod = $1`, [id]);
+      await client.query("COMMIT");
+      return res.json({ ok: true, excluido: true });
+    } catch (e) {
+      await client.query("ROLLBACK");
+      throw e;
+    } finally {
+      client.release();
+    }
   } catch (e) {
-    if (e.code === '23503') return res.status(409).json({ error: 'cliente possui vínculos e não pode ser removido' });
+    if (e.code === "23503") {
+      return res.status(409).json({ error: "Cliente possui vínculos e não pode ser removido." });
+    }
     console.error(e);
-    return res.status(500).json({ error: 'erro ao remover cliente' });
+    return res.status(500).json({ error: "Erro ao remover cliente." });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Pedidos vinculados
+// ---------------------------------------------------------------------------
+
+exports.listarPedidosCliente = async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: "id inválido" });
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT pv.pvcod, pv.pvdtcad, pv.pvcanal, pv.pvsta, pv.pvconfirmado,
+              COALESCE(pv.pvvl, 0) AS pvvl,
+              COALESCE(SUM(COALESCE(i.pviqtde, 0) * COALESCE(i.pvivl, 0)), 0) AS total_itens
+       FROM public.pv
+       LEFT JOIN public.pvi i ON i.pvipvcod = pv.pvcod
+       WHERE pv.pvparcod = $1
+       GROUP BY pv.pvcod
+       ORDER BY pv.pvcod DESC`,
+      [id]
+    );
+    return res.json(rows);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro ao listar pedidos do cliente." });
+  }
+};
+
+exports.listarPedidosDisponiveis = async (req, res) => {
+  const q = (req.query.q || "").trim();
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+  try {
+    const params = [];
+    let filtro = "";
+    if (q) {
+      const like = `%${q}%`;
+      params.push(like);
+      params.push(onlyDigits(q) || null);
+      filtro = `AND (
+        COALESCE(pv.pvobs, '') ILIKE $1 OR
+        ($2::text IS NOT NULL AND pv.pvcod = $2::int)
+      )`;
+    }
+    params.push(limit);
+    const { rows } = await pool.query(
+      `SELECT pv.pvcod, pv.pvdtcad, pv.pvcanal, pv.pvconfirmado, pv.pvsta,
+              COALESCE(pv.pvvl, 0) AS pvvl
+       FROM public.pv
+       WHERE pv.pvparcod IS NULL
+         ${filtro}
+       ORDER BY pv.pvcod DESC
+       LIMIT $${params.length}`,
+      params
+    );
+    return res.json(rows);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro ao listar pedidos disponíveis." });
+  }
+};
+
+exports.vincularPedido = async (req, res) => {
+  const id = parseId(req.params.id);
+  const pvcod = parseId(req.params.pvcod);
+  if (!id || !pvcod) return res.status(400).json({ error: "Parâmetros inválidos." });
+
+  try {
+    const pedido = await pool.query(`SELECT pvparcod FROM public.pv WHERE pvcod = $1`, [pvcod]);
+    if (!pedido.rows.length) return res.status(404).json({ error: "Pedido não encontrado." });
+    if (pedido.rows[0].pvparcod && Number(pedido.rows[0].pvparcod) !== id) {
+      return res.status(409).json({ error: "Pedido já vinculado a outro cliente." });
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE public.pv SET pvparcod = $1 WHERE pvcod = $2 RETURNING pvcod, pvparcod`,
+      [id, pvcod]
+    );
+    return res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro ao vincular pedido." });
+  }
+};
+
+exports.desvincularPedido = async (req, res) => {
+  const id = parseId(req.params.id);
+  const pvcod = parseId(req.params.pvcod);
+  if (!id || !pvcod) return res.status(400).json({ error: "Parâmetros inválidos." });
+
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE public.pv SET pvparcod = NULL WHERE pvcod = $1 AND pvparcod = $2`,
+      [pvcod, id]
+    );
+    if (!rowCount) return res.status(404).json({ error: "Vínculo não encontrado." });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro ao desvincular pedido." });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Conta do cliente
+// ---------------------------------------------------------------------------
+
+exports.resumoConta = async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: "id inválido" });
+
+  try {
+    // Crédito é o saldo do extrato do cliente. Lançamentos gerados por
+    // cobranças (ref "COB:*") NÃO entram aqui para não compensar crédito
+    // com cobrança automaticamente.
+    const creditoMov = await pool.query(
+      `SELECT COALESCE(SUM(movvalor), 0) AS saldo
+       FROM public.cli_mov
+       WHERE movparcod = $1
+         AND COALESCE(movref, '') NOT LIKE 'COB:%'`,
+      [id]
+    );
+    const saldoCredito = Number(creditoMov.rows[0]?.saldo || 0);
+
+    const conta = await pool.query(
+      `SELECT contadtua FROM public.cli_conta WHERE cliparcod = $1`,
+      [id]
+    );
+    const pedidos = await pool.query(
+      `SELECT COUNT(*)::int AS total,
+              COALESCE(SUM(COALESCE(pvvl, 0)), 0) AS valor
+       FROM public.pv
+       WHERE pvparcod = $1 AND COALESCE(pvsta, 'A') <> 'X'`,
+      [id]
+    );
+    const cobrancas = await pool.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE cobsta = 'A')::int AS abertas,
+         COALESCE(SUM(cobvalor) FILTER (WHERE cobsta = 'A'), 0) AS valor_aberto
+       FROM public.cli_cobranca WHERE cobparcod = $1`,
+      [id]
+    );
+
+    const emAberto = Number(cobrancas.rows[0]?.valor_aberto || 0);
+
+    return res.json({
+      // "Em aberto" = cobranças pendentes, auditável na aba Cobranças.
+      em_aberto: emAberto,
+      cobrancas_abertas: cobrancas.rows[0]?.abertas || 0,
+      // "Crédito" = saldo a favor, independente das cobranças.
+      credito: Math.max(-saldoCredito, 0),
+      saldo_conta: saldoCredito,
+      contadtua: conta.rows[0]?.contadtua || null,
+      pedidos_vinculados: pedidos.rows[0]?.total || 0,
+      valor_pedidos: Number(pedidos.rows[0]?.valor || 0),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro ao carregar conta do cliente." });
+  }
+};
+
+exports.listarMovimentacoes = async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: "id inválido" });
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 100, 1), 500);
+
+  try {
+    // Extrato de crédito: cobranças têm sua própria aba, então lançamentos
+    // gerados por elas não aparecem aqui.
+    const { rows } = await pool.query(
+      `SELECT movcod, movtipo, movvalor, movsaldo, movdesc, movref, movdtcad
+       FROM public.cli_mov
+       WHERE movparcod = $1
+         AND COALESCE(movref, '') NOT LIKE 'COB:%'
+       ORDER BY movcod DESC
+       LIMIT $2`,
+      [id, limit]
+    );
+    return res.json(rows);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro ao listar movimentações." });
+  }
+};
+
+// Lançamento manual. tipo define o efeito no saldo de crédito do extrato.
+exports.criarMovimentacao = async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: "id inválido" });
+
+  const { tipo, valor, descricao, ref } = req.body || {};
+  if (!TIPOS_MOVIMENTO.includes(tipo)) {
+    return res.status(400).json({ error: `Tipo inválido. Use: ${TIPOS_MOVIMENTO.join(", ")}.` });
+  }
+  const num = Number(valor);
+  if (!Number.isFinite(num) || num === 0) {
+    return res.status(400).json({ error: "Valor inválido." });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const mov = await registrarMovimentacao(client, {
+      parcod: id,
+      tipo,
+      valor: num,
+      descricao,
+      ref,
+      usucod: req.token?.usucod,
+    });
+    await client.query("COMMIT");
+    return res.status(201).json(mov);
+  } catch (e) {
+    await client.query("ROLLBACK");
+    if (e.code === "23503") return res.status(404).json({ error: "Cliente não encontrado." });
+    console.error(e);
+    return res.status(500).json({ error: "Erro ao registrar movimentação." });
+  } finally {
+    client.release();
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Cobranças
+// ---------------------------------------------------------------------------
+
+exports.listarCobrancas = async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: "id inválido" });
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT c.cobcod, c.cobpvcod, c.cobvalor, c.cobvenc, c.cobsta,
+              c.cobobs, c.cobdtcad, c.cobdtpg
+       FROM public.cli_cobranca c
+       WHERE c.cobparcod = $1
+       ORDER BY c.cobsta = 'A' DESC, c.cobcod DESC`,
+      [id]
+    );
+    return res.json(rows);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro ao listar cobranças." });
+  }
+};
+
+exports.criarCobranca = async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: "id inválido" });
+
+  const { cobpvcod, cobvalor, cobvenc, cobobs } = req.body || {};
+  const valor = Number(cobvalor);
+  if (!Number.isFinite(valor) || valor <= 0) {
+    return res.status(400).json({ error: "Valor da cobrança inválido." });
+  }
+  const pvcod = parseId(cobpvcod);
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Cobrança é um título a receber: altera o "Em aberto", mas NÃO o
+    // crédito do cliente (sem compensação automática).
+    const insert = await client.query(
+      `INSERT INTO public.cli_cobranca
+         (cobparcod, cobpvcod, cobvalor, cobvenc, cobobs, cobusucod)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       RETURNING *`,
+      [id, pvcod, valor, cobvenc || null, cobobs || null, req.token?.usucod || null]
+    );
+
+    await client.query("COMMIT");
+    return res.status(201).json(insert.rows[0]);
+  } catch (e) {
+    await client.query("ROLLBACK");
+    if (e.code === "23503") return res.status(400).json({ error: "Cliente ou pedido inválido." });
+    console.error(e);
+    return res.status(500).json({ error: "Erro ao criar cobrança." });
+  } finally {
+    client.release();
+  }
+};
+
+async function carregarCobranca(client, id, cobcod) {
+  const { rows } = await client.query(
+    `SELECT * FROM public.cli_cobranca WHERE cobcod = $1 AND cobparcod = $2 FOR UPDATE`,
+    [cobcod, id]
+  );
+  return rows[0] || null;
+}
+
+exports.baixarCobranca = async (req, res) => {
+  const id = parseId(req.params.id);
+  const cobcod = parseId(req.params.cobcod);
+  if (!id || !cobcod) return res.status(400).json({ error: "Parâmetros inválidos." });
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const cobranca = await carregarCobranca(client, id, cobcod);
+    if (!cobranca) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Cobrança não encontrada." });
+    }
+    if (cobranca.cobsta !== "A") {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "Cobrança não está aberta." });
+    }
+
+    await client.query(
+      `UPDATE public.cli_cobranca
+       SET cobsta = 'P', cobdtpg = now()
+       WHERE cobcod = $1`,
+      [cobcod]
+    );
+
+    await client.query("COMMIT");
+    return res.json({ ok: true, cobcod, cobsta: "P" });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    console.error(e);
+    return res.status(500).json({ error: "Erro ao baixar cobrança." });
+  } finally {
+    client.release();
+  }
+};
+
+exports.cancelarCobranca = async (req, res) => {
+  const id = parseId(req.params.id);
+  const cobcod = parseId(req.params.cobcod);
+  if (!id || !cobcod) return res.status(400).json({ error: "Parâmetros inválidos." });
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const cobranca = await carregarCobranca(client, id, cobcod);
+    if (!cobranca) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Cobrança não encontrada." });
+    }
+    if (cobranca.cobsta !== "A") {
+      await client.query("ROLLBACK");
+      return res.status(409).json({
+        error: "Somente cobranças abertas podem ser canceladas.",
+      });
+    }
+
+    await client.query(`UPDATE public.cli_cobranca SET cobsta = 'C' WHERE cobcod = $1`, [cobcod]);
+
+    await client.query("COMMIT");
+    return res.json({ ok: true, cobcod, cobsta: "C" });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    console.error(e);
+    return res.status(500).json({ error: "Erro ao cancelar cobrança." });
+  } finally {
+    client.release();
   }
 };

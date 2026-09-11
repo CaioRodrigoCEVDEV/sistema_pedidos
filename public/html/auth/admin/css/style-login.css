@@ -32,7 +32,7 @@ Container e cartão do login
   
 
   .login-card {
-    background: #ffffff;
+    background: var(--ou-surface);
     border-radius: 20px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
     width: 100%;
@@ -89,7 +89,7 @@ Campos do formulário
 ================================ */
   label {
     font-weight: 500;
-    color: #333;
+    color: var(--ou-text);
     margin-bottom: 6px;
     display: block;
     font-size: 0.9rem;
@@ -99,7 +99,7 @@ Campos do formulário
     width: 100%;
     border-radius: 10px;
     padding: 10px 14px;
-    border: 1px solid #dce3ec;
+    border: 1px solid var(--ou-border);
     margin-bottom: 14px;
     transition: all 0.3s ease;
   }
@@ -121,7 +121,7 @@ Checkbox e botões
 
   .form-check-label {
     font-size: 0.9rem;
-    color: #555;
+    color: var(--ou-text-muted);
     cursor: pointer;
   }
 
