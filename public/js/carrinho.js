@@ -42,15 +42,19 @@ document.addEventListener("DOMContentLoaded", function () {
       const empusapv = data.empusapv;
 
       const botaoOrcamento = document.getElementById("botao-orcamento");
+      const botaoRegistrar = document.getElementById("botao-registrar-pedido");
 
       const usuarioLogado = await carregarUsuarioLogado();
 
       if (usuarioLogado && empusapv === "S") {
         botaoOrcamento.style.display = "inline";
+        botaoRegistrar.style.display = "inline";
       } else if (usuarioLogado && empusapv === "N") {
         botaoOrcamento.style.display = "inline";
+        botaoRegistrar.style.display = "inline";
       } else {
         botaoOrcamento.style.display = "none";
+        botaoRegistrar.style.display = "none";
       }
     })
     .catch((error) => {
@@ -610,5 +614,126 @@ function copiarOrcamentoParaClipboard() {
       showToast("Falha ao copiar o texto. Copie manualmente.", "error");
     }
     document.body.removeChild(textarea);
+  }
+}
+
+// Abre um modal de confirmação no padrão do sistema e resolve true/false
+function confirmarRegistroPedido() {
+  return new Promise((resolve) => {
+    const modalEl = document.getElementById("confirmarRegistroModal");
+    const btnConfirmar = document.getElementById("confirmarRegistroBtn");
+
+    // Fallback caso o modal ou o Bootstrap não estejam disponíveis
+    if (!modalEl || !btnConfirmar || !window.bootstrap) {
+      resolve(
+        window.confirm(
+          "Confirmar o registro deste pedido? O carrinho será finalizado."
+        )
+      );
+      return;
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    let confirmou = false;
+
+    const onConfirmar = () => {
+      confirmou = true;
+      modal.hide();
+    };
+
+    const onHidden = () => {
+      btnConfirmar.removeEventListener("click", onConfirmar);
+      modalEl.removeEventListener("hidden.bs.modal", onHidden);
+      resolve(confirmou);
+    };
+
+    btnConfirmar.addEventListener("click", onConfirmar);
+    modalEl.addEventListener("hidden.bs.modal", onHidden);
+    modal.show();
+  });
+}
+
+// função para registrar o pedido diretamente, sem envio por WhatsApp e sem copiar orçamento
+async function registrarPedido() {
+  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+  if (cart.length === 0) {
+    showToast("Seu carrinho está vazio!", "warning");
+    return;
+  }
+
+  if (!(await confirmarRegistroPedido())) {
+    return;
+  }
+
+  const disabledDiv = document.getElementById("divFinalizar");
+  try {
+    disabledDiv.style.pointerEvents = "none";
+    disabledDiv.style.opacity = "0.6";
+    disabledDiv.style.userSelect = "none";
+  } catch (error) {
+    console.error("Failed", error);
+  }
+
+  const observacoes = document.getElementById("observacoes").value.trim();
+
+  let totalValue = 0;
+  cart.forEach((item) => {
+    const valor = parseFloat(item.preco) || 0;
+    const qtde = item.qt || 0;
+    totalValue += valor * qtde;
+  });
+
+  try {
+    const respSeq = await fetch("/pedidos/sequencia");
+    const seqData = await respSeq.json();
+    const pvcod = seqData.nextval;
+
+    const respPedido = await fetch(`${BASE_URL}/pedidos/enviar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pvcod,
+        cart,
+        total: totalValue,
+        obs: observacoes,
+        canal: "VENDA",
+        status: "A",
+        confirmado: "N",
+        codigoVendedor: (await buscarUsuario()) || null,
+      }),
+    });
+    const data = await respPedido.json();
+
+    if (!respPedido.ok) {
+      console.error("Erro ao criar pedido:", data);
+      const mensagemErro =
+        data.error || "Erro ao processar pedido. Tente novamente.";
+      showToast(mensagemErro, "error");
+      reabilitarBotoes();
+      return;
+    }
+
+    console.log("Pedido registrado com sucesso:", data);
+
+    /// Limpa o carrinho no localStorage e na tela
+    localStorage.setItem("cart", JSON.stringify([]));
+    renderCart(); // Isso vai limpar a tabela e zerar o total
+
+    // Remove o parâmetro cart da URL
+    const url = new URL(window.location);
+    url.searchParams.delete("cart");
+    window.history.replaceState({}, document.title, url.pathname + url.search);
+
+    showToast("Pedido registrado com sucesso!", "success");
+
+    // Redireciona para o index após um pequeno delay
+    setTimeout(() => {
+      window.location.href = "index";
+    }, 500);
+  } catch (error) {
+    console.error("Erro ao processar pedido:", error);
+    showToast("Erro ao processar pedido. Tente novamente.", "error");
+    reabilitarBotoes();
   }
 }

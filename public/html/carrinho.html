@@ -106,6 +106,16 @@
                   Copiar &#128221;
                 </button>
               </div>
+              <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                <button
+                  id="botao-registrar-pedido"
+                  class="btn btn-primary w-100"
+                  style="display: none"
+                  onclick="registrarPedido()"
+                >
+                  Registrar Pedido &#128179;
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -115,11 +125,59 @@
       </footer>
     </div>
 
-    <script src="../js/componentes.js?v=2026.09.10.233855"></script>
-    <script src="/config.js?v=2026.09.10.233855"></script>
-    <script src="../js/toast.js?v=2026.09.10.233855"></script>
-    <script src="../js/carrinho.js?v=2026.09.10.233855"></script>
-    <script src="../js/nomeEmpresa.js?v=2026.09.10.233855"></script>
+    <!-- Modal de confirmação: Registrar Pedido -->
+    <div
+      class="modal fade"
+      id="confirmarRegistroModal"
+      tabindex="-1"
+      aria-labelledby="confirmarRegistroModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header">
+            <div>
+              <h2 class="modal-title h5 mb-1" id="confirmarRegistroModalLabel">
+                <i class="bi bi-check2-circle text-primary me-1"></i>Registrar
+                pedido
+              </h2>
+              <div class="small text-muted">
+                O pedido será finalizado e o carrinho esvaziado.
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Fechar"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">
+              Deseja realmente registrar este pedido?
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button type="button" id="confirmarRegistroBtn" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i>Registrar pedido
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/componentes.js?v=2026.09.10.235434"></script>
+    <script src="/config.js?v=2026.09.10.235434"></script>
+    <script src="../js/toast.js?v=2026.09.10.235434"></script>
+    <script src="../js/carrinho.js?v=2026.09.10.235434"></script>
+    <script src="../js/nomeEmpresa.js?v=2026.09.10.235434"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"

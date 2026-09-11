@@ -246,6 +246,18 @@ exports.listarPvEntregaNow = async (req, res) => {
 };
 
 
+exports.listarPvVendaNow = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "select count(*) from pv where pvcanal = 'VENDA' and pvsta = 'A' and pvdtcad::date = CURRENT_DATE"
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro buscar pedidos" });
+  }
+};
+
 exports.listarPvBalcaoNow = async (req, res) => {
   try {
     const result = await pool.query(

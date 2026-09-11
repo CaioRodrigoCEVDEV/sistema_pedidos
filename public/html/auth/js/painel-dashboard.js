@@ -167,6 +167,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const MESES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
       const balcao = Array(12).fill(0);
       const entrega = Array(12).fill(0);
+      const venda = Array(12).fill(0);
 
       (data || []).forEach(r => {
         const m = Math.max(1, Math.min(12, parseInt(r.mes, 10))) - 1;
@@ -174,9 +175,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         const v = parseFloat(r.vl_total_mes) || 0;
         if (canal === "BALCAO" || canal === "BALCÃO") balcao[m] += v;
         else if (canal === "ENTREGA") entrega[m] += v;
+        else if (canal === "VENDA") venda[m] += v;
       });
 
-      const totalAno = [...balcao, ...entrega].reduce((a, b) => a + b, 0);
+      const totalAno = [...balcao, ...entrega, ...venda].reduce((a, b) => a + b, 0);
 
       if (chartFaturamentoAnual) chartFaturamentoAnual.destroy();
       const ctx = prepareHiDPICanvas(canvas, 360);
@@ -200,6 +202,15 @@ document.addEventListener("DOMContentLoaded", async () => {
               data: entrega,
               backgroundColor: "#43A047",
               borderColor: "#2E7D32",
+              borderWidth: 1,
+              borderRadius: 6,
+              borderSkipped: false
+            },
+            {
+              label: "VENDA",
+              data: venda,
+              backgroundColor: "#fd7e14",
+              borderColor: "#e8590c",
               borderWidth: 1,
               borderRadius: 6,
               borderSkipped: false
@@ -440,6 +451,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const conf = await jget("/pedidos/total/confirmadosNow", []);
       const balcao = await jget("/pedidos/balcaoNow", []);
       const entrega = await jget("/pedidos/entregaNow", []);
+      const venda = await jget("/pedidos/vendaNow", []);
       const emfalta = await jget("/total/produto/emfalta", []);
       const acabando = await jget("/total/produto/acabando", []);
 
@@ -447,6 +459,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const confirmadosCount = toNum(conf?.[0]?.count);
       const balcaoCount = toNum(balcao?.[0]?.count);
       const entregaCount = toNum(entrega?.[0]?.count);
+      const vendaCount = toNum(venda?.[0]?.count);
       const emfaltaCount = toNum(emfalta?.[0]?.count);
       const acabandoCount = toNum(acabando?.[0]?.count);
 
@@ -482,9 +495,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       // 2) Canais
       chartDoughnut(
         document.getElementById("chartCanais"),
-        ["Balcão", "Entrega"],
-        [balcaoCount, entregaCount],
-        [COLORS.blue || COLORS.primary, COLORS.red]
+        ["Balcão", "Entrega", "VENDA"],
+        [balcaoCount, entregaCount, vendaCount],
+        [COLORS.blue || COLORS.primary, COLORS.red, COLORS.orange]
       );
 
       // 3) Estoque (barras)
