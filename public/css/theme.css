@@ -453,6 +453,23 @@ body,
   --bs-progress-bar-color: #fff;
 }
 
+/* Botões outline escuros e ícones de navbar no tema escuro */
+[data-theme="dark"] .btn-outline-dark {
+  --bs-btn-color: var(--ou-text);
+  --bs-btn-border-color: var(--ou-border);
+  --bs-btn-hover-color: var(--ou-text);
+  --bs-btn-hover-bg: var(--ou-surface-2);
+  --bs-btn-hover-border-color: var(--ou-border);
+  --bs-btn-active-color: var(--ou-text);
+  --bs-btn-active-bg: var(--ou-surface-3);
+  --bs-btn-active-border-color: var(--ou-border);
+  --bs-btn-disabled-color: var(--ou-text-muted);
+  --bs-btn-disabled-border-color: var(--ou-border);
+}
+[data-theme="dark"] .navbar-light .navbar-toggler-icon {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
 /* Botões de ação do painel de produtos */
 [data-theme="dark"] .pecas-btn-editar {
   background: rgba(37, 99, 235, 0.16);
