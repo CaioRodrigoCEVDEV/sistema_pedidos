@@ -94,6 +94,7 @@ function getSelectedTelas() {
 
 // Elementos
 const tbody = document.getElementById("usersTbody");
+const usersMobileList = document.getElementById("usersMobileList");
 const searchInput = document.getElementById("searchInput");
 const resultsInfo = document.getElementById("resultsInfo");
 const emptyState = document.getElementById("emptyState");
@@ -113,21 +114,51 @@ const btnDelete = document.getElementById("btnDelete");
 const btnNew = document.getElementById("btnNew");
 const btnRefresh = document.getElementById("btnRefresh");
 
-// Render da tabela
+// Badges para a listagem mobile (design system)
+function admBadge(usuadm) {
+  return usuadm === "S"
+    ? '<span class="ou-badge ou-badge--info"><span class="ou-badge__dot"></span>Sim</span>'
+    : '<span class="ou-badge ou-badge--neutral"><span class="ou-badge__dot"></span>Não</span>';
+}
+
+function statusBadge(ususta) {
+  if (ususta === "A") {
+    return '<span class="ou-badge ou-badge--success"><span class="ou-badge__dot"></span>Ativo</span>';
+  }
+  if (ususta === "I") {
+    return '<span class="ou-badge ou-badge--warning"><span class="ou-badge__dot"></span>Inativo</span>';
+  }
+  return '<span class="ou-badge ou-badge--danger"><span class="ou-badge__dot"></span>Excluído</span>';
+}
+
+function iniciais(nome, email) {
+  const base = String(nome || "").trim() || String(email || "").trim();
+  const partes = base.split(/\s+/).filter(Boolean);
+  if (!partes.length) return "?";
+  const a = partes[0][0] || "";
+  const b = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (a + b).toUpperCase() || "?";
+}
+
+// Render da tabela (desktop) e dos cards (mobile)
 function renderTable(list) {
   tbody.innerHTML = "";
+  usersMobileList.innerHTML = "";
   if (!list.length) {
     emptyState.style.display = "block";
   } else {
     emptyState.style.display = "none";
     for (const u of list) {
+      const nome = (u.usunome || "").trim();
+      const email = u.usuemail || "";
+
       const tr = document.createElement("tr");
       tr.dataset.usucod = u.usucod;
       tr.innerHTML = `
             
             <!--<td>${escapeHtml(u.usunome)}</td>-->
             <td>${u.usucod}</td>
-            <td>${escapeHtml(u.usuemail)}</td>
+            <td>${escapeHtml(email)}</td>
             <td>${
               u.usuadm === "S"
                 ? '<span class="badge bg-success">Sim</span>'
@@ -143,6 +174,48 @@ function renderTable(list) {
           `;
       tr.addEventListener("click", () => openUserModal(u.usucod));
       tbody.appendChild(tr);
+
+      const card = document.createElement("div");
+      card.className = "ou-mobile-card";
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-label", `Abrir usuário ${nome || email}`);
+      card.innerHTML = `
+        <div class="ou-mobile-card__head">
+          <span class="ou-mobile-card__avatar" aria-hidden="true">${escapeHtml(iniciais(nome, email))}</span>
+          <span class="ou-mobile-card__identity">
+            <span class="ou-mobile-card__name">${escapeHtml(nome || email)}</span>
+            ${nome ? `<span class="ou-mobile-card__fantasia">${escapeHtml(email)}</span>` : ""}
+          </span>
+        </div>
+        <div class="ou-mobile-card__info">
+          <div class="ou-mobile-card__block">
+            <span class="ou-mobile-card__label">Código</span>
+            <span class="ou-mobile-card__value">#${u.usucod}</span>
+          </div>
+          <div class="ou-mobile-card__block">
+            <span class="ou-mobile-card__label">Administrador</span>
+            <span class="ou-mobile-card__value">${admBadge(u.usuadm)}</span>
+          </div>
+          <div class="ou-mobile-card__block ou-mobile-card__block--full">
+            <span class="ou-mobile-card__label">E-mail</span>
+            <span class="ou-mobile-card__value ou-mobile-card__value--wrap">${escapeHtml(email)}</span>
+          </div>
+        </div>
+        <div class="ou-mobile-card__foot">
+          ${statusBadge(u.ususta)}
+          <i class="fa-solid fa-chevron-right ou-mobile-card__chevron" aria-hidden="true"></i>
+        </div>
+      `;
+      const abrir = () => openUserModal(u.usucod);
+      card.addEventListener("click", abrir);
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          abrir();
+        }
+      });
+      usersMobileList.appendChild(card);
     }
   }
   resultsInfo.textContent = `${list.length} usuário(s)`;

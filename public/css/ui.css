@@ -1072,3 +1072,143 @@ body.ou-has-shell .modal-backdrop.show {
     transition: none !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   15. Listagens mobile — tabela vira lista de cards (< 768px)
+   Componente reutilizável: a mesma base de dados da tabela é renderizada
+   como cards em telas pequenas para evitar rolagem horizontal.
+   -------------------------------------------------------------------------- */
+.ou-mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.ou-mobile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 14px 16px;
+  text-align: left;
+  outline: none;
+  cursor: pointer;
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border);
+  border-radius: var(--ou-radius);
+  box-shadow: var(--ou-shadow);
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, background-color 0.15s ease,
+    transform 0.05s ease;
+}
+.ou-mobile-card:hover {
+  border-color: color-mix(in srgb, var(--ou-primary) 45%, var(--ou-border));
+}
+.ou-mobile-card:active {
+  transform: scale(0.995);
+  background: var(--ou-surface-2);
+}
+.ou-mobile-card:focus-visible {
+  outline: 2px solid var(--ou-primary);
+  outline-offset: 2px;
+}
+
+.ou-mobile-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.ou-mobile-card__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: var(--ou-radius);
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.25);
+}
+
+.ou-mobile-card__identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ou-mobile-card__name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ou-text);
+}
+
+.ou-mobile-card__fantasia {
+  overflow: hidden;
+  font-size: 0.8rem;
+  color: var(--ou-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ou-mobile-card__info {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 0.9rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--ou-border);
+}
+
+.ou-mobile-card__block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.ou-mobile-card__block--full {
+  grid-column: 1 / -1;
+}
+
+.ou-mobile-card__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ou-text-muted);
+}
+
+.ou-mobile-card__value {
+  font-size: 0.82rem;
+  color: var(--ou-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ou-mobile-card__value--wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.ou-mobile-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--ou-border);
+}
+
+.ou-mobile-card__chevron {
+  font-size: 0.85rem;
+  color: var(--ou-text-muted);
+}
