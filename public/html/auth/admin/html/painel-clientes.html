@@ -404,8 +404,259 @@
       .ou-mov-valores { width: 100%; text-align: left; }
       .ou-resumo-valor { font-size: 1.2rem; }
     }
+    /* Conteúdo das abas e seções do formulário (base = desktop atual). */
+    .ou-tab-content { padding-top: 1rem; }
+    .ou-secao-titulo { margin-bottom: 1rem; }
+    .ou-secao-divisor { margin: 1.5rem 0; }
+
+    /* No cadastro de novo cliente o resumo (Em aberto/Crédito/Pedidos/WhatsApp)
+       não deve aparecer: o `.d-flex` do Bootstrap tem display !important e
+       ignora o style inline aplicado pelo JS. */
+    .ou-cli-novo #cliResumo { display: none !important; }
+
+    /* =====================================================================
+       MOBILE — ficha do cliente compacta (<= 575.98px)
+       Estrutura: header enxuto + abas compactas + conteúdo rolável +
+       rodapé fixo. O desktop permanece inalterado.
+       ===================================================================== */
     @media (max-width: 575.98px) {
-      #cliForm { height: 100%; }
+      /* Modal ocupa toda a viewport, com altura dinâmica quando suportada. */
+      #cliModal .modal-dialog,
+      #cliModal .modal-content {
+        width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+      }
+      @supports (height: 100dvh) {
+        #cliModal .modal-dialog,
+        #cliModal .modal-content {
+          height: 100dvh;
+          max-height: 100dvh;
+        }
+      }
+      #cliForm {
+        height: 100%;
+        max-height: 100%;
+      }
+      #cliForm .modal-body { padding: 0; }
+
+      /* Cabeçalho compacto */
+      #cliModal .modal-header {
+        padding: .5rem .75rem;
+        border-bottom: 1px solid var(--ou-border);
+      }
+      #cliAvatar {
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
+        font-size: .72rem;
+      }
+      .ou-cli-novo #cliAvatar { display: none; }
+      #cliModal .modal-title { font-size: 1.05rem; line-height: 1.2; }
+      #cliSubtitulo { font-size: .72rem; line-height: 1.2; }
+
+      /* Indicadores (cliente existente) em linha compacta */
+      #cliResumo {
+        gap: .85rem !important;
+        row-gap: .35rem !important;
+        margin-top: .5rem !important;
+      }
+      #cliResumo > div > .text-muted { font-size: .66rem; line-height: 1.1; }
+      #cliResumo .fw-semibold { font-size: .82rem; line-height: 1.15; }
+      #cliResumo .ms-auto { margin-left: 0 !important; }
+      #cliResumo .btn { padding: .15rem .5rem; font-size: .72rem; }
+
+      /* Abas compactas: 4 abas visíveis em 360px, alvo de toque de 44px */
+      .ou-tabs-nav { padding: 0; }
+      #cliTabs .nav-item { flex: 1 1 0; }
+      #cliTabs .nav-link {
+        width: 100%;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: .4rem .1rem;
+        font-size: .72rem;
+        line-height: 1.1;
+        white-space: nowrap;
+      }
+      #cliTabs .nav-link i { font-size: .78rem; }
+
+      /* Conteúdo rolável: aproveita a altura e reduz espaçamentos excessivos */
+      .ou-tab-content { padding: .75rem; }
+      .ou-tab-content .row { --bs-gutter-y: .75rem; }
+      .ou-tab-content .form-label { margin-bottom: .3rem; font-size: .85rem; }
+      .ou-secao-titulo { margin-bottom: .5rem; }
+      .ou-secao-divisor { margin: .75rem 0; }
+
+      /* Rodapé fixo, uma única linha com as 4 ações distribuídas.
+         `display: contents` promove os botões a itens diretos do footer,
+         mantendo a ordem DOM mesmo com os dois grupos existentes. */
+      #cliModal .modal-footer {
+        flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
+        gap: 5px !important;
+        padding: .5rem .75rem calc(.5rem + env(safe-area-inset-bottom));
+        border-top: 1px solid var(--ou-border);
+        background: var(--ou-surface);
+      }
+      #cliModal .modal-footer > div { display: contents !important; }
+      #cliModal .modal-footer .btn {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: .25rem .2rem !important;
+        font-size: .72rem;
+        line-height: 1;
+        white-space: nowrap;
+      }
+      #cliModal .modal-footer .btn > i {
+        font-size: .7rem;
+        margin-right: .2rem !important;
+      }
+    }
+
+    /* =====================================================================
+       LISTAGEM MOBILE — tabela vira lista de cards (< 768px).
+       Os cards reutilizam os tokens/tema do sistema e a mesma base de dados.
+       ===================================================================== */
+    .client-mobile-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+    }
+    .client-mobile-card {
+      display: flex;
+      flex-direction: column;
+      gap: .7rem;
+      padding: 14px 16px;
+      border: 1px solid var(--ou-border);
+      border-radius: 14px;
+      background: var(--ou-surface);
+      box-shadow: var(--ou-shadow);
+      cursor: pointer;
+      text-align: left;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color .15s ease, background-color .15s ease,
+        transform .05s ease;
+    }
+    .client-mobile-card:hover {
+      border-color: color-mix(in srgb, var(--ou-primary) 45%, var(--ou-border));
+    }
+    .client-mobile-card:active {
+      transform: scale(.995);
+      background: var(--ou-surface-2);
+    }
+    .client-mobile-card:focus-visible {
+      outline: 2px solid var(--ou-primary);
+      outline-offset: 2px;
+    }
+    .client-mobile-card__head {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      min-width: 0;
+    }
+    .client-mobile-card__avatar {
+      flex: 0 0 42px;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .82rem;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      box-shadow: 0 8px 18px rgba(59, 130, 246, .25);
+    }
+    .client-mobile-card__identity {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .client-mobile-card__name {
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--ou-text);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .client-mobile-card__fantasia {
+      font-size: .8rem;
+      color: var(--ou-text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .client-mobile-card__info {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .6rem .9rem;
+      padding-top: .7rem;
+      border-top: 1px solid var(--ou-border);
+    }
+    .client-mobile-card__block {
+      display: flex;
+      flex-direction: column;
+      gap: .1rem;
+      min-width: 0;
+    }
+    .client-mobile-card__label {
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--ou-text-muted);
+    }
+    .client-mobile-card__value {
+      font-size: .82rem;
+      color: var(--ou-text);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .client-mobile-card__value--wrap {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .client-mobile-card__foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+      padding-top: .6rem;
+      border-top: 1px solid var(--ou-border);
+    }
+    .client-mobile-card__chevron {
+      color: var(--ou-text-muted);
+      font-size: .85rem;
+    }
+    .client-page-info {
+      min-width: 3.25rem;
+      text-align: center;
+      font-weight: 600;
+      color: var(--ou-text-muted);
+    }
+    @media (max-width: 767.98px) {
+      #btnPrev,
+      #btnNext {
+        min-width: 38px;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding-left: .5rem;
+        padding-right: .5rem;
+      }
     }
   </style>
   <link rel="stylesheet" href="/css/theme.css?v=2026.09.11.233405" />
@@ -449,7 +700,7 @@
             </div>
 
             <div class="card-body p-0">
-              <div class="table-responsive">
+              <div class="table-responsive d-none d-md-block">
                 <table id="cliTable" class="table table-hover mb-0 align-middle">
                   <thead class="table-light">
                     <tr>
@@ -465,14 +716,22 @@
                   <tbody id="cliTbody"><!-- via JS --></tbody>
                 </table>
               </div>
+              <div id="cliMobileList" class="client-mobile-list d-md-none"><!-- via JS --></div>
               <div id="emptyState" class="ficha-vazio" style="display:none">Nenhum cliente encontrado.</div>
             </div>
 
             <div class="card-footer text-muted d-flex justify-content-between align-items-center">
               <small id="resultsInfo">0 clientes</small>
-              <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-secondary" id="btnPrev" type="button">Anterior</button>
-                <button class="btn btn-sm btn-outline-secondary" id="btnNext" type="button">Próxima</button>
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary" id="btnPrev" type="button" aria-label="Página anterior">
+                  <i class="fa-solid fa-chevron-left d-md-none" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">Anterior</span>
+                </button>
+                <small id="pageInfo" class="client-page-info d-md-none">1 / 1</small>
+                <button class="btn btn-sm btn-outline-secondary" id="btnNext" type="button" aria-label="Próxima página">
+                  <span class="d-none d-md-inline">Próxima</span>
+                  <i class="fa-solid fa-chevron-right d-md-none" aria-hidden="true"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -555,10 +814,10 @@
                 </ul>
               </div>
 
-              <div class="tab-content pt-3">
+              <div class="tab-content ou-tab-content">
                 <!-- ============ DADOS ============ -->
                 <div class="tab-pane fade show active" id="tabDados" role="tabpanel">
-                  <h6 class="text-uppercase text-muted fw-semibold small mb-3">Identificação</h6>
+                  <h6 class="text-uppercase text-muted fw-semibold small ou-secao-titulo">Identificação</h6>
                   <div class="row g-3">
                     <div class="col-md-6">
                       <label class="form-label">Nome/Razão Social <span class="text-danger">*</span></label>
@@ -581,8 +840,8 @@
                     </div>
                   </div>
 
-                  <hr class="my-4" />
-                  <h6 class="text-uppercase text-muted fw-semibold small mb-3">Contato</h6>
+                  <hr class="ou-secao-divisor" />
+                  <h6 class="text-uppercase text-muted fw-semibold small ou-secao-titulo">Contato</h6>
                   <div class="row g-3">
                     <div class="col-md-6">
                       <label class="form-label">Telefone/WhatsApp <span class="text-danger">*</span></label>
@@ -594,8 +853,8 @@
                     </div>
                   </div>
 
-                  <hr class="my-4" />
-                  <h6 class="text-uppercase text-muted fw-semibold small mb-3">Endereço</h6>
+                  <hr class="ou-secao-divisor" />
+                  <h6 class="text-uppercase text-muted fw-semibold small ou-secao-titulo">Endereço</h6>
                   <div class="row g-3">
                     <div class="col-md-3">
                       <label class="form-label">CEP</label>

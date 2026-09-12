@@ -13,7 +13,9 @@ const btnPrev = qs("btnPrev");
 const btnNext = qs("btnNext");
 const searchInput = qs("searchInput");
 const tbody = qs("cliTbody");
+const cliMobileList = qs("cliMobileList");
 const resultsInfo = qs("resultsInfo");
+const pageInfo = qs("pageInfo");
 const emptyState = qs("emptyState");
 
 const cliForm = qs("cliForm");
@@ -236,27 +238,37 @@ async function carregarClientes() {
   const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), q }).toString();
   try {
     const data = await api(`/cli?${params}`);
+    const lista = data.data || [];
     total = data.total || 0;
-    renderTabela(data.data || []);
-    resultsInfo.textContent = `${total} cliente(s)`;
-    emptyState.style.display = (data.data || []).length ? "none" : "block";
+    renderLista(lista);
+    resultsInfo.textContent = total === 1 ? "1 cliente" : `${total} clientes`;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    pageInfo.textContent = `${page} / ${totalPages}`;
+    btnPrev.disabled = page <= 1;
+    btnNext.disabled = page >= totalPages;
+    emptyState.style.display = lista.length ? "none" : "block";
   } catch (err) {
     console.error(err);
     showToast("Falha ao carregar clientes.", false);
   }
 }
 
-function renderTabela(lista) {
+function renderLista(lista) {
   tbody.innerHTML = "";
+  cliMobileList.innerHTML = "";
   lista.forEach((r) => {
-    const tr = document.createElement("tr");
-    tr.className = "cliente-linha";
     const cidadeUF = [r.mundes, r.ufsigla].filter(Boolean).join("/") || "—";
     const emAberto = toNum(r.em_aberto);
     const corSaldo = emAberto > 0 ? "text-danger" : "text-muted";
     const contato = r.parfone ? escapeHtml(fmtPhone(r.parfone)) : "—";
     const email = r.paremail ? `<div class="text-muted small text-truncate">${escapeHtml(r.paremail)}</div>` : "";
+    const statusBadge = r.parsit === "I"
+      ? '<span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle">Inativo</span>'
+      : '<span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">Ativo</span>';
 
+    // Linha da tabela (desktop)
+    const tr = document.createElement("tr");
+    tr.className = "cliente-linha";
     tr.innerHTML = `
       <td class="text-muted">#${r.parcod}</td>
       <td>
@@ -267,12 +279,57 @@ function renderTabela(lista) {
       <td>${escapeHtml(cidadeUF)}</td>
       <td><div>${contato}</div>${email}</td>
       <td class="text-end ${corSaldo} fw-semibold">${fmtMoney(emAberto)}</td>
-      <td>${r.parsit === "I"
-        ? '<span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle">Inativo</span>'
-        : '<span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">Ativo</span>'}</td>
+      <td>${statusBadge}</td>
     `;
     tr.addEventListener("click", () => abrirFicha(r.parcod));
     tbody.appendChild(tr);
+
+    // Card (mobile) — mesma base de dados, mesma ação
+    const card = document.createElement("div");
+    card.className = "client-mobile-card";
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-label", `Abrir ficha do cliente ${r.pardes || "#" + r.parcod}`);
+    card.innerHTML = `
+      <div class="client-mobile-card__head">
+        <span class="client-mobile-card__avatar" aria-hidden="true">${escapeHtml(iniciais(r.pardes))}</span>
+        <span class="client-mobile-card__identity">
+          <span class="client-mobile-card__name">${escapeHtml(r.pardes || "")}</span>
+          ${r.parfan ? `<span class="client-mobile-card__fantasia">${escapeHtml(r.parfan)}</span>` : ""}
+        </span>
+      </div>
+      <div class="client-mobile-card__info">
+        <div class="client-mobile-card__block">
+          <span class="client-mobile-card__label">Código</span>
+          <span class="client-mobile-card__value">#${r.parcod}</span>
+        </div>
+        <div class="client-mobile-card__block">
+          <span class="client-mobile-card__label">Documento</span>
+          <span class="client-mobile-card__value">${fmtDoc(r.parcnpjcpf)}</span>
+        </div>
+        <div class="client-mobile-card__block">
+          <span class="client-mobile-card__label">Cidade/UF</span>
+          <span class="client-mobile-card__value client-mobile-card__value--wrap">${escapeHtml(cidadeUF)}</span>
+        </div>
+        <div class="client-mobile-card__block">
+          <span class="client-mobile-card__label">Em aberto</span>
+          <span class="client-mobile-card__value ${corSaldo}">${fmtMoney(emAberto)}</span>
+        </div>
+      </div>
+      <div class="client-mobile-card__foot">
+        ${statusBadge}
+        <i class="fa-solid fa-chevron-right client-mobile-card__chevron" aria-hidden="true"></i>
+      </div>
+    `;
+    const abrir = () => abrirFicha(r.parcod);
+    card.addEventListener("click", abrir);
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        abrir();
+      }
+    });
+    cliMobileList.appendChild(card);
   });
 }
 
@@ -419,6 +476,7 @@ function renderSituacao(parsit) {
 }
 function renderCabecalhoNovo() {
   clienteAtual = null;
+  cliForm.classList.add("ou-cli-novo");
   cliTitulo.textContent = "Novo cliente";
   cliSubtitulo.textContent = "Preencha os dados para cadastrar";
   cliAvatar.textContent = "?";
@@ -428,6 +486,7 @@ function renderCabecalhoNovo() {
 }
 function renderCabecalhoCliente(data) {
   clienteAtual = data;
+  cliForm.classList.remove("ou-cli-novo");
   cliTitulo.textContent = data.pardes || "Cliente";
   cliAvatar.textContent = iniciais(data.pardes);
   renderSituacao(data.parsit);
@@ -557,6 +616,75 @@ async function abrirFicha(id) {
 }
 
 // ---------------------------------------------------------------------------
+// Popup de confirmação no layout padrão do sistema
+// ---------------------------------------------------------------------------
+function confirmarPopup({
+  titulo,
+  mensagem,
+  textoConfirmar = "Confirmar",
+  textoCancelar = "Cancelar",
+  icone = "bi-exclamation-triangle",
+  variante = "danger",
+}) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.style.position = "fixed";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.width = "100%";
+    overlay.style.height = "100%";
+    overlay.style.background = "rgba(0,0,0,0.5)";
+    overlay.style.display = "flex";
+    overlay.style.alignItems = "center";
+    overlay.style.justifyContent = "center";
+    overlay.style.zIndex = "9999";
+
+    const popup = document.createElement("div");
+    popup.className = "popup";
+    popup.style.width = "380px";
+    popup.style.maxWidth = "90vw";
+    popup.style.background = "var(--ou-surface)";
+    popup.style.color = "var(--ou-text)";
+    popup.style.padding = "20px";
+    popup.style.borderRadius = "10px";
+    popup.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
+    popup.style.zIndex = "10000";
+
+    popup.innerHTML = `
+      <h5 class="mb-3"><i class="bi ${icone} me-2"></i>${escapeHtml(titulo)}</h5>
+      <p class="mb-4">${escapeHtml(mensagem)}</p>
+      <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary" data-popup="cancelar">${escapeHtml(textoCancelar)}</button>
+        <button type="button" class="btn btn-${variante}" data-popup="confirmar">${escapeHtml(textoConfirmar)}</button>
+      </div>
+    `;
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    const finalizar = (valor) => {
+      document.removeEventListener("keydown", onKey, true);
+      overlay.remove();
+      resolve(valor);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        e.preventDefault();
+        finalizar(false);
+      }
+    };
+
+    popup.querySelector('[data-popup="cancelar"]').addEventListener("click", () => finalizar(false));
+    popup.querySelector('[data-popup="confirmar"]').addEventListener("click", () => finalizar(true));
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) finalizar(false); });
+    document.addEventListener("keydown", onKey, true);
+
+    popup.querySelector('[data-popup="confirmar"]').focus();
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Salvar / inativar / excluir
 // ---------------------------------------------------------------------------
 cliForm.addEventListener("submit", async (ev) => {
@@ -613,7 +741,15 @@ cliForm.addEventListener("submit", async (ev) => {
 
 btnInativar.addEventListener("click", async () => {
   const id = f_parcod.value;
-  if (!id || !confirm("Inativar este cliente?")) return;
+  if (!id) return;
+  const confirmado = await confirmarPopup({
+    titulo: "Inativar cliente",
+    mensagem: "Tem certeza que deseja inativar este cliente?",
+    textoConfirmar: "Inativar",
+    icone: "bi-slash-circle",
+    variante: "warning",
+  });
+  if (!confirmado) return;
   try {
     await api(`/cli/${id}`, { method: "DELETE" });
     showToast("Cliente inativado.", true);
@@ -627,7 +763,14 @@ btnInativar.addEventListener("click", async () => {
 btnExcluir.addEventListener("click", async () => {
   const id = f_parcod.value;
   if (!id) return;
-  if (!confirm("Excluir DEFINITIVAMENTE este cliente? Só é permitido se não houver vínculos.")) return;
+  const confirmado = await confirmarPopup({
+    titulo: "Excluir cliente",
+    mensagem: "Excluir DEFINITIVAMENTE este cliente? Só é permitido se não houver vínculos.",
+    textoConfirmar: "Excluir",
+    icone: "bi-trash",
+    variante: "danger",
+  });
+  if (!confirmado) return;
   try {
     await api(`/cli/${id}?hard=1`, { method: "DELETE" });
     showToast("Cliente excluído.", true);
