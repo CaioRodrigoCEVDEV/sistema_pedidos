@@ -47,6 +47,22 @@ const requireAdminPv = require("./middlewares/adminPvMiddleware");
 const requireAdminEst = require("./middlewares/adminEstMiddleware");
 const requireAdminPages = require("./middlewares/adminPagesMiddleware");
 app.set("views", path.join(__dirname, "views"));
+
+// IP real do cliente quando a aplicação roda atrás de proxy/nginx.
+// Só habilite TRUST_PROXY se existir um proxy confiável na frente; caso
+// contrário o header X-Forwarded-For poderia ser forjado pelo cliente.
+if (process.env.TRUST_PROXY) {
+  const trustProxy = process.env.TRUST_PROXY;
+  app.set(
+    "trust proxy",
+    trustProxy === "true"
+      ? true
+      : /^\d+$/.test(trustProxy)
+        ? parseInt(trustProxy, 10)
+        : trustProxy
+  );
+}
+
 app.use(compression());
 app.use(requestTimingMiddleware);
 app.use(morgan("dev"));
