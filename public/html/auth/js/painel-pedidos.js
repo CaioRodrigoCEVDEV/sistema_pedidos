@@ -670,7 +670,7 @@ function mostrarPopupMensagem(mensagem, onOk) {
         });
       } else {
         tabelaConfirmados.innerHTML =
-          '<tr><td colspan="5">Nenhum pedido encontrado para o período selecionado.</td></tr>';
+          '<tr><td colspan="5" class="border-0"><div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-inbox"></i></span><span class="ou-empty__title">Nenhum pedido encontrado</span><span class="ou-empty__text">Ajuste o período para ver resultados.</span></div></td></tr>';
       }
     } catch (err) {
       console.error(err);
@@ -726,7 +726,7 @@ function mostrarPopupMensagem(mensagem, onOk) {
         });
       } else {
         tabelaPendentes.innerHTML =
-          '<tr><td colspan="6">Nenhum pedido encontrado para o período selecionado.</td></tr>';
+          '<tr><td colspan="6" class="border-0"><div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-inbox"></i></span><span class="ou-empty__title">Nenhum pedido encontrado</span><span class="ou-empty__text">Ajuste o período para ver resultados.</span></div></td></tr>';
       }
     } catch (err) {
       console.error(err);

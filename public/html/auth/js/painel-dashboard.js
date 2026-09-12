@@ -164,8 +164,8 @@
     function tokens() {
       var isDark = document.documentElement.getAttribute("data-theme") === "dark";
       var gold = isDark
-        ? { blue: "#60a5fa", indigo: "#818cf8", violet: "#a78bfa", teal: "#2dd4bf", green: "#34d399", amber: "#fbbf24", orange: "#fb923c", rose: "#fb7185", cyan: "#22d3ee", slate: "#94a3b8" }
-        : { blue: "#3b82f6", indigo: "#4f46e5", violet: "#7c3aed", teal: "#0d9488", green: "#10b981", amber: "#f59e0b", orange: "#f97316", rose: "#f43f5e", cyan: "#06b6d4", slate: "#64748b" };
+        ? { blue: "#60a5fa", indigo: "#38bdf8", violet: "#22d3ee", teal: "#2dd4bf", green: "#34d399", amber: "#fbbf24", orange: "#fb923c", rose: "#fb7185", cyan: "#7dd3fc", slate: "#94a3b8" }
+        : { blue: "#3b82f6", indigo: "#0ea5e9", violet: "#06b6d4", teal: "#0d9488", green: "#10b981", amber: "#f59e0b", orange: "#f97316", rose: "#f43f5e", cyan: "#0891b2", slate: "#64748b" };
 
       return {
         isDark: isDark,

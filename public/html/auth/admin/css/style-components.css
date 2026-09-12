@@ -2,7 +2,7 @@
   background: linear-gradient(135deg, #6ea8fe, #3b82f6);
 }
 .bg-grad-2 {
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
 }
 .bg-grad-3 {
   background: linear-gradient(135deg, #f59e0b, #fb923c);
@@ -15,7 +15,7 @@
   background: linear-gradient(135deg, #6ea8fe, #3b82f6);
 }
 .bg-card-2 {
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
 }
 .bg-card-3 {
   background: linear-gradient(135deg, #f59e0b, #fb923c);
@@ -27,53 +27,70 @@
   background: linear-gradient(135deg, #f472b6, #fb7185);
 }
 
-.button-color-1 {
-    width: 100%;
-  padding: 0.4rem;
-  border-radius: 8px;
-  border: none;
-  text-decoration: none;
-  color: var(--ou-surface);
-  background: linear-gradient(135deg, #6ea8fe, #3b82f6);
-  &:hover {
-    background: linear-gradient(135deg, #3081fb, #106cff);
-  }
-}
-.button-color-2 {
-    width: 100%;
-  padding: 0.4rem;
-  border-radius: 8px;
-  border: none;
-  text-decoration: none;
-  color: var(--ou-surface);
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
-  &:hover {
-    background: linear-gradient(135deg, #7c3aed, #5b21b6);
-  }
-}
-.button-color-3 {
-    width: 100%;
-  padding: 0.4rem;
-  border-radius: 8px;
-  border: none;
-  text-decoration: none;
-  color: var(--ou-surface);
-  background: linear-gradient(135deg, #f59e0b, #fb923c);
-  &:hover {
-    background: linear-gradient(135deg, #d97706, #f97316);
-  }
-}
+.button-color-1,
+.button-color-2,
+.button-color-3,
 .button-color-4 {
-    width: 100%;
-  padding: 0.4rem;
-  border-radius: 8px;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 42px;
+  padding: 0.5rem 1rem;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   text-decoration: none;
-  color: var(--ou-surface);
-  background: linear-gradient(135deg, #34d399, #10b981);
-  &:hover {
-    background: linear-gradient(135deg, #059669, #047857);
-  }
+  border: 0;
+  border-radius: var(--ou-radius, 14px);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.button-color-1,
+.button-color-2,
+.button-color-3,
+.button-color-4 {
+  background-image: none;
+}
+
+.button-color-1 {
+  background-color: #2563eb;
+}
+.button-color-1:hover {
+  color: #fff;
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.button-color-2 {
+  background-color: #0284c7;
+}
+.button-color-2:hover {
+  color: #fff;
+  background-color: #0369a1;
+  transform: translateY(-1px);
+}
+
+.button-color-3 {
+  background-color: #d97706;
+}
+.button-color-3:hover {
+  color: #fff;
+  background-color: #b45309;
+  transform: translateY(-1px);
+}
+
+.button-color-4 {
+  background-color: #059669;
+}
+.button-color-4:hover {
+  color: #fff;
+  background-color: #047857;
+  transform: translateY(-1px);
 }
 
 /*Titulo das paginas*/
@@ -205,13 +222,14 @@
 .icon-circle {
   width: 64px;
   height: 64px;
-  border-radius: 50%;
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--ou-surface);
+  color: #ffffff;
   font-size: 1.35rem;
   flex: 0 0 64px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
 }
 /*Fim titulo Paginas*/
 

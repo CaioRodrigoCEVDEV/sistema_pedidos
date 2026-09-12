@@ -6,34 +6,94 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. Variáveis do sistema
+   1. Variáveis do sistema (Design System OrderUp)
+   Hierarquia de superfícies: background → surface → surface-elevated.
+   Nunca usar preto absoluto no tema escuro.
    -------------------------------------------------------------------------- */
 :root {
   color-scheme: light;
 
-  --ou-bg: #f3f5f9;
+  /* Superfícies */
+  --ou-bg: #f1f4f9;
+  --ou-bg-elevated: #f7f9fc;
   --ou-surface: #ffffff;
-  --ou-surface-2: #f8fafc;
-  --ou-surface-3: #eef2f7;
+  --ou-surface-2: #f6f8fc;
+  --ou-surface-3: #eef2f8;
+  --ou-surface-hover: #f1f5fb;
+
+  /* Bordas */
   --ou-border: #e2e8f0;
+  --ou-border-soft: #eaeef5;
+
+  /* Texto */
   --ou-text: #0f172a;
+  --ou-text-2: #475569;
   --ou-text-muted: #64748b;
-  --ou-primary: #3b82f6;
-  --ou-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+
+  /* Identidade / acentos */
+  --ou-primary: #2563eb;
+  --ou-primary-hover: #1d4ed8;
+  --ou-primary-soft: rgba(37, 99, 235, 0.1);
+  --ou-primary-ring: rgba(37, 99, 235, 0.22);
+  --ou-success: #059669;
+  --ou-success-soft: rgba(5, 150, 105, 0.12);
+  --ou-danger: #dc2626;
+  --ou-danger-soft: rgba(220, 38, 38, 0.12);
+  --ou-warning: #d97706;
+  --ou-warning-soft: rgba(217, 119, 6, 0.14);
+  --ou-info: #0284c7;
+  --ou-info-soft: rgba(2, 132, 199, 0.12);
+
+  /* Raios */
+  --ou-radius-sm: 10px;
+  --ou-radius: 14px;
+  --ou-radius-lg: 18px;
+  --ou-radius-xl: 22px;
+
+  /* Sombras (muito discretas) */
+  --ou-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 1px 3px rgba(15, 23, 42, 0.05);
+  --ou-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --ou-shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.12);
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --ou-bg: #0f172a;
-  --ou-surface: #1f2937;
-  --ou-surface-2: #263244;
-  --ou-surface-3: #2f3d52;
-  --ou-border: #374151;
-  --ou-text: #f9fafb;
-  --ou-text-muted: #9ca3af;
+  /* Superfícies (slate, sem preto absoluto) */
+  --ou-bg: #0b1220;
+  --ou-bg-elevated: #0f172a;
+  --ou-surface: #162033;
+  --ou-surface-2: #1d293d;
+  --ou-surface-3: #243149;
+  --ou-surface-hover: #212e45;
+
+  /* Bordas */
+  --ou-border: #2a3852;
+  --ou-border-soft: #223047;
+
+  /* Texto */
+  --ou-text: #e8edf6;
+  --ou-text-2: #b7c3d7;
+  --ou-text-muted: #8b9ab3;
+
+  /* Identidade / acentos */
   --ou-primary: #60a5fa;
-  --ou-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+  --ou-primary-hover: #93c5fd;
+  --ou-primary-soft: rgba(96, 165, 250, 0.16);
+  --ou-primary-ring: rgba(96, 165, 250, 0.3);
+  --ou-success: #34d399;
+  --ou-success-soft: rgba(52, 211, 153, 0.16);
+  --ou-danger: #f87171;
+  --ou-danger-soft: rgba(248, 113, 113, 0.16);
+  --ou-warning: #fbbf24;
+  --ou-warning-soft: rgba(251, 191, 36, 0.16);
+  --ou-info: #38bdf8;
+  --ou-info-soft: rgba(56, 189, 248, 0.16);
+
+  --ou-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --ou-shadow: 0 12px 30px rgba(0, 0, 0, 0.32);
+  --ou-shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.45);
 }
 
 /* --------------------------------------------------------------------------
@@ -42,15 +102,15 @@
 [data-bs-theme="dark"] {
   --bs-body-bg: var(--ou-bg);
   --bs-body-color: var(--ou-text);
-  --bs-secondary-bg: var(--ou-surface);
-  --bs-tertiary-bg: var(--ou-surface-2);
+  --bs-secondary-bg: var(--ou-surface-2);
+  --bs-tertiary-bg: var(--ou-surface-3);
   --bs-border-color: var(--ou-border);
   --bs-secondary-color: var(--ou-text-muted);
   --bs-emphasis-color: var(--ou-text);
-  --bs-link-color: #93c5fd;
-  --bs-link-hover-color: #bfdbfe;
+  --bs-link-color: #7fb4fb;
+  --bs-link-hover-color: #a9cdfd;
   --bs-highlight-color: var(--ou-text);
-  --bs-highlight-bg: #3b4a63;
+  --bs-highlight-bg: #2a3a55;
 }
 
 /* --------------------------------------------------------------------------
@@ -62,6 +122,18 @@ html {
 
 body {
   background-color: var(--ou-bg) !important;
+  background-image: radial-gradient(
+      900px 480px at 100% -8%,
+      var(--ou-primary-soft),
+      transparent 62%
+    ),
+    radial-gradient(
+      760px 420px at -10% 108%,
+      color-mix(in srgb, var(--ou-primary) 5%, transparent),
+      transparent 60%
+    );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: var(--ou-text);
 }
 
@@ -80,11 +152,12 @@ body,
     color 0.18s ease;
 }
 
-[data-theme="dark"] .bg-white {
-  background-color: var(--ou-surface) !important;
-}
-[data-theme="dark"] .bg-light {
+body.bg-light,
+.bg-light {
   background-color: var(--ou-bg) !important;
+}
+.bg-white {
+  background-color: var(--ou-surface) !important;
 }
 [data-theme="dark"] .text-dark,
 [data-theme="dark"] .text-body {

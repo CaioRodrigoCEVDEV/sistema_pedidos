@@ -178,6 +178,12 @@ function statusCobranca(c) {
 function badge(cls, label) {
   return `<span class="badge rounded-pill border ${cls}">${escapeHtml(label)}</span>`;
 }
+function situacaoBadge(parsit) {
+  if (parsit === "I") {
+    return '<span class="ou-badge ou-badge--neutral"><span class="ou-badge__dot"></span>Inativo</span>';
+  }
+  return '<span class="ou-badge ou-badge--success"><span class="ou-badge__dot"></span>Ativo</span>';
+}
 const MOV_LABEL = {
   DEBITO: "Débito", CREDITO: "Crédito", PAGAMENTO: "Pagamento",
   ESTORNO: "Estorno", AJUSTE: "Ajuste", COBRANCA: "Cobrança",
@@ -262,9 +268,7 @@ function renderLista(lista) {
     const corSaldo = emAberto > 0 ? "text-danger" : "text-muted";
     const contato = r.parfone ? escapeHtml(fmtPhone(r.parfone)) : "—";
     const email = r.paremail ? `<div class="text-muted small text-truncate">${escapeHtml(r.paremail)}</div>` : "";
-    const statusBadge = r.parsit === "I"
-      ? '<span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle">Inativo</span>'
-      : '<span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">Ativo</span>';
+    const statusBadge = situacaoBadge(r.parsit);
 
     // Linha da tabela (desktop)
     const tr = document.createElement("tr");
@@ -466,11 +470,11 @@ function iniciais(nome) {
 }
 function renderSituacao(parsit) {
   if (parsit === "I") {
-    cliSituacaoBadge.className = "badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle";
-    cliSituacaoBadge.textContent = "Inativo";
+    cliSituacaoBadge.className = "ou-badge ou-badge--neutral";
+    cliSituacaoBadge.innerHTML = '<span class="ou-badge__dot"></span>Inativo';
   } else {
-    cliSituacaoBadge.className = "badge rounded-pill bg-success-subtle text-success border border-success-subtle";
-    cliSituacaoBadge.textContent = "Ativo";
+    cliSituacaoBadge.className = "ou-badge ou-badge--success";
+    cliSituacaoBadge.innerHTML = '<span class="ou-badge__dot"></span>Ativo';
   }
   cliSituacaoBadge.classList.remove("d-none");
 }
