@@ -2,7 +2,7 @@
 <html lang="pt-BR">
   <head>
 <meta charset="UTF-8" />
-  <script src="/js/theme-manager.js?v=2026.09.11.203014"></script>
+  <script src="/js/theme-manager.js?v=2026.09.11.215422"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title id="title"></title>
     <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
@@ -12,9 +12,9 @@
       href="/uploads/apple-touch-icon.png"
     />
     <!--Links proprios-->
-    <link rel="stylesheet" href="/html/auth/admin/css/style.css?v=2026.09.11.203014" />
-    <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.11.203014" />
-    <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.11.203014" />
+    <link rel="stylesheet" href="/html/auth/admin/css/style.css?v=2026.09.11.215422" />
+    <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.11.215422" />
+    <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.11.215422" />
     <!--links bootstrap-->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
@@ -23,7 +23,7 @@
       crossorigin="anonymous"
     />
     <!--Link tema personalizado bootstrap-->
-    <link rel="stylesheet" href="../../../../css/tema-bootstrap.css?v=2026.09.11.203014" />
+    <link rel="stylesheet" href="../../../../css/tema-bootstrap.css?v=2026.09.11.215422" />
     <!--link tema-->
     <link
       rel="stylesheet"
@@ -39,8 +39,8 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
-    <link rel="stylesheet" href="/css/theme.css?v=2026.09.11.203014" />
-    <link rel="stylesheet" href="/css/shell.css?v=2026.09.11.203014" />
+    <link rel="stylesheet" href="/css/theme.css?v=2026.09.11.215422" />
+    <link rel="stylesheet" href="/css/shell.css?v=2026.09.11.215422" />
 </head>
 
   <body class="bg-light">
@@ -51,97 +51,91 @@
       <main class="p-3">
         <div class="container">
           <div class="panel-hero mb-4">
-            <div
-              class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3"
-            >
-              <div class="d-flex align-items-center gap-3">
-                <div class="icon-circle" aria-hidden="true">
-                  <i class="bi bi-inboxes text-primary"></i>
-                </div>
-                <div>
-                  <h1 class="h4 mb-0">Painel de Gestão do estoque</h1>
-                  <div class="text-muted small">
-                    Visão geral de estoque — Gerencie suas peças e acompanhe as
-                    quantidades de inventário em tempo real.
-                  </div>
-                </div>
+            <div class="panel-hero__main">
+              <span class="panel-hero__icon" aria-hidden="true">
+                <i class="bi bi-inboxes"></i>
+              </span>
+              <div>
+                <span class="panel-hero__eyebrow">Operações</span>
+                <h1 class="h4 mb-0 panel-hero__title">Painel de Gestão do estoque</h1>
+                <p class="panel-hero__sub mb-0">
+                  Visão geral de estoque — Gerencie suas peças e acompanhe as
+                  quantidades de inventário em tempo real.
+                </p>
               </div>
-              <div
-                class="ms-md-auto d-flex flex-wrap gap-2 align-items-center w-100"
-              >
-                <!-- Campo de busca -->
-                <div class="flex-grow-1 min-w-0">
-                  <div class="input-group search-input shadow-sm rounded">
-                    <span class="input-group-text bg-white border-0">
-                      <i class="bi bi-search"></i>
-                    </span>
-                    <input
-                      class="form-control border-0"
-                      type="search"
-                      placeholder="Pesquisar por marca, modelo ou peça..."
-                      aria-label="Pesquisar"
-                      id="pesquisa"
-                    />
-                    <button
-                      class="btn btn-outline-secondary"
-                      type="button"
-                      title="Filtrar"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#filtrosCollapse"
-                      aria-expanded="false"
-                      aria-controls="filtrosCollapse"
-                    >
-                      <i class="bi bi-funnel"></i> Filtros
-                    </button>
+            </div>
+            <div class="panel-hero__actions w-100">
+              <div class="flex-grow-1 min-w-0">
+                <div class="input-group search-input shadow-sm rounded">
+                  <span class="input-group-text bg-white border-0">
+                    <i class="bi bi-search"></i>
+                  </span>
+                  <input
+                    class="form-control border-0"
+                    type="search"
+                    placeholder="Pesquisar por marca, modelo ou peça..."
+                    aria-label="Pesquisar"
+                    id="pesquisa"
+                  />
+                  <button
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    title="Filtrar"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#filtrosCollapse"
+                    aria-expanded="false"
+                    aria-controls="filtrosCollapse"
+                  >
+                    <i class="bi bi-funnel"></i> Filtros
+                  </button>
 
-                    <div class="collapse mt-2 w-100" id="filtrosCollapse">
-                      <div class="card card-body p-3 shadow-sm">
-                        <div class="row gx-2 gy-2 align-items-center">
-                          <div class="col-auto">
-                            <select
-                              id="filtroMarcaSelect"
-                              class="form-select"
-                              aria-label="Marca"
-                            ></select>
-                          </div>
+                  <div class="collapse mt-2 w-100" id="filtrosCollapse">
+                    <div class="card card-body p-3 shadow-sm">
+                      <div class="row gx-2 gy-2 align-items-center">
+                        <div class="col-auto">
+                          <select
+                            id="filtroMarcaSelect"
+                            class="form-select"
+                            aria-label="Marca"
+                          ></select>
+                        </div>
 
-                          <div class="col-auto">
-                            <select
-                              id="filtroModeloSelect"
-                              class="form-select"
-                              aria-label="Modelo"
-                            ></select>
-                          </div>
+                        <div class="col-auto">
+                          <select
+                            id="filtroModeloSelect"
+                            class="form-select"
+                            aria-label="Modelo"
+                          ></select>
+                        </div>
 
-                          <div class="col-auto">
-                            <select
-                              id="filtroEstoqueSelect"
-                              class="form-select"
-                              aria-label="Estoque"
-                            >
-                              <option value="0">Em estoque</option>
-                              <option value="1">Fora de estoque</option>
-                              <option value="3">Peças acabando</option>
-                              <option value="4">Em Falta</option>
-                            </select>
-                          </div>
+                        <div class="col-auto">
+                          <select
+                            id="filtroEstoqueSelect"
+                            class="form-select"
+                            aria-label="Estoque"
+                          >
+                            <option value="0">Em estoque</option>
+                            <option value="1">Fora de estoque</option>
+                            <option value="3">Peças acabando</option>
+                            <option value="4">Em Falta</option>
+                          </select>
+                        </div>
 
-                          <div class="col-auto d-flex gap-2">
-                            <button
-                              type="button"
-                              class="btn btn-sm btn-primary"
-                              id="btnAplicarFiltroEstoque"
-                            >
-                              Aplicar
-                            </button>
-                            <button
-                              type="button"
-                              class="btn btn-sm btn-outline-secondary"
-                              id="btnLimparFiltroEstoque"
-                            >
-                              Limpar
-                            </button>
-                          </div>
+                        <div class="col-auto d-flex gap-2">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-primary"
+                            id="btnAplicarFiltroEstoque"
+                          >
+                            Aplicar
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            id="btnLimparFiltroEstoque"
+                          >
+                            Limpar
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -187,10 +181,10 @@
       </footer>
     </div>
 
-    <script src="html/auth/js/componentes.js?v=2026.09.11.203014"></script>
-    <script src="/config.js?v=2026.09.11.203014"></script>
-    <script src="html/auth/js/painel-estoque.js?v=2026.09.11.203014"></script>
-    <script src="../js/nomeEmpresa.js?v=2026.09.11.203014"></script>
+    <script src="html/auth/js/componentes.js?v=2026.09.11.215422"></script>
+    <script src="/config.js?v=2026.09.11.215422"></script>
+    <script src="html/auth/js/painel-estoque.js?v=2026.09.11.215422"></script>
+    <script src="../js/nomeEmpresa.js?v=2026.09.11.215422"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"

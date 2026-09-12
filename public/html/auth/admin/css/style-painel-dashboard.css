@@ -1,53 +1,320 @@
-.chart-card {
-      min-height: 420px;
-    }
+/* ==========================================================================
+   Dashboard — visual moderno (cards, KPIs, hero, filtro e gráficos)
+   Usa os tokens de public/css/theme.css (--ou-*) e o tema aplicado em
+   <html data-theme="light|dark"> pelo public/js/theme-manager.js.
+   ========================================================================== */
 
-    .chart-wrapper {
-      position: relative;
-      border-radius: 8px;
-      overflow: hidden;
-      background-color: var(--ou-surface-2);
-      width: 100%;
-      /* 🔥 garante 100% da largura do card */
-      height: 100%;
-      /* acompanha altura total do container */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+:root {
+  --dash-radius: 20px;
+  --dash-radius-sm: 14px;
+  --dash-gap: 1.25rem;
+  --dash-chart-h: 340px;
+}
 
-    .chart-wrapper canvas {
-      width: 100% !important;
-      height: 320px !important;
-      background-color: var(--ou-surface) !important;
-      border-radius: 8px;
-      display: block;
-    }
+.bg-grad-5 {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+}
 
-    /* overlay com os placeholders do Bootstrap */
-    .skeleton-overlay {
-      position: absolute;
-      inset: 0;
-      padding: 20px;
-      background: var(--ou-surface);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      pointer-events: none;
-      /* evita clique no overlay */
-    }
+/* --------------------------------------------------------------------------
+   Cards
+   -------------------------------------------------------------------------- */
+.chart-card,
+.dashboard-card {
+  position: relative;
+  border: 1px solid var(--ou-border) !important;
+  border-radius: var(--dash-radius) !important;
+  background: var(--ou-surface);
+  box-shadow: var(--ou-shadow) !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
 
-    /* enquanto carrega, esconde o canvas */
-    .chart-wrapper.loading canvas {
-      visibility: hidden;
-    }
+.chart-card:hover,
+.dashboard-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--ou-primary) 24%, var(--ou-border)) !important;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1) !important;
+}
 
-    /* quando sair de loading, some o overlay */
-    .chart-wrapper:not(.loading) .skeleton-overlay {
-      display: none;
-    }
+[data-theme="dark"] .chart-card:hover,
+[data-theme="dark"] .dashboard-card:hover {
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.45) !important;
+}
 
-    .subtle {
-      color: var(--ou-text-muted);
-      font-size: .82rem;
-    }
+.chart-card .card-body,
+.dashboard-card .card-body {
+  padding: 1.25rem 1.35rem;
+}
+
+/* Cabeçalho padrão dos cards de gráfico */
+.dash-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--ou-border);
+}
+
+.dash-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  font-size: 1.05rem;
+  color: var(--ou-primary);
+  background: rgba(59, 130, 246, 0.12);
+  background: color-mix(in srgb, var(--ou-primary) 12%, transparent);
+  border-radius: 12px;
+}
+
+[data-theme="dark"] .dash-card__icon {
+  color: #93c5fd;
+  background: rgba(96, 165, 250, 0.14);
+}
+
+.dash-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ou-text);
+}
+
+.dash-badge {
+  margin-left: auto;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--ou-text-muted);
+  background: var(--ou-surface-2);
+  border: 1px solid var(--ou-border);
+  border-radius: 999px;
+}
+
+/* --------------------------------------------------------------------------
+   Wrapper dos gráficos + skeleton
+   -------------------------------------------------------------------------- */
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+  height: var(--dash-chart-h);
+  border-radius: var(--dash-radius-sm);
+  overflow: hidden;
+}
+
+.chart-wrapper--sm {
+  --dash-chart-h: 280px;
+}
+.chart-wrapper--md {
+  --dash-chart-h: 340px;
+}
+.chart-wrapper--lg {
+  --dash-chart-h: 400px;
+}
+
+.chart-wrapper canvas {
+  display: block;
+  max-width: 100%;
+  background: transparent !important;
+}
+
+.chart-wrapper.loading canvas {
+  visibility: hidden;
+}
+
+.skeleton-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--ou-surface);
+}
+
+.chart-wrapper:not(.loading) .skeleton-overlay {
+  display: none;
+}
+
+.sk-line {
+  position: relative;
+  overflow: hidden;
+  background: var(--ou-surface-3);
+  border-radius: 8px;
+}
+
+.sk-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(148, 163, 184, 0.22),
+    transparent
+  );
+  animation: dash-shimmer 1.5s infinite;
+}
+
+[data-theme="dark"] .sk-line::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.07),
+    transparent
+  );
+}
+
+.sk-line--title {
+  width: 45%;
+  height: 16px;
+}
+.sk-line--chart {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 110px;
+}
+.sk-row {
+  display: flex;
+  gap: 14px;
+}
+.sk-line--legend {
+  width: 60px;
+  height: 14px;
+}
+
+@keyframes dash-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   KPIs
+   -------------------------------------------------------------------------- */
+.dash-kpi__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  font-size: 1.15rem;
+  color: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.18);
+}
+
+.dash-kpi__label {
+  margin-bottom: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ou-text-muted);
+}
+
+.dash-kpi__value {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ou-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-card .card-sub {
+  font-size: 0.76rem;
+  color: var(--ou-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Filtro
+   -------------------------------------------------------------------------- */
+.dash-filter {
+  border: 1px solid var(--ou-border) !important;
+  border-radius: var(--dash-radius) !important;
+  background: var(--ou-surface);
+  box-shadow: var(--ou-shadow) !important;
+}
+
+.dash-filter__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dash-filter__group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  background: var(--ou-surface-2);
+  border: 1px solid var(--ou-border);
+  border-radius: 999px;
+}
+
+.dash-filter__group > i {
+  color: var(--ou-text-muted);
+}
+
+.dash-filter__group .form-select,
+.dash-filter__group .form-control {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.dash-filter__group .form-select {
+  min-width: 160px;
+  font-weight: 600;
+}
+
+.dash-filter__group .form-control {
+  min-width: 150px;
+}
+
+.dash-filter__sep {
+  font-size: 0.8rem;
+  color: var(--ou-text-muted);
+}
+
+.dash-filter .btn {
+  border-radius: 999px;
+  padding-inline: 1.1rem;
+}
+
+/* --------------------------------------------------------------------------
+   Responsivo / acessibilidade
+   -------------------------------------------------------------------------- */
+@media (max-width: 575.98px) {
+  .dash-filter__group {
+    flex: 1 1 100%;
+  }
+  .dash-filter__group .form-select,
+  .dash-filter__group .form-control {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-line::after {
+    animation: none;
+  }
+  .chart-card,
+  .dashboard-card {
+    transition: none;
+  }
+}

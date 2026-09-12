@@ -3,18 +3,18 @@
 
 <head>
 <meta charset=" TF-8" />
-  <script src="/js/theme-manager.js?v=2026.09.11.203014"></script>
+  <script src="/js/theme-manager.js?v=2026.09.11.215422"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Painel de Gestão — Dashboard</title>
   <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
   <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png" />
 
   <!-- CSS do projeto (mesmos do painel) -->
-  <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.11.203014" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-painel.css?v=2026.09.11.203014" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-painel-releases.css?v=2026.09.11.203014" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.11.203014" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style.css?v=2026.09.11.203014" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.11.215422" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-painel.css?v=2026.09.11.215422" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-painel-releases.css?v=2026.09.11.215422" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.11.215422" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style.css?v=2026.09.11.215422" />
 
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -22,12 +22,12 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
     integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-painel-dashboard.css?v=2026.09.11.203014" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-painel-dashboard.css?v=2026.09.11.215422" />
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <link rel="stylesheet" href="/css/theme.css?v=2026.09.11.203014" />
-  <link rel="stylesheet" href="/css/shell.css?v=2026.09.11.203014" />
+  <link rel="stylesheet" href="/css/theme.css?v=2026.09.11.215422" />
+  <link rel="stylesheet" href="/css/shell.css?v=2026.09.11.215422" />
 </head>
 
 <body class="bg-light">
@@ -100,33 +100,27 @@
       </div>
 
 
-      <div class="container">
+      <div class="container dash-page">
+        <!-- Hero -->
         <div class="panel-hero mb-4">
-          <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3">
-            <div class="d-flex align-items-center gap-3">
-              <div class="icon-circle" aria-hidden="true">
-                <i class="bi bi-graph-up text-primary fs-4"></i>
-              </div>
-              <div>
-                <h1 class="h4 mb-0">Bem-Vindo, </h1>
-                <div class="text-muted small">
-                  Veja suas métricas principais e o desempenho!
-                </div>
-              </div>
+          <div class="panel-hero__main">
+            <span class="panel-hero__icon" aria-hidden="true"><i class="bi bi-graph-up-arrow"></i></span>
+            <div>
+              <span class="panel-hero__eyebrow">Painel de gestão</span>
+              <h1 class="h4 mb-0 panel-hero__title">Bem-vindo, </h1>
+              <p class="panel-hero__sub mb-0">Veja suas métricas principais e o desempenho do seu negócio.</p>
             </div>
-
           </div>
         </div>
 
         <!-- Filtros de data do dashboard -->
-        <div class="card border-0 shadow-sm mb-4">
+        <div class="card dash-filter mb-4">
           <div class="card-body py-2">
-            <form id="formFiltroDashboard" class="row g-2 align-items-center" onsubmit="return false;">
-              <div class="col-auto">
-                <label class="form-label mb-0 fw-semibold"><i class="bi bi-funnel me-1"></i>Filtrar por período:</label>
-              </div>
-              <div class="col-auto">
-                <select class="form-select form-select-sm" id="dashPeriodoSelect" style="min-width:140px;">
+            <form id="formFiltroDashboard" class="dash-filter__form" onsubmit="return false;">
+              <span class="dash-filter__group">
+                <i class="bi bi-funnel" aria-hidden="true"></i>
+                <label class="visually-hidden" for="dashPeriodoSelect">Período</label>
+                <select class="form-select form-select-sm" id="dashPeriodoSelect">
                   <option value="ult30" selected>Últimos 30 dias</option>
                   <option value="hoje">Hoje</option>
                   <option value="ult7">Últimos 7 dias</option>
@@ -135,193 +129,160 @@
                   <option value="todos">Todos</option>
                   <option value="personalizado">Personalizado</option>
                 </select>
-              </div>
-              <div class="col-auto">
-                <input type="date" class="form-control form-control-sm" id="dashDataInicio" placeholder="Início" disabled />
-              </div>
-              <div class="col-auto">
-                <input type="date" class="form-control form-control-sm" id="dashDataFim" placeholder="Fim" disabled />
-              </div>
-              <div class="col-auto">
-                <button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltroDash">
-                  <i class="bi bi-check-lg me-1"></i>Aplicar
-                </button>
-              </div>
+              </span>
+              <span class="dash-filter__group">
+                <label class="visually-hidden" for="dashDataInicio">Data inicial</label>
+                <input type="date" class="form-control form-control-sm" id="dashDataInicio" disabled />
+                <span class="dash-filter__sep">até</span>
+                <label class="visually-hidden" for="dashDataFim">Data final</label>
+                <input type="date" class="form-control form-control-sm" id="dashDataFim" disabled />
+              </span>
+              <button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltroDash">
+                <i class="bi bi-check-lg me-1"></i>Aplicar
+              </button>
             </form>
           </div>
         </div>
 
-        <!-- Top Produtos do Mês -->
-        <div class="col-12">
-          <div class="card border-0 shadow-sm chart-card h-100">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-2">
-                <h5 class="mb-0 p-2" id="tituloTopProdutos">Top 10 Produtos — Últimos 30 dias</h5>
-                <span class="badge bg-info text-dark">Por Quantidade</span>
-              </div>
-
-              <!-- wrapper inicia em loading + placeholders -->
-              <div class="chart-wrapper loading placeholder placeholder-wave">
-                <!-- overlay com “barrinhas” -->
-                <div class="skeleton-overlay placeholder-wave">
-                  <span class="placeholder col-8 mb-3 rounded-1" style="height:18px;"></span>
-                  <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
-                  <div class="d-flex gap-4">
-                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
-                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
-                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
-                  </div>
+        <!-- Top Produtos + Top Marcas -->
+        <div class="row g-4">
+          <div class="col-12 col-xl-6">
+            <div class="card chart-card h-100">
+              <div class="card-body">
+                <div class="dash-card__head">
+                  <span class="dash-card__icon" aria-hidden="true"><i class="bi bi-bar-chart-line"></i></span>
+                  <h5 class="dash-card__title" id="tituloTopProdutos">Top 10 Produtos</h5>
+                  <span class="dash-badge">Por quantidade</span>
                 </div>
-
-                <canvas id="chartTopProdutosMes"></canvas>
+                <div class="chart-wrapper chart-wrapper--lg loading">
+                  <div class="skeleton-overlay">
+                    <span class="sk-line sk-line--title"></span>
+                    <span class="sk-line sk-line--chart"></span>
+                  </div>
+                  <canvas id="chartTopProdutosMes"></canvas>
+                </div>
+                <div id="resumoTopProdutosMes" class="subtle mt-2"></div>
               </div>
+            </div>
+          </div>
 
-              <div id="resumoTopProdutosMes" class="subtle mt-2"></div>
+          <div class="col-12 col-xl-6">
+            <div class="card chart-card h-100">
+              <div class="card-body">
+                <div class="dash-card__head">
+                  <span class="dash-card__icon" aria-hidden="true"><i class="bi bi-award"></i></span>
+                  <h5 class="dash-card__title" id="tituloTopMarcas">Top 10 Marcas</h5>
+                  <span class="dash-badge">Por valor</span>
+                </div>
+                <div class="chart-wrapper chart-wrapper--lg loading">
+                  <div class="skeleton-overlay">
+                    <span class="sk-line sk-line--title"></span>
+                    <span class="sk-line sk-line--chart"></span>
+                  </div>
+                  <canvas id="chartTopMarcasMes"></canvas>
+                </div>
+                <div id="resumoTopMarcasMes" class="subtle mt-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vendas do dia + Venda Anual -->
+          <div class="col-12 col-xl-6">
+            <div class="card chart-card h-100">
+              <div class="card-body">
+                <div class="dash-card__head">
+                  <span class="dash-card__icon" aria-hidden="true"><i class="bi bi-cash-coin"></i></span>
+                  <h5 class="dash-card__title">Vendas do dia</h5>
+                  <span class="dash-badge">Por canal</span>
+                </div>
+                <div class="chart-wrapper chart-wrapper--md loading">
+                  <div class="skeleton-overlay">
+                    <span class="sk-line sk-line--title"></span>
+                    <span class="sk-line sk-line--chart"></span>
+                    <div class="sk-row">
+                      <span class="sk-line sk-line--legend"></span>
+                      <span class="sk-line sk-line--legend"></span>
+                      <span class="sk-line sk-line--legend"></span>
+                    </div>
+                  </div>
+                  <canvas id="chartFaturamentoDia"></canvas>
+                </div>
+                <div id="chartFaturamentoDiaResumo" class="subtle mt-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-6">
+            <div class="card chart-card h-100">
+              <div class="card-body">
+                <div class="dash-card__head">
+                  <span class="dash-card__icon" aria-hidden="true"><i class="bi bi-graph-up"></i></span>
+                  <h5 class="dash-card__title">Venda anual — por mês e canal</h5>
+                  <span class="dash-badge">Por valor</span>
+                </div>
+                <div class="chart-wrapper chart-wrapper--md loading">
+                  <div class="skeleton-overlay">
+                    <span class="sk-line sk-line--title"></span>
+                    <span class="sk-line sk-line--chart"></span>
+                    <div class="sk-row">
+                      <span class="sk-line sk-line--legend"></span>
+                      <span class="sk-line sk-line--legend"></span>
+                      <span class="sk-line sk-line--legend"></span>
+                    </div>
+                  </div>
+                  <canvas id="chartFaturamentoAnual"></canvas>
+                </div>
+                <div id="resumoFaturamentoAnual" class="subtle mt-2"></div>
+              </div>
             </div>
           </div>
         </div><br>
-
-        <!-- NOVO: Top Marcas — Mês -->
-        <div class="col-12">
-          <div class="card border-0 shadow-sm chart-card h-100">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-2">
-                <h5 class="mb-0 p-2" id="tituloTopMarcas">Top 10 Marcas — Últimos 30 dias</h5>
-                <span class="badge bg-info text-dark">Por Valor</span>
-              </div>
-
-              <div class="chart-wrapper loading placeholder placeholder-wave">
-                <div class="skeleton-overlay placeholder-wave">
-                  <span class="placeholder col-8 mb-3 rounded-1" style="height:18px;"></span>
-                  <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
-                  <div class="d-flex gap-4">
-                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
-                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
-                    <span class="placeholder col-3 rounded-1" style="height:16px;"></span>
-                  </div>
-                </div>
-
-                <canvas id="chartTopMarcasMes"></canvas>
-              </div>
-
-              <div id="resumoTopMarcasMes" class="subtle mt-2"></div>
-            </div>
-          </div>
-        </div><br>
-
-        <!-- NOVO GRÁFICO: Vendas Do dia -->
-        <div class="col-12">
-          <div class="card border-0 shadow-sm chart-card h-100">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-2">
-                <h5 class="mb-0 p-2">Vendas do dia</h5>
-                <span class="badge bg-info text-dark">Por Valor</span>
-              </div>
-
-              <div class="chart-wrapper loading placeholder placeholder-wave">
-                <div class="skeleton-overlay placeholder-wave">
-                  <span class="placeholder col-10 mb-3 rounded-1" style="height:18px;"></span>
-                  <span class="placeholder col-12 mb-3 rounded-1" style="height:100px;"></span>
-                  <div class="d-flex gap-3">
-                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                  </div>
-                </div>
-
-                <canvas id="chartFaturamentoDia"></canvas>
-              </div>
-
-              <div id="chartFaturamentoDiaResumo" class="subtle mt-2"></div>
-            </div>
-          </div>
-        </div><br>
-
-        <!-- NOVO: Venda Anual (barras verticais) -->
-        <div class="col-12">
-          <div class="card border-0 shadow-sm chart-card h-100">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-2">
-                <h5 class="mb-0 p-2">Venda Anual — por Mês e Canal</h5>
-                <span class="badge bg-info text-dark">Por Valor</span>
-              </div>
-
-              <div class="chart-wrapper loading placeholder placeholder-wave">
-                <div class="skeleton-overlay placeholder-wave">
-                  <span class="placeholder col-6 mb-3 rounded-1" style="height:18px;"></span>
-                  <span class="placeholder col-12 mb-3 rounded-1" style="height:120px;"></span>
-                  <div class="d-flex gap-2">
-                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                    <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                  </div>
-                </div>
-
-                <canvas id="chartFaturamentoAnual"></canvas>
-              </div>
-
-              <div id="resumoFaturamentoAnual" class="subtle mt-2"></div>
-            </div>
-          </div>
-        </div><br>
-
 
         <!-- Linha 1: KPIs principais -->
-        <div class="row row-cols-1 row-cols-md-4 g-4 text-start">
+        <div class="row row-cols-1 row-cols-md-4 g-4">
           <div class="col">
-            <div class="card dashboard-card border-0 shadow-sm h-100">
+            <div class="card dashboard-card h-100">
               <div class="card-body d-flex align-items-center gap-3">
-                <div class="icon-circle bg-grad-1"><i class="bi bi-hourglass-split"></i></div>
+                <div class="dash-kpi__icon bg-grad-3"><i class="bi bi-hourglass-split"></i></div>
                 <div class="flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-baseline">
-                    <h6 class="mb-1">Pedidos Pendentes</h6>
-                  </div>
-                  <h3 id="kpiPendentes" class="mb-1">0</h3>
+                  <div class="dash-kpi__label">Pedidos pendentes</div>
+                  <h3 id="kpiPendentes" class="dash-kpi__value">0</h3>
                   <div class="card-sub">Hoje</div>
                 </div>
               </div>
             </div>
           </div>
           <div class="col">
-            <div class="card dashboard-card border-0 shadow-sm h-100">
+            <div class="card dashboard-card h-100">
               <div class="card-body d-flex align-items-center gap-3">
-                <div class="icon-circle bg-grad-2"><i class="bi bi-check2-circle"></i></div>
+                <div class="dash-kpi__icon bg-grad-4"><i class="bi bi-check2-circle"></i></div>
                 <div class="flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-baseline">
-                    <h6 class="mb-1">Pedidos Confirmados</h6>
-                  </div>
-                  <h3 id="kpiConfirmados" class="mb-1">0</h3>
+                  <div class="dash-kpi__label">Pedidos confirmados</div>
+                  <h3 id="kpiConfirmados" class="dash-kpi__value">0</h3>
                   <div class="card-sub">Hoje</div>
                 </div>
               </div>
             </div>
           </div>
           <div class="col">
-            <div class="card dashboard-card border-0 shadow-sm h-100">
+            <div class="card dashboard-card h-100">
               <div class="card-body d-flex align-items-center gap-3">
-                <div class="icon-circle bg-grad-2"><i class="bi bi-collection"></i></div>
+                <div class="dash-kpi__icon bg-grad-1"><i class="bi bi-collection"></i></div>
                 <div class="flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-baseline">
-                    <h6 class="mb-1">Produtos Acabando</h6>
-                  </div>
-                  <h3 id="kpiAcabando" class="mb-1">0</h3>
+                  <div class="dash-kpi__label">Produtos acabando</div>
+                  <h3 id="kpiAcabando" class="dash-kpi__value">0</h3>
                   <div class="card-sub">Total</div>
                 </div>
               </div>
             </div>
           </div>
           <div class="col">
-            <div class="card dashboard-card border-0 shadow-sm h-100">
+            <div class="card dashboard-card h-100">
               <div class="card-body d-flex align-items-center gap-3">
-                <div class="icon-circle bg-grad-3"><i class="bi bi-card-checklist"></i></div>
+                <div class="dash-kpi__icon bg-grad-5"><i class="bi bi-box-seam"></i></div>
                 <div class="flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-baseline">
-                    <h6 class="mb-1">Produtos em falta</h6>
-                  </div>
-                  <h3 id="kpiEmFalta" class="mb-1">0</h3>
+                  <div class="dash-kpi__label">Produtos em falta</div>
+                  <h3 id="kpiEmFalta" class="dash-kpi__value">0</h3>
                   <div class="card-sub">Total</div>
                 </div>
               </div>
@@ -329,76 +290,60 @@
           </div>
         </div><br>
 
-
-
-
-
         <!-- Linha 2: KPIs secundários -->
-        <div class="row row-cols-1 row-cols-md-3 g-4 text-start mt-1">
+        <div class="row row-cols-1 row-cols-md-3 g-4">
           <div class="col">
-            <div class="card dashboard-card border-0 shadow-sm h-100">
+            <div class="card dashboard-card h-100">
               <div class="card-body d-flex align-items-center gap-3">
-                <div class="icon-circle bg-grad-1"><i class="bi bi-tags-fill"></i></div>
+                <div class="dash-kpi__icon bg-grad-2"><i class="bi bi-tags-fill"></i></div>
                 <div class="flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-baseline">
-                    <h6 class="mb-1">Marcas</h6>
-                  </div>
-                  <h3 id="kpiMarcas" class="mb-1">0</h3>
+                  <div class="dash-kpi__label">Marcas</div>
+                  <h3 id="kpiMarcas" class="dash-kpi__value">0</h3>
                   <div class="card-sub">Marcas ativas</div>
                 </div>
               </div>
             </div>
           </div>
           <div class="col">
-            <div class="card dashboard-card border-0 shadow-sm h-100">
+            <div class="card dashboard-card h-100">
               <div class="card-body d-flex align-items-center gap-3">
-                <div class="icon-circle bg-grad-3"><i class="bi bi-people-fill"></i></div>
+                <div class="dash-kpi__icon bg-grad-1"><i class="bi bi-people-fill"></i></div>
                 <div class="flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-baseline">
-                    <h6 class="mb-1">Carteira de Clientes</h6>
-                  </div>
-                  <h3 id="kpiClientes" class="mb-1">0</h3>
+                  <div class="dash-kpi__label">Carteira de clientes</div>
+                  <h3 id="kpiClientes" class="dash-kpi__value">0</h3>
                   <div class="card-sub">Total</div>
                 </div>
               </div>
             </div>
           </div>
           <div class="col">
-            <div class="card dashboard-card border-0 shadow-sm h-100">
+            <div class="card dashboard-card h-100">
               <div class="card-body d-flex align-items-center gap-3">
-                <div class="icon-circle bg-grad-4"><i class="bi bi-person-badge"></i></div>
+                <div class="dash-kpi__icon bg-grad-4"><i class="bi bi-person-badge"></i></div>
                 <div class="flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-baseline">
-                    <h6 class="mb-1">Vendedores</h6>
-                  </div>
-                  <h3 id="kpiVendedores" class="mb-1">0</h3>
+                  <div class="dash-kpi__label">Vendedores</div>
+                  <h3 id="kpiVendedores" class="dash-kpi__value">0</h3>
                   <div class="card-sub">Total</div>
                 </div>
               </div>
             </div>
           </div>
-
-        </div>
+        </div><br>
 
         <!-- Linha 3: Gráficos -->
-        <!-- Linha 3: Gráficos -->
-        <div class="row g-4 mt-1">
+        <div class="row g-4">
           <!-- Pedidos — Pendentes x Confirmados -->
           <div class="col-12 col-xl-6">
-            <div class="card border-0 shadow-sm chart-card h-100">
+            <div class="card chart-card h-100">
               <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <h5 class="mb-0">Pedidos — Pendentes x Confirmados</h5>
+                <div class="dash-card__head">
+                  <span class="dash-card__icon" aria-hidden="true"><i class="bi bi-pie-chart"></i></span>
+                  <h5 class="dash-card__title">Pedidos — pendentes x confirmados</h5>
                 </div>
-
-                <div class="chart-wrapper loading placeholder placeholder-wave">
-                  <div class="skeleton-overlay placeholder-wave">
-                    <span class="placeholder col-7 mb-3 rounded-1" style="height:18px;"></span>
-                    <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
-                    <div class="d-flex gap-3">
-                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
-                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
-                    </div>
+                <div class="chart-wrapper chart-wrapper--sm loading">
+                  <div class="skeleton-overlay">
+                    <span class="sk-line sk-line--title"></span>
+                    <span class="sk-line sk-line--chart"></span>
                   </div>
                   <canvas id="chartPedidos"></canvas>
                 </div>
@@ -406,22 +351,18 @@
             </div>
           </div>
 
-          <!-- Canais — Balcão x Entrega -->
+          <!-- Canais — Balcão x Entrega x Venda -->
           <div class="col-12 col-xl-6">
-            <div class="card border-0 shadow-sm chart-card h-100">
+            <div class="card chart-card h-100">
               <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <h5 class="mb-0">Canais — Balcão x Entrega x Venda</h5>
+                <div class="dash-card__head">
+                  <span class="dash-card__icon" aria-hidden="true"><i class="bi bi-diagram-3"></i></span>
+                  <h5 class="dash-card__title">Canais — balcão x entrega x venda</h5>
                 </div>
-
-                <div class="chart-wrapper loading placeholder placeholder-wave">
-                  <div class="skeleton-overlay placeholder-wave">
-                    <span class="placeholder col-6 mb-3 rounded-1" style="height:18px;"></span>
-                    <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
-                    <div class="d-flex gap-3">
-                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
-                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
-                    </div>
+                <div class="chart-wrapper chart-wrapper--sm loading">
+                  <div class="skeleton-overlay">
+                    <span class="sk-line sk-line--title"></span>
+                    <span class="sk-line sk-line--chart"></span>
                   </div>
                   <canvas id="chartCanais"></canvas>
                 </div>
@@ -431,20 +372,16 @@
 
           <!-- Estoque — Com x Sem -->
           <div class="col-12 col-xl-6">
-            <div class="card border-0 shadow-sm chart-card h-100">
+            <div class="card chart-card h-100">
               <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <h5 class="mb-0">Estoque — Com x Sem</h5>
+                <div class="dash-card__head">
+                  <span class="dash-card__icon" aria-hidden="true"><i class="bi bi-boxes"></i></span>
+                  <h5 class="dash-card__title">Estoque — com x sem</h5>
                 </div>
-
-                <div class="chart-wrapper loading placeholder placeholder-wave">
-                  <div class="skeleton-overlay placeholder-wave">
-                    <span class="placeholder col-7 mb-3 rounded-1" style="height:18px;"></span>
-                    <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
-                    <div class="d-flex gap-3">
-                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
-                      <span class="placeholder col-4 rounded-1" style="height:16px;"></span>
-                    </div>
+                <div class="chart-wrapper chart-wrapper--sm loading">
+                  <div class="skeleton-overlay">
+                    <span class="sk-line sk-line--title"></span>
+                    <span class="sk-line sk-line--chart"></span>
                   </div>
                   <canvas id="chartEstoque"></canvas>
                 </div>
@@ -454,23 +391,16 @@
 
           <!-- Top 5 Marcas com Estoque -->
           <div class="col-12 col-xl-6">
-            <div class="card border-0 shadow-sm chart-card h-100">
+            <div class="card chart-card h-100">
               <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <h5 class="mb-0">Top 5 Marcas com Estoque</h5>
+                <div class="dash-card__head">
+                  <span class="dash-card__icon" aria-hidden="true"><i class="bi bi-tags"></i></span>
+                  <h5 class="dash-card__title">Top 5 marcas com estoque</h5>
                 </div>
-
-                <div class="chart-wrapper loading placeholder placeholder-wave">
-                  <div class="skeleton-overlay placeholder-wave">
-                    <span class="placeholder col-8 mb-3 rounded-1" style="height:18px;"></span>
-                    <span class="placeholder col-12 mb-3 rounded-1" style="height:110px;"></span>
-                    <div class="d-flex gap-2">
-                      <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                      <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                      <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                      <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                      <span class="placeholder col-2 rounded-1" style="height:16px;"></span>
-                    </div>
+                <div class="chart-wrapper chart-wrapper--sm loading">
+                  <div class="skeleton-overlay">
+                    <span class="sk-line sk-line--title"></span>
+                    <span class="sk-line sk-line--chart"></span>
                   </div>
                   <canvas id="chartTopMarcas"></canvas>
                 </div>
@@ -479,7 +409,6 @@
           </div>
         </div>
 
-
       </div>
     </main>
 
@@ -487,14 +416,14 @@
   </div>
 
   <!-- Seus scripts comuns -->
-  <script src="/config.js?v=2026.09.11.203014"></script>
-  <script src="../js/nomeEmpresa.js?v=2026.09.11.203014"></script>
+  <script src="/config.js?v=2026.09.11.215422"></script>
+  <script src="../js/nomeEmpresa.js?v=2026.09.11.215422"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
     crossorigin="anonymous"></script>
-  <script src="html/auth/js/componentes.js?v=2026.09.11.203014"></script>
-  <script src="html/auth/js/painel-dashboard.js?v=2026.09.11.203014"></script>
-  <script src="html/auth/js/painel-releases.js?v=2026.09.11.203014"></script>
+  <script src="html/auth/js/componentes.js?v=2026.09.11.215422"></script>
+  <script src="html/auth/js/painel-dashboard.js?v=2026.09.11.215422"></script>
+  <script src="html/auth/js/painel-releases.js?v=2026.09.11.215422"></script>
 
 </body>
 

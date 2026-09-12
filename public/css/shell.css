@@ -46,7 +46,6 @@ body.ou-has-shell .wrapper > :nth-child(2) {
   body.ou-has-shell .wrapper {
     padding-left: calc(var(--ou-shell-sidebar-w) + (var(--ou-shell-gap) * 2));
     padding-right: var(--ou-shell-gap);
-    transition: padding-left 0.2s ease;
   }
 }
 
@@ -527,8 +526,7 @@ body.ou-drawer-open .ou-drawer-overlay {
   .ou-sidebar,
   .ou-drawer-overlay,
   .ou-icon-btn,
-  .ou-user-btn,
-  body.ou-has-shell .wrapper {
+  .ou-user-btn {
     transition: none !important;
   }
 }

@@ -228,17 +228,6 @@ body,
 /* --------------------------------------------------------------------------
    8. Componentes do projeto
    -------------------------------------------------------------------------- */
-[data-theme="dark"] .panel-hero {
-  background: linear-gradient(
-    90deg,
-    rgba(59, 130, 246, 0.14),
-    rgba(99, 102, 241, 0.05)
-  );
-  box-shadow: var(--ou-shadow);
-}
-[data-theme="dark"] .panel-hero .icon-circle {
-  background: var(--ou-surface-2);
-}
 [data-theme="dark"] .subtle,
 [data-theme="dark"] .card-sub {
   color: var(--ou-text-muted);
@@ -308,10 +297,10 @@ body,
   color: var(--ou-text);
 }
 [data-theme="dark"] .chart-wrapper {
-  background-color: var(--ou-surface-2);
+  background-color: transparent;
 }
 [data-theme="dark"] .chart-wrapper canvas {
-  background-color: var(--ou-surface) !important;
+  background-color: transparent !important;
 }
 [data-theme="dark"] .skeleton-overlay {
   background: var(--ou-surface);
