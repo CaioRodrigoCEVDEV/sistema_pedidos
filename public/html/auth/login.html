@@ -2,71 +2,160 @@
 <html lang="pt-BR">
 
 <head>
-<meta charset="UTF-8" />
-  <script src="/js/theme-manager.js?v=2026.09.11.223033"></script>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title id="title"></title>
-  <!--links internos-->
-  <link rel="stylesheet" href="/html/auth/admin/css/style-login.css?v=2026.09.11.223033" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.11.223033" />
-  <!--links externos-->
+  <title id="title">OrderUp — Acesso ao sistema</title>
   <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
   <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-  <!--Link tema bootstrap-->
-  <link rel="stylesheet" href="../../css/tema-bootstrap.css?v=2026.09.11.223033"/>
-  <!--Fim Link tema bootstrap-->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-    integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous" />
-  <link rel="stylesheet" href="/css/theme.css?v=2026.09.11.223033" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-login.css?v=2026.09.11.223033" />
 </head>
 
-<body class="bg-light">
-  
-  <div class="wrapper">
-    <header>
-      <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm bg-white rounded">
-        <a class="navbar-brand" href="index" id="nomeEmpresa"><img src="/uploads/logo.jpg" width="30" height="30"
-            alt="" /></a>
-      </nav>
-    </header>
-    <main class="login-page mt-5 p-2">
-      <div class="login-card m-auto">
-        <img src="/uploads/logo.jpg" alt="Logo JP Peças" class="login-logo" />
-        <h2>Login</h2>
+<body>
+  <main class="login-page">
+    <section class="login-card" aria-label="Login OrderUp">
 
-        <form id="formLogin">
-          <label for="email">E-mail</label>
-          <input type="email" class="form-control" id="email" placeholder="Digite seu e-mail" required />
+      <!-- Painel institucional (desktop) -->
+      <aside class="brand-panel">
+        <div class="brand-panel__content">
+          <span class="brand-pill">
+            <img class="brand-pill__logo" src="/uploads/logo.jpg" alt="" />
+            OrderUp
+          </span>
 
-          <label for="password">Senha</label>
-          <input type="password" class="form-control" id="password" placeholder="Digite sua senha" required />
+          <h1 class="brand-title">
+            Seu sistema<br />
+            de pedidos<br />
+            e estoque
+          </h1>
 
-          <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="remember" />
-            <label class="form-check-label" for="remember">Salvar usuário e senha</label>
+          <p class="brand-desc">
+            Controle pedidos, clientes, estoque, devoluções e relatórios em um
+            painel único e integrado.
+          </p>
+
+          <div class="brand-stats">
+            <div class="stat">
+              <span class="stat__label">Pedidos</span>
+              <span class="stat__value">Tempo real</span>
+            </div>
+            <div class="stat">
+              <span class="stat__label">Estoque</span>
+              <span class="stat__value">Sincronizado</span>
+            </div>
+            <div class="stat">
+              <span class="stat__label">Clientes</span>
+              <span class="stat__value">Integrado</span>
+            </div>
           </div>
 
-          <div class="d-flex gap-2 justify-content-center">
-            <button type="submit" class="btn btn-primary">Entrar</button>
-            <button type="button" class="btn btn-outline-dark" onclick="window.history.back();">
-              <i class="bi bi-box-arrow-in-left"></i> Voltar
+          <ul class="brand-features">
+            <li>
+              <span class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1V2l-2 1-2-1-2 1-2-1-2 1-2-1z" />
+                  <path d="M8 8h8M8 12h8M8 16h5" />
+                </svg>
+              </span>
+              Gestão de pedidos
+            </li>
+            <li>
+              <span class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                </svg>
+              </span>
+              Controle de estoque
+            </li>
+            <li>
+              <span class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </span>
+              Gestão de clientes
+            </li>
+            <li>
+              <span class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="6" y1="20" x2="6" y2="11" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="18" y1="20" x2="18" y2="14" />
+                </svg>
+              </span>
+              Relatórios integrados
+            </li>
+          </ul>
+        </div>
+
+        <p class="brand-footer">&copy; OrderUp &mdash; Sistema de Pedidos</p>
+      </aside>
+
+      <!-- Painel do formulário -->
+      <section class="form-panel">
+        <div class="form-inner">
+          <div class="mobile-brand">
+            <img src="/uploads/logo.jpg" alt="" />
+            <span>OrderUp</span>
+          </div>
+
+          <header class="form-head">
+            <h2>Login</h2>
+            <p>Acesse seu painel de pedidos com segurança.</p>
+          </header>
+
+          <form id="formLogin">
+            <div class="field">
+              <label for="email">E-mail</label>
+              <input type="email" id="email" name="email" autocomplete="email" placeholder="seu@email.com"
+                required />
+            </div>
+
+            <div class="field">
+              <label for="password">Senha</label>
+              <input type="password" id="password" name="password" autocomplete="current-password"
+                placeholder="Sua senha" required />
+            </div>
+
+            <label class="remember" for="remember">
+              <input type="checkbox" id="remember" />
+              <span>Salvar usuário e senha</span>
+            </label>
+
+            <button type="submit" class="btn-primary">
+              Entrar
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14" />
+                <path d="M13 6l6 6-6 6" />
+              </svg>
             </button>
-          </div>
-        </form>
-      </div>
-    </main>
 
-    <footer id="footer">
-      <!--Conteudo do footer adicionado via JS-->
-    </footer>
-  </div>
+            <button type="button" class="btn-ghost" onclick="window.history.back();">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 12H5" />
+                <path d="M11 18l-6-6 6-6" />
+              </svg>
+              Voltar
+            </button>
+          </form>
+        </div>
+      </section>
 
-  <script src="/html/auth/js/componentes.js?v=2026.09.11.223033"></script>
+    </section>
+  </main>
+
   <script src="/config.js?v=2026.09.11.223033"></script>
-  <script src="../js/nomeEmpresa.js?v=2026.09.11.223033"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
   <script src="/html/auth/js/login.js?v=2026.09.11.223033"></script>
 </body>
 
