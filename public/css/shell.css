@@ -10,8 +10,9 @@
 
 :root {
   --ou-shell-sidebar-w: 240px;
-  --ou-shell-sidebar-from: #3b82f6;
-  --ou-shell-sidebar-to: #1d4ed8;
+  --ou-shell-sidebar-1: #0f2444;
+  --ou-shell-sidebar-2: #0c1c36;
+  --ou-shell-sidebar-3: #0a1526;
   --ou-shell-radius: 26px;
   --ou-shell-topbar-h: 60px;
   --ou-shell-gap: 1rem;
@@ -63,12 +64,24 @@ body.ou-has-shell .wrapper > :nth-child(2) {
   height: calc(100dvh - (var(--ou-shell-gap) * 2));
   overflow: hidden;
   color: #ffffff;
-  background: linear-gradient(
-    180deg,
-    var(--ou-shell-sidebar-from),
-    var(--ou-shell-sidebar-to)
-  );
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(
+      220px 160px at 100% 0%,
+      rgba(255, 255, 255, 0.08),
+      transparent 70%
+    ),
+    radial-gradient(
+      320px 220px at 95% 0%,
+      rgba(59, 130, 246, 0.22),
+      transparent 65%
+    ),
+    linear-gradient(
+      160deg,
+      var(--ou-shell-sidebar-1) 0%,
+      var(--ou-shell-sidebar-2) 55%,
+      var(--ou-shell-sidebar-3) 100%
+    );
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--ou-shell-radius);
   box-shadow: var(--ou-shadow);
 }
