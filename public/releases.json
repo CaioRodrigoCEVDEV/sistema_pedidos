@@ -1,6 +1,13 @@
 {
-  "generatedAt": "2026-09-12T02:34:05.790Z",
+  "generatedAt": "2026-09-12T04:27:45.261Z",
   "releases": [
+    {
+      "id": 387449712,
+      "tag_name": "v5.0.0",
+      "name": "v5.0.0",
+      "body": "🎯 Objetivo\r\nModernizar a interface do sistema, padronizando a experiência visual das páginas autenticadas e melhorando a responsividade, o suporte a temas e a usabilidade do módulo de clientes.\r\n\r\n🔨 Alterações\r\nModernizado o dashboard e o layout das páginas autenticadas.\r\nReformulada a identidade visual das páginas internas.\r\nImplementado o tema claro como padrão, mantendo as opções dark e auto.\r\nAplicado o tema global também na tela de login.\r\nRefatorada a tela de login para o novo layout em dois painéis.\r\nAjustado o topbar para integração com o background da aplicação.\r\nMelhorada a experiência mobile da página de clientes.\r\nReformulado o modal de clientes.\r\nAjustadas as abas de Pedidos, Conta e Cobrança, exibidas somente na edição de clientes existentes.\r\nPadronizados feedbacks utilizando Toast.\r\nAjustado o filtro de período no dashboard mobile.\r\nRenomeado item do menu.\r\nImplementado versionamento de assets para atualização de cache.\r\nAjustado o processo de disponibilização das releases utilizando JSON local no deploy.\r\n\r\n✅ Validação\r\nValidado o novo layout das páginas autenticadas.\r\nValidado o funcionamento dos temas claro, dark e auto.\r\nValidada a nova tela de login.\r\nValidada a responsividade do módulo de clientes.\r\nValidada a exibição das abas somente durante a edição.\r\nValidada a atualização dos assets após alteração de versão.\r\n\r\n🎉 Resultado\r\nInterface mais moderna e consistente em todo o sistema.\r\nMelhor experiência de uso em desktop e mobile.\r\nNovo padrão visual alinhado à identidade atual da aplicação.\r\nMaior consistência entre tema claro e escuro.\r\nMelhor usabilidade no módulo de clientes.\r\nMelhor experiência na tela de autenticação.",
+      "published_at": "2026-09-12T04:08:58Z"
+    },
     {
       "id": 386764949,
       "tag_name": "v4.3.0",

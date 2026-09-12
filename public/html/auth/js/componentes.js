@@ -327,7 +327,7 @@ function ouWireLogout() {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       }).finally(function () {
-        window.location.href = "/index";
+        window.location.href = "/login";
       });
     });
   }

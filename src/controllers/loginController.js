@@ -1,9 +1,28 @@
 const pool = require('../config/db');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const {
+    LIMITE_MENSAGEM,
+    buildLoginKey,
+    checkLoginAttempt,
+    registerLoginFailure,
+    resetLoginAttempts,
+} = require('../utils/loginAttempts');
+
+function getClientIp(req) {
+    return req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+}
 
 exports.validarLogin = async (req, res) => {
     const { usucod,usunome,usuemail, ususenha } = req.body;
+
+    const chaveTentativas = buildLoginKey(getClientIp(req), usuemail);
+    const tentativa = checkLoginAttempt(chaveTentativas);
+
+    if (tentativa.blocked) {
+        res.set('Retry-After', String(tentativa.retryAfterSec));
+        return res.status(429).json({ mensagem: LIMITE_MENSAGEM });
+    }
 
     try {
         const result = await pool.query('SELECT usucod,usunome,usuemail, ususenha,usuadm ,ususta, usuest, usupv FROM usu WHERE usuemail = $1', [usuemail]);
@@ -11,14 +30,17 @@ exports.validarLogin = async (req, res) => {
         const empresaResult = await pool.query('SELECT empusapv, empusaest FROM emp WHERE empcod = 1');
 
         if (result.rowCount === 1 && result.rows[0].ususta === 'I') {
+            registerLoginFailure(chaveTentativas);
             return res.status(403).json({ mensagem: 'Usuário inativo. Contate o administrador.' });
         }
 
         if (result.rowCount === 1 && result.rows[0].ususta === 'X') {
+            registerLoginFailure(chaveTentativas);
             return res.status(403).json({ mensagem: 'Usuário excluído. Contate o administrador.' });
         }
 
         if (result.rows.length === 0) {
+            registerLoginFailure(chaveTentativas);
             return res.status(401).json({ mensagem: 'Usuário não encontrado' });
         }
 
@@ -30,10 +52,13 @@ exports.validarLogin = async (req, res) => {
         const senhaHash = crypto.createHash('md5').update(ususenha).digest('hex');
 
         if (usuario.ususenha !== senhaHash) {
+            registerLoginFailure(chaveTentativas);
             return res.status(401).json({ mensagem: 'Senha incorreta' });
         }
 
         // Se tudo ok, retorna sucesso
+
+        resetLoginAttempts(chaveTentativas);
 
         const token = jwt.sign({ 
             usuemail: usuario.usuemail,
