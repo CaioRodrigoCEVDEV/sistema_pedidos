@@ -12,7 +12,7 @@ var OU_NAV_GROUPS = [
   {
     title: "Principal",
     items: [
-      { href: "/index", route: "/index", label: "Início", icon: "bi-house" },
+      { href: "/index", route: "/index", label: "Ir para a loja", icon: "bi-shop" },
       {
         href: "/dash",
         route: "/dash",
@@ -174,7 +174,7 @@ function ouBuildTopbar() {
     '<button type="button" class="ou-icon-btn ou-menu-btn" id="ouMenuBtn" aria-label="Abrir menu" aria-expanded="false">' +
     '<i class="bi bi-list" aria-hidden="true"></i>' +
     "</button>" +
-    '<a class="ou-topbar__brand d-lg-none" href="/index" aria-label="Início">' +
+    '<a class="ou-topbar__brand d-lg-none" href="/index" aria-label="Ir para a loja">' +
     '<span class="ou-topbar__brand-logo"><img src="/uploads/logo.jpg" alt="" /></span>' +
     "</a>" +
     "</div>" +

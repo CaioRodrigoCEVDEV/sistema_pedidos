@@ -299,13 +299,32 @@
    Responsivo / acessibilidade
    -------------------------------------------------------------------------- */
 @media (max-width: 575.98px) {
+  .dash-filter__form {
+    align-items: stretch;
+  }
   .dash-filter__group {
     flex: 1 1 100%;
+    max-width: 100%;
+    border-radius: var(--dash-radius-sm);
   }
   .dash-filter__group .form-select,
   .dash-filter__group .form-control {
     min-width: 0;
     flex: 1 1 auto;
+  }
+  .dash-filter__group--dates {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .dash-filter__group--dates .form-control {
+    width: 100%;
+  }
+  .dash-filter__group--dates .dash-filter__sep {
+    text-align: center;
+  }
+  .dash-filter .btn {
+    flex: 1 1 100%;
   }
 }
 
