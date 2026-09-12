@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon app.js",
     "test": "node tests/partGroups.test.js",
-    "bump-version": "node scripts/bump-asset-version.js"
+    "bump-version": "node scripts/generate-releases.js && node scripts/bump-asset-version.js",
+    "releases:sync": "node scripts/generate-releases.js"
   },
   "author": "Caio - Heitor - Alan",
   "license": "ISC",

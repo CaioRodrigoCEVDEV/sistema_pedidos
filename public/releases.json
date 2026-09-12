@@ -1,0 +1,341 @@
+{
+  "generatedAt": "2026-09-12T01:16:22.850Z",
+  "releases": [
+    {
+      "id": 386764949,
+      "tag_name": "v4.3.0",
+      "name": "v4.3.0",
+      "body": "📌 Cache em memória e ETag na rota /v2/pros\r\n\r\n🎯 Objetivo\r\nOtimizar o desempenho da rota /v2/pros, reduzindo consultas desnecessárias ao banco de dados e permitindo o reaproveitamento de respostas já processadas.\r\n\r\n🧾 Detalhes\r\nImplementado cache em memória para o catálogo consultado pela rota /v2/pros.\r\nAdicionado controle de TTL para expiração automática do cache.\r\nImplementado suporte a ETag, evitando o envio do conteúdo quando não houver alterações.\r\nAdicionada configuração CATALOGO_CACHE_TTL_MS para controlar o tempo de vida do cache.\r\nMantida a instrumentação de performance e os controles de timeout existentes.\r\n✅ Resultado Esperado\r\nReduzir o tempo de resposta da rota /v2/pros.\r\nDiminuir a quantidade de consultas repetidas ao banco de dados.\r\nEvitar o envio desnecessário de dados quando o catálogo não tiver sido alterado.\r\nMelhorar a performance da busca de produtos sem alterar o comportamento funcional da rota.",
+      "published_at": "2026-09-11T03:21:51Z"
+    },
+    {
+      "id": 386757134,
+      "tag_name": "v4.2.0",
+      "name": "v4.2.0",
+      "body": "📌 Adicionar botão “Registrar Pedido” no carrinho\r\n\r\n🎯 Objetivo\r\nAdicionar uma nova opção no carrinho para permitir o registro de pedidos diretamente pelo canal de venda.\r\n\r\n🧾 Detalhes\r\nAdicionado o botão “Registrar Pedido” no carrinho.\r\nImplementada a integração com o canal VENDA.\r\nAjustada a interface do painel para disponibilizar a nova funcionalidade.\r\n✅ Resultado Esperado\r\nPermitir que o usuário registre um pedido diretamente a partir do carrinho.\r\nGarantir que o pedido seja registrado corretamente utilizando o canal de venda VENDA.\r\nManter o funcionamento atual do carrinho e das demais funcionalidades do painel.",
+      "published_at": "2026-09-11T02:58:40Z"
+    },
+    {
+      "id": 386749242,
+      "tag_name": "v4.1.1",
+      "name": "v4.1.1",
+      "body": "📌 Utilizar /v2/pros na busca da index e manter preço/estoque\r\n\r\n🎯 Objetivo\r\nAjustar a busca de produtos para usuários logados, utilizando a rota /v2/pros e garantindo a manutenção das informações de preço e estoque.\r\n\r\n🧾 Detalhes\r\nAlterada a busca de produtos para utilizar a rota /v2/pros na index.\r\nAmpliada a rota V2 com os parâmetros prov e promest para manter as informações de preço e status de disponibilidade.\r\nMantida a regra de disponibilidade utilizada anteriormente para o produto compartilhado.\r\n✅ Resultado Esperado\r\nUsuários logados realizam a busca de produtos através da rota /v2/pros.\r\nPreço e estoque permanecem disponíveis corretamente nos resultados.\r\nA regra de disponibilidade continua sendo aplicada de forma consistente.",
+      "published_at": "2026-09-11T02:34:23Z"
+    },
+    {
+      "id": 386265149,
+      "tag_name": "v4.1.0",
+      "name": "v4.1.0",
+      "body": "🎯 Objetivo\r\n\r\nCriar uma nova tela para permitir o gerenciamento das devoluções de peças no sistema.\r\n\r\n🧾 Detalhes\r\nCriada a nova tela de Devoluções de Peças.\r\nImplementada a estrutura inicial da rotina para tratamento das devoluções.\r\nAdicionada a funcionalidade ao sistema de pedidos.\r\nRealizados os ajustes necessários para disponibilização da nova rotina.\r\n✅ Resultado Esperado\r\n\r\nDisponibilizar uma rotina específica para controle e gerenciamento das devoluções de peças, facilitando o acompanhamento dessas operações no sistema.\r\n\r\n👤 Contribuidor\r\nheitorgb",
+      "published_at": "2026-09-10T12:30:21Z"
+    },
+    {
+      "id": 378742084,
+      "tag_name": "v4.0.1",
+      "name": "v4.0.1",
+      "body": "📌 Ajustes de responsividade, cache e informações do sistema\r\n\r\n🎯 **Objetivo**\r\nCorrigir problemas de exibição no mobile, melhorar o controle de cache dos assets e ajustar a apresentação de informações e configurações do sistema.\r\n\r\n🧾 **Detalhes**\r\n\r\n* Corrigido overflow horizontal no painel de pedidos em dispositivos mobile\r\n* Implementado versionamento de assets com data e hora para evitar problemas de cache\r\n* Ajustado dashboard para exibir apenas a última release e o nome do sistema\r\n* Corrigido carregamento do `config.js` antes da utilização de `nomeEmpresa` em estoque, grupos e relatórios\r\n",
+      "published_at": "2026-08-28T20:15:11Z"
+    },
+    {
+      "id": 378716341,
+      "tag_name": "v4.0.0",
+      "name": "v4.0.0",
+      "body": "📌 Melhorias nas telas de gerenciamento e atualização de assets\r\n\r\n🎯 Objetivo\r\nMelhorar a experiência nas telas de gerenciamento e garantir que os assets atualizados sejam carregados corretamente pelos usuários.\r\n\r\n🧾 Detalhes\r\n\r\nMelhoradas as telas de gerenciamento com modal em fullscreen\r\nImplementado scroll infinito para facilitar a navegação em listas extensas\r\nAdicionado cache-busting automático dos assets\r\nAjustado o controle de cache para garantir o carregamento das versões mais recentes dos arquivos",
+      "published_at": "2026-08-28T19:27:10Z"
+    },
+    {
+      "id": 374659986,
+      "tag_name": "v3.9.2",
+      "name": "v3.9.2",
+      "body": "📌 Ajuste no consumo de estoque dos grupos de estoque\r\n\r\n🎯 Objetivo\r\nCorrigir o comportamento do sistema para que os grupos de estoque não realizem o consumo de estoque indevidamente.\r\n\r\n🧾 Detalhes\r\n\r\nAjustada a rotina de consumo de estoque dos grupos de estoque\r\nCorrigido o comportamento para evitar a baixa indevida dos itens vinculados aos grupos\r\nGarantido que o consumo de estoque siga corretamente as regras definidas para cada operação",
+      "published_at": "2026-08-21T20:29:06Z"
+    },
+    {
+      "id": 372756474,
+      "tag_name": "v3.9.1",
+      "name": "v3.9.1",
+      "body": "📌 Padronização dos popups e melhorias no gerenciamento de pedidos\r\n\r\n🎯 Objetivo\r\nMelhorar a experiência de gerenciamento dos pedidos, padronizando a identidade visual dos popups, facilitando ações em lote e corrigindo o direcionamento após o login.\r\n\r\n🧾 Detalhes\r\n\r\n* Padronizados os popups de gerenciamento, seguindo uma identidade visual consistente e adicionando filtros para facilitar a utilização\r\n* Adicionada a possibilidade de cancelar múltiplos pedidos pendentes em lote\r\n* Ajustado o fluxo de login para direcionar o usuário diretamente para a página de pedidos após a autenticação\r\n\r\n✨ Resultado\r\nA interface de gerenciamento ficou mais consistente e prática, com maior agilidade para operações em lote e um fluxo de navegação mais direto após o login.\r\n",
+      "published_at": "2026-08-19T02:01:37Z"
+    },
+    {
+      "id": 351599129,
+      "tag_name": "v3.8.3",
+      "name": "v3.8.3",
+      "body": "📌 Ajuste na ordenação do relatório de peças cadastradas\r\n🎯 Objetivo\r\nMelhorar a organização das informações exibidas no relatório de peças cadastradas, corrigindo a ordenação dos registros e padronizando a listagem por marca.\r\n\r\n🧾 Detalhes\r\nCorrigida a ordenação do relatório de peças cadastradas\r\nAjustado o critério de ordenação dos registros exibidos\r\nAlterada a listagem para ordenar as peças exclusivamente por marca\r\nRevisada a lógica de geração do relatório para garantir consistência na exibição\r\nAplicados refinamentos para melhorar a visualização e a consulta das informações\r\n\r\n✅ Resultado Esperado\r\nRelatório exibindo as peças em ordem consistente\r\nListagem organizada por marca\r\nMaior facilidade para localizar peças cadastradas\r\nApresentação padronizada das informações no relatório\r\nMelhor experiência de consulta para os usuários\r\n\r\n👤 Contribuidor\r\nheitorgb",
+      "published_at": "2026-07-09T14:55:46Z"
+    },
+    {
+      "id": 342137622,
+      "tag_name": "v3.8.2",
+      "name": "v3.8.2",
+      "body": "📌 Correções no relatório Top Peças, filtros de cadastro e atualização visual do footer\r\n\r\n🎯 Objetivo\r\nMelhorar a usabilidade e consistência dos relatórios de peças, corrigindo agrupamentos, adicionando filtros de pesquisa, ajustando a geração de PDF e atualizando o layout do footer da aplicação.\r\n\r\n🧾 Detalhes\r\n\r\nCorrigido agrupamento de dados no relatório Top Peças\r\nAdicionado filtro por tipo na tela de Peças Cadastradas\r\nAjustada lógica de exibição e agrupamento dos registros no relatório\r\nCorrigido layout das colunas na exportação PDF do relatório Top Peças\r\nRefatorada a formatação de quantidades para reutilização e padronização no PDF\r\nMelhorada a organização visual das informações exportadas\r\nRevisadas regras de geração do relatório para garantir consistência dos dados apresentados\r\nAtualizado footer da aplicação da versão V1 para o padrão V2\r\nAplicados ajustes visuais no rodapé para alinhamento com a identidade atual da plataforma\r\n\r\n✅ Resultado Esperado\r\n\r\nRelatório Top Peças exibindo agrupamentos corretos\r\nFiltro por tipo funcionando corretamente nas consultas de peças cadastradas\r\nPDFs gerados com colunas alinhadas e informações legíveis\r\nFormatação de quantidades consistente em todos os relatórios\r\nMelhor experiência de navegação e consulta de dados\r\nFooter atualizado e padronizado conforme o novo layout da aplicação\r\n\r\n👤 Contribuidor\r\n\r\nCaioRodrigoCEVDEV\r\nheitorgb",
+      "published_at": "2026-06-19T21:07:37Z"
+    },
+    {
+      "id": 342133605,
+      "tag_name": "v3.8.1",
+      "name": "v3.8.1",
+      "body": "📌 Correções no relatório Top Peças, filtros de cadastro e atualização visual do footer\r\n\r\n🎯 Objetivo\r\nMelhorar a usabilidade e consistência dos relatórios de peças, corrigindo agrupamentos, adicionando filtros de pesquisa, ajustando a geração de PDF e atualizando o layout do footer da aplicação.\r\n\r\n🧾 Detalhes\r\n\r\nCorrigido agrupamento de dados no relatório Top Peças\r\nAdicionado filtro por tipo na tela de Peças Cadastradas\r\nAjustada lógica de exibição e agrupamento dos registros no relatório\r\nCorrigido layout das colunas na exportação PDF do relatório Top Peças\r\nRefatorada a formatação de quantidades para reutilização e padronização no PDF\r\nMelhorada a organização visual das informações exportadas\r\nRevisadas regras de geração do relatório para garantir consistência dos dados apresentados\r\nAtualizado footer da aplicação da versão V1 para o padrão V2\r\nAplicados ajustes visuais no rodapé para alinhamento com a identidade atual da plataforma\r\n\r\n✅ Resultado Esperado\r\n\r\nRelatório Top Peças exibindo agrupamentos corretos\r\nFiltro por tipo funcionando corretamente nas consultas de peças cadastradas\r\nPDFs gerados com colunas alinhadas e informações legíveis\r\nFormatação de quantidades consistente em todos os relatórios\r\nMelhor experiência de navegação e consulta de dados\r\nFooter atualizado e padronizado conforme o novo layout da aplicação\r\n\r\n👤 Contribuidor\r\n\r\nCaioRodrigoCEVDEV\r\nheitorgb",
+      "published_at": "2026-06-19T20:55:38Z"
+    },
+    {
+      "id": 342108941,
+      "tag_name": "v3.8.0",
+      "name": "v3.8.0",
+      "body": "",
+      "published_at": "2026-06-19T19:54:03Z"
+    },
+    {
+      "id": 340879785,
+      "tag_name": "v3.7.2",
+      "name": "v3.7.2",
+      "body": "📌 Ajuste do footer com integração à landing page da OrderUp\r\n\r\n🎯 Objetivo\r\nMelhorar a apresentação visual do rodapé da aplicação, tornando-o mais discreto e profissional, além de direcionar os usuários para a landing page da OrderUp.\r\n\r\n🧾 Detalhes\r\n\r\nAjustado o layout do footer para uma apresentação mais sutil\r\nReduzido o destaque visual do texto institucional\r\nMelhorado o alinhamento e espaçamento dos elementos do rodapé\r\nAdicionado link para a landing page da OrderUp\r\nConfigurado redirecionamento ao clicar na identificação da plataforma\r\nRevisada a responsividade do footer para dispositivos móveis\r\nPadronizada a exibição da assinatura da aplicação\r\n\r\n✅ Resultado Esperado\r\n\r\nRodapé mais limpo e discreto visualmente\r\nMelhor experiência de navegação para o usuário\r\nDirecionamento facilitado para a página institucional da OrderUp\r\nLayout consistente entre desktop e dispositivos móveis\r\nIdentificação da plataforma preservada sem impactar a usabilidade da aplicação\r\n\r\n👤 Contribuidor\r\n\r\nCaioRodrigoCEVDEV",
+      "published_at": "2026-06-17T15:31:36Z"
+    },
+    {
+      "id": 340202925,
+      "tag_name": "v3.7.1",
+      "name": "v3.7.1",
+      "body": "📌 Permitir edição de produto sem exigir promodcod no endpoint de atualização\r\n\r\n🎯 Objetivo\r\nCorrigir a falha na edição de produtos que ocorria quando o frontend enviava apenas campos de atualização (descrição, preço, status, etc.) sem informar o código promocional (promodcod), permitindo atualizações parciais sem alterar o modelo vinculado.\r\n\r\n🧾 Detalhes\r\n\r\nTornado o campo promodcod opcional no endpoint PUT /pro/:id\r\nMantida a validação obrigatória do identificador do produto (produtoId)\r\nAjustada a validação para retornar erro apenas quando promodcod for informado e estiver inválido\r\nCorrigida a lógica de atualização para preservar o modelo atual quando promodcod não for enviado\r\nImplementados dois fluxos de atualização:\r\nSem promodcod: mantém o vínculo atual do produto\r\nCom promodcod: atualiza o vínculo conforme o novo modelo informado\r\nAjustada a sincronização da tabela promod\r\nEvitada recriação desnecessária de vínculos quando não houver alteração real de modelo\r\nImplementados testes cobrindo:\r\nEdição sem promodcod\r\nValidação de promodcod inválido\r\nSincronização quando houver mudança de modelo\r\nAusência de sincronização quando o modelo permanecer inalterado\r\n\r\n✅ Resultado Esperado\r\n\r\nProdutos podem ser editados sem a necessidade de reenviar o código promocional\r\nAtualizações parciais passam a funcionar corretamente\r\nO modelo atual do produto é preservado quando não houver alteração explícita\r\nRedução de erros 400 - Modelo inválido ou não informado\r\nMaior robustez e previsibilidade no processo de edição de produtos\r\n\r\n👤 Contribuidor\r\n\r\nheitorgb",
+      "published_at": "2026-06-16T14:26:41Z"
+    },
+    {
+      "id": 339547303,
+      "tag_name": "v3.7.0",
+      "name": "v3.7.0",
+      "body": "📌 Validação de parâmetros inteiros para marca, modelo e tipo\r\n\r\n🎯 Objetivo\r\nGarantir a integridade dos dados recebidos pela aplicação, validando corretamente os parâmetros de marca, modelo e tipo antes da execução das consultas e regras de negócio.\r\n\r\n🧾 Detalhes\r\n\r\nImplementada validação para parâmetros inteiros de marca\r\nImplementada validação para parâmetros inteiros de modelo\r\nImplementada validação para parâmetros inteiros de tipo\r\nAdicionadas verificações preventivas para evitar valores inválidos nas requisições\r\nMelhorado o tratamento de erros para parâmetros fora do padrão esperado\r\nReduzido o risco de falhas em consultas e relacionamentos dependentes desses identificadores\r\nAjustada a camada de validação para aumentar a segurança e consistência dos dados\r\n\r\n✅ Resultado Esperado\r\n\r\nApenas identificadores numéricos válidos são processados pelo sistema\r\nRequisições com parâmetros inválidos são rejeitadas de forma controlada\r\nMaior confiabilidade nas consultas relacionadas a marca, modelo e tipo\r\nRedução de erros causados por parâmetros incorretos ou malformados\r\n\r\n👤 Contribuidor\r\n\r\nCaioRodrigoCEVDEV",
+      "published_at": "2026-06-15T13:01:57Z"
+    },
+    {
+      "id": 310576252,
+      "tag_name": "v3.6.0",
+      "name": "v3.6.0",
+      "body": "📌 Ajustes no controle de estoque por grupo de compatibilidade + correções relacionadas\r\n\r\n🎯 Objetivo\r\nImplementar a tela de controle de estoque por grupo de compatibilidade e corrigir inconsistências relacionadas a inserção de peças, consultas SQL e comportamento de regras de negócio.\r\n\r\n🧾 Detalhes\r\n\r\nCriação da funcionalidade de controle de estoque por grupo de compatibilidade (estoque-grupos)\r\nCorreção de query utilizando parâmetro para CONFIRMED_ORDER_STATUS, evitando erro de execução\r\nAjuste na lógica de relacionamento entre part_group e part_group_items (correção de JOIN incorreto)\r\nCorreção para permitir adicionar peças sem cor ao grupo de compatibilidade\r\nAjuste complementar garantindo consistência na inclusão de peças sem cor\r\nPequenos ajustes estruturais e organização de código\r\nAjuste de menu para refletir corretamente as novas funcionalidades\r\n\r\n✅ Resultado Esperado\r\n\r\nNova tela de controle de estoque por grupo funcionando corretamente\r\nInclusão de peças sem cor operando sem falhas\r\nQueries mais seguras e sem erros de execução\r\nRelacionamentos entre entidades corrigidos e consistentes\r\nSistema mais estável e alinhado às regras de negócio\r\n\r\n👤 Contribuidor\r\nheitorgb",
+      "published_at": "2026-04-17T22:14:07Z"
+    },
+    {
+      "id": 305785125,
+      "tag_name": "v3.5.0",
+      "name": "v3.5.0",
+      "body": "📌 Ajustes gerais em pedidos, estoque por cor, agrupamentos e geração de PDF\r\n\r\n🎯 Objetivo\r\nMelhorar a consistência das operações de pedidos, corrigir problemas de estoque (principalmente por cor), ajustar agrupamentos e eliminar erros na geração de PDF e queries.\r\n\r\n🧾 Detalhes\r\n\r\nImplementadas melhorias na edição de pedidos aprovados\r\nCorreção de regressões identificadas na PR #245 (filtros, agrupamentos e PDF)\r\nAjustes na lógica de estoque por cor (procorqtde)\r\nCorreções em validação de cor hexadecimal (regex)\r\nCorreção de cópia de objetos de data\r\nAjustes em queries SQL (JOIN incorreto, nomes de colunas)\r\nCorreção de captura de ID de cor em modal\r\nAjustes no comportamento de rolagem ao adicionar itens em grupos\r\nCorreção de herança de estoque entre itens/grupos\r\nImplementação de agrupamento baseado em part_group_items\r\nCorreções no PDF:\r\nAltura dinâmica de linha\r\nEvitar sobreposição de texto\r\nOrganização do header da tabela\r\nPequenos ajustes diversos:\r\nÍndices para captura de ID\r\nCorreções de nomes de campos\r\nAjustes finos em campos de cores\r\n\r\n📌 Resultado Esperado\r\n\r\nEdição de pedidos aprovados funcionando corretamente com estoque por cor\r\nExibição de estoque consistente em grupos\r\nFiltros e dashboards sem regressões\r\nPDFs gerados corretamente, sem sobreposição de conteúdo\r\nQueries executando sem erro de JOIN ou colunas\r\nInterface mais estável (sem scroll inesperado)\r\nMelhor consistência geral nas regras de negócio envolvendo cores e agrupamentos\r\n\r\n👨‍💻 Contribuidor\r\nheitorgb\r\n",
+      "published_at": "2026-04-06T19:03:49Z"
+    },
+    {
+      "id": 299815972,
+      "tag_name": "v3.4.3",
+      "name": "v3.4.3",
+      "body": "📌 Ajuste de ordenação por data mais recente\r\n\r\n🎯 Objetivo\r\nGarantir que os registros sejam exibidos corretamente em ordem do mais recente para o mais antigo.\r\n\r\n🧾 Detalhes\r\nFoi identificado que a ordenação dos dados não estava priorizando corretamente os registros mais recentes, podendo causar inconsistência na visualização das informações.\r\nO ajuste realizado corrige a lógica de ordenação, assegurando que os itens mais novos apareçam primeiro na listagem.\r\n\r\n✅ Resultado Esperado\r\n\r\nRegistros exibidos corretamente do mais recente para o mais antigo\r\nMelhor organização e visualização dos dados\r\nComportamento consistente na listagem\r\n\r\n👤 Contribuidor\r\n\r\nheitorgb",
+      "published_at": "2026-03-21T22:42:14Z"
+    },
+    {
+      "id": 299808496,
+      "tag_name": "v3.4.2",
+      "name": "v3.4.2",
+      "body": "📌 Ajuste: PopUp Releases listar somente a última versão\r\n\r\n🎯 Objetivo —\r\nGarantir que o PopUp de releases exiba apenas a versão mais recente do sistema, evitando poluição visual e informações desnecessárias ao usuário.\r\n\r\n🧾 Detalhes —\r\nAtualmente, o PopUp de releases está listando múltiplas versões, o que pode gerar confusão e dificultar a identificação da versão mais atual.\r\nO ajuste foi realizado para que apenas a última versão disponível seja apresentada no PopUp.\r\n\r\n📌 Escopo —\r\n\r\nAlterar lógica de listagem de releases\r\nGarantir filtro para exibir somente a versão mais recente\r\nManter integridade das demais funcionalidades relacionadas ao PopUp\r\n\r\n🔧 Regras de Implementação —\r\n\r\nA listagem deve considerar ordenação por versão/data\r\nApenas o registro mais recente deve ser exibido\r\nNão impactar outros pontos que utilizam a listagem de releases\r\n\r\n✅ Resultado Esperado —\r\nO PopUp de releases passa a exibir somente a última versão do sistema, de forma clara e objetiva para o usuário.\r\n\r\n👤 Contribuidor —\r\nCaio Rodrigo",
+      "published_at": "2026-03-21T21:40:33Z"
+    },
+    {
+      "id": 299803413,
+      "tag_name": "v3.4.0",
+      "name": "v3.4.0",
+      "body": "📌 Adição de barra de pesquisa e melhorias na listagem de grupos\r\n\r\n🎯 Objetivo\r\nMelhorar a usabilidade da tela de grupos, permitindo busca rápida e organização mais eficiente dos registros.\r\n\r\n🧾 Detalhes\r\nImplementada barra de pesquisa na tela de grupos\r\nAjustado comportamento do campo de busca para suportar tecla Enter corretamente\r\nCorrigido problema de execução padrão ao pressionar Enter (preventDefault)\r\nAlterada ordenação dos grupos para ordem por data de criação\r\nRemovido trigger desnecessário (before insert EST) que impactava o comportamento da base\r\n\r\n✅ Resultado Esperado\r\nUsuário consegue buscar grupos de forma rápida e intuitiva\r\nPressionar Enter na busca executa corretamente a ação sem efeitos colaterais\r\nListagem de grupos fica organizada por ordem de criação\r\nSistema mais limpo e sem execuções indevidas no banco\r\n\r\n👨‍💻 Contribuidor\r\nCaio Rodrigo\r\nheitorgb",
+      "published_at": "2026-03-21T20:58:49Z"
+    },
+    {
+      "id": 291027326,
+      "tag_name": "v3.3.4",
+      "name": "v3.3.4",
+      "body": "📌 Ajuste SemEstoque para assumir default 'N'\r\n🎯 Objetivo\r\n\r\nGarantir que o campo prosemest assuma automaticamente o valor padrão 'N' quando não informado, evitando inconsistências de dados.\r\n\r\n🧾 Detalhes\r\n\r\nAo não informar o valor do campo prosemest, o sistema não definia explicitamente um valor padrão, podendo gerar comportamento inesperado ou registros inconsistentes.\r\n\r\nFoi realizado ajuste para que o campo passe a assumir 'N' como valor default.\r\n\r\n✅ Resultado Esperado\r\n\r\nNovos registros passam a assumir 'N' como padrão\r\n\r\nEliminação de inconsistências relacionadas ao campo não preenchido\r\n\r\nComportamento padronizado no sistema\r\n\r\n👤 Contribuidor\r\n\r\nheitorgb",
+      "published_at": "2026-02-26T17:37:43Z"
+    },
+    {
+      "id": 290561647,
+      "tag_name": "v3.3.3",
+      "name": "v3.3.3",
+      "body": "📌 Ajustes em relatório e correção na exclusão de cliente\r\n🎯 Objetivo\r\n\r\nCorrigir inconsistências no custo apresentado em relatório e ajustar o comportamento da exclusão de cadastro de cliente.\r\n\r\n🧾 Alterações realizadas\r\n\r\n• Ajustado cálculo/exibição de custo no relatório para refletir corretamente os valores esperados.\r\n\r\n• Corrigido problema ao excluir cadastro de cliente.\r\n\r\n• Atualização em 2 arquivos do projeto.\r\n\r\n• Total de 2 commits aplicados na branch release.\r\n\r\n🔧 Detalhes técnicos\r\n\r\n• Commit b69068d — ajuste custo do relatório.\r\n\r\n• Commit 9224bd7 — Fix: Ajustado Excluir cadastro de cliente.\r\n\r\n• Correção aplicada diretamente na regra responsável pela exclusão, eliminando comportamento inconsistente.\r\n\r\n• Ajuste validado para não impactar demais fluxos do sistema.\r\n\r\n👤 Contribuidores\r\n\r\n• heitorbg\r\n\r\n• caiorodrigocev\r\n\r\n✅ Resultado Esperado\r\n\r\n• Relatório apresentando custo corretamente.\r\n\r\n• Exclusão de cliente funcionando sem erro ou inconsistência.\r\n\r\n• Estabilidade mantida nas demais funcionalidades relacionadas.",
+      "published_at": "2026-02-25T20:33:20Z"
+    },
+    {
+      "id": 284056601,
+      "tag_name": "v3.3.1",
+      "name": "v3.3.1",
+      "body": "🛠️ Fix — Ajustes no Custo de Produto e Grupos\r\n\r\n🔧 O que foi corrigido\r\n\r\nRemovido o valor de custo do cadastro e da edição de produto.\r\n\r\nRevertidas implementações relacionadas ao custo em grupos de peças, após validações de impacto.\r\n\r\nAjustes de consistência após merges e reverts consecutivos.\r\n\r\nCorreções de revisão de código (SQL, validações e handlers).\r\n\r\nLimpeza e estabilização da lógica de sincronização relacionada a custos.\r\n\r\n🎯 Objetivo\r\n\r\nEvitar inconsistências de dados relacionadas a custo de produtos e grupos.\r\n\r\nGarantir estabilidade do sistema após testes e revisões da feature de custo em grupos.\r\n\r\nManter o cadastro de produtos funcional e coerente com a regra atual de negócio.\r\n\r\n📦 Impacto\r\n\r\nCorreção funcional sem alteração de comportamento esperado para o usuário final.\r\n\r\nRemove riscos de dados incorretos de custo propagados automaticamente.\r\n\r\nMelhora a confiabilidade e previsibilidade do módulo de produtos e grupos.\r\n\r\nNenhum impacto negativo em rotinas críticas do sistema.\r\n\r\n👤 Contribuidor\r\n\r\nheitorgb",
+      "published_at": "2026-02-07T18:22:34Z"
+    },
+    {
+      "id": 281840918,
+      "tag_name": "v3.3.0",
+      "name": "v3.3.0",
+      "body": "🛠️ Feat — Adicionado valor de custo no cadastro e edição de produto\r\n\r\n🔧 O que foi implementado\r\n\r\nAdicionado o campo valor de custo no cadastro e na edição de produtos, permitindo registrar e manter atualizado o custo real de cada item no sistema.\r\n\r\n🎯 Objetivo\r\n\r\nPermitir o controle correto do custo dos produtos, viabilizando análises financeiras mais precisas, como margem de lucro, rentabilidade e apoio à tomada de decisão.\r\n\r\n📦 Impacto\r\n\r\n• Inclusão de novo campo funcional no cadastro de produtos\r\n• Permite diferenciar custo x preço de venda\r\n• Base preparada para relatórios financeiros futuros\r\n• Não altera regras existentes de venda ou estoque\r\n• Sem impacto negativo em rotinas atuais\r\n\r\n👤 Contribuidor\r\n\r\nheitorgb",
+      "published_at": "2026-01-31T22:08:11Z"
+    },
+    {
+      "id": 280683190,
+      "tag_name": "v3.2.0",
+      "name": "v3.2.0",
+      "body": "🛠️ Feat — Marcar Produto “Em Falta” Automaticamente ao Zerar Estoque\r\n\r\n🔧 O que foi implementado\r\nImplementada regra automática para marcar o produto como “Em falta” quando o estoque chega a zero, atualizando o campo prosemest na tabela pro.\r\n\r\n🎯 Objetivo\r\nGarantir consistência entre o estoque real e o status de disponibilidade do produto, eliminando a necessidade de ajustes manuais quando o estoque se esgota.\r\n\r\n📦 Impacto\r\n• Atualização automática do status de produto ao zerar o estoque\r\n• Evita produtos com estoque zero aparecerem como disponíveis\r\n• Melhora a confiabilidade das informações exibidas no sistema\r\n• Correção lógica sem impacto negativo em outras rotinas\r\n\r\n👤 Contribuidor\r\n• CaioRodrigoCEVDEV",
+      "published_at": "2026-01-28T12:17:26Z"
+    },
+    {
+      "id": 277523906,
+      "tag_name": "v3.1.0",
+      "name": "v3.1.0",
+      "body": "📦 Release Notes — v3.1.0\r\n🚀 Novidades\r\n\r\n• Relatório Top Peças com backend e frontend integrados\r\n• Exibição organizada das peças mais vendidas\r\n\r\n🛠️ Melhorias\r\n\r\n• Alinhamento visual da coluna de quantidade\r\n• Padronização de strings com constantes\r\n• Ajustes de posicionamento em geração de PDF\r\n\r\n🧹 Refatorações\r\n\r\n• Remoção de valores hardcoded\r\n• Código mais legível e fácil de manter\r\n\r\n👥 Contribuidores\r\n• heitorgb",
+      "published_at": "2026-01-16T20:09:21Z"
+    },
+    {
+      "id": 273222431,
+      "tag_name": "v3.0.4",
+      "name": "v3.0.4",
+      "body": "🛠️ Fix — Correção no Vínculo de Produto com Modelo\r\n🔧 O que foi corrigido\r\n\r\nCorrigido o cadastro de produto, que não estava realizando corretamente o vínculo com o modelo selecionado.\r\n\r\n🎯 Objetivo\r\n\r\nGarantir que, ao cadastrar um produto, o modelo seja corretamente associado, evitando inconsistências de dados e problemas em fluxos dependentes desse relacionamento.\r\n\r\n📦 Impacto\r\n\r\nCorreção direta de bug funcional no cadastro de produtos.\r\n\r\nEvita produtos sem modelo vinculado no banco de dados.\r\n\r\nMelhora a integridade dos dados e a confiabilidade do sistema.\r\n\r\nNenhum impacto negativo em outras rotinas.\r\n\r\n👤 Contribuidor\r\n\r\nCaioRodrigoCEVDEV",
+      "published_at": "2025-12-29T15:36:10Z"
+    },
+    {
+      "id": 270106684,
+      "tag_name": "v3.0.3",
+      "name": "v3.0.3",
+      "body": "🔧 O que foi feito\r\n\r\nAdicionado novo filtro “Estoque em Falta” na tela de listagem, permitindo identificar rapidamente produtos com saldo zerado ou negativo.\r\n\r\nCorrigido o botão “Copiar”, que havia deixado de aparecer após ajustes anteriores no layout.\r\n\r\n🎯 Objetivo\r\n\r\nMelhorar a usabilidade e controle de estoque, facilitando a identificação de itens críticos e garantindo o pleno funcionamento das ações na interface.\r\n\r\n📦 Impacto\r\n\r\nMaior agilidade na gestão de produtos em falta.\r\n\r\nCorreção visual e funcional na UI.\r\n\r\nNenhum impacto nas demais rotinas do sistema.\r\n\r\n👤 Contribuidor\r\n\r\nheitorgb",
+      "published_at": "2025-12-13T15:54:33Z"
+    },
+    {
+      "id": 269858153,
+      "tag_name": "v3.0.2",
+      "name": "v3.0.2",
+      "body": "🔧 O que foi feito\r\n\r\nRemovida a seleção de múltiplos modelos no cadastro de peças, simplificando o fluxo e evitando inconsistências.\r\n\r\nEliminado o campo de estoque inicial, substituído por distribuição automática entre as partes associadas.\r\n\r\nAdicionados testes automatizados para a nova funcionalidade de distribuição de estoque.\r\n\r\nImplementado tratamento de valores nulos (null safety) na exibição de estoque em grupos.\r\n\r\nAjustado layout da tela de grupos, corrigindo largura e altura inconsistentes nos cards de estoque.\r\n\r\nMelhoradas mensagens de sucesso da API, exibindo detalhes de atualização de contagem de peças.\r\n\r\nAjustado cache-busting no CSS, garantindo atualização visual imediata após alterações no front-end.\r\n\r\n🧠 Backend\r\n\r\nReestruturação da lógica de distribuição de estoque entre partes.\r\n\r\nIncremento na robustez e testabilidade do módulo de estoque.\r\n\r\n🎯 Objetivo\r\n\r\nAprimorar o fluxo de gerenciamento de estoque e a consistência visual da tela de grupos, garantindo exibição precisa de dados e melhor experiência ao usuário.\r\n\r\n📦 Impacto\r\n\r\nFluxo de estoque mais coerente e automatizado.\r\n\r\nMelhor desempenho e confiabilidade na exibição de informações.\r\n\r\nInterface mais estável e consistente entre atualizações.\r\n\r\nSem impactos críticos em rotinas de produção.\r\n\r\n👥 Contribuidores\r\n\r\nheitorgb",
+      "published_at": "2025-12-12T11:37:20Z"
+    },
+    {
+      "id": 268000354,
+      "tag_name": "v3.0.1",
+      "name": "v3.0.1",
+      "body": "🔧 O que foi feito\r\n\r\nSeparados arquivos JS e CSS que estavam embutidos no HTML, criando arquivos externos organizados por função.\r\n\r\nImplementado placeholder visual para carregamento de componentes no front-end, melhorando a percepção de performance.\r\n\r\nAprimorado o popup de novas atualizações, com layout mais limpo e responsivo.\r\n\r\nCorrigido erro no download de arquivos de backup, garantindo funcionamento completo da rotina.\r\n\r\n🧠 Front-End\r\n\r\nEstrutura modularizada para facilitar manutenção e futuras evoluções de interface.\r\n\r\nMelhoria na legibilidade e desempenho do carregamento das páginas.\r\n\r\nCódigo HTML agora mais limpo e compatível com boas práticas de separação de responsabilidades (HTML/CSS/JS).\r\n\r\n🎯 Objetivo\r\n\r\nMelhorar a organização do front-end, reduzir redundâncias de código e proporcionar uma experiência de usuário mais fluida e consistente.\r\n\r\n📦 Impacto\r\n\r\nMaior desempenho e organização no carregamento de páginas.\r\n\r\nMelhoria na manutenibilidade e clareza do código front-end.\r\n\r\nCorreção completa no processo de download de backups.\r\n\r\nNenhum impacto estrutural no backend.\r\n\r\n👤 Contribuidor\r\n\r\nCaioRodrigoCEVDEV",
+      "published_at": "2025-12-06T15:22:03Z"
+    },
+    {
+      "id": 267862733,
+      "tag_name": "v3.0.0",
+      "name": "v3.0.0",
+      "body": "🔧 O que foi feito\r\n\r\nRefatorada a lógica de controle de estoque para evitar débitos duplicados e inconsistências.\r\n\r\nImplementada idempotência nas operações de saída de estoque, garantindo integridade em múltiplos eventos.\r\n\r\nAjustado agrupamento de peças compatíveis, com correção no nome e comportamento do grupo.\r\n\r\nRemovido campo de estoque da tabela de grupos, substituído por controle centralizado.\r\n\r\nRevisado o gatilho de decremento no banco de dados, agora executado apenas na confirmação de venda.\r\n\r\nPadronizado nomes e nomenclaturas de atualização de estoque, garantindo consistência em logs e endpoints.\r\n\r\nMelhoradas mensagens e logs internos para depuração de fluxos de movimentação.\r\n\r\n🧠 Backend\r\n\r\nSincronização atômica de estoque entre produtos e grupos.\r\n\r\nCorreção de triggers e validações no serviço de estoque.\r\n\r\nMelhor separação entre responsabilidades de API e camada de serviço.\r\n\r\nRemoção de redundâncias no fluxo de atualização de estoque.\r\n\r\n🎯 Objetivo\r\n\r\nGarantir estabilidade e consistência total nas movimentações de estoque, evitando erros de débito duplicado, inconsistências entre grupos e falhas em cenários concorrentes.\r\n\r\n📦 Impacto\r\n\r\nMelhoria significativa na confiabilidade das rotinas de atualização e controle de estoque.\r\n\r\nMaior precisão nos relatórios e dashboards que dependem de dados de movimentação.\r\n\r\nRedução de erros manuais e técnicos, com fluxos mais seguros e rastreáveis.\r\n\r\nNenhum impacto visual direto no usuário final — foco total em backend e integridade de dados.\r\n\r\n👥 Contribuidores\r\n\r\nheitorgb",
+      "published_at": "2025-12-05T19:30:38Z"
+    },
+    {
+      "id": 266105880,
+      "tag_name": "v2.9.3",
+      "name": "v2.9.3",
+      "body": "📦 Dashboard com Top 10 Marcas Mais Vendidas\r\n🔧 O que foi feito\r\n\r\nAdicionado novo gráfico à Dashboard exibindo as Top 10 marcas mais vendidas nos últimos 30 dias.\r\n\r\nImplementado novo endpoint para retorno dos dados agregados de vendas por marca.\r\n\r\nAjustado layout da área de gráficos para incluir o novo componente sem comprometer a visualização existente.\r\n\r\n🎯 Objetivo\r\n\r\nFornecer uma visão mais ampla do desempenho comercial, permitindo que o usuário acompanhe as marcas com maior volume de vendas no último mês.\r\n\r\n📦 Impacto\r\n\r\nDashboard mais completa, reunindo indicadores por produto e por marca.\r\n\r\nAprimoramento da análise estratégica, facilitando decisões de reposição e destaque de marcas líderes.\r\n\r\nNenhum impacto negativo em outros módulos — alteração exclusiva na camada de visualização e endpoint analítico.\r\n\r\n👤 Contribuidor\r\n\r\nCaioRodrigoCEVDEV",
+      "published_at": "2025-11-29T02:56:12Z"
+    },
+    {
+      "id": 266102398,
+      "tag_name": "v2.9.2",
+      "name": "v2.9.2",
+      "body": "📦 Release — Dashboard com Top 10 Produtos Mais Vendidos\r\n🔧 O que foi feito\r\n\r\nAdicionado novo gráfico à Dashboard exibindo os Top 10 produtos mais vendidos nos últimos 30 dias.\r\n\r\nIntegração com o endpoint analítico para buscar os dados de vendas recentes.\r\n\r\nAjustado layout e responsividade da seção de gráficos para acomodar o novo componente visual.\r\n\r\n🎯 Objetivo\r\n\r\nAmpliar a visibilidade de desempenho dos produtos, permitindo uma análise rápida dos itens com maior volume de vendas no período recente.\r\n\r\n📦 Impacto\r\n\r\nDashboard mais completa e informativa, agora exibindo ranking de produtos por volume de vendas.\r\n\r\nMelhor suporte à análise de resultados, auxiliando na gestão comercial e reposição de estoque.\r\n\r\nNenhum impacto em outras áreas do sistema — alteração exclusiva no módulo de visualização da Dashboard.\r\n\r\n👤 Contribuidor\r\n\r\nCaioRodrigoCEVDEV",
+      "published_at": "2025-11-29T01:43:43Z"
+    },
+    {
+      "id": 266096275,
+      "tag_name": "v2.9.1",
+      "name": "v2.9.1",
+      "body": "🔧 O que foi feito\r\n\r\nAdicionados campos esquecidos na versão v2.9.0, garantindo integridade dos cadastros.\r\n\r\nCorrigido erro ao gravar município, ajustando a persistência dos dados no backend.\r\n\r\nReposicionado o popup de saudação da dashboard, melhorando a experiência do usuário.\r\n\r\nIncluído middleware de autenticação na rota pública /v2/pedidos/, reforçando a segurança da API.\r\n\r\n📊 Melhorias na Dashboard\r\n\r\nAdicionado gráfico de vendas do dia, com atualização em tempo real.\r\n\r\nImplementado novo endpoint para vendas anuais por mês.\r\n\r\nAdicionado gráfico de vendas anuais na Dashboard, consolidando dados analíticos da aplicação.\r\n\r\n🎯 Objetivo\r\n\r\nAprimorar a visibilidade dos indicadores de vendas e corrigir falhas remanescentes da versão anterior, mantendo a aplicação estável e com dados mais acessíveis para o usuário final.\r\n\r\n📦 Impacto\r\n\r\nMaior confiabilidade na gravação de informações geográficas (município).\r\n\r\nDashboard mais informativa, exibindo métricas diárias e anuais.\r\n\r\nReforço na segurança das rotas públicas com autenticação via middleware.\r\n\r\nMelhoria visual e funcional no comportamento da saudação ao usuário.\r\n\r\n👤 Contribuidor\r\n\r\nCaioRodrigoCEVDEV",
+      "published_at": "2025-11-28T23:51:20Z"
+    },
+    {
+      "id": 265855779,
+      "tag_name": "v2.9.0",
+      "name": "v2.9.0",
+      "body": "🔧 O que foi feito\r\n🧩 Integrações e Infraestrutura\r\n\r\nAdicionados e testados diversos Webhooks GitHub para integração contínua com o repositório.\r\n\r\nImplementado deploy automatizado com separação de ambientes e validações CI/CD.\r\n\r\nAdicionado script de deploy para UTI e JP, executando de forma independente.\r\n\r\n🧠 Backend\r\n\r\nImplementada lógica de cadastro de cliente com seleção de município.\r\n\r\nCriadas novas rotas para autenticação via token e tratamento do campo usuviuversao.\r\n\r\nAdicionado campo pvirporcod nas tabelas e funções associadas.\r\n\r\nAjustadas funções de controle de estoque e correção de registros duplicados.\r\n\r\nValidação backend e frontend para controle de cores de produtos com estoque.\r\n\r\nAdicionado campo de saldo automático e cálculo dinâmico de quantidades.\r\n\r\n💡 Frontend / UI\r\n\r\nReformulação da dashboard principal com saudação dinâmica do usuário.\r\n\r\nImplementada tela de backup acessível via painel administrativo.\r\n\r\nMelhorias na responsividade e layout das páginas após aplicação do Bootstrap.\r\n\r\nAdicionada logo ao editar marcas e exibição nas tabelas correspondentes.\r\n\r\nCorrigido detalhe de pedidos, evitando exclusões indevidas.\r\n\r\nAdicionada cor “S ou N” no estoque e controle visual de disponibilidade.\r\n\r\nAjustado width de elementos expandíveis e refinada a experiência de uso nas tabelas.\r\n\r\nModal de releases revisado e otimizado (removido cache, fetch assíncrono, re-render seguro).\r\n\r\n🧱 Refatorações Internas\r\n\r\nRemovidos componentes não utilizados (botões, headers, refresh).\r\n\r\nAjustes de identação, formatação e padronização de código.\r\n\r\nRemovidas dependências e fontes não utilizadas.\r\n\r\nMelhoria na performance com uso de batch insert em registros massivos.\r\n\r\nRefatorado combobox para multi-select com checkboxes (modelos de produtos).\r\n\r\n🧪 Testes e Correções\r\n\r\nDiversos testes de integração do Webhook GitHub.\r\n\r\nCorreções no modal de releases e validações em produção.\r\n\r\nAjuste no cache de notificações para exibir novas atualizações corretamente.\r\n\r\nCorreção de erro ao gravar cliente e no controle de acesso ao painel.\r\n\r\nCorrigido filtro de modelos e validações de estoque em edições de produto.\r\n\r\n🎯 Objetivo\r\n\r\nConsolidar uma grande atualização do sistema — integrando melhorias estruturais, estabilidade nas operações de estoque, autenticação segura e interface aprimorada para melhor experiência do usuário.\r\n\r\n📦 Impacto\r\n\r\nMaior estabilidade no fluxo de estoque e no cadastro de clientes.\r\n\r\nIntegração contínua (CI/CD) com deploy automatizado e versionamento seguro.\r\n\r\nDashboard e modais otimizados, melhorando performance e UX.\r\n\r\nMenor risco de falhas por conta das validações front/back sincronizadas.\r\n\r\nBase de código mais limpa e organizada, pronta para expansão de novas features.\r\n\r\n👥 Contribuidores\r\n\r\nCaioRodrigoCEVDEV\r\n\r\nheitorgb",
+      "published_at": "2025-11-27T22:04:02Z"
+    },
+    {
+      "id": 263992457,
+      "tag_name": "v2.8.1",
+      "name": "v2.8.1",
+      "body": "🔧 O que foi feito\r\n🛠️ Funcionalidade / Lógica\r\n\r\nCorrigida a lógica de alteração de estoque, agora atualizando a quantidade diretamente e evitando inconsistências.\r\nRemovida data da release que estava redundante na tabela.\r\n\r\n🎨 UI / Front-end\r\n\r\nAjustado o CSS aumentando o width da div expandida, melhorando a visualização.\r\nRemovida a lixeira do detalhe de pedidos para evitar cliques acidentais e erros de exclusão.\r\n\r\n🔔 Notificações\r\n\r\nAjustado o cache das notificações para que novas atualizações sejam detectadas e exibidas corretamente, sem precisar limpar localStorage ou recarregar várias vezes.\r\n\r\n🎯 Objetivo\r\n\r\nMelhorar a precisão das operações de estoque, corrigir pequenas falhas visuais e garantir que o módulo de notificações funcione de forma confiável e atualizada.\r\n\r\n📦 Impacto\r\n\r\nRedução de erros ao manipular estoque.\r\nExperiência mais segura no detalhe de pedidos, sem risco de exclusão indevida.\r\nNotificações mais previsíveis, carregando atualizações reais sem cache residual.\r\nAjustes visuais que melhoram a leitura e interface.\r\nNenhum impacto no backend estrutural — apenas correções e melhorias localizadas.\r\n\r\n👤 Contribuidor\r\n\r\nCaioRodrigoCEVDEV",
+      "published_at": "2025-11-20T13:42:02Z"
+    },
+    {
+      "id": 263826363,
+      "tag_name": "v2.8.0",
+      "name": "v2.8.0",
+      "body": "🔧 O que foi feito\r\n🆕 Funcionalidades\r\n\r\nAdicionadas notificações/avisos de atualizações do sistema diretamente na interface.\r\n\r\nImplementada autenticação via Token para proteger a rota /api/releases.\r\n\r\n🎨 UI & UX (Releases Modal)\r\n\r\nReformatação completa das informações exibidas no modal de Releases.\r\n\r\nAjustes de indentação, quebra de texto, padding, e tamanho do texto.\r\n\r\nAjustado o tamanho do modal, melhorando a leitura e organização das informações.\r\n\r\n🔧 Ajustes Técnicos nas Requisições\r\n\r\nCorreções na função fetchReleasesFromGitHub.\r\n\r\nRemoção de await desnecessário em /api/releases.\r\n\r\nAjustado fluxo da requisição para /api/releases em produção.\r\n\r\nRemoção de headers incorretos que causavam bloqueios.\r\n\r\nRemoção do botão btnRefresh (não era mais necessário).\r\n\r\n🧹 Limpeza & Manutenção\r\n\r\nMelhor organização do código.\r\n\r\nRedução de complexidade nos scripts de chamadas GitHub.\r\n\r\nAjustes gerais para garantir consistência no módulo de releases.\r\n\r\n🎯 Objetivo\r\n\r\nTornar o sistema de Releases mais funcional, seguro e intuitivo — com autenticação adequada, modal organizado e notificações nativas no sistema.\r\n\r\n📦 Impacto\r\n\r\nMaior segurança ao exigir Token para consultas às releases.\r\n\r\nMelhor experiência do usuário, com modal mais limpo e informativo.\r\n\r\nMenos erros nas integrações com a API do GitHub.\r\n\r\nNotificações internas funcionando, melhorando comunicação de atualizações.\r\n\r\nSem impacto negativo em outras rotinas do sistema.\r\n\r\n👤 Contribuidor\r\n\r\nCaioRodrigoCEVDEV",
+      "published_at": "2025-11-20T00:37:50Z"
+    },
+    {
+      "id": 263655380,
+      "tag_name": "v2.7.0",
+      "name": "v2.7.0",
+      "body": "📦 Release — Ajustes de Responsividade + Correções Visuais + Logo na Edição de Marca\r\n🔧 O que foi feito\r\n\r\nResponsividade corrigida em diversas páginas que estavam quebradas após atualizações de layout/Bootstrap.\r\n\r\nLogo adicionada na edição de marca, permitindo visualizar e atualizar a imagem corretamente.\r\n\r\nMerge da branch release com ajustes estruturais e sincronização dos arquivos.\r\n\r\n🎨 Melhorias de UI/CSS\r\n\r\nAjustes amplos no style.css (943 adições e 630 remoções).\r\n\r\nCorreção de comportamentos de overflow e largura usando substituições de utilitários Bootstrap.\r\n\r\nMelhorias visuais gerais nas páginas afetadas.\r\n\r\n🎯 Objetivo\r\n\r\nGarantir uma UI consistente, responsiva e funcional, além de aprimorar o fluxo de edição de marcas com exibição da logo.\r\n\r\n📦 Impacto\r\n\r\nMelhora imediata na experiência do usuário, com páginas corrigidas e evitando quebras de layout.\r\n\r\nCorreção de inconsistências visuais em múltiplas telas.\r\n\r\nFluxo de edição de marca mais completo, exibindo a logo corretamente.\r\n\r\nSem impacto no backend ou regras de negócio — alterações concentradas em front-end e responsividade.\r\n\r\n👤 Contribuidores\r\n\r\nheitorgb",
+      "published_at": "2025-11-19T14:23:03Z"
+    },
+    {
+      "id": 263626072,
+      "tag_name": "v2.6.2",
+      "name": "v2.6.2",
+      "body": "🔧 O que foi feito\r\n\r\nSeparado o processo de deploy UTI e JP em runs independentes dentro do workflow CI/CD.\r\n\r\nCada ambiente agora executa seu próprio fluxo, evitando conflitos e garantindo maior controle e isolamento.\r\n\r\n🎯 Objetivo\r\n\r\nMelhorar a organização do pipeline e permitir que cada deploy ocorra de forma independente, mais previsível e segura.\r\n\r\n📦 Impacto\r\n\r\nApenas no CI/CD — sem alterações no código da aplicação.",
+      "published_at": "2025-11-19T13:01:54Z"
+    },
+    {
+      "id": 263620538,
+      "tag_name": "v2.6.1",
+      "name": "📦 Release — Ajustes no Cadastro de Marca + Workflow CI/CD",
+      "body": "🔧 O que foi feito\r\n\r\nImplementado salvamento da logo da marca ao cadastrar novas marcas.\r\n\r\nCorreção no fluxo de upload/salvamento da imagem no backend.\r\n\r\nAdicionado script deployUTIdosCelulares.sh ao workflow CI/CD, permitindo incluir esse fluxo no processo automatizado de deploy.\r\n\r\n🎯 Objetivo\r\n\r\nGarantir que o cadastro de marcas funcione corretamente com upload de logo e ampliar o pipeline de deploy adicionando o novo script necessário à produção.\r\n\r\n👥 Contribuidores\r\n\r\nheitorgb\r\n\r\nCaioRodrigoCEVDEV\r\n\r\n📦 Impacto\r\n\r\nAjustes funcionais no cadastro de marca e expansão do fluxo CI/CD para suportar novos tipos de deploy.",
+      "published_at": "2025-11-19T12:43:57Z"
+    },
+    {
+      "id": 263619077,
+      "tag_name": "v2.6.0",
+      "name": "📦 Release — Ajustes no Cadastro de Marca + Workflow CI/CD",
+      "body": "🔧 O que foi feito\r\n\r\nImplementado salvamento da logo da marca ao cadastrar novas marcas.\r\n\r\nCorreção no fluxo de upload/salvamento da imagem no backend.\r\n\r\nAdicionado script deployUTIdosCelulares.sh ao workflow CI/CD, permitindo incluir esse fluxo no processo automatizado de deploy.\r\n\r\n🎯 Objetivo\r\n\r\nGarantir que o cadastro de marcas funcione corretamente com upload de logo e ampliar o pipeline de deploy adicionando o novo script necessário à produção.\r\n\r\n👥 Contribuidores\r\n\r\nheitorgb\r\n\r\nCaioRodrigoCEVDEV\r\n\r\n📦 Impacto\r\n\r\nAjustes funcionais no cadastro de marca e expansão do fluxo CI/CD para suportar novos tipos de deploy.",
+      "published_at": "2025-11-19T12:38:50Z"
+    },
+    {
+      "id": 263149476,
+      "tag_name": "v2.5.0",
+      "name": "v2.5.0",
+      "body": "🚀 Release v2.5.0 — Melhorias de UI, Estoque e Correções Gerais\r\n\r\n🎯 Visão Geral\r\nA versão v2.5.0 consolida diversas melhorias visuais, ajustes de usabilidade e correções importantes em múltiplas áreas do sistema, garantindo uma experiência mais fluida, moderna e estável.\r\n\r\n🔧 Principais Ajustes e Melhorias\r\n🛠️ Funcionalidade e Comportamento\r\n\r\nRemoção automática do localStorage do usuário ao encerrar o sistema.\r\n\r\nTabela “fora de estoque” removida.\r\n\r\nCorreção do domínio da Tecno-Spark.\r\n\r\nCorreções no painel de estoque.\r\n\r\n📊 Estoque\r\n\r\nFiltro da tabela agora funciona de forma dinâmica conforme a entrada do usuário.\r\n\r\nVisual da tabela de estoque atualizado e mais moderno.\r\n\r\nArquivo painel-estoque.js revisado e otimizado.\r\n\r\n🎨 UI / Layout\r\n\r\nPadronização completa dos botões em todo o sistema.\r\n\r\nAplicação do tema Bootstrap nos botões.\r\n\r\nAtualização visual no painel de pedidos (painel-pedidos.html).\r\n\r\n🔄 Estrutura\r\n\r\nMerge e limpeza de arquivos da branch release.\r\n\r\nAjustes gerais de organização e melhorias incrementais no front-end.\r\n\r\n👥 Contribuidores\r\n\r\nCaioRodrigoCEVDEV\r\n\r\nAlanNs12\r\n\r\nheitorgb\r\n\r\n✅ Resultado\r\n\r\nUma versão mais moderna, estável e organizada, com foco em melhora de UX, desempenho e padronização visual.",
+      "published_at": "2025-11-18T02:04:22Z"
+    },
+    {
+      "id": 262778812,
+      "tag_name": "v2.1.4",
+      "name": "v2.1.4",
+      "body": "📌 O que foi feito\r\n\r\nSubstituída a montagem manual do payload JSON por criação estruturada usando jq.\r\n\r\nRemovidos trechos vulneráveis ou suscetíveis a quebras na formatação.\r\n\r\nPadronização do conteúdo enviado para o WebHook/Discord.\r\n\r\n🎯 Objetivo\r\n\r\nAumentar a segurança, confiabilidade e consistência do payload gerado pelo workflow, evitando erros de escape e problemas de formatação.\r\n\r\n📦 Impacto\r\n\r\nSomente alterações no pipeline de CI/CD — nenhuma mudança no código da aplicação.",
+      "published_at": "2025-11-16T17:14:37Z"
+    },
+    {
+      "id": 262776493,
+      "tag_name": "v2.1.3",
+      "name": "v2.1.3",
+      "body": "🔧 O que foi feito\r\n\r\nCorreção de indentação e estrutura do arquivo de workflow.\r\n\r\nAjustes no fluxo de notificações via Discord Notify para garantir execução correta.\r\n\r\n🎯 Objetivo\r\n\r\nRefinar o pipeline, melhorar legibilidade e assegurar que as notificações funcionem conforme esperado.\r\n\r\n📦 Impacto\r\n\r\nNenhuma alteração lógica no sistema. Apenas ajustes de organização e consistência no CI/CD.",
+      "published_at": "2025-11-16T17:03:46Z"
+    },
+    {
+      "id": 262774799,
+      "tag_name": "v2.1.2",
+      "name": "v2.1.2",
+      "body": "📌 O que foi feito\r\n\r\nExpansão do workflow para que a branch main responda corretamente aos eventos de:\r\n\r\npush\r\n\r\npull_request\r\n\r\nmerge\r\n\r\n🎯 Objetivo\r\n\r\nGarantir que o pipeline seja acionado sempre que houver alterações relevantes na main, mantendo o fluxo de deploy e verificação automatizado e consistente.\r\n\r\n📦 Impacto\r\n\r\nNenhuma mudança no código da aplicação — apenas atualização no processo de automação CI/CD.",
+      "published_at": "2025-11-16T16:45:53Z"
+    },
+    {
+      "id": 262764582,
+      "tag_name": "v2.1.1",
+      "name": "v2.1.1",
+      "body": "📦 Release v2.1.1\r\n\r\nEsta PR reúne os ajustes finais da versão v2.0.0, incluindo melhorias no fluxo de deploy via TAG e aprimoramentos no frontend.\r\n\r\n🔧 Alterações incluídas\r\n\r\nAjuste no workflow para deploy em produção utilizando TAG.\r\n\r\nAdicionada barra de pesquisa na página de peças.\r\n\r\nAjustes no layout (H2 da página de tipos).\r\n\r\n🎯 Objetivo\r\n\r\nUnificar as melhorias desenvolvidas na branch release e publicar a nova versão estável.",
+      "published_at": "2025-11-16T14:18:08Z"
+    },
+    {
+      "id": 262763842,
+      "tag_name": "v2.1.0",
+      "name": "v2.1.0",
+      "body": "📦 Release v2.1.0\r\n\r\nEsta PR reúne os ajustes finais da versão v2.0.0, incluindo melhorias no fluxo de deploy via TAG e aprimoramentos no frontend.\r\n\r\n🔧 Alterações incluídas\r\n\r\nAjuste no workflow para deploy em produção utilizando TAG.\r\n\r\nAdicionada barra de pesquisa na página de peças.\r\n\r\nAjustes no layout (H2 da página de tipos).\r\n\r\n🎯 Objetivo\r\n\r\nUnificar as melhorias desenvolvidas na branch release e publicar a nova versão estável.",
+      "published_at": "2025-11-16T14:08:18Z"
+    },
+    {
+      "id": 262757943,
+      "tag_name": "v2.0.0",
+      "name": "v2.0.0.0",
+      "body": "## 📦 Release – Atualização da Main\r\n\r\nEsta release consolida todas as alterações desenvolvidas nas últimas semanas na branch **release**, incluindo novas funcionalidades, ajustes visuais, correções importantes e melhorias gerais no sistema.\r\n\r\n---\r\n\r\n## ✨ Novas Funcionalidades\r\n- Adicionado novo campo **prosemester** (GET/PUT).\r\n- Novo cadastro de **vendedor/usuárioVendedor**.\r\n- Adicionada **validação de administrador** no sistema.\r\n- Adicionado **filtro de período** para pedidos.\r\n- Adicionado **checkbox com tooltip** com legendas de permissões.\r\n- Novo sistema de **marcas dinâmicas** (incluindo imagens como Huawei).\r\n- Adicionada validação de acesso por empresa (pedido autorizado ou não).\r\n\r\n---\r\n\r\n## 🎨 Melhorias de Design & UI\r\n- Diversas atualizações no layout: páginas, estilos, componentes e modais.\r\n- Ajustes no **popup de ordenar** (largura, responsividade, comportamento).\r\n- Atualizações nas cores e padronização visual.\r\n- Atualização de **Bootstrap para 5.3.8**.\r\n- Novo design do **nav**, footer e carrinho.\r\n- Padronização do carrinho fixo no topo com barra de pesquisa.\r\n\r\n---\r\n\r\n## 🛠️ Ajustes e Melhorias Gerais\r\n- Refatorações diversas em HTML, CSS e JS.\r\n- Atualização de arquivos index e painel de pedidos.\r\n- Remoção do hash em endpoints públicos.\r\n- Ajustes na autenticação, corrige usuário \"undefined\" no localStorage.\r\n- Ajustes no botão *Em falta* e validações de estoque.\r\n- Melhorias nas rotas de pedidos pendentes.\r\n\r\n---\r\n\r\n## 🐞 Correções (Fix)\r\n- Ajuste de sintaxe em múltiplos arquivos.\r\n- Correção no alerta do index.\r\n- Correção no comportamento do popup ao ordenar.\r\n- Corrigida opção “todos” com data null.\r\n- Correção no botão limpar filtro de data.\r\n- Correções gerais no login.\r\n- Ajustes nas permissões e no fluxo de cadastro/atualização de usuário.\r\n\r\n---\r\n\r\n## 🔄 Commits de Merge\r\n- Vários merges internos da própria branch release para sincronização de alterações.\r\n\r\n---\r\n\r\n## 🧪 Status\r\n- Todas as alterações foram revisadas e testadas diretamente na branch release.\r\n\r\n---\r\n\r\n## ✔️ Objetivo\r\nAtualizar a branch **main** com a versão estável mais recente e consolidar todas as melhorias, correções e funcionalidades desenvolvidas até o momento.\r\n\r\n",
+      "published_at": "2025-11-16T12:41:25Z"
+    }
+  ]
+}

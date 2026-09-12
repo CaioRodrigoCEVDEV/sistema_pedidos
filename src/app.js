@@ -573,51 +573,13 @@ app.post(
   }
 );
 
-// cache simples em memória
-let cache = { data: null, expiresAt: 0 };
-const CACHE_TTL_MS = 1000 * 60; // 1 minuto (ajuste conforme precisar)
-
-const OWNER = "CaioRodrigoCEVDEV";
-const REPO = "sistema_pedidos";
-
-app.get("/api/releases", async (req, res) => {
-  try {
-    if (Date.now() < cache.expiresAt && cache.data) {
-      return res.json({ ok: true, fromCache: true, releases: cache.data });
-    }
-
-    const token = process.env.GITHUB_TOKEN;
-    const url = `https://api.github.com/repos/${OWNER}/${REPO}/releases`;
-    const headers = token
-      ? { Authorization: `token ${token}`, "User-Agent": "orderup" }
-      : { "User-Agent": "orderup" };
-
-    const resp = await fetch(url, { headers });
-    if (!resp.ok) {
-      const body = await resp.text();
-      return res
-        .status(resp.status)
-        .json({ ok: false, status: resp.status, body });
-    }
-
-    const full = await resp.json();
-
-    // filtre apenas os campos que o front realmente precisa (evita enviar dados desnecessários)
-    const releases = full.map((r) => ({
-      id: r.id,
-      tag_name: r.tag_name,
-      name: r.name,
-      body: r.body,
-      published_at: r.published_at,
-    }));
-
-    cache = { data: releases, expiresAt: Date.now() + CACHE_TTL_MS };
-
-    res.json({ ok: true, fromCache: false, releases });
-  } catch (err) {
-    console.error("Erro /api/releases", err);
-    res.status(500).json({ ok: false, error: "Erro interno" });
-  }
+// Releases são servidas de public/releases.json, gerado no deploy por
+// `npm run releases:sync`. Assim o dashboard não depende da API do GitHub em
+// runtime (sem rate-limit, sem token e sem rede do servidor no acesso do user).
+// Mantido apenas como alias para clientes antigos que ainda usam /api/releases.
+app.get("/api/releases", (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "../public/releases.json"));
 });
 
 // Inicia o servidor
