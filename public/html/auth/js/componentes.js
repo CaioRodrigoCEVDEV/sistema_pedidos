@@ -179,9 +179,17 @@ function ouBuildTopbar() {
     "</a>" +
     "</div>" +
     '<div class="ou-topbar__actions">' +
-    '<button type="button" class="ou-icon-btn" id="ouQuickTheme" aria-label="Alterar tema" title="Alterar tema">' +
-    '<i class="bi bi-sun" aria-hidden="true"></i>' +
+    '<div class="dropdown">' +
+    '<button type="button" class="ou-icon-btn" id="ouQuickTheme" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Alterar tema" title="Alterar tema">' +
+    '<i class="bi bi-circle-half" aria-hidden="true"></i>' +
     "</button>" +
+    '<ul class="dropdown-menu dropdown-menu-end ou-theme-menu" aria-label="Aparência">' +
+    '<li class="dropdown-header">Aparência</li>' +
+    '<li><button type="button" class="dropdown-item" data-theme-pref="light"><i class="bi bi-sun" aria-hidden="true"></i> Claro <i class="bi bi-check2 ou-theme-menu__check" aria-hidden="true"></i></button></li>' +
+    '<li><button type="button" class="dropdown-item" data-theme-pref="dark"><i class="bi bi-moon" aria-hidden="true"></i> Escuro <i class="bi bi-check2 ou-theme-menu__check" aria-hidden="true"></i></button></li>' +
+    '<li><button type="button" class="dropdown-item" data-theme-pref="auto"><i class="bi bi-circle-half" aria-hidden="true"></i> Automático <i class="bi bi-check2 ou-theme-menu__check" aria-hidden="true"></i></button></li>' +
+    "</ul>" +
+    "</div>" +
     '<div class="dropdown">' +
     '<button type="button" class="ou-user-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu do usuário">' +
     '<span class="ou-user-avatar" id="ouUserAvatar">U</span>' +
@@ -266,22 +274,43 @@ function ouThemeIcon(pref) {
   return "bi-circle-half";
 }
 
+var ouThemeLabels = {
+  light: "Claro",
+  dark: "Escuro",
+  auto: "Automático",
+};
+
 function ouWireThemeToggle() {
   var btn = document.getElementById("ouQuickTheme");
   if (!btn || !window.OrderUpTheme) return;
 
+  var dropdown = btn.parentElement;
+  var items = dropdown ? dropdown.querySelectorAll("[data-theme-pref]") : [];
+
   function refresh() {
+    var pref = window.OrderUpTheme.get();
+    var label = ouThemeLabels[pref] || ouThemeLabels.auto;
     var icon = btn.querySelector("i");
-    if (icon) icon.className = "bi " + ouThemeIcon(window.OrderUpTheme.get());
+    if (icon) icon.className = "bi " + ouThemeIcon(pref);
+    btn.setAttribute("title", "Tema: " + label);
+    btn.setAttribute("aria-label", "Tema: " + label + " — alterar");
+    for (var i = 0; i < items.length; i++) {
+      items[i].classList.toggle(
+        "active",
+        items[i].getAttribute("data-theme-pref") === pref
+      );
+    }
   }
 
-  btn.addEventListener("click", function () {
-    var order = ["light", "dark", "auto"];
-    var current = window.OrderUpTheme.get();
-    var next = order[(order.indexOf(current) + 1) % order.length];
-    window.OrderUpTheme.set(next);
-    refresh();
-  });
+  for (var i = 0; i < items.length; i++) {
+    items[i].addEventListener("click", function () {
+      window.OrderUpTheme.set(this.getAttribute("data-theme-pref"));
+      if (window.bootstrap && bootstrap.Dropdown) {
+        var dd = bootstrap.Dropdown.getInstance(btn);
+        if (dd) dd.hide();
+      }
+    });
+  }
 
   window.addEventListener("ou:themechange", refresh);
   refresh();
@@ -351,11 +380,6 @@ function createHeader() {
   ouWireThemeToggle();
   ouWireLogout();
   ouLoadUser();
-
-  // Injeta o seletor de aparência no menu do usuário (se o tema estiver ativo).
-  if (window.OrderUpTheme && typeof window.OrderUpTheme.mount === "function") {
-    window.OrderUpTheme.mount();
-  }
 }
 
 document.addEventListener("DOMContentLoaded", createHeader);

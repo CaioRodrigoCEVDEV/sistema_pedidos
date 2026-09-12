@@ -433,10 +433,56 @@ body.ou-has-shell #header-admin.ou-topbar {
   white-space: nowrap;
 }
 
+.ou-theme-menu {
+  min-width: 12rem;
+  padding: 0.5rem;
+  border-radius: 16px;
+  border-color: var(--ou-border);
+  box-shadow: var(--ou-shadow);
+}
+
+.ou-theme-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ou-text-muted);
+  border-radius: 12px;
+}
+
+.ou-theme-menu .dropdown-item > i:first-child {
+  width: 16px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.ou-theme-menu .dropdown-item:hover,
+.ou-theme-menu .dropdown-item:focus {
+  color: var(--ou-text);
+  background: var(--ou-surface-2);
+}
+
+.ou-theme-menu .dropdown-item.active {
+  font-weight: 600;
+  color: var(--ou-text);
+  background: var(--ou-surface-2);
+}
+
+.ou-theme-menu__check {
+  margin-left: auto;
+  font-size: 15px;
+  opacity: 0;
+}
+
+.ou-theme-menu .dropdown-item.active .ou-theme-menu__check {
+  opacity: 1;
+}
+
 .ou-menu-btn {
   display: inline-flex;
 }
-
 @media (min-width: 992px) {
   .ou-menu-btn {
     display: none;

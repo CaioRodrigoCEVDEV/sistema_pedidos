@@ -54,23 +54,10 @@
     root.style.colorScheme = effective;
   }
 
-  function updateSwitcher(pref) {
-    var box = document.getElementById("ouThemeSwitcher");
-    if (!box) return;
-    var buttons = box.querySelectorAll("[data-theme-choice]");
-    for (var i = 0; i < buttons.length; i++) {
-      var btn = buttons[i];
-      var active = btn.getAttribute("data-theme-choice") === pref;
-      btn.classList.toggle("active", active);
-      btn.setAttribute("aria-pressed", active ? "true" : "false");
-    }
-  }
-
   function setPreference(pref) {
     if (VALID.indexOf(pref) === -1) pref = DEFAULT;
     savePreference(pref);
     apply(pref);
-    updateSwitcher(pref);
     window.dispatchEvent(
       new CustomEvent("ou:themechange", {
         detail: { preference: pref, effective: resolve(pref) },
@@ -97,63 +84,10 @@
     }
   }
 
-  // --- Seletor de aparência no menu do usuário ------------------------------
-  function buildSwitcher() {
-    var wrap = document.createElement("div");
-    wrap.id = "ouThemeSwitcher";
-    wrap.className = "ou-theme-switcher";
-    wrap.innerHTML =
-      '<div class="dropdown-divider"></div>' +
-      '<h6 class="dropdown-header">Aparência</h6>' +
-      '<div class="px-3 pb-2">' +
-      '<div class="btn-group w-100" role="group" aria-label="Aparência">' +
-      '<button type="button" class="btn btn-sm btn-outline-secondary" data-theme-choice="light" title="Tema claro" aria-pressed="false">' +
-      '<i class="fa-solid fa-sun"></i><span class="ms-1">Claro</span></button>' +
-      '<button type="button" class="btn btn-sm btn-outline-secondary" data-theme-choice="dark" title="Tema escuro" aria-pressed="false">' +
-      '<i class="fa-solid fa-moon"></i><span class="ms-1">Escuro</span></button>' +
-      '<button type="button" class="btn btn-sm btn-outline-secondary" data-theme-choice="auto" title="Acompanhar o sistema" aria-pressed="false">' +
-      '<i class="fa-solid fa-circle-half-stroke"></i><span class="ms-1">Auto</span></button>' +
-      "</div></div>";
-    return wrap;
-  }
-
-  function mount() {
-    if (document.getElementById("ouThemeSwitcher")) {
-      updateSwitcher(readPreference());
-      return;
-    }
-    // Só páginas com o menu do usuário (header autenticado) recebem o seletor.
-    var menu = document.querySelector("#header-admin .dropdown-menu");
-    if (!menu) return;
-
-    var wrap = buildSwitcher();
-    var divider = menu.querySelector(".dropdown-divider");
-    if (divider) {
-      menu.insertBefore(wrap, divider);
-    } else {
-      menu.appendChild(wrap);
-    }
-
-    var buttons = wrap.querySelectorAll("[data-theme-choice]");
-    for (var i = 0; i < buttons.length; i++) {
-      buttons[i].addEventListener("click", function () {
-        setPreference(this.getAttribute("data-theme-choice"));
-      });
-    }
-    updateSwitcher(readPreference());
-  }
-
   window.OrderUpTheme = {
     STORAGE_KEY: STORAGE_KEY,
     get: getPreference,
     set: setPreference,
     resolve: resolve,
-    mount: mount,
   };
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", mount);
-  } else {
-    mount();
-  }
 })();

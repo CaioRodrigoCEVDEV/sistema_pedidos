@@ -488,17 +488,6 @@ body,
 }
 
 /* --------------------------------------------------------------------------
-   9. Seletor de aparência no menu do usuário
-   -------------------------------------------------------------------------- */
-.ou-theme-switcher .btn {
-  font-size: 0.78rem;
-  padding: 0.25rem 0.4rem;
-}
-.ou-theme-switcher .btn.active {
-  font-weight: 600;
-}
-
-/* --------------------------------------------------------------------------
    10. Acessibilidade: respeita "reduzir movimento"
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
