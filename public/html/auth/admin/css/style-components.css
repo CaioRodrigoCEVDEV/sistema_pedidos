@@ -2,7 +2,7 @@
   background: linear-gradient(135deg, #6ea8fe, #3b82f6);
 }
 .bg-grad-2 {
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
 }
 .bg-grad-3 {
   background: linear-gradient(135deg, #f59e0b, #fb923c);
@@ -15,7 +15,7 @@
   background: linear-gradient(135deg, #6ea8fe, #3b82f6);
 }
 .bg-card-2 {
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
 }
 .bg-card-3 {
   background: linear-gradient(135deg, #f59e0b, #fb923c);
@@ -27,76 +27,189 @@
   background: linear-gradient(135deg, #f472b6, #fb7185);
 }
 
-.button-color-1 {
-    width: 100%;
-  padding: 0.4rem;
-  border-radius: 8px;
-  border: none;
-  text-decoration: none;
-  color: #fff;
-  background: linear-gradient(135deg, #6ea8fe, #3b82f6);
-  &:hover {
-    background: linear-gradient(135deg, #3081fb, #106cff);
-  }
-}
-.button-color-2 {
-    width: 100%;
-  padding: 0.4rem;
-  border-radius: 8px;
-  border: none;
-  text-decoration: none;
-  color: #fff;
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
-  &:hover {
-    background: linear-gradient(135deg, #7c3aed, #5b21b6);
-  }
-}
-.button-color-3 {
-    width: 100%;
-  padding: 0.4rem;
-  border-radius: 8px;
-  border: none;
-  text-decoration: none;
-  color: #fff;
-  background: linear-gradient(135deg, #f59e0b, #fb923c);
-  &:hover {
-    background: linear-gradient(135deg, #d97706, #f97316);
-  }
-}
+.button-color-1,
+.button-color-2,
+.button-color-3,
 .button-color-4 {
-    width: 100%;
-  padding: 0.4rem;
-  border-radius: 8px;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 42px;
+  padding: 0.5rem 1rem;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   text-decoration: none;
+  border: 0;
+  border-radius: var(--ou-radius, 14px);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.button-color-1,
+.button-color-2,
+.button-color-3,
+.button-color-4 {
+  background-image: none;
+}
+
+.button-color-1 {
+  background-color: #2563eb;
+}
+.button-color-1:hover {
   color: #fff;
-  background: linear-gradient(135deg, #34d399, #10b981);
-  &:hover {
-    background: linear-gradient(135deg, #059669, #047857);
-  }
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.button-color-2 {
+  background-color: #0284c7;
+}
+.button-color-2:hover {
+  color: #fff;
+  background-color: #0369a1;
+  transform: translateY(-1px);
+}
+
+.button-color-3 {
+  background-color: #d97706;
+}
+.button-color-3:hover {
+  color: #fff;
+  background-color: #b45309;
+  transform: translateY(-1px);
+}
+
+.button-color-4 {
+  background-color: #059669;
+}
+.button-color-4:hover {
+  color: #fff;
+  background-color: #047857;
+  transform: translateY(-1px);
 }
 
 /*Titulo das paginas*/
 .panel-hero {
-  background: linear-gradient(
-    90deg,
-    rgba(59, 130, 246, 0.08),
-    rgba(99, 102, 241, 0.03)
-  );
-  border-radius: 0.75rem;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
-  padding: 10px;
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1.6rem;
+  overflow: hidden;
+  border: 1px solid var(--ou-border);
+  border: 1px solid
+    color-mix(in srgb, var(--ou-primary) 22%, var(--ou-border));
+  border-radius: 20px;
+  background: linear-gradient(120deg, var(--ou-surface-2), var(--ou-surface));
+  background: radial-gradient(
+      120% 160% at 0% 0%,
+      color-mix(in srgb, var(--ou-primary) 16%, transparent),
+      transparent 55%
+    ),
+    linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--ou-primary) 8%, var(--ou-surface)),
+      var(--ou-surface)
+    );
+  box-shadow: var(--ou-shadow);
 }
-.panel-hero .icon-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  background: #fff;
+
+.panel-hero__main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.panel-hero__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.08);
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  font-size: 1.4rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(59, 130, 246, 0.28);
 }
+
+.panel-hero__icon i {
+  color: #ffffff !important;
+}
+
+.panel-hero__eyebrow {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ou-primary);
+}
+
+.panel-hero__title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ou-text);
+}
+
+.panel-hero__sub {
+  font-size: 0.9rem;
+  color: var(--ou-text-muted);
+}
+
+.panel-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+@media (max-width: 575.98px) {
+  .panel-hero {
+    padding: 1.15rem 1.2rem;
+  }
+  .panel-hero__icon {
+    flex-basis: 48px;
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+  .panel-hero__actions {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+/* Card de conteúdo (padrão Configurações / Perfil) */
+.panel-card,
+.card.panel-card {
+  background-color: var(--ou-surface);
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.1);
+}
+
+/* Avatar de perfil — garante contraste no tema escuro */
+.icon-circle.perfil-avatar {
+  color: #ffffff;
+}
+
+/* Grid de conteúdo do Perfil (largura equilibrada como Configurações) */
+.perfil-grid {
+  max-width: 1040px;
+  margin-inline: auto;
+}
+
 .search-input {
   max-width: 560px;
   min-width: 220px;
@@ -109,13 +222,14 @@
 .icon-circle {
   width: 64px;
   height: 64px;
-  border-radius: 50%;
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: #ffffff;
   font-size: 1.35rem;
   flex: 0 0 64px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
 }
 /*Fim titulo Paginas*/
 
@@ -135,7 +249,7 @@
     
 }
 .button-cart:hover {
-    background-color: #ffffff;
+    background-color: var(--ou-surface);
     transition: 0.5s;
 }
 /*Fim Botão carrinho*/

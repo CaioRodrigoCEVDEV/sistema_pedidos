@@ -1,757 +1,869 @@
-     // remove loading + placeholders de todos os wrappers
-    function finishAllChartsLoading() {
-      document.querySelectorAll('.chart-wrapper.loading').forEach(w => {
-        w.classList.remove('loading', 'placeholder', 'placeholder-wave');
-      });
-    }
+/* ==========================================================================
+   Dashboard — filtros, KPIs e gráficos
+   - Tema dos gráficos lê os tokens de public/css/theme.css e re-renderiza
+     ao trocar de tema (evento "ou:themechange").
+   - Cada gráfico separa busca de dados (load*) de render (render*), de modo
+     que a troca de tema não refaça requisições.
+   ========================================================================== */
+(function () {
+  "use strict";
 
-    // EXEMPLO provisório: remove após 1.2s (substitua pela chamada após render do Chart.js)
-    setTimeout(finishAllChartsLoading, 1200);
- 
- // Usa window.API_URL (se definido em /config.js). Caso contrário, usa caminho relativo.
-    const API = (path) => (window.API_URL ? window.API_URL + path : path);
-    const optAuth = { credentials: "include" }; // envia cookie httpOnly do login
+  var FONT = "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+  var API = function (path) { return window.API_URL ? window.API_URL + path : path; };
+  var optAuth = { credentials: "include" };
 
-    const $ = (s) => document.querySelector(s);
-    const toNum = (v) => Number(v ?? 0) || 0;
+  var toNum = function (v) { return Number(v ?? 0) || 0; };
 
-// ---- Filtros de data do Dashboard ----
-// Retorna os parâmetros de data atuais para o filtro do dashboard
-window.dashFiltroParams = { dataInicio: null, dataFim: null };
+  var brl = function (v) {
+    return (isNaN(v) ? 0 : Number(v)).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+  };
+  window.brl = window.brl || brl;
 
-function toISODate(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
-}
-
-function buildDashQS() {
-  const p = window.dashFiltroParams;
-  const qs = new URLSearchParams();
-  if (p.dataInicio) qs.set("dataInicio", p.dataInicio);
-  if (p.dataFim) qs.set("dataFim", p.dataFim);
-  return qs.toString() ? "?" + qs.toString() : "";
-}
-
-function aplicarPresetDash(preset) {
-  const today = new Date();
-  const inputInicio = document.getElementById("dashDataInicio");
-  const inputFim = document.getElementById("dashDataFim");
-  let start = null, end = null;
-
-  if (preset === "hoje") {
-    start = new Date(today);
-    end = new Date(today);
-  } else if (preset === "ult7") {
-    start = new Date(today); start.setDate(today.getDate() - 6); end = new Date(today);
-  } else if (preset === "ult30") {
-    start = new Date(today); start.setDate(today.getDate() - 29); end = new Date(today);
-  } else if (preset === "mesAtual") {
-    start = new Date(today.getFullYear(), today.getMonth(), 1);
-    end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  } else if (preset === "anoAtual") {
-    start = new Date(today.getFullYear(), 0, 1);
-    end = new Date(today.getFullYear(), 11, 31);
-  } else if (preset === "todos") {
-    start = end = null;
-  } else if (preset === "personalizado") {
-    // keep current values, enable inputs
-    if (inputInicio) inputInicio.disabled = false;
-    if (inputFim) inputFim.disabled = false;
-    return;
+  function compactBRL(v) {
+    var n = Number(v) || 0;
+    if (Math.abs(n) >= 1e6) return "R$ " + (n / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mi";
+    if (Math.abs(n) >= 1e3) return "R$ " + (n / 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mil";
+    return brl(n);
   }
 
-  if (inputInicio) { inputInicio.disabled = true; inputInicio.value = start ? toISODate(start) : ""; }
-  if (inputFim) { inputFim.disabled = true; inputFim.value = end ? toISODate(end) : ""; }
-  window.dashFiltroParams.dataInicio = start ? toISODate(start) : null;
-  window.dashFiltroParams.dataFim = end ? toISODate(end) : null;
-}
+  function setText(id, v) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = v;
+  }
 
-document.addEventListener("DOMContentLoaded", function () {
-  const periodoSel = document.getElementById("dashPeriodoSelect");
-  const inputInicio = document.getElementById("dashDataInicio");
-  const inputFim = document.getElementById("dashDataFim");
-  const btnAplicar = document.getElementById("btnAplicarFiltroDash");
+  async function getJSON(path) {
+    var resp = await fetch(BASE_URL + path, { credentials: "include" });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    return resp.json();
+  }
 
-  if (periodoSel) {
+  async function jget(path, fallback) {
+    try {
+      var r = await fetch(API(path), optAuth);
+      if (!r.ok) throw new Error(path + " => " + r.status);
+      return await r.json();
+    } catch (e) {
+      console.warn("Falha em", path, e.message);
+      return fallback === undefined ? null : fallback;
+    }
+  }
+
+  // ------------------------------------------------------------------------
+  // Skeleton / loading por gráfico
+  // ------------------------------------------------------------------------
+  function setWrapperLoading(canvas, isLoading) {
+    if (!canvas) return;
+    var wrapper = canvas.closest(".chart-wrapper");
+    if (!wrapper) return;
+    wrapper.classList.toggle("loading", !!isLoading);
+  }
+
+  // ------------------------------------------------------------------------
+  // Filtros de período
+  // ------------------------------------------------------------------------
+  window.dashFiltroParams = { dataInicio: null, dataFim: null };
+
+  function toISODate(d) {
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var dd = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + dd;
+  }
+
+  function buildDashQS() {
+    var p = window.dashFiltroParams;
+    var qs = new URLSearchParams();
+    if (p.dataInicio) qs.set("dataInicio", p.dataInicio);
+    if (p.dataFim) qs.set("dataFim", p.dataFim);
+    return qs.toString() ? "?" + qs.toString() : "";
+  }
+
+  function aplicarPresetDash(preset) {
+    var today = new Date();
+    var inputInicio = document.getElementById("dashDataInicio");
+    var inputFim = document.getElementById("dashDataFim");
+    var start = null, end = null;
+
+    if (preset === "hoje") {
+      start = new Date(today); end = new Date(today);
+    } else if (preset === "ult7") {
+      start = new Date(today); start.setDate(today.getDate() - 6); end = new Date(today);
+    } else if (preset === "ult30") {
+      start = new Date(today); start.setDate(today.getDate() - 29); end = new Date(today);
+    } else if (preset === "mesAtual") {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+      end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (preset === "anoAtual") {
+      start = new Date(today.getFullYear(), 0, 1);
+      end = new Date(today.getFullYear(), 11, 31);
+    } else if (preset === "todos") {
+      start = end = null;
+    } else if (preset === "personalizado") {
+      if (inputInicio) inputInicio.disabled = false;
+      if (inputFim) inputFim.disabled = false;
+      return;
+    }
+
+    if (inputInicio) { inputInicio.disabled = true; inputInicio.value = start ? toISODate(start) : ""; }
+    if (inputFim) { inputFim.disabled = true; inputFim.value = end ? toISODate(end) : ""; }
+    window.dashFiltroParams.dataInicio = start ? toISODate(start) : null;
+    window.dashFiltroParams.dataFim = end ? toISODate(end) : null;
+  }
+
+  function updateChartTitles() {
+    var sel = document.getElementById("dashPeriodoSelect");
+    if (!sel || !sel.options[sel.selectedIndex]) return;
+    var periodo = sel.options[sel.selectedIndex].text;
+    var tp = document.getElementById("tituloTopProdutos");
+    var tm = document.getElementById("tituloTopMarcas");
+    if (tp) tp.textContent = "Top 10 Produtos — " + periodo;
+    if (tm) tm.textContent = "Top 10 Marcas — " + periodo;
+  }
+
+  function initFilter() {
+    var periodoSel = document.getElementById("dashPeriodoSelect");
+    var inputInicio = document.getElementById("dashDataInicio");
+    var inputFim = document.getElementById("dashDataFim");
+    var btnAplicar = document.getElementById("btnAplicarFiltroDash");
+    if (!periodoSel) return;
+
+    aplicarPresetDash(periodoSel.value);
+    updateChartTitles();
+
     periodoSel.addEventListener("change", function () {
       aplicarPresetDash(this.value);
     });
-    // init with default
-    aplicarPresetDash(periodoSel.value);
-  }
 
-  if (btnAplicar) {
-    btnAplicar.addEventListener("click", function () {
-      const preset = periodoSel ? periodoSel.value : "todos";
-      if (preset === "personalizado") {
-        window.dashFiltroParams.dataInicio = inputInicio ? inputInicio.value || null : null;
-        window.dashFiltroParams.dataFim = inputFim ? inputFim.value || null : null;
-      } else {
-        aplicarPresetDash(preset);
-      }
-      // Recarrega todos os gráficos
-      if (typeof carregarTopProdutosMes === "function") carregarTopProdutosMes().catch(console.error);
-      if (typeof carregarTopMarcasMes === "function") carregarTopMarcasMes().catch(console.error);
-      if (typeof carregarFaturamentoAnualVertical === "function") carregarFaturamentoAnualVertical().catch(console.error);
-      if (typeof carregarFaturamentoDiarioNitido === "function") carregarFaturamentoDiarioNitido().catch(console.error);
-
-      // Atualiza título dos gráficos
-      const periodo = periodoSel ? periodoSel.options[periodoSel.selectedIndex].text : "";
-      const tituloP = document.getElementById("tituloTopProdutos");
-      const tituloM = document.getElementById("tituloTopMarcas");
-      if (tituloP) tituloP.textContent = `Top 10 Produtos — ${periodo}`;
-      if (tituloM) tituloM.textContent = `Top 10 Marcas — ${periodo}`;
-    });
-  }
-});
-// ---- Fim Filtros Dashboard ----
-
-
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    const response = await fetch("/me/usuario", {
-      method: "GET",
-      credentials: "include" // envia o cookie HttpOnly
-    });
-
-    if (!response.ok) throw new Error("Falha ao obter usuário");
-
-    const data = await response.json();
-    const usuario = data.usunome || "Usuário";
-
-    const h1 = document.querySelector("h1.h4.mb-0");
-    if (h1) {
-      h1.textContent = `Bem-vindo, ${usuario}`;
+    if (btnAplicar) {
+      btnAplicar.addEventListener("click", function () {
+        var preset = periodoSel.value;
+        if (preset === "personalizado") {
+          window.dashFiltroParams.dataInicio = inputInicio ? inputInicio.value || null : null;
+          window.dashFiltroParams.dataFim = inputFim ? inputFim.value || null : null;
+        } else {
+          aplicarPresetDash(preset);
+        }
+        updateChartTitles();
+        loadPeriodCharts();
+      });
     }
-  } catch (err) {
-    console.error("Erro ao buscar nome do usuário:", err);
   }
-   // -- Helpers globais, com proteção para evitar redefinir --
-    window.prepareHiDPICanvas ||= function (canvas, cssHeightPx = 360) {
-      const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const rect = canvas.getBoundingClientRect();
-      canvas.style.width = rect.width + "px";
-      canvas.style.height = cssHeightPx + "px";
-      canvas.width = Math.round(rect.width * dpr);
-      canvas.height = Math.round(cssHeightPx * dpr);
-      const ctx = canvas.getContext("2d");
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      return ctx;
-    };
 
-    window.throttleDash ||= function (fn, wait = 150) {
-      let t = 0;
-      return (...args) => {
-        const now = Date.now();
-        if (now - t > wait) { t = now; fn(...args); }
+  // ------------------------------------------------------------------------
+  // Tema dos gráficos (tokens do CSS + Chart.defaults)
+  // ------------------------------------------------------------------------
+  var DashChart = (function () {
+    function readToken(name, fallback) {
+      var v = getComputedStyle(document.documentElement).getPropertyValue(name);
+      return (v && v.trim()) || fallback;
+    }
+
+    function tokens() {
+      var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      var gold = isDark
+        ? { blue: "#60a5fa", indigo: "#38bdf8", violet: "#22d3ee", teal: "#2dd4bf", green: "#34d399", amber: "#fbbf24", orange: "#fb923c", rose: "#fb7185", cyan: "#7dd3fc", slate: "#94a3b8" }
+        : { blue: "#3b82f6", indigo: "#0ea5e9", violet: "#06b6d4", teal: "#0d9488", green: "#10b981", amber: "#f59e0b", orange: "#f97316", rose: "#f43f5e", cyan: "#0891b2", slate: "#64748b" };
+
+      return {
+        isDark: isDark,
+        text: readToken("--ou-text", isDark ? "#f9fafb" : "#0f172a"),
+        muted: readToken("--ou-text-muted", isDark ? "#9ca3af" : "#64748b"),
+        border: readToken("--ou-border", isDark ? "#374151" : "#e2e8f0"),
+        surface: readToken("--ou-surface", isDark ? "#1f2937" : "#ffffff"),
+        grid: isDark ? "rgba(148,163,184,0.14)" : "rgba(100,116,139,0.14)",
+        gold: gold,
+        palette: [gold.blue, gold.indigo, gold.violet, gold.teal, gold.green, gold.amber, gold.orange, gold.rose, gold.cyan, gold.slate],
+        channel: { balcao: gold.blue, entrega: gold.green, venda: gold.amber }
       };
+    }
+
+    function grid(t) {
+      return { color: t.grid, drawTicks: false };
+    }
+
+    function applyDefaults() {
+      var t = tokens();
+      Chart.defaults.font.family = FONT;
+      Chart.defaults.font.size = 12;
+      Chart.defaults.color = t.muted;
+      Chart.defaults.borderColor = t.grid;
+      Chart.defaults.responsive = true;
+      Chart.defaults.maintainAspectRatio = false;
+
+      var legend = Chart.defaults.plugins.legend;
+      legend.display = true;
+      legend.position = "bottom";
+      legend.labels.usePointStyle = true;
+      legend.labels.pointStyle = "circle";
+      legend.labels.boxWidth = 8;
+      legend.labels.boxHeight = 8;
+      legend.labels.padding = 16;
+      legend.labels.color = t.muted;
+
+      var tt = Chart.defaults.plugins.tooltip;
+      tt.backgroundColor = t.isDark ? "#0b1220" : "#0f172a";
+      tt.titleColor = "#f8fafc";
+      tt.bodyColor = "#e2e8f0";
+      tt.borderColor = t.isDark ? "rgba(148,163,184,0.25)" : "rgba(15,23,42,0.06)";
+      tt.borderWidth = 1;
+      tt.padding = 12;
+      tt.cornerRadius = 12;
+      tt.displayColors = false;
+      tt.titleFont = { weight: "600" };
+    }
+
+    return { tokens: tokens, grid: grid, applyDefaults: applyDefaults };
+  })();
+
+  DashChart.applyDefaults();
+
+  // Plugin: total no centro de doughnuts
+  var centerTextPlugin = {
+    id: "dashCenterText",
+    afterDraw: function (chart, _args, opts) {
+      if (!opts || !opts.display) return;
+      var area = chart.chartArea;
+      if (!area) return;
+      var t = DashChart.tokens();
+      var cx = (area.left + area.right) / 2;
+      var cy = (area.top + area.bottom) / 2;
+      var ctx = chart.ctx;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      if (opts.label) {
+        ctx.font = "600 10px " + FONT;
+        ctx.fillStyle = t.muted;
+        ctx.fillText(String(opts.label).toUpperCase(), cx, cy - (opts.value ? 12 : 0));
+      }
+      if (opts.value) {
+        ctx.font = "700 18px " + FONT;
+        ctx.fillStyle = t.text;
+        ctx.fillText(String(opts.value), cx, cy + (opts.label ? 8 : 0));
+      }
+      ctx.restore();
+    }
+  };
+  Chart.register(centerTextPlugin);
+
+  var DATA_LABELS = typeof ChartDataLabels !== "undefined" ? [ChartDataLabels] : [];
+
+  // ------------------------------------------------------------------------
+  // Registro de instâncias/estado/render por gráfico
+  // ------------------------------------------------------------------------
+  var chartInstances = Object.create(null);
+  var chartStates = Object.create(null);
+  var chartRenderers = Object.create(null);
+
+  function destroyChart(id) {
+    if (chartInstances[id]) {
+      chartInstances[id].destroy();
+      chartInstances[id] = null;
+    }
+  }
+
+  function mountChart(id, config) {
+    var canvas = document.getElementById(id);
+    if (!canvas) return null;
+    destroyChart(id);
+    chartInstances[id] = new Chart(canvas, config);
+    return chartInstances[id];
+  }
+
+  function clearResumo(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg || "";
+    el.classList.remove("text-danger");
+  }
+
+  // ------------------------------------------------------------------------
+  // Render — Top Produtos
+  // ------------------------------------------------------------------------
+  function renderTopProdutos(state) {
+    var canvas = document.getElementById("chartTopProdutosMes");
+    if (!canvas) return;
+    var rows = state.rows || [];
+
+    if (!rows.length) {
+      destroyChart("chartTopProdutosMes");
+      clearResumo("resumoTopProdutosMes", "Sem vendas no período.");
+      setWrapperLoading(canvas, false);
+      return;
+    }
+
+    var t = DashChart.tokens();
+    var labels = rows.map(function (r) {
+      return r.produto.length > 42 ? r.produto.slice(0, 42) + "…" : r.produto;
+    });
+    var valores = rows.map(function (r) { return r.qtde; });
+    var total = valores.reduce(function (a, b) { return a + b; }, 0);
+
+    mountChart("chartTopProdutosMes", {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Qtd. vendida",
+          data: valores,
+          backgroundColor: function (c) {
+            var area = c.chart.chartArea;
+            if (!area) return t.gold.blue;
+            var g = c.chart.ctx.createLinearGradient(area.left, 0, area.right, 0);
+            g.addColorStop(0, t.gold.blue);
+            g.addColorStop(1, t.gold.indigo);
+            return g;
+          },
+          hoverBackgroundColor: t.gold.indigo,
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 22
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        animation: { duration: 700, easing: "easeOutQuart" },
+        layout: { padding: { right: 40, top: 4, bottom: 4 } },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: DashChart.grid(t),
+            border: { display: false },
+            ticks: { color: t.muted, precision: 0, stepSize: 1, font: { size: 11 } }
+          },
+          y: {
+            grid: { display: false },
+            border: { display: false },
+            ticks: { color: t.text, autoSkip: false, font: { size: 11.5 } }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: function (items) { return rows[items[0].dataIndex].produto; },
+              label: function (c) { return " " + Number(c.parsed.x).toLocaleString("pt-BR") + " un. vendidas"; }
+            }
+          },
+          datalabels: {
+            anchor: "end", align: "right", offset: 6, clamp: true,
+            color: t.text, font: { weight: "700", size: 11 },
+            formatter: function (v) { return Number(v).toLocaleString("pt-BR"); }
+          }
+        }
+      },
+      plugins: DATA_LABELS
+    });
+
+    clearResumo("resumoTopProdutosMes", "Top " + rows.length + " produtos · " + total.toLocaleString("pt-BR") + " itens vendidos no período");
+    setWrapperLoading(canvas, false);
+  }
+
+  // ------------------------------------------------------------------------
+  // Render — Top Marcas
+  // ------------------------------------------------------------------------
+  function renderTopMarcas(state) {
+    var canvas = document.getElementById("chartTopMarcasMes");
+    if (!canvas) return;
+    var rows = state.rows || [];
+
+    if (!rows.length) {
+      destroyChart("chartTopMarcasMes");
+      clearResumo("resumoTopMarcasMes", "Sem faturamento por marca no período.");
+      setWrapperLoading(canvas, false);
+      return;
+    }
+
+    var t = DashChart.tokens();
+    var labels = rows.map(function (r) { return r.marca.toUpperCase(); });
+    var valores = rows.map(function (r) { return r.valor; });
+    var total = valores.reduce(function (a, b) { return a + b; }, 0);
+
+    var corMarca = function (m, i) {
+      var x = String(m).toUpperCase();
+      if (x.indexOf("APPLE") !== -1 || x.indexOf("IPHONE") !== -1) return t.gold.indigo;
+      if (x.indexOf("SAMSUNG") !== -1) return t.gold.blue;
+      if (x.indexOf("MOTOROLA") !== -1) return t.gold.green;
+      if (x.indexOf("XIAOMI") !== -1) return t.gold.orange;
+      if (x.indexOf("REALME") !== -1) return t.gold.violet;
+      if (x.indexOf("NOKIA") !== -1) return t.gold.cyan;
+      if (x.indexOf("LG") !== -1) return t.gold.rose;
+      return t.palette[i % t.palette.length];
     };
 
-    window.brl ||= function (v) {
-      return (isNaN(v) ? 0 : v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    };
+    mountChart("chartTopMarcasMes", {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Venda",
+          data: valores,
+          backgroundColor: labels.map(corMarca),
+          hoverBackgroundColor: labels.map(corMarca),
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 22
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        animation: { duration: 700, easing: "easeOutQuart" },
+        layout: { padding: { right: 56, top: 4, bottom: 4 } },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: DashChart.grid(t),
+            border: { display: false },
+            ticks: { color: t.muted, callback: function (v) { return compactBRL(v); }, font: { size: 11 } }
+          },
+          y: {
+            grid: { display: false },
+            border: { display: false },
+            ticks: { color: t.text, autoSkip: false, font: { size: 11.5 } }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function (c) { return " " + brl(c.parsed.x); },
+              afterLabel: function (c) {
+                var v = c.parsed.x || 0;
+                var pct = total ? (v / total) * 100 : 0;
+                return "Participação: " + pct.toFixed(1) + "%";
+              }
+            }
+          },
+          datalabels: {
+            anchor: "end", align: "right", offset: 6, clamp: true,
+            color: t.text, font: { weight: "700", size: 11 },
+            formatter: function (v) { return compactBRL(v); }
+          }
+        }
+      },
+      plugins: DATA_LABELS
+    });
 
-    let chartFaturamentoAnual;
+    var top = rows[0];
+    var pctTop = total ? ((top.valor / total) * 100).toFixed(1) : "0.0";
+    clearResumo("resumoTopMarcasMes", "Total: " + brl(total) + " · Top: " + top.marca + " (" + brl(top.valor) + " · " + pctTop + "%)");
+    setWrapperLoading(canvas, false);
+  }
 
-    async function carregarFaturamentoAnualVertical() {
-      const canvas = document.getElementById("chartFaturamentoAnual");
-      const resumo = document.getElementById("resumoFaturamentoAnual");
-      if (!canvas) return;
+  // ------------------------------------------------------------------------
+  // Render — Vendas do dia (doughnut por canal)
+  // ------------------------------------------------------------------------
+  function renderFaturamentoDia(state) {
+    var canvas = document.getElementById("chartFaturamentoDia");
+    if (!canvas) return;
+    var labels = state.labels || [];
+    var valores = state.valores || [];
+    var total = valores.reduce(function (a, b) { return a + b; }, 0);
 
-      const resp = await fetch(`${BASE_URL}/v2/pedidos/total/anual${buildDashQS()}`, { credentials: "include" });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
+    if (!labels.length || total <= 0) {
+      destroyChart("chartFaturamentoDia");
+      clearResumo("chartFaturamentoDiaResumo", "Sem vendas no período.");
+      setWrapperLoading(canvas, false);
+      return;
+    }
 
-      const MESES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
-      const balcao = Array(12).fill(0);
-      const entrega = Array(12).fill(0);
-      const venda = Array(12).fill(0);
+    var t = DashChart.tokens();
+    var cores = labels.map(function (_, i) { return t.palette[i % t.palette.length]; });
 
-      (data || []).forEach(r => {
-        const m = Math.max(1, Math.min(12, parseInt(r.mes, 10))) - 1;
-        const canal = String(r.pvcanal || "").trim().toUpperCase();
-        const v = parseFloat(r.vl_total_mes) || 0;
+    mountChart("chartFaturamentoDia", {
+      type: "doughnut",
+      data: {
+        labels: labels,
+        datasets: [{ data: valores, backgroundColor: cores, borderWidth: 0, hoverOffset: 10, borderRadius: 6 }]
+      },
+      options: {
+        cutout: "64%",
+        animation: { duration: 700, easing: "easeOutQuart" },
+        plugins: {
+          legend: { position: "bottom" },
+          dashCenterText: { display: true, label: "Total", value: compactBRL(total) },
+          tooltip: { callbacks: { label: function (c) { return " " + c.label + ": " + brl(c.parsed); } } }
+        }
+      }
+    });
+
+    clearResumo("chartFaturamentoDiaResumo", "Total: " + brl(total));
+    setWrapperLoading(canvas, false);
+  }
+
+  // ------------------------------------------------------------------------
+  // Render — Venda anual (barras empilhadas por canal)
+  // ------------------------------------------------------------------------
+  function renderFaturamentoAnual(state) {
+    var canvas = document.getElementById("chartFaturamentoAnual");
+    if (!canvas) return;
+
+    var MESES = state.meses;
+    var balcao = state.balcao;
+    var entrega = state.entrega;
+    var venda = state.venda;
+    var total = balcao.concat(entrega, venda).reduce(function (a, b) { return a + b; }, 0);
+    var t = DashChart.tokens();
+
+    mountChart("chartFaturamentoAnual", {
+      type: "bar",
+      data: {
+        labels: MESES,
+        datasets: [
+          { label: "Balcão", data: balcao, backgroundColor: t.channel.balcao, borderRadius: 6, borderSkipped: false, maxBarThickness: 26 },
+          { label: "Entrega", data: entrega, backgroundColor: t.channel.entrega, borderRadius: 6, borderSkipped: false, maxBarThickness: 26 },
+          { label: "Venda", data: venda, backgroundColor: t.channel.venda, borderRadius: 6, borderSkipped: false, maxBarThickness: 26 }
+        ]
+      },
+      options: {
+        interaction: { mode: "index", intersect: false },
+        animation: { duration: 700, easing: "easeOutQuart" },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { display: false },
+            border: { display: false },
+            ticks: { color: t.muted, font: { size: 10 } }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            grid: DashChart.grid(t),
+            border: { display: false },
+            ticks: { color: t.muted, callback: function (v) { return compactBRL(v); }, font: { size: 11 } }
+          }
+        },
+        plugins: {
+          legend: { position: "top", align: "end" },
+          tooltip: {
+            callbacks: {
+              label: function (c) { return " " + c.dataset.label + ": " + brl(c.parsed.y); },
+              footer: function (items) {
+                if (!items.length) return "";
+                var soma = items.reduce(function (s, i) { return s + (i.parsed.y || 0); }, 0);
+                return "Total: " + brl(soma);
+              }
+            }
+          }
+        }
+      }
+    });
+
+    clearResumo("resumoFaturamentoAnual", "Total do ano: " + brl(total));
+    setWrapperLoading(canvas, false);
+  }
+
+  // ------------------------------------------------------------------------
+  // Render — doughnuts de KPI (Pedidos / Canais)
+  // ------------------------------------------------------------------------
+  function renderDoughnut(id, state, centerLabel) {
+    var total = (state.valores || []).reduce(function (a, b) { return a + b; }, 0);
+    var t = DashChart.tokens();
+    var cores = (state.labels || []).map(function (_, i) { return t.palette[i % t.palette.length]; });
+
+    mountChart(id, {
+      type: "doughnut",
+      data: {
+        labels: state.labels,
+        datasets: [{ data: state.valores, backgroundColor: cores, borderWidth: 0, hoverOffset: 10, borderRadius: 6 }]
+      },
+      options: {
+        cutout: "64%",
+        animation: { duration: 700, easing: "easeOutQuart" },
+        plugins: {
+          legend: { position: "bottom" },
+          dashCenterText: { display: true, label: centerLabel, value: total.toLocaleString("pt-BR") },
+          tooltip: { callbacks: { label: function (c) { return " " + c.label + ": " + Number(c.parsed).toLocaleString("pt-BR"); } } }
+        }
+      }
+    });
+  }
+
+  // ------------------------------------------------------------------------
+  // Render — barras horizontais de KPI (Estoque / Top 5 marcas)
+  // ------------------------------------------------------------------------
+  function horizontalBar(id, state, colors, unit) {
+    var t = DashChart.tokens();
+    mountChart(id, {
+      type: "bar",
+      data: {
+        labels: state.labels,
+        datasets: [{
+          data: state.valores,
+          backgroundColor: colors,
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 22
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        animation: { duration: 700, easing: "easeOutQuart" },
+        layout: { padding: { right: 40, top: 4, bottom: 4 } },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: DashChart.grid(t),
+            border: { display: false },
+            ticks: { color: t.muted, precision: 0, font: { size: 11 } }
+          },
+          y: {
+            grid: { display: false },
+            border: { display: false },
+            ticks: { color: t.text, font: { size: 11.5 } }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function (c) { return " " + Number(c.parsed.x).toLocaleString("pt-BR") + (unit || ""); }
+            }
+          },
+          datalabels: {
+            anchor: "end", align: "right", offset: 6, clamp: true,
+            color: t.text, font: { weight: "700", size: 11 },
+            formatter: function (v) { return Number(v).toLocaleString("pt-BR"); }
+          }
+        }
+      },
+      plugins: DATA_LABELS
+    });
+  }
+
+  function renderEstoqueKpi(state) {
+    var t = DashChart.tokens();
+    horizontalBar("chartEstoque", state, [t.gold.green, t.gold.slate], " produtos");
+  }
+
+  function renderTopMarcasEstoqueKpi(state) {
+    var t = DashChart.tokens();
+    var bg = state.labels.map(function (_, i) { return t.palette[i % t.palette.length]; });
+    horizontalBar("chartTopMarcas", state, bg, " produtos");
+  }
+
+  chartRenderers.chartTopProdutosMes = renderTopProdutos;
+  chartRenderers.chartTopMarcasMes = renderTopMarcas;
+  chartRenderers.chartFaturamentoDia = renderFaturamentoDia;
+  chartRenderers.chartFaturamentoAnual = renderFaturamentoAnual;
+  chartRenderers.chartPedidos = function (s) { renderDoughnut("chartPedidos", s, "Pedidos"); };
+  chartRenderers.chartCanais = function (s) { renderDoughnut("chartCanais", s, "Canais"); };
+  chartRenderers.chartEstoque = renderEstoqueKpi;
+  chartRenderers.chartTopMarcas = renderTopMarcasEstoqueKpi;
+
+  // ------------------------------------------------------------------------
+  // Busca de dados
+  // ------------------------------------------------------------------------
+  async function loadTopProdutos() {
+    var canvas = document.getElementById("chartTopProdutosMes");
+    try {
+      var data = await getJSON("/v2/top/produtos/mes" + buildDashQS());
+      var rows = (data || [])
+        .map(function (r) {
+          return { procod: r.procod, produto: String(r.produto || "").trim(), qtde: Number(r.qtde) || 0 };
+        })
+        .sort(function (a, b) { return b.qtde - a.qtde; })
+        .slice(0, 10);
+      var state = { rows: rows };
+      chartStates.chartTopProdutosMes = state;
+      renderTopProdutos(state);
+    } catch (e) {
+      console.error("Erro Top Produtos:", e);
+      clearResumo("resumoTopProdutosMes", "Erro ao carregar Top Produtos.");
+      var r = document.getElementById("resumoTopProdutosMes");
+      if (r) r.classList.add("text-danger");
+      setWrapperLoading(canvas, false);
+    }
+  }
+
+  async function loadTopMarcas() {
+    var canvas = document.getElementById("chartTopMarcasMes");
+    try {
+      var data = await getJSON("/v2/top/marcas/mes" + buildDashQS());
+      var rows = (data || [])
+        .map(function (r) {
+          return { marca: String(r.marcasdes || "").trim(), valor: parseFloat(String(r.valor || "0").replace(",", ".")) || 0 };
+        })
+        .filter(function (r) { return r.valor > 0; })
+        .sort(function (a, b) { return b.valor - a.valor; });
+      var state = { rows: rows };
+      chartStates.chartTopMarcasMes = state;
+      renderTopMarcas(state);
+    } catch (e) {
+      console.error("Erro Top Marcas:", e);
+      clearResumo("resumoTopMarcasMes", "Erro ao carregar Top Marcas.");
+      var r = document.getElementById("resumoTopMarcasMes");
+      if (r) r.classList.add("text-danger");
+      setWrapperLoading(canvas, false);
+    }
+  }
+
+  async function loadFaturamentoAnual() {
+    var canvas = document.getElementById("chartFaturamentoAnual");
+    try {
+      var data = await getJSON("/v2/pedidos/total/anual" + buildDashQS());
+      var MESES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+      var balcao = new Array(12).fill(0);
+      var entrega = new Array(12).fill(0);
+      var venda = new Array(12).fill(0);
+
+      (data || []).forEach(function (r) {
+        var m = Math.max(1, Math.min(12, parseInt(r.mes, 10))) - 1;
+        var canal = String(r.pvcanal || "").trim().toUpperCase();
+        var v = parseFloat(r.vl_total_mes) || 0;
         if (canal === "BALCAO" || canal === "BALCÃO") balcao[m] += v;
         else if (canal === "ENTREGA") entrega[m] += v;
         else if (canal === "VENDA") venda[m] += v;
       });
 
-      const totalAno = [...balcao, ...entrega, ...venda].reduce((a, b) => a + b, 0);
-
-      if (chartFaturamentoAnual) chartFaturamentoAnual.destroy();
-      const ctx = prepareHiDPICanvas(canvas, 360);
-
-      chartFaturamentoAnual = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: MESES,
-          datasets: [
-            {
-              label: "BALCÃO",
-              data: balcao,
-              backgroundColor: "#1E88E5", // troque cores se quiser
-              borderColor: "#1565C0",
-              borderWidth: 1,
-              borderRadius: 6,
-              borderSkipped: false
-            },
-            {
-              label: "ENTREGA",
-              data: entrega,
-              backgroundColor: "#43A047",
-              borderColor: "#2E7D32",
-              borderWidth: 1,
-              borderRadius: 6,
-              borderSkipped: false
-            },
-            {
-              label: "VENDA",
-              data: venda,
-              backgroundColor: "#fd7e14",
-              borderColor: "#e8590c",
-              borderWidth: 1,
-              borderRadius: 6,
-              borderSkipped: false
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: "index", intersect: false },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { callback: v => brl(v) },
-              title: { display: true, text: "Venda em (R$)" },
-              grid: { drawBorder: false }
-            },
-            x: { grid: { display: false }, title: { display: true, text: "Meses" } }
-          },
-          plugins: {
-            legend: { position: "top" },
-            tooltip: { callbacks: { label: c => `${c.dataset.label}: ${brl(c.parsed.y)}` } }
-          },
-          categoryPercentage: 0.7,
-          barPercentage: 0.85
-        }
-      });
-
-      if (resumo) resumo.textContent = `Total do ano: ${brl(totalAno)}`;
+      var state = { meses: MESES, balcao: balcao, entrega: entrega, venda: venda };
+      chartStates.chartFaturamentoAnual = state;
+      renderFaturamentoAnual(state);
+    } catch (e) {
+      console.error("Erro Faturamento Anual:", e);
+      clearResumo("resumoFaturamentoAnual", "Erro ao carregar faturamento anual.");
+      var r = document.getElementById("resumoFaturamentoAnual");
+      if (r) r.classList.add("text-danger");
+      setWrapperLoading(canvas, false);
     }
+  }
 
-    // init + resize
-    const initAnual = () => carregarFaturamentoAnualVertical().catch(e => {
-      console.error("Erro anual:", e);
-      const r = document.getElementById("resumoFaturamentoAnual");
-      if (r) { r.textContent = "Erro ao carregar faturamento anual."; r.classList.add("text-danger"); }
-    });
-
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initAnual);
-    else initAnual();
-
-    window.addEventListener("resize", throttleDash(initAnual, 200));
-
-  // Deixa o canvas nítido em monitores HiDPI/Retina
-    function prepareHiDPICanvas(canvas, cssHeightPx = 340) {
-      const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const rect = canvas.getBoundingClientRect();
-
-      // define o tamanho CSS (em px lógicos)
-      canvas.style.width = rect.width + "px";
-      canvas.style.height = cssHeightPx + "px";
-
-      // define o tamanho real do buffer do canvas (em px físicos)
-      canvas.width = Math.round(rect.width * dpr);
-      canvas.height = Math.round(cssHeightPx * dpr);
-
-      // escala o contexto para não “estourar” os elementos
-      const ctx = canvas.getContext("2d");
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      return ctx;
-    }
-
-    // Throttle simples para resize
-    function throttle(fn, wait = 150) {
-      let t = 0;
-      return (...args) => {
-        const now = Date.now();
-        if (now - t > wait) { t = now; fn(...args); }
-      };
-    }
-
-    let chartFaturamentoDia; // referência para destruir/recriar no resize
-    
-
-    async function carregarFaturamentoDiarioNitido() {
-      const canvas = document.getElementById("chartFaturamentoDia");
-      const resumo = document.getElementById("chartFaturamentoDiaResumo");
-      if (!canvas) return;
-
-      // fetch (mesmo do código anterior)
-      const resp = await fetch(`${BASE_URL}/v2/pedidos/total/dia${buildDashQS()}`, { credentials: "include" });
-      const data = await resp.json();
-
-      const agrupado = {};
-      (data || []).forEach(i => {
-        const canal = (i.pvcanal || "").trim() || "—";
-        const v = parseFloat(i.vl_total_dia) || 0;
+  async function loadFaturamentoDia() {
+    var canvas = document.getElementById("chartFaturamentoDia");
+    try {
+      var data = await getJSON("/v2/pedidos/total/dia" + buildDashQS());
+      var agrupado = {};
+      (data || []).forEach(function (i) {
+        var canal = (i.pvcanal || "").trim() || "—";
+        var v = parseFloat(i.vl_total_dia) || 0;
         agrupado[canal] = (agrupado[canal] || 0) + v;
       });
-
-      const labels = Object.keys(agrupado);
-      const valores = Object.values(agrupado);
-      const total = valores.reduce((a, b) => a + b, 0);
-      const brl = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-      // destrói chart antigo se existir
-      if (chartFaturamentoDia) chartFaturamentoDia.destroy();
-
-      // prepara canvas HiDPI e cria chart
-      const ctx = prepareHiDPICanvas(canvas, 340);
-      chartFaturamentoDia = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{
-            backgroundColor: ["#3949ab", "#00acc1"],
-            borderColor: "#fff",
-            borderWidth: 1,
-            label: "Venda (R$)",
-            data: valores,
-            borderWidth: 2,
-            fill: true,
-            tension: 0.3,
-            pointRadius: 5,
-            borderRadius: 6,
-            borderSkipped: false // cantos arredondados
-            // sem cores custom pra respeitar seu tema
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          scales: { x: { beginAtZero: true } }
-        }
-      });
-
-      if (resumo) resumo.textContent = `Total do dia: ${brl(total)}`;
+      var state = { labels: Object.keys(agrupado), valores: Object.values(agrupado) };
+      chartStates.chartFaturamentoDia = state;
+      renderFaturamentoDia(state);
+    } catch (e) {
+      console.error("Erro Faturamento Dia:", e);
+      clearResumo("chartFaturamentoDiaResumo", "Erro ao carregar vendas do dia.");
+      var r = document.getElementById("chartFaturamentoDiaResumo");
+      if (r) r.classList.add("text-danger");
+      setWrapperLoading(canvas, false);
     }
+  }
 
-    // carrega e re-renderiza com nitidez no resize
-    const iniciarFaturamentoDia = () => carregarFaturamentoDiarioNitido();
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", iniciarFaturamentoDia);
-    } else {
-      iniciarFaturamentoDia();
-    }
-    window.addEventListener("resize", throttle(() => {
-      // Recria o gráfico ajustando o buffer do canvas ao novo tamanho
-      carregarFaturamentoDiarioNitido();
-    }, 200));
+  function loadPeriodCharts() {
+    loadTopProdutos();
+    loadTopMarcas();
+    loadFaturamentoAnual();
+    loadFaturamentoDia();
+  }
 
-    // Expõe as funções de gráfico globalmente para que o botão Aplicar possa chamá-las
-    window.carregarFaturamentoAnualVertical = carregarFaturamentoAnualVertical;
-    window.carregarFaturamentoDiarioNitido = carregarFaturamentoDiarioNitido;
+  // ------------------------------------------------------------------------
+  // KPIs + gráficos fixos (não dependem do filtro de período)
+  // ------------------------------------------------------------------------
+  async function loadDashboard() {
+    try {
+      var pend = await jget("/pedidos/pendentescountNow", []);
+      var conf = await jget("/pedidos/total/confirmadosNow", []);
+      var balcao = await jget("/pedidos/balcaoNow", []);
+      var entrega = await jget("/pedidos/entregaNow", []);
+      var venda = await jget("/pedidos/vendaNow", []);
+      var emfalta = await jget("/total/produto/emfalta", []);
+      var acabando = await jget("/total/produto/acabando", []);
 
-});
-
-    async function jget(path, fallback = null) {
-      try {
-        const r = await fetch(API(path), optAuth);
-        if (!r.ok) throw new Error(path + " => " + r.status);
-        return await r.json();
-      } catch (e) {
-        console.warn("Falha em", path, e.message);
-        return fallback;
-      }
-    }
-
-    function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
-
-    // Paleta consistente com Bootstrap
-    const COLORS = {
-      primary:  "#0d6efd",
-      purple:   "#6f42c1",
-      orange:   "#fd7e14",
-      green:    "#198754",
-      teal:     "#20c997",
-      yellow:   "#ffc107",
-      red:      "#dc3545",
-      gray600:  "#6c757d",
-      gray400:  "#adb5bd"
-    };
-    const PALETTE = [
-      COLORS.primary, COLORS.purple, COLORS.orange, COLORS.green, COLORS.red,
-      COLORS.teal, COLORS.yellow, "#0dcaf0", "#6610f2", "#198754"
-    ];
-
-    // Chart.js helpers com layout corrigido
-    function baseOptions(overrides={}) {
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 600, easing: "easeOutQuart" },
-        plugins: {
-          legend: { position: "bottom", labels: { usePointStyle: true, pointStyle: "circle" } },
-          tooltip: {
-            callbacks: {
-              label(ctx) {
-                const v = ctx.raw ?? 0;
-                return ` ${ctx.label}: ${v}`;
-              }
-            }
-          }
-        },
-        layout: { padding: { top: 8, right: 8, bottom: 8, left: 8 } },
-        ...overrides
-      };
-    }
-
-    function chartDoughnut(ctx, labels, data, colors) {
-      return new Chart(ctx, {
-        type: "doughnut",
-        data: {
-          labels,
-          datasets: [{
-            data,
-            backgroundColor: colors,
-            borderWidth: 0,
-            hoverOffset: 8
-          }]
-        },
-        options: baseOptions({ cutout: "58%" })
-      });
-    }
-
-    function chartBar(ctx, labels, data, colors) {
-      return new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{
-            data,
-            backgroundColor: colors,
-            borderRadius: 8,
-            borderWidth: 0
-          }]
-        },
-        options: baseOptions({
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true, grid: { color: "rgba(108,117,125,.15)" } },
-                    x: { grid: { display: false } } }
-        })
-      });
-    }
-
-    async function loadDashboard() {
-      // KPIs: pedidos
-      const pend = await jget("/pedidos/pendentescountNow", []);
-      const conf = await jget("/pedidos/total/confirmadosNow", []);
-      const balcao = await jget("/pedidos/balcaoNow", []);
-      const entrega = await jget("/pedidos/entregaNow", []);
-      const venda = await jget("/pedidos/vendaNow", []);
-      const emfalta = await jget("/total/produto/emfalta", []);
-      const acabando = await jget("/total/produto/acabando", []);
-
-      const pendentesCount = toNum(pend?.[0]?.count);
-      const confirmadosCount = toNum(conf?.[0]?.count);
-      const balcaoCount = toNum(balcao?.[0]?.count);
-      const entregaCount = toNum(entrega?.[0]?.count);
-      const vendaCount = toNum(venda?.[0]?.count);
-      const emfaltaCount = toNum(emfalta?.[0]?.count);
-      const acabandoCount = toNum(acabando?.[0]?.count);
+      var pendentesCount = toNum(pend && pend[0] && pend[0].count);
+      var confirmadosCount = toNum(conf && conf[0] && conf[0].count);
+      var balcaoCount = toNum(balcao && balcao[0] && balcao[0].count);
+      var entregaCount = toNum(entrega && entrega[0] && entrega[0].count);
+      var vendaCount = toNum(venda && venda[0] && venda[0].count);
+      var emfaltaCount = toNum(emfalta && emfalta[0] && emfalta[0].count);
+      var acabandoCount = toNum(acabando && acabando[0] && acabando[0].count);
 
       setText("kpiEmFalta", emfaltaCount);
       setText("kpiAcabando", acabandoCount);
-
       setText("kpiPendentes", pendentesCount);
       setText("kpiConfirmados", confirmadosCount);
 
-      // KPIs: clientes e vendedores
-      const clientes = await jget("/cli", { total: 0, data: [] });
-      const vendedores = await jget("/vendedor/listar", []);
-      setText("kpiClientes", toNum(clientes?.total ?? clientes?.length ?? 0));
-      setText("kpiVendedores", vendedores?.length ?? 0);
+      var clientes = await jget("/cli", { total: 0, data: [] });
+      var vendedores = await jget("/vendedor/listar", []);
+      setText("kpiClientes", toNum(clientes && (clientes.total ?? clientes.length)));
+      setText("kpiVendedores", vendedores ? vendedores.length : 0);
 
-      // KPIs secundários
-      const marcas = await jget("/marcas", []);
-      setText("kpiMarcas", marcas?.length ?? 0);
+      var marcas = await jget("/marcas", []);
+      setText("kpiMarcas", marcas ? marcas.length : 0);
 
-      // Estoque (listas)
-      const comEstoque = await jget("/proComEstoque", []);
-      const semEstoque = await jget("/proSemEstoque", []);
+      var comEstoque = await jget("/proComEstoque", []);
+      var semEstoque = await jget("/proSemEstoque", []);
 
-      // ===== Gráficos =====
-      // 1) Pedidos (doughnut p/ evitar "pizza esmagada" com valores desbalanceados)
-      chartDoughnut(
-        document.getElementById("chartPedidos"),
-        ["Pendentes", "Confirmados"],
-        [pendentesCount, confirmadosCount],
-        [COLORS.primary, COLORS.purple]
-      );
+      chartStates.chartPedidos = { labels: ["Pendentes", "Confirmados"], valores: [pendentesCount, confirmadosCount] };
+      chartRenderers.chartPedidos(chartStates.chartPedidos);
 
-      // 2) Canais
-      chartDoughnut(
-        document.getElementById("chartCanais"),
-        ["Balcão", "Entrega", "VENDA"],
-        [balcaoCount, entregaCount, vendaCount],
-        [COLORS.blue || COLORS.primary, COLORS.red, COLORS.orange]
-      );
+      chartStates.chartCanais = { labels: ["Balcão", "Entrega", "Venda"], valores: [balcaoCount, entregaCount, vendaCount] };
+      chartRenderers.chartCanais(chartStates.chartCanais);
 
-      // 3) Estoque (barras)
-      chartBar(
-        document.getElementById("chartEstoque"),
-        ["Com estoque", "Sem estoque"],
-        [comEstoque.length, semEstoque.length],
-        [COLORS.green, COLORS.gray400]
-      );
+      chartStates.chartEstoque = { labels: ["Com estoque", "Sem estoque"], valores: [(comEstoque || []).length, (semEstoque || []).length] };
+      chartRenderers.chartEstoque(chartStates.chartEstoque);
 
-      // 4) Top 5 Marcas com estoque
-      const porMarca = {};
-      (comEstoque || []).forEach((p) => {
-        const m = p.marcasdes || "—";
+      var porMarca = {};
+      (comEstoque || []).forEach(function (p) {
+        var m = p.marcasdes || "—";
         porMarca[m] = (porMarca[m] || 0) + 1;
       });
-      const top = Object.entries(porMarca).sort((a,b) => b[1]-a[1]).slice(0,5);
-      chartBar(
-        document.getElementById("chartTopMarcas"),
-        top.map(([k]) => k),
-        top.map(([,v]) => v),
-        top.map((_,i) => PALETTE[i % PALETTE.length])
-      );
-    }
-
-    document.addEventListener("DOMContentLoaded", loadDashboard);
-
-let chartTopProdutosMes;
-
-    async function carregarTopProdutosMes() {
-      const canvas = document.getElementById("chartTopProdutosMes");
-      const resumo = document.getElementById("resumoTopProdutosMes");
-      if (!canvas) return;
-
-      // 1) Buscar dados
-      const resp = await fetch(`${BASE_URL}/v2/top/produtos/mes${buildDashQS()}`, { credentials: "include" });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-
-      // 2) Normalizar -> ordenar por qtde desc -> pegar TOP 10
-      const rows = (data || [])
-        .map(r => ({
-          procod: r.procod,
-          produto: String(r.produto || "").trim(),
-          qtde: Number(r.qtde) || 0
-        }))
-        .sort((a, b) => b.qtde - a.qtde)
-        .slice(0, 10);
-
-      if (rows.length === 0) {
-        if (resumo) resumo.textContent = "Sem vendas no mês.";
-        return;
-      }
-
-      const labels = rows.map(r => r.produto.length > 45 ? r.produto.slice(0, 45) + "…" : r.produto);
-      const valores = rows.map(r => r.qtde);
-      const totalItens = valores.reduce((a, b) => a + b, 0);
-
-      // 3) (Re)criar gráfico HiDPI
-      if (chartTopProdutosMes) chartTopProdutosMes.destroy();
-      const ctx = prepareHiDPICanvas(canvas, 420);
-
-      // Paleta sólida alternada
-      const cores = valores.map((_, i) => i % 2 === 0 ? "#0d6efd" : "#198754"); // Azul + Verde
-      const coresBorder = valores.map((_, i) => i % 2 === 0 ? "#0b5ed7" : "#146c43");
-
-      chartTopProdutosMes = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{
-            label: "Qtd. vendida",
-            data: valores,
-            backgroundColor: cores,
-            borderColor: coresBorder,
-            borderWidth: 1,
-            borderRadius: 6,
-            borderSkipped: false
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              beginAtZero: true,
-              ticks: {
-                precision: 0, // evita casas decimais
-                stepSize: 1
-              },
-              title: { display: true, text: "Quantidade vendida" },
-              grid: { drawBorder: false }
-            },
-            y: {
-              grid: { display: false },
-              ticks: { autoSkip: false }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                title: (items) => rows[items[0].dataIndex].produto,
-                label: (ctx) => `Qtde: ${ctx.parsed.x}`
-              }
-            },
-            datalabels: {
-              anchor: "end",
-              align: "right",
-              formatter: v => v,
-              color: "#212529",
-              font: { weight: "bold", size: 11 }
-            }
-          },
-          animation: false,
-          categoryPercentage: 0.6,
-          barPercentage: 0.8
-        },
-        plugins: [ChartDataLabels] // precisa do plugin
+      var top = Object.entries(porMarca).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5);
+      chartStates.chartTopMarcas = { labels: top.map(function (x) { return x[0]; }), valores: top.map(function (x) { return x[1]; }) };
+      chartRenderers.chartTopMarcas(chartStates.chartTopMarcas);
+    } catch (e) {
+      console.error("Erro dashboard:", e);
+    } finally {
+      ["chartPedidos", "chartCanais", "chartEstoque", "chartTopMarcas"].forEach(function (id) {
+        setWrapperLoading(document.getElementById(id), false);
       });
-
-      if (resumo)
-        resumo.textContent = `Top ${rows.length} produtos — Total itens vendidos: ${totalItens}`;
     }
+  }
 
-
-    // init + resize
-    const initTopProdutosMes = () => carregarTopProdutosMes().catch(e => {
-      console.error("Erro Top Produtos Mês:", e);
-      const r = document.getElementById("resumoTopProdutosMes");
-      if (r) { r.textContent = "Erro ao carregar Top Produtos."; r.classList.add("text-danger"); }
+  // ------------------------------------------------------------------------
+  // Troca de tema: reaplica defaults e re-renderiza sem refetch
+  // ------------------------------------------------------------------------
+  function refreshChartsTheme() {
+    DashChart.applyDefaults();
+    Object.keys(chartStates).forEach(function (id) {
+      var render = chartRenderers[id];
+      if (render && chartStates[id]) render(chartStates[id]);
     });
+  }
+  window.addEventListener("ou:themechange", refreshChartsTheme);
 
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initTopProdutosMes);
-    else initTopProdutosMes();
-
-
-
-  let chartTopMarcasMes;
-
-    async function carregarTopMarcasMes() {
-      const canvas = document.getElementById("chartTopMarcasMes");
-      const resumo = document.getElementById("resumoTopMarcasMes");
-      if (!canvas) return;
-
-      // Fetch
-      const resp = await fetch(`${BASE_URL}/v2/top/marcas/mes${buildDashQS()}`, { credentials: "include" });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-
-      // Normaliza, ordena desc por valor (R$)
-      const rows = (data || [])
-        .map(r => ({
-          marca: String(r.marcasdes || "").trim(),
-          valor: parseFloat(String(r.valor || "0").replace(",", "."))
-        }))
-        .filter(r => r.valor > 0)
-        .sort((a, b) => b.valor - a.valor);
-
-      if (rows.length === 0) {
-        if (resumo) resumo.textContent = "Sem faturamento por marca no mês.";
-        return;
-      }
-
-      // Labels e valores
-      const labels = rows.map(r => r.marca.toUpperCase());
-      const valores = rows.map(r => r.valor);
-      const total = valores.reduce((a, b) => a + b, 0);
-
-      // Cores sólidas por marca (ajuste à vontade)
-      const corMarca = (m) => {
-        const x = m.toUpperCase();
-        if (x.includes("IPHONE") || x.includes("APPLE")) return "#0d6efd"; // azul
-        if (x.includes("SAMSUNG")) return "#198754"; // verde
-        if (x.includes("MOTOROLA")) return "#ff9800"; // laranja
-        if (x.includes("XIAOMI")) return "#e53935"; // vermelho
-        if (x.includes("REALME")) return "#6f42c1"; // roxo
-        if (x.includes("NOKIA")) return "#00acc1"; // ciano
-        if (x.includes("LG")) return "#d63384"; // magenta
-        return "#6c757d"; // fallback
-      };
-      const bg = labels.map(corMarca);
-      const border = labels.map(() => "#ffffff");
-
-      // (Re)cria HiDPI
-      if (chartTopMarcasMes) chartTopMarcasMes.destroy();
-      const ctx = prepareHiDPICanvas(canvas, 360);
-
-      chartTopMarcasMes = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{
-            label: "Venda (R$)",
-            data: valores,
-            backgroundColor: bg,
-            borderColor: border,
-            borderWidth: 1,
-            borderRadius: 6,
-            borderSkipped: false
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: "index", intersect: false },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { callback: v => brl(v) },
-              title: { display: true, text: "Venda (R$)" },
-              grid: { drawBorder: false }
-            },
-            x: {
-              grid: { display: false },
-              title: { display: true, text: "Marcas" }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => `${ctx.dataset.label}: ${brl(ctx.parsed.y)}`,
-                afterLabel: (ctx) => {
-                  const v = ctx.parsed.y || 0;
-                  const pct = total ? ((v / total) * 100) : 0;
-                  return `Participação: ${pct.toFixed(1)}%`;
-                }
-              }
-            }
-          },
-          categoryPercentage: 0.7,
-          barPercentage: 0.85
-        }
-      });
-
-      if (resumo) {
-        const top = rows[0];
-        const pctTop = total ? (top.valor / total * 100).toFixed(1) : "0.0";
-        resumo.textContent = `Total do mês: ${brl(total)} — Top: ${top.marca} (${brl(top.valor)} • ${pctTop}%)`;
-      }
+  // ------------------------------------------------------------------------
+  // Nome do usuário no hero
+  // ------------------------------------------------------------------------
+  async function initUserName() {
+    try {
+      var response = await fetch("/me/usuario", { method: "GET", credentials: "include" });
+      if (!response.ok) throw new Error("Falha ao obter usuário");
+      var data = await response.json();
+      var usuario = data.usunome || "Usuário";
+      var h1 = document.querySelector("h1.h4.mb-0");
+      if (h1) h1.textContent = "Bem-vindo, " + usuario;
+    } catch (err) {
+      console.error("Erro ao buscar nome do usuário:", err);
     }
+  }
 
-    // init + resize
-    const initTopMarcasMes = () => carregarTopMarcasMes().catch(e => {
-      console.error("Erro Top Marcas:", e);
-      const r = document.getElementById("resumoTopMarcasMes");
-      if (r) { r.textContent = "Erro ao carregar Top Marcas."; r.classList.add("text-danger"); }
-    });
+  // ------------------------------------------------------------------------
+  // Boot
+  // ------------------------------------------------------------------------
+  function boot() {
+    initFilter();
+    loadDashboard();
+    loadPeriodCharts();
+    initUserName();
+  }
 
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initTopMarcasMes);
-    else initTopMarcasMes();
-
-    //window.addEventListener("resize", throttleDash(initTopProdutosMes, 200));
-  
-
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();

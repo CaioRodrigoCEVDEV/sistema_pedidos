@@ -428,7 +428,8 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
         if (isSemEstoque) tr.style.background = "var(--bs-warning-bg-subtle)";
         tr.style.transition = "background .25s";
         tr.addEventListener("mouseenter", () => {
-          tr.style.background = "linear-gradient(90deg,#f8f9fa,#eef1f4)";
+          tr.style.background =
+            "linear-gradient(90deg,var(--ou-surface-2),var(--ou-surface-3))";
         });
         tr.addEventListener("mouseleave", () => {
           tr.style.background = isSemEstoque

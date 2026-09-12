@@ -56,9 +56,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 (function () {
-  const OWNER = 'CaioRodrigoCEVDEV';
-  const REPO = 'sistema_pedidos';
-
   // Sem cache de releases
   const FAV_KEY = 'gh_releases_favs_v2';
 
@@ -111,39 +108,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (cacheInfo) cacheInfo.innerText = 'agora';
   }
 
-  // --- FETCH sempre sem cache e compatível com o JSON real ---
+  // --- FETCH do JSON local gerado no deploy (`npm run releases:sync`) ---
+  // Não chama a API do GitHub em runtime: mais simples, sem token/rate-limit e
+  // imune a bloqueios de rede no navegador ou no servidor.
   async function fetchReleasesFromAPI() {
-    const url = '/api/releases?t=' + Date.now();
-    const res = await fetch(url, {
+    const res = await fetch('/releases.json?t=' + Date.now(), {
       method: 'GET',
       cache: 'no-store',
       credentials: 'same-origin',
-      headers: {
-        'Accept': 'application/json, text/plain, */*',
-        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-      },
+      headers: { 'Accept': 'application/json' },
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
-    // força o parse mesmo que o content-type esteja errado
-    const text = await res.text();
-    let payload;
-    try {
-      payload = JSON.parse(text);
-    } catch (e) {
-      console.error('[releases] JSON inválido recebido:', text.slice(0, 300));
-      throw new Error('Resposta da API não é JSON válido.');
-    }
-
-    const releases = Array.isArray(payload.releases)
-      ? payload.releases
-      : Array.isArray(payload.data)
-        ? payload.data
-        : Array.isArray(payload)
-          ? payload
-          : [];
+    const payload = await res.json();
+    const releases = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload.releases)
+        ? payload.releases
+        : [];
 
     if (!releases.length) throw new Error('Nenhuma release encontrada.');
 

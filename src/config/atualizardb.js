@@ -1274,6 +1274,132 @@ async function atualizarDB() {
     // FIM CORREÇÃO procorcorescod NULL
     // ==================================================================================================================================
 
+    // ==================================================================================================================================
+    // CLIENTES: VÍNCULO COM PEDIDOS, CONTA, MOVIMENTAÇÕES E COBRANÇAS
+    // Simplificação do cadastro: cidade/UF passa a ser opcional e o telefone
+    // é armazenado normalizado (somente dígitos) para uso no WhatsApp.
+    // ==================================================================================================================================
+
+    // Cidade/UF deixa de ser obrigatória no cadastro do cliente.
+    await pool.query(
+      `ALTER TABLE public.par ALTER COLUMN parmuncod DROP NOT NULL;`
+    );
+
+    // Normaliza telefone legado para somente dígitos (padrão novo).
+    await pool.query(`
+      UPDATE public.par
+      SET parfone = regexp_replace(parfone, '\\D', '', 'g')
+      WHERE parfone IS NOT NULL
+        AND parfone <> regexp_replace(parfone, '\\D', '', 'g');
+    `);
+
+    // Normaliza CEP legado para somente dígitos (padrão novo).
+    await pool.query(`
+      UPDATE public.par
+      SET parcep = regexp_replace(parcep, '\\D', '', 'g')
+      WHERE parcep IS NOT NULL
+        AND char_length(regexp_replace(parcep, '\\D', '', 'g')) = 8
+        AND parcep <> regexp_replace(parcep, '\\D', '', 'g');
+    `);
+
+    // Vínculo manual pedido -> cliente. Pedidos continuam podendo existir sem
+    // cliente; a associação é feita na tela de clientes.
+    await pool.query(
+      `ALTER TABLE public.pv ADD COLUMN IF NOT EXISTS pvparcod INT4 NULL;`
+    );
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints
+          WHERE constraint_name = 'pv_pvparcod_fkey'
+            AND table_name = 'pv'
+        ) THEN
+          ALTER TABLE public.pv
+            ADD CONSTRAINT pv_pvparcod_fkey
+            FOREIGN KEY (pvparcod) REFERENCES public.par(parcod)
+            ON DELETE SET NULL;
+        END IF;
+      END$$;
+    `);
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_pv_parcod ON public.pv (pvparcod);`
+    );
+
+    // Conta corrente do cliente: saldo mantido em sincronia com o histórico de
+    // movimentações (nunca sobrescrito isoladamente).
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.cli_conta (
+        cliparcod  INT PRIMARY KEY REFERENCES public.cli(cliparcod) ON DELETE CASCADE,
+        contasaldo NUMERIC(14,2) NOT NULL DEFAULT 0,
+        contadtua  TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+
+      INSERT INTO public.cli_conta (cliparcod, contasaldo)
+      SELECT cliparcod, 0 FROM public.cli
+      ON CONFLICT (cliparcod) DO NOTHING;
+    `);
+
+    // Histórico de movimentações (ledger) — rastreabilidade do saldo.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.cli_mov (
+        movcod    BIGSERIAL PRIMARY KEY,
+        movparcod INT NOT NULL REFERENCES public.par(parcod) ON DELETE RESTRICT,
+        movtipo   VARCHAR(20) NOT NULL,
+        movvalor  NUMERIC(14,2) NOT NULL,
+        movsaldo  NUMERIC(14,2) NOT NULL,
+        movdesc   VARCHAR(254) NULL,
+        movref    VARCHAR(60) NULL,
+        movusucod INT NULL,
+        movdtcad  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        CONSTRAINT ck_cli_mov_tipo CHECK (
+          movtipo IN ('CREDITO','DEBITO','PAGAMENTO','ESTORNO','AJUSTE','COBRANCA')
+        )
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_cli_mov_parcod
+        ON public.cli_mov (movparcod, movdtcad DESC);
+    `);
+
+    // Cobranças vinculadas (opcionalmente) a um pedido, com baixa/pagamento.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.cli_cobranca (
+        cobcod    BIGSERIAL PRIMARY KEY,
+        cobparcod INT NOT NULL REFERENCES public.par(parcod) ON DELETE RESTRICT,
+        cobpvcod  INT NULL REFERENCES public.pv(pvcod) ON DELETE SET NULL,
+        cobvalor  NUMERIC(14,2) NOT NULL,
+        cobvenc   DATE NULL,
+        cobsta    CHAR(1) NOT NULL DEFAULT 'A',
+        cobobs    VARCHAR(254) NULL,
+        cobdtcad  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        cobdtpg   TIMESTAMPTZ NULL,
+        cobusucod INT NULL,
+        CONSTRAINT ck_cli_cobranca_sta CHECK (cobsta IN ('A','P','C'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_cli_cobranca_parcod
+        ON public.cli_cobranca (cobparcod, cobsta);
+      CREATE INDEX IF NOT EXISTS idx_cli_cobranca_pvcod
+        ON public.cli_cobranca (cobpvcod);
+    `);
+
+    // Reconcilia o saldo da conta com o extrato de crédito, ignorando os
+    // lançamentos gerados por cobranças (ref "COB:*"). Isso corrige dados
+    // antigos em que a cobrança compensava o crédito automaticamente.
+    await pool.query(`
+      UPDATE public.cli_conta c
+      SET contasaldo = COALESCE((
+        SELECT SUM(m.movvalor)
+        FROM public.cli_mov m
+        WHERE m.movparcod = c.cliparcod
+          AND COALESCE(m.movref, '') NOT LIKE 'COB:%'
+      ), 0);
+    `);
+
+    // ==================================================================================================================================
+    // FIM CLIENTES: CONTA, MOVIMENTAÇÕES E COBRANÇAS
+    // ==================================================================================================================================
+
     await pool.query("COMMIT");
     console.log("✅ atualizardb: tabelas e registros padrão garantidos.");
   } catch (err) {

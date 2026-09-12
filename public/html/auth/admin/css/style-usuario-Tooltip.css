@@ -8,7 +8,7 @@
 /* Ícone de interrogação */
 .info-icon {
   margin-left: 6px;
-  color: #6c757d;
+  color: var(--ou-text-muted);
   cursor: pointer;
   transition: color 0.2s ease;
   user-select: none;
@@ -32,7 +32,7 @@
   width: max-content;
   max-width: 320px;
   background-color: rgba(0,0,0,.88);
-  color: #fff;
+  color: var(--ou-surface);
   font-size: 12px;
   line-height: 1.4;
   padding: 6px 8px;
