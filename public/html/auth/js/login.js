@@ -98,7 +98,7 @@ document.getElementById("formLogin").addEventListener("submit", async (e) => {
         localStorage.removeItem("savedEmail");
         localStorage.removeItem("savedPassword");
       }
-      window.location.href = `${BASE_URL}/pedidos`;
+      window.location.href = `${BASE_URL}${data.redirect || "/pedidos"}`;
     } else {
       if (response.status === 403) {
         alertPersonalizado(
