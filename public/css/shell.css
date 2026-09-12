@@ -263,7 +263,9 @@ body.ou-has-shell #header-admin.ou-topbar {
   gap: 0.75rem;
   height: var(--ou-shell-topbar-h);
   padding: 0.25rem 0.5rem;
-  background: var(--ou-bg);
+  background: transparent;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 @media (min-width: 992px) {
