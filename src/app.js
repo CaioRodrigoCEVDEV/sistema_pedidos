@@ -128,6 +128,9 @@ app.use(munRoute);
 const partGroupRoutes = require("./routes/partGroupRoutes");
 app.use(partGroupRoutes);
 
+const releaseRoutes = require("./routes/releaseRoutes");
+app.use(releaseRoutes);
+
 app.get("/me/usuario", autenticarToken, (req, res) => {
   // o middleware colocou o payload em req.token
   return res.json({ usunome: req.token.usunome });
@@ -591,14 +594,9 @@ app.post(
   }
 );
 
-// Releases são servidas de public/releases.json, gerado no deploy por
-// `npm run releases:sync`. Assim o dashboard não depende da API do GitHub em
-// runtime (sem rate-limit, sem token e sem rede do servidor no acesso do user).
-// Mantido apenas como alias para clientes antigos que ainda usam /api/releases.
-app.get("/api/releases", (req, res) => {
-  res.set("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "../public/releases.json"));
-});
+// Releases são servidas pela rota /api/releases (src/routes/releaseRoutes.js),
+// que lê exclusivamente a tabela system_releases no PostgreSQL. A API do GitHub
+// é usada apenas no script de sincronização `npm run releases:sync`.
 
 // Inicia o servidor
 (async () => {

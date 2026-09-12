@@ -1,5 +1,6 @@
 const pool = require("./db");
 const TELAS = require("./telas");
+const { ensureReleasesSchema } = require("./releasesSchema");
 
 async function atualizarDB() {
   const LOCK_KEY = 20250911;
@@ -247,6 +248,19 @@ async function atualizarDB() {
     await pool.query(`
       ALTER TABLE public.part_groups ADD COLUMN IF NOT EXISTS qtde_ideal INTEGER NULL;
     `);
+
+    // ==================================================================================================================================
+    // RELEASES DO SISTEMA
+    // Histórico de atualizações persistido no PostgreSQL. O modal "Ver
+    // atualizações" lê apenas o banco; a API do GitHub só é usada pelo script
+    // de sincronização (scripts/sync-releases.js / npm run releases:sync).
+    // ==================================================================================================================================
+
+    await ensureReleasesSchema(pool);
+
+    // ==================================================================================================================================
+    // FIM RELEASES DO SISTEMA
+    // ==================================================================================================================================
 
     // ==================================================================================================================================
     // FIM GRUPOS DE COMPATIBILIDADE

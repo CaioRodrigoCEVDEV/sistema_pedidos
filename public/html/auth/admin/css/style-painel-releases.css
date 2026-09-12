@@ -84,3 +84,108 @@
 #releasesModal .modal-body { max-height: 70vh; overflow-y: auto; }
 #releasesList { display: block; min-height: 300px; max-height: 65vh; overflow-y: auto; }
 
+    /* ============================================================
+       Atualizações — release mais recente em destaque + histórico
+       ============================================================ */
+
+    /* Feedback (carregando / erro) */
+    .release-feedback {
+      text-align: center;
+      color: var(--muted);
+      padding: 2rem 1rem;
+    }
+    .release-feedback--error {
+      color: var(--ou-danger, #dc2626);
+    }
+
+    /* Release mais recente em destaque */
+    .release-card--latest {
+      flex-direction: column;
+      gap: .6rem;
+      border: 1px solid rgba(13,110,253,0.18);
+      box-shadow: 0 12px 30px rgba(30,40,60,0.10);
+    }
+    .release-latest__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+    .release-date {
+      font-size: .85rem;
+      color: var(--muted);
+    }
+    .release-title-text {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--ou-text);
+    }
+
+    /* Conteúdo (Markdown renderizado de forma segura) */
+    .release-md {
+      color: var(--ou-text);
+      font-size: .95rem;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+    .release-md__p { margin: 0 0 .6rem; white-space: pre-wrap; }
+    .release-md__p:last-child { margin-bottom: 0; }
+    .release-md__heading { margin: 1rem 0 .5rem; font-weight: 600; font-size: 1rem; }
+    .release-md__list { margin: 0 0 .75rem; padding-left: 1.2rem; }
+    .release-md__list li { margin-bottom: .2rem; }
+    .release-md__empty { margin: 0; color: var(--muted); font-style: italic; }
+
+    /* Histórico de versões */
+    .release-history__title {
+      margin: 1.5rem 0 .75rem;
+      font-weight: 600;
+      color: var(--ou-text);
+    }
+    .release-history .accordion-item {
+      background: var(--ou-surface);
+      border: 1px solid var(--ou-border, #e2e8f0);
+      border-radius: var(--radius);
+      margin-bottom: .5rem;
+      overflow: hidden;
+    }
+    .release-history .accordion-button {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      font-size: .92rem;
+      color: var(--ou-text);
+      background: transparent;
+      box-shadow: none;
+    }
+    .release-history .accordion-button:not(.collapsed) {
+      background: var(--ou-surface-2);
+      color: var(--ou-text);
+    }
+    .release-history .accordion-button:focus {
+      box-shadow: 0 0 0 0.15rem rgba(13,110,253,0.15);
+    }
+    .release-history .accordion-body { padding: 1rem 1.1rem; }
+    .release-history__version { font-weight: 600; color: var(--accent); white-space: nowrap; }
+    .release-history__name {
+      flex: 1;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .release-history__date { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+
+    @media (max-width: 720px) {
+      .release-card--latest { padding: .9rem; }
+      .release-latest__header { align-items: flex-start; }
+      .release-history .accordion-button {
+        flex-wrap: wrap;
+        gap: .15rem .5rem;
+        padding: .75rem .85rem;
+      }
+      .release-history__name { flex-basis: 100%; white-space: normal; order: 3; }
+      .release-history__date { margin-left: auto; }
+    }
+

@@ -56,250 +56,313 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 (function () {
-  // Sem cache de releases
-  const FAV_KEY = 'gh_releases_favs_v2';
-
   const openBtn = document.getElementById('openReleasesBtn');
   const releasesModalEl = document.getElementById('releasesModal');
   const releasesModal = releasesModalEl ? new bootstrap.Modal(releasesModalEl) : null;
   const listEl = document.getElementById('releasesList');
   const msgEl = document.getElementById('releasesMsg');
-  const filterInput = document.getElementById('filterInput');
-  const sortSelect = document.getElementById('sortSelect');
-  const cacheInfo = document.getElementById('cacheInfo'); // mostra "agora"
-  const refreshBtn = document.getElementById('refreshBtn');
-
-  let releasesData = [];
 
   if (!listEl || !msgEl) {
     console.warn('Releases: elementos essenciais não encontrados, abortando inicialização.');
     return;
   }
 
+  // Cache em memória apenas durante a sessão da página. O botão sempre
+  // reaproveita o que já foi carregado do banco.
+  let loaded = false;
+
   if (openBtn) {
     openBtn.addEventListener('click', () => {
       if (releasesModal) releasesModal.show();
-      setTimeout(() => filterInput && filterInput.focus(), 300);
-      loadAndRender(); // sempre bate na API
+      if (!loaded) loadAndRender();
     });
   }
 
-  if (filterInput) filterInput.addEventListener('input', renderFromMemory);
-  if (sortSelect) sortSelect.addEventListener('change', renderFromMemory);
-  if (refreshBtn) refreshBtn.addEventListener('click', () => loadAndRender(true));
-
-  function getFavs() {
-    try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch { return []; }
-  }
-  function setFavs(favs) { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); }
-
-  function toggleFav(id, release) {
-    const favs = getFavs();
-    const exists = favs.find(f => f.id === id);
-    if (exists) setFavs(favs.filter(f => f.id !== id));
-    else {
-      favs.push({ id, tag_name: release.tag_name, name: release.name, ts: Date.now() });
-      setFavs(favs);
-    }
-    renderFromMemory();
-  }
-
-  function updateInfoNow() {
-    if (cacheInfo) cacheInfo.innerText = 'agora';
-  }
-
-  // --- FETCH do JSON local gerado no deploy (`npm run releases:sync`) ---
-  // Não chama a API do GitHub em runtime: mais simples, sem token/rate-limit e
-  // imune a bloqueios de rede no navegador ou no servidor.
-  async function fetchReleasesFromAPI() {
-    const res = await fetch('/releases.json?t=' + Date.now(), {
+  // --- FETCH: exclusivamente a API do sistema, que lê o PostgreSQL ---
+  async function fetchReleases() {
+    const res = await fetch('/api/releases', {
       method: 'GET',
       cache: 'no-store',
       credentials: 'same-origin',
       headers: { 'Accept': 'application/json' },
     });
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const payload = await res.json();
-    const releases = Array.isArray(payload)
-      ? payload
-      : Array.isArray(payload.releases)
-        ? payload.releases
-        : [];
-
-    if (!releases.length) throw new Error('Nenhuma release encontrada.');
-
-    return releases;
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   }
 
-
-  // --- carrega e renderiza sempre direto da API ---
   async function loadAndRender() {
-    msgEl.innerText = 'Carregando...';
-    listEl.innerHTML = '';
+    listEl.replaceChildren();
+    setMessage('Carregando atualizações...');
 
     try {
-      const data = await fetchReleasesFromAPI();
-      // Mostrar apenas a última release (assumindo que a API retorna em ordem decrescente)
-      const latestReleases = data.slice(0, 1);
-      releasesData = latestReleases.map(r => ({
-        id: r.id ?? 0,
-        tag_name: r.tag_name || '',
-        name: r.name || '',
-        body: r.body || '',
-        published_at: r.published_at || '',
-      }));
-
-      updateInfoNow();
-      renderList(releasesData);
-      msgEl.innerText = '';
+      const releases = await fetchReleases();
+      loaded = true;
+      render(releases);
     } catch (err) {
       console.error('[releases] erro ao carregar releases', err);
-      msgEl.innerHTML = `<div class="text-danger small">Erro: ${escapeHtml(err.message)}</div>`;
-      listEl.innerHTML = `<div class="empty-state">
-        <i class="bi bi-exclamation-circle" style="font-size:28px"></i>
-        <div class="mt-2">Não foi possível carregar releases.</div>
-      </div>`;
+      renderError();
     }
   }
 
-  function renderFromMemory() {
-    if (!Array.isArray(releasesData)) return;
-    renderList(releasesData);
+  function setMessage(text) {
+    msgEl.replaceChildren();
+    const div = document.createElement('div');
+    div.className = 'release-feedback';
+    div.textContent = text;
+    msgEl.appendChild(div);
   }
 
-  // ---------- Renderer DOM-safe (sem innerHTML para conteúdo de API) ----------
-  function renderList(releases) {
-    updateInfoNow();
+  function renderError() {
+    listEl.replaceChildren();
+    msgEl.replaceChildren();
 
-    if (!Array.isArray(releases) || releases.length === 0) {
-      listEl.replaceChildren();
-      const empty = document.createElement('div');
-      empty.className = 'empty-state';
-      empty.textContent = 'Nenhuma release encontrada.';
-      listEl.appendChild(empty);
+    const wrap = document.createElement('div');
+    wrap.className = 'release-feedback release-feedback--error';
+
+    const title = document.createElement('p');
+    title.className = 'mb-2';
+    title.textContent = 'Não foi possível carregar as atualizações.';
+
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'btn btn-sm btn-outline-primary';
+    retry.textContent = 'Tentar novamente';
+    retry.addEventListener('click', () => loadAndRender());
+
+    wrap.append(title, retry);
+    msgEl.appendChild(wrap);
+  }
+
+  function render(releases) {
+    listEl.replaceChildren();
+    msgEl.replaceChildren();
+
+    if (!releases.length) {
+      listEl.appendChild(renderEmpty());
       return;
     }
 
-    const q = (filterInput && filterInput.value) ? filterInput.value.trim().toLowerCase() : '';
-    let list = releases.filter(r => {
-      if (!q) return true;
-      return ((r.name || '') + ' ' + (r.tag_name || '') + ' ' + (r.body || '')).toLowerCase().includes(q);
-    });
+    // A ordenação vem do backend (mais recente primeiro). O primeiro item é,
+    // por definição, a release mais recente — nada fica hardcoded no frontend.
+    const [latest, ...history] = releases;
+    listEl.appendChild(renderLatest(latest));
 
-    if (sortSelect && sortSelect.value === 'date_asc') {
-      list.sort((a, b) => new Date(a.published_at) - new Date(b.published_at));
-    } else {
-      list.sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+    if (history.length) {
+      const heading = document.createElement('h6');
+      heading.className = 'release-history__title';
+      heading.textContent = 'Histórico de versões';
+      listEl.appendChild(heading);
+      listEl.appendChild(renderHistory(history));
+    }
+  }
+
+  function renderEmpty() {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+
+    const icon = document.createElement('i');
+    icon.className = 'bi bi-inboxes';
+    icon.setAttribute('aria-hidden', 'true');
+
+    const text = document.createElement('p');
+    text.className = 'mt-2 mb-0';
+    text.textContent = 'Nenhuma atualização cadastrada ainda.';
+
+    empty.append(icon, text);
+    return empty;
+  }
+
+  function renderLatest(release) {
+    const card = document.createElement('article');
+    card.className = 'release-card release-card--latest';
+
+    const header = document.createElement('div');
+    header.className = 'release-latest__header';
+
+    const badge = document.createElement('span');
+    badge.className = 'version-badge';
+    badge.textContent = release.version || release.tag_name || 'Versão';
+
+    const date = document.createElement('span');
+    date.className = 'release-date';
+    date.textContent = formatDate(release.published_at);
+
+    header.append(badge, date);
+
+    const titleText = release.name || release.tag_name || '';
+    if (titleText) {
+      const title = document.createElement('h5');
+      title.className = 'release-title-text';
+      title.textContent = titleText;
+      card.appendChild(title);
     }
 
-    const favs = getFavs();
-    listEl.replaceChildren();
+    const body = document.createElement('div');
+    body.className = 'release-md';
+    renderMarkdown(body, release.body);
 
-    for (const r of list) {
-      const isFav = !!favs.find(f => f.id === r.id);
-      const publishedStr = r.published_at ? new Date(r.published_at).toLocaleString() : '—';
-      const fullBody = r.body || '';
-      const isLong = fullBody.length > 420;
-      const shortBody = isLong ? fullBody.slice(0, 420) : fullBody;
+    card.append(header, body);
+    return card;
+  }
 
-      const card = document.createElement('div');
-      card.className = 'release-card';
+  function renderHistory(items) {
+    const accordion = document.createElement('div');
+    accordion.className = 'accordion release-history';
+    accordion.id = 'releasesHistoryAccordion';
 
-      const meta = document.createElement('div');
-      // meta.className = 'release-meta';
+    items.forEach((release, index) => {
+      const targetId = 'release-history-' + (release.id || index);
 
-      // const ver = document.createElement('div');
-      // ver.className = 'version-badge';
-      // ver.textContent = r.tag_name || r.name || '';
-      // meta.appendChild(ver);
+      const item = document.createElement('div');
+      item.className = 'accordion-item release-history__item';
 
-      // const dsmall = document.createElement('div');
-      // dsmall.className = 'date-small';
-      // dsmall.textContent = new Date(r.published_at || Date.now()).toLocaleDateString();
-      // meta.appendChild(dsmall);
+      const header = document.createElement('h2');
+      header.className = 'accordion-header';
 
-      const authorWrap = document.createElement('div');
-      authorWrap.className = 'mt-2';
-      const avatar = document.createElement('div');
-      avatar.className = 'author-avatar';
-      avatar.textContent = 'O';
-      // const brand = document.createElement('div');
-      // brand.className = 'small text-muted mt-1';
-      // brand.textContent = 'OrderUp';
-      // authorWrap.append(avatar, brand);
-      meta.appendChild(authorWrap);
+      const toggle = document.createElement('button');
+      toggle.className = 'accordion-button collapsed release-history__toggle';
+      toggle.type = 'button';
+      toggle.setAttribute('data-bs-toggle', 'collapse');
+      toggle.setAttribute('data-bs-target', '#' + targetId);
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-controls', targetId);
+
+      const version = document.createElement('span');
+      version.className = 'release-history__version';
+      version.textContent = release.version || release.tag_name || '';
+
+      const name = document.createElement('span');
+      name.className = 'release-history__name';
+      const displayName = release.name || '';
+      const displayVersion = release.version || release.tag_name || '';
+      name.textContent = displayName && displayName !== displayVersion ? displayName : '';
+
+      const date = document.createElement('span');
+      date.className = 'release-history__date';
+      date.textContent = formatDate(release.published_at);
+
+      toggle.append(version, name, date);
+      header.appendChild(toggle);
+
+      const collapse = document.createElement('div');
+      collapse.id = targetId;
+      collapse.className = 'accordion-collapse collapse';
+      collapse.setAttribute('data-bs-parent', '#releasesHistoryAccordion');
 
       const body = document.createElement('div');
-      body.className = 'release-body';
+      body.className = 'accordion-body release-md';
+      renderMarkdown(body, release.body);
+      collapse.appendChild(body);
 
-      const titleWrap = document.createElement('div');
-      titleWrap.className = 'release-title';
-      const titleInner = document.createElement('div');
-      const h5 = document.createElement('h5');
-      h5.textContent = r.name || '';
-      const sub = document.createElement('div');
-      sub.className = 'release-sub';
-      sub.appendChild(document.createTextNode((r.tag_name || '') + ' • '));
-      const span = document.createElement('span');
-      span.className = 'text-muted';
-      span.textContent = publishedStr;
-      sub.appendChild(span);
-      titleInner.append(h5, sub);
-      titleWrap.appendChild(titleInner);
+      item.append(header, collapse);
+      accordion.appendChild(item);
+    });
 
-      const desc = document.createElement('div');
-      desc.className = 'release-desc';
-      desc.dataset.id = String(r.id || '');
-      insertMultiline(desc, shortBody);
+    return accordion;
+  }
 
-      const footer = document.createElement('div');
-      footer.className = 'd-flex justify-content-between align-items-center mt-2';
-      const left = document.createElement('div');
+  function formatDate(value) {
+    if (!value) return 'Data não informada';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Data não informada';
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
 
-      if (isLong) {
-        const a = document.createElement('a');
-        a.href = '#';
-        a.className = 'readmore small';
-        a.dataset.id = String(r.id || '');
-        a.textContent = 'Ver mais';
-        a.addEventListener('click', ev => {
-          ev.preventDefault();
-          const expanded = desc.classList.toggle('expanded');
-          a.textContent = expanded ? 'Ver menos' : 'Ver mais';
-          desc.replaceChildren();
-          if (expanded) {
-            insertMultiline(desc, fullBody || '(sem descrição)');
-          } else {
-            insertMultiline(desc, shortBody);
-            if (fullBody.length > 420) desc.appendChild(document.createTextNode('…'));
-          }
-        });
-        left.appendChild(a);
+  // ---------- Renderer DOM-safe ----------
+  // Nenhum innerHTML é usado com conteúdo externo. Tudo é criado com
+  // createElement/textContent, então HTML/scripts vindos do body da release
+  // são exibidos como texto (sem risco de XSS).
+  function renderMarkdown(container, text) {
+    container.replaceChildren();
+
+    const normalized = String(text == null ? '' : text)
+      .replaceAll('\\r\\n', '\n')
+      .replaceAll('\\n', '\n')
+      .replaceAll('\\r', '\n');
+
+    if (!normalized.trim()) {
+      const empty = document.createElement('p');
+      empty.className = 'release-md__empty';
+      empty.textContent = 'Esta versão não possui descrição.';
+      container.appendChild(empty);
+      return;
+    }
+
+    const lines = normalized.split('\n');
+    let listEl = null;
+
+    const flushList = () => {
+      if (listEl) {
+        container.appendChild(listEl);
+        listEl = null;
+      }
+    };
+
+    for (const rawLine of lines) {
+      const line = rawLine.replace(/\s+$/, '');
+
+      if (!line.trim()) {
+        flushList();
+        continue;
       }
 
-      footer.appendChild(left);
-      body.append(titleWrap, desc, footer);
-      card.append(meta, body);
-      listEl.appendChild(card);
+      const heading = line.match(/^(#{1,6})\s+(.*)$/);
+      if (heading) {
+        flushList();
+        const level = Math.min(6, heading[1].length + 2);
+        const el = document.createElement('h' + level);
+        el.className = 'release-md__heading';
+        appendInline(el, heading[2]);
+        container.appendChild(el);
+        continue;
+      }
+
+      const bullet = line.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)$/);
+      if (bullet) {
+        if (!listEl) {
+          listEl = document.createElement('ul');
+          listEl.className = 'release-md__list';
+        }
+        const li = document.createElement('li');
+        appendInline(li, bullet[1]);
+        listEl.appendChild(li);
+        continue;
+      }
+
+      flushList();
+      const paragraph = document.createElement('p');
+      paragraph.className = 'release-md__p';
+      appendInline(paragraph, line);
+      container.appendChild(paragraph);
     }
 
-    function insertMultiline(container, text) {
-      const lines = String(text || '').replaceAll('\\n', '\n').split(/\r?\n/);
-      lines.forEach((ln, i) => {
-        container.appendChild(document.createTextNode(ln));
-        if (i < lines.length - 1) container.appendChild(document.createElement('br'));
-      });
+    flushList();
+  }
+
+  function appendInline(el, text) {
+    const parts = String(text).split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+
+    for (const part of parts) {
+      if (!part) continue;
+
+      if (/^\*\*[^*]+\*\*$/.test(part)) {
+        const strong = document.createElement('strong');
+        strong.textContent = part.slice(2, -2);
+        el.appendChild(strong);
+      } else if (/^`[^`]+`$/.test(part)) {
+        const code = document.createElement('code');
+        code.textContent = part.slice(1, -1);
+        el.appendChild(code);
+      } else {
+        el.appendChild(document.createTextNode(part));
+      }
     }
   }
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
-  }
-
-  updateInfoNow();
 })();

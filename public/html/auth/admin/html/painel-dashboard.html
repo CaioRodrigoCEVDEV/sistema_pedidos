@@ -3,18 +3,18 @@
 
 <head>
 <meta charset=" TF-8" />
-  <script src="/js/theme-manager.js?v=2026.09.12.135306"></script>
+  <script src="/js/theme-manager.js?v=2026.09.12.140506"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Painel de Gestão — Dashboard</title>
   <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
   <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png" />
 
   <!-- CSS do projeto (mesmos do painel) -->
-  <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.12.135306" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-painel.css?v=2026.09.12.135306" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-painel-releases.css?v=2026.09.12.135306" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.12.135306" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style.css?v=2026.09.12.135306" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.12.140506" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-painel.css?v=2026.09.12.140506" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-painel-releases.css?v=2026.09.12.140506" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.12.140506" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style.css?v=2026.09.12.140506" />
 
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -22,13 +22,13 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
     integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-painel-dashboard.css?v=2026.09.12.135306" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-painel-dashboard.css?v=2026.09.12.140506" />
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <link rel="stylesheet" href="/css/theme.css?v=2026.09.12.135306" />
-  <link rel="stylesheet" href="/css/shell.css?v=2026.09.12.135306" />
-  <link rel="stylesheet" href="/css/ui.css?v=2026.09.12.135306" />
+  <link rel="stylesheet" href="/css/theme.css?v=2026.09.12.140506" />
+  <link rel="stylesheet" href="/css/shell.css?v=2026.09.12.140506" />
+  <link rel="stylesheet" href="/css/ui.css?v=2026.09.12.140506" />
 </head>
 
 <body class="bg-light">
@@ -49,9 +49,8 @@
           </div>
           <hr>
           <p class="d-flex justify-content-between align-items-center mt-2">
-            <button id="openReleasesBtn" type="button" class="btn btn-success"> <i class="bi bi-github">
-              </i>Ver atualizações
-              </i></button>
+            <button id="openReleasesBtn" type="button" class="btn btn-success"> <i class="bi bi-megaphone">
+              </i>Ver atualizações</button>
             <button type="button" class="btn btn-secondary" data-bs-dismiss="alert" id="releaseIDClose">Fechar</button>
           </p>
         </div><br id="br" style="display: none;">
@@ -59,37 +58,21 @@
 
       <!-- Modal -->
       <div class="modal fade" id="releasesModal" tabindex="-1" aria-labelledby="releasesModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
           <div class="modal-content">
             <div class="modal-header">
               <div>
-                <h5 class="modal-title" id="releasesModalLabel"> 🚀 Atualização — OrderUp</h5>
-                <p class="text-muted small">Confira as novidades e melhorias da última atualização</p>
+                <h5 class="modal-title" id="releasesModalLabel">🚀 Atualizações — OrderUp</h5>
+                <p class="text-muted small mb-0">Confira as novidades e melhorias das versões mais recentes</p>
               </div>
-
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
 
             <div class="modal-body">
-              <!-- header controls -->
-              <div class="releases-header mb-3">
-                <input id="filterInput" class="form-control" placeholder="Pesquisar por título ou descrição..."
-                  style="display: none;" />
-                <select id="sortSelect" class="form-select" style="max-width:180px; display: none;">
-                  <option value="date_desc" selected>Mais recentes</option>
-                  <option value="date_asc">Mais antigas</option>
-                </select>
-
-                <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
-                  <small class="text-muted d-none">Cache: <span id="cacheInfo">--</span></small>
-                  <input id="ghToken" type="password" class="form-control" placeholder="Token (opcional)"
-                    style="width:220px; display: none;" />
-                </div>
-              </div>
-
-              <!-- list -->
+              <!-- lista de releases (mais recente em destaque + histórico) -->
               <div id="releasesList"></div>
 
-              <!-- empty / message -->
+              <!-- estado vazio / carregando / erro -->
               <div id="releasesMsg" class="py-3"></div>
             </div>
 
@@ -417,14 +400,14 @@
   </div>
 
   <!-- Seus scripts comuns -->
-  <script src="/config.js?v=2026.09.12.135306"></script>
-  <script src="../js/nomeEmpresa.js?v=2026.09.12.135306"></script>
+  <script src="/config.js?v=2026.09.12.140506"></script>
+  <script src="../js/nomeEmpresa.js?v=2026.09.12.140506"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
     crossorigin="anonymous"></script>
-  <script src="html/auth/js/componentes.js?v=2026.09.12.135306"></script>
-  <script src="html/auth/js/painel-dashboard.js?v=2026.09.12.135306"></script>
-  <script src="html/auth/js/painel-releases.js?v=2026.09.12.135306"></script>
+  <script src="html/auth/js/componentes.js?v=2026.09.12.140506"></script>
+  <script src="html/auth/js/painel-dashboard.js?v=2026.09.12.140506"></script>
+  <script src="html/auth/js/painel-releases.js?v=2026.09.12.140506"></script>
 
 </body>
 
