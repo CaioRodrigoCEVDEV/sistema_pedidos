@@ -12,6 +12,6 @@ document
       },
     }).finally(() => {
       // Redireciona após logout
-      window.location.href = "/index";
+      window.location.href = "/login";
     });
   });
