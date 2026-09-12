@@ -13,6 +13,34 @@ function getClientIp(req) {
     return req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
 }
 
+// Define a rota inicial após o login. A tela de Pedidos é o destino padrão,
+// mas só é usada quando o usuário realmente pode acessá-la (módulo da empresa
+// ativo e tela liberada). Caso contrário, envia para o perfil, que é acessível
+// a qualquer usuário autenticado.
+async function resolverRotaInicial(usuario, empresa) {
+    if (!empresa || empresa.empusapv !== 'S') {
+        return '/perfil';
+    }
+
+    if (usuario.usuadm === 'S') {
+        return '/pedidos';
+    }
+
+    const permitido = await pool.query(
+        `SELECT 1
+           FROM usu_telas ut
+           JOIN telas t ON t.telacod = ut.usutelatelacod
+          WHERE ut.usutelausucod = $1
+            AND t.telachave = 'pedidos'
+            AND ut.usutelapermitido = 'S'
+            AND t.telaativa = 'S'
+          LIMIT 1`,
+        [usuario.usucod]
+    );
+
+    return permitido.rowCount > 0 ? '/pedidos' : '/perfil';
+}
+
 exports.validarLogin = async (req, res) => {
     const { usucod,usunome,usuemail, ususenha } = req.body;
 
@@ -60,6 +88,8 @@ exports.validarLogin = async (req, res) => {
 
         resetLoginAttempts(chaveTentativas);
 
+        const redirect = await resolverRotaInicial(usuario, empresa);
+
         const token = jwt.sign({ 
             usuemail: usuario.usuemail,
             usucod:   usuario.usucod,
@@ -76,7 +106,7 @@ exports.validarLogin = async (req, res) => {
             sameSite: 'Strict',
         });
 
-        res.status(200).json({ mensagem: 'Login bem-sucedido',token, usunome: usuario.usunome, usuemail: usuario.usuemail, usuadm: usuario.usuadm, ususta: usuario.ususta, usuest: usuario.usuest, usupv: usuario.usupv, empusapv: empresa.empusapv, empusaest: empresa.empusaest  });
+        res.status(200).json({ mensagem: 'Login bem-sucedido',token, redirect, usunome: usuario.usunome, usuemail: usuario.usuemail, usuadm: usuario.usuadm, ususta: usuario.ususta, usuest: usuario.usuest, usupv: usuario.usupv, empusapv: empresa.empusapv, empusaest: empresa.empusaest  });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao validar login' });

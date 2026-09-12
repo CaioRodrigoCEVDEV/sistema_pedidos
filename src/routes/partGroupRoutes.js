@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const partGroupController = require("../controllers/partGroupController");
-const requireAdmin = require("../middlewares/adminMiddleware");
+const requireTela = require("../middlewares/telaMiddleware");
+const requireGrupos = requireTela("grupos");
 
 /**
  * Rotas de Grupos de Compatibilidade
@@ -25,84 +26,84 @@ const requireAdmin = require("../middlewares/adminMiddleware");
  */
 
 // Lista todos os grupos de compatibilidade
-router.get("/part-groups", requireAdmin, partGroupController.listGroups);
+router.get("/part-groups", requireGrupos, partGroupController.listGroups);
 
 // Busca peças disponíveis para agrupamento (com filtro opcional por grupo)
 router.get(
   "/part-groups/available-parts",
-  requireAdmin,
+  requireGrupos,
   partGroupController.getAvailableParts
 );
 
 // Busca todas as peças disponíveis (lista completa)
 router.get(
   "/part-groups/available-part",
-  requireAdmin,
+  requireGrupos,
   partGroupController.getAvailablePart
 );
 
 // Busca grupo por ID (inclui lista de peças do grupo)
-router.get("/part-groups/:id", requireAdmin, partGroupController.getGroup);
+router.get("/part-groups/:id", requireGrupos, partGroupController.getGroup);
 
 // Busca histórico de movimentações (auditoria) de um grupo
 router.get(
   "/part-groups/:id/audit",
-  requireAdmin,
+  requireGrupos,
   partGroupController.getGroupAuditHistory
 );
 
 // Busca estoque através do ID da peça
 router.get(
   "/part-groups/part/:partId/stock",
-  requireAdmin,
+  requireGrupos,
   partGroupController.getPartGroupStock
 );
 
 // Cria novo grupo de compatibilidade
-router.post("/part-groups", requireAdmin, partGroupController.createGroup);
+router.post("/part-groups", requireGrupos, partGroupController.createGroup);
 
 // Atualiza grupo de compatibilidade
-router.put("/part-groups/:id", requireAdmin, partGroupController.updateGroup);
+router.put("/part-groups/:id", requireGrupos, partGroupController.updateGroup);
 
 // Atualiza estoque do grupo diretamente
 router.put(
   "/part-groups/:id/stock",
-  requireAdmin,
+  requireGrupos,
   partGroupController.updateGroupStock
 );
 
 // Adiciona peça ao grupo
 router.post(
   "/part-groups/:id/parts",
-  requireAdmin,
+  requireGrupos,
   partGroupController.addPartToGroup
 );
 
 // Remove peça do grupo (por procorid)
 router.delete(
   "/part-groups/parts/:procorid",
-  requireAdmin,
+  requireGrupos,
   partGroupController.removePartFromGroup
 );
 
 // Atualiza quantidade ideal de um grupo
 router.put(
   "/part-groups/:id/ideal",
-  requireAdmin,
+  requireGrupos,
   partGroupController.updateGroupIdealQty
 );
 
 // Ajusta estoque do grupo por delta (adicionar ou reduzir)
 router.post(
   "/part-groups/:id/adjust-stock",
-  requireAdmin,
+  requireGrupos,
   partGroupController.adjustGroupStock
 );
 
 // Exclui grupo de compatibilidade
 router.delete(
   "/part-groups/:id",
-  requireAdmin,
+  requireGrupos,
   partGroupController.deleteGroup
 );
 

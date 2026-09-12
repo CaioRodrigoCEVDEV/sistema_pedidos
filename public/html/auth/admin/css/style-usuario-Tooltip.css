@@ -19,7 +19,7 @@
 }
 
 /* Tooltip base */
-.form-check .tooltip-text {
+.tooltip-text {
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
@@ -42,7 +42,7 @@
 }
 
 /* Seta da tooltip */
-.form-check .tooltip-text::after {
+.tooltip-text::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -54,7 +54,7 @@
 }
 
 /* Mostra tooltip no hover */
-.form-check .info-icon:hover + .tooltip-text {
+.info-icon:hover + .tooltip-text {
   visibility: visible;
   opacity: 1;
   transform: translateX(-50%) translateY(0);
@@ -62,9 +62,105 @@
 }
 
 /* Mostra tooltip ao clicar (classe adicionada via JS) */
-.form-check .tooltip-text.active {
+.tooltip-text.active {
   visibility: visible;
   opacity: 1;
   transform: translateX(-50%) translateY(0);
   pointer-events: auto;
+}
+
+/* ==========================================================================
+   Seções do modal de usuário (Perfil e acesso / Telas liberadas)
+   ========================================================================== */
+.usu-section__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+
+.usu-section__title {
+  margin: 0;
+  font-size: .95rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: inherit;
+}
+
+.usu-section__hint {
+  margin: .5rem 0 0;
+  font-size: .8rem;
+  color: var(--ou-text-muted);
+}
+
+/* Campos de perfil (Ativo / Administrador / Vendedor) */
+.usu-access-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .5rem 1rem;
+  padding: .75rem 1rem;
+  border: 1px solid var(--ou-border, rgba(0, 0, 0, 0.125));
+  border-radius: 0.5rem;
+  background-color: var(--ou-surface-muted, rgba(0, 0, 0, 0.02));
+}
+
+.usu-access-grid .form-check {
+  margin-bottom: 0;
+}
+
+/* Grade de telas liberadas no modal de usuário */
+.usu-telas-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
+  padding: .85rem 1rem;
+  border: 1px solid var(--ou-border, rgba(0, 0, 0, 0.125));
+  border-radius: 0.5rem;
+  background-color: var(--ou-surface-muted, rgba(0, 0, 0, 0.02));
+}
+
+.usu-telas-grid .form-check {
+  margin-bottom: 0;
+}
+
+.usu-telas-group__title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ou-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+/* Modal um pouco mais largo no desktop para acomodar as 4 colunas */
+@media (min-width: 992px) {
+  #userModal .modal-dialog {
+    max-width: 960px;
+  }
+}
+
+/* Tablet: 2 colunas nas categorias de telas */
+@media (max-width: 991.98px) {
+  .usu-telas-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Telas pequenas: campos de perfil empilhados */
+@media (max-width: 767.98px) {
+  .usu-access-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile: 1 coluna e respiro no corpo do modal */
+@media (max-width: 575.98px) {
+  .usu-telas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #userModal .modal-body {
+    overflow-y: auto;
+  }
 }

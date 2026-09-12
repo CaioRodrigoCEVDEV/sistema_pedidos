@@ -11,6 +11,7 @@ const usersData = [
 // Estado
 let users = [...usersData]; // clone para manipulação local
 let filtered = [...users];
+let telasRegistry = []; // catálogo de telas liberáveis
 // Carrega dados reais da API e atualiza users/usersData
 // --- Função central para recarregar usuários da API e atualizar UI ---
 async function refreshUsers({ keepSearch = true } = {}) {
@@ -36,11 +37,64 @@ async function refreshUsers({ keepSearch = true } = {}) {
 
 // Substitui seu IIFE loadUsers original — usa refreshUsers para inicializar
 (async function init() {
+  try {
+    const res = await fetch(`${BASE_URL}/telas`);
+    if (res.ok) {
+      telasRegistry = await res.json();
+    }
+  } catch (err) {
+    console.error("Falha ao carregar catálogo de telas:", err);
+  }
+  renderTelasChecks([]);
   await refreshUsers();
 })();
 
+// Renderiza as checkboxes de telas liberáveis, agrupadas por grupo.
+function renderTelasChecks(selected) {
+  const holder = document.getElementById("usuTelasChecks");
+  if (!holder) return;
+  const sel = new Set(selected || []);
+  const grupos = {};
+  for (const tela of telasRegistry) {
+    const grupo = tela.telagrupo || "Telas";
+    if (!grupos[grupo]) grupos[grupo] = [];
+    grupos[grupo].push(tela);
+  }
+
+  holder.innerHTML = Object.keys(grupos)
+    .map((grupo) => {
+      const checks = grupos[grupo]
+        .map(
+          (tela) => `
+        <div class="form-check">
+          <input class="form-check-input tela-check" type="checkbox"
+            value="${escapeHtml(tela.telachave)}" id="tela_${escapeHtml(
+              tela.telachave
+            )}" ${sel.has(tela.telachave) ? "checked" : ""}>
+          <label class="form-check-label" for="tela_${escapeHtml(
+            tela.telachave
+          )}"><i class="bi ${escapeHtml(
+            tela.telaicone || "bi-window"
+          )}"></i> ${escapeHtml(tela.telanome)}</label>
+        </div>`
+        )
+        .join("");
+      return `<div class="usu-telas-group"><div class="usu-telas-group__title">${escapeHtml(
+        grupo
+      )}</div>${checks}</div>`;
+    })
+    .join("");
+}
+
+function getSelectedTelas() {
+  return Array.from(
+    document.querySelectorAll("#usuTelasChecks .tela-check:checked")
+  ).map((input) => input.value);
+}
+
 // Elementos
 const tbody = document.getElementById("usersTbody");
+const usersMobileList = document.getElementById("usersMobileList");
 const searchInput = document.getElementById("searchInput");
 const resultsInfo = document.getElementById("resultsInfo");
 const emptyState = document.getElementById("emptyState");
@@ -55,28 +109,56 @@ const usuSenha = document.getElementById("usuSenha");
 const usuAdm = document.getElementById("usuAdm");
 const usuSta = document.getElementById("usuSta");
 const usuRca = document.getElementById("usuRca");
-const usuPv = document.getElementById("usuPv");
-const usuEst = document.getElementById("usuEst");
 const togglePwd = document.getElementById("togglePwd");
 const btnDelete = document.getElementById("btnDelete");
 const btnNew = document.getElementById("btnNew");
 const btnRefresh = document.getElementById("btnRefresh");
 
-// Render da tabela
+// Badges para a listagem mobile (design system)
+function admBadge(usuadm) {
+  return usuadm === "S"
+    ? '<span class="ou-badge ou-badge--info"><span class="ou-badge__dot"></span>Sim</span>'
+    : '<span class="ou-badge ou-badge--neutral"><span class="ou-badge__dot"></span>Não</span>';
+}
+
+function statusBadge(ususta) {
+  if (ususta === "A") {
+    return '<span class="ou-badge ou-badge--success"><span class="ou-badge__dot"></span>Ativo</span>';
+  }
+  if (ususta === "I") {
+    return '<span class="ou-badge ou-badge--warning"><span class="ou-badge__dot"></span>Inativo</span>';
+  }
+  return '<span class="ou-badge ou-badge--danger"><span class="ou-badge__dot"></span>Excluído</span>';
+}
+
+function iniciais(nome, email) {
+  const base = String(nome || "").trim() || String(email || "").trim();
+  const partes = base.split(/\s+/).filter(Boolean);
+  if (!partes.length) return "?";
+  const a = partes[0][0] || "";
+  const b = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (a + b).toUpperCase() || "?";
+}
+
+// Render da tabela (desktop) e dos cards (mobile)
 function renderTable(list) {
   tbody.innerHTML = "";
+  usersMobileList.innerHTML = "";
   if (!list.length) {
     emptyState.style.display = "block";
   } else {
     emptyState.style.display = "none";
     for (const u of list) {
+      const nome = (u.usunome || "").trim();
+      const email = u.usuemail || "";
+
       const tr = document.createElement("tr");
       tr.dataset.usucod = u.usucod;
       tr.innerHTML = `
             
             <!--<td>${escapeHtml(u.usunome)}</td>-->
             <td>${u.usucod}</td>
-            <td>${escapeHtml(u.usuemail)}</td>
+            <td>${escapeHtml(email)}</td>
             <td>${
               u.usuadm === "S"
                 ? '<span class="badge bg-success">Sim</span>'
@@ -92,6 +174,48 @@ function renderTable(list) {
           `;
       tr.addEventListener("click", () => openUserModal(u.usucod));
       tbody.appendChild(tr);
+
+      const card = document.createElement("div");
+      card.className = "ou-mobile-card";
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-label", `Abrir usuário ${nome || email}`);
+      card.innerHTML = `
+        <div class="ou-mobile-card__head">
+          <span class="ou-mobile-card__avatar" aria-hidden="true">${escapeHtml(iniciais(nome, email))}</span>
+          <span class="ou-mobile-card__identity">
+            <span class="ou-mobile-card__name">${escapeHtml(nome || email)}</span>
+            ${nome ? `<span class="ou-mobile-card__fantasia">${escapeHtml(email)}</span>` : ""}
+          </span>
+        </div>
+        <div class="ou-mobile-card__info">
+          <div class="ou-mobile-card__block">
+            <span class="ou-mobile-card__label">Código</span>
+            <span class="ou-mobile-card__value">#${u.usucod}</span>
+          </div>
+          <div class="ou-mobile-card__block">
+            <span class="ou-mobile-card__label">Administrador</span>
+            <span class="ou-mobile-card__value">${admBadge(u.usuadm)}</span>
+          </div>
+          <div class="ou-mobile-card__block ou-mobile-card__block--full">
+            <span class="ou-mobile-card__label">E-mail</span>
+            <span class="ou-mobile-card__value ou-mobile-card__value--wrap">${escapeHtml(email)}</span>
+          </div>
+        </div>
+        <div class="ou-mobile-card__foot">
+          ${statusBadge(u.ususta)}
+          <i class="fa-solid fa-chevron-right ou-mobile-card__chevron" aria-hidden="true"></i>
+        </div>
+      `;
+      const abrir = () => openUserModal(u.usucod);
+      card.addEventListener("click", abrir);
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          abrir();
+        }
+      });
+      usersMobileList.appendChild(card);
     }
   }
   resultsInfo.textContent = `${list.length} usuário(s)`;
@@ -126,10 +250,9 @@ function openUserModal(usucod) {
     usuSenha.value = "";
     usuSenha.type = "password";
     usuAdm.checked = u.usuadm === "S";
-    usuPv.checked = u.usupv === "S";
-    usuEst.checked = u.usuest === "S";
     usuSta.checked = u.ususta === "A" ? true : u.ususta === "I" ? false : false;
     usuRca.checked = u.usurca === "S";
+    renderTelasChecks(u.telas || []);
     userModal.show();
   }
 }
@@ -144,10 +267,9 @@ userForm.addEventListener("submit", async (ev) => {
     usuemail: usuEmail.value.trim(),
     ususenha: usuSenha.value,
     usuadm: usuAdm.checked ? "S" : "N",
-    usupv: usuPv.checked ? "S" : "N",
-    usuest: usuEst.checked ? "S" : "N",
     ususta: usuSta.checked ? "A" : "I",
     usurca: usuRca.checked ? "S" : "N",
+    telas: getSelectedTelas(),
   };
 
   try {
@@ -223,10 +345,9 @@ btnNew.addEventListener("click", () => {
   usuSenha.value = "";
   usuSenha.type = "password";
   usuAdm.checked = false;
-  usuPv.checked = false;
-  usuEst.checked = false;
   usuSta.checked = true;
   usuRca.checked = false;
+  renderTelasChecks([]);
   userModal.show();
 });
 

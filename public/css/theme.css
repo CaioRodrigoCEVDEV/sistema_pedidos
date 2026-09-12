@@ -400,6 +400,32 @@ body.bg-light,
   border-color: rgba(96, 165, 250, 0.25);
   color: #bfdbfe;
 }
+[data-theme="dark"] .release-card--latest {
+  border-color: rgba(96, 165, 250, 0.25);
+}
+[data-theme="dark"] .release-title-text,
+[data-theme="dark"] .release-md,
+[data-theme="dark"] .release-history__title,
+[data-theme="dark"] .release-history .accordion-button {
+  color: var(--ou-text);
+}
+[data-theme="dark"] .release-history .accordion-item {
+  background: var(--ou-surface);
+  border-color: var(--ou-border);
+}
+[data-theme="dark"] .release-history .accordion-button:not(.collapsed) {
+  background: var(--ou-surface-2);
+  color: var(--ou-text);
+}
+[data-theme="dark"] .release-date,
+[data-theme="dark"] .release-md__empty,
+[data-theme="dark"] .release-history__name,
+[data-theme="dark"] .release-history__date {
+  color: var(--ou-text-muted);
+}
+[data-theme="dark"] .release-feedback {
+  color: var(--ou-text-muted);
+}
 
 /* Backups */
 [data-theme="dark"] .toolbar input[type="search"],

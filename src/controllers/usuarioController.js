@@ -2,6 +2,40 @@ const pool = require("../config/db");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 
+// Substitui as permissões de tela de um usuário. A presença da linha com
+// permitido='S' libera a tela; a ausência mantém o acesso negado.
+async function salvarTelasUsuario(usucod, telas) {
+  if (!usucod || !Array.isArray(telas)) return;
+
+  await pool.query("DELETE FROM usu_telas WHERE usutelausucod = $1", [usucod]);
+
+  if (telas.length === 0) return;
+
+  await pool.query(
+    `INSERT INTO usu_telas (usutelausucod, usutelatelacod, usutelapermitido)
+     SELECT $1, telacod, 'S' FROM telas WHERE telachave = ANY($2::text[])`,
+    [usucod, telas]
+  );
+}
+
+// Mantém as colunas legadas usupv/usuest coerentes com as telas liberadas.
+// Elas continuam existindo para compatibilidade, mas a fonte da verdade das
+// telas de Pedidos e Estoque passa a ser usu_telas.
+function derivarFlagsTela(telas, fallback = {}) {
+  if (Array.isArray(telas)) {
+    return {
+      usupv: telas.includes("pedidos") ? "S" : "N",
+      usuest: telas.includes("estoque") ? "S" : "N",
+    };
+  }
+  // Quando o cliente não envia a lista de telas nem as flags, mantém o valor
+  // atual (COALESCE no UPDATE) em vez de gravar NULL.
+  return {
+    usupv: fallback.usupv || null,
+    usuest: fallback.usuest || null,
+  };
+}
+
 exports.validarLogin = async (req, res) => {
   const { usucod, usunome, usuemail, ususenha } = req.body;
 
@@ -56,15 +90,20 @@ exports.validarLogin = async (req, res) => {
 
 exports.atualizarCadastro = async (req, res) => {
   const { id } = req.params;
-  const { usunome, ususenha, usuadm, ususta, usupv, usuest,usurca } = req.body;
+  const { usunome, ususenha, usuadm, ususta, usurca, telas } = req.body;
+  const { usupv, usuest } = derivarFlagsTela(telas, req.body);
 
   try {
+    let usucod;
+
     if (ususenha === undefined || ususenha.trim() === "") {
       // Atualiza sem alterar a senha
-      await pool.query(
-        "UPDATE usu SET usunome = $1, usuadm = $2, ususta = $3,usupv = $4 ,usuest = $5, usurca = $6 WHERE usuemail = $7",
-        [usunome, usuadm, ususta, usupv, usuest,usurca, id]
+      const result = await pool.query(
+        "UPDATE usu SET usunome = $1, usuadm = $2, ususta = $3,usupv = COALESCE($4, usupv) ,usuest = COALESCE($5, usuest), usurca = $6 WHERE usuemail = $7 RETURNING usucod",
+        [usunome, usuadm, ususta, usupv, usuest, usurca, id]
       );
+      usucod = result.rows[0] && result.rows[0].usucod;
+      await salvarTelasUsuario(usucod, telas);
       return res
         .status(200)
         .json({ mensagem: "Usuario atualizado com sucesso" });
@@ -76,10 +115,12 @@ exports.atualizarCadastro = async (req, res) => {
       .update(ususenha)
       .digest("hex");
 
-    await pool.query(
-      "UPDATE usu SET  usunome = $1, ususenha = $2,usuadm = $3, ususta = $4 ,usupv = $5 ,usuest = $6, usurca = $7 WHERE usuemail = $8",
+    const result = await pool.query(
+      "UPDATE usu SET  usunome = $1, ususenha = $2,usuadm = $3, ususta = $4 ,usupv = COALESCE($5, usupv) ,usuest = COALESCE($6, usuest), usurca = $7 WHERE usuemail = $8 RETURNING usucod",
       [usunome, newSenhaHash, usuadm, ususta, usupv, usuest, usurca, id]
     );
+    usucod = result.rows[0] && result.rows[0].usucod;
+    await salvarTelasUsuario(usucod, telas);
 
     res.status(200).json({ mensagem: "Usuario atualizado com sucesso" });
   } catch (error) {
@@ -89,8 +130,9 @@ exports.atualizarCadastro = async (req, res) => {
 };
 
 exports.cadastrarlogin = async (req, res) => {
-  const { usunome, usuemail, ususenha, usuadm, ususta, usupv, usuest,usurca } =
+  const { usunome, usuemail, ususenha, usuadm, ususta, usurca, telas } =
     req.body;
+  const { usupv, usuest } = derivarFlagsTela(telas, req.body);
   const senhaHash = crypto.createHash("md5").update(ususenha).digest("hex");
 
   try {
@@ -103,10 +145,11 @@ exports.cadastrarlogin = async (req, res) => {
         .status(409)
         .json({ error: "Email já existe na base de dados, Faça o Login!" });
     }
-    await pool.query(
-      "INSERT INTO usu (usunome, usuemail, ususenha,usuadm,ususta,usupv,usuest,usurca) VALUES ($1, $2, $3,$4,$5,$6,$7,$8)",
-      [usunome, usuemail, senhaHash, usuadm, ususta, usupv, usuest,usurca]
+    const result = await pool.query(
+      "INSERT INTO usu (usunome, usuemail, ususenha,usuadm,ususta,usupv,usuest,usurca) VALUES ($1, $2, $3,$4,$5,$6,$7,$8) RETURNING usucod",
+      [usunome, usuemail, senhaHash, usuadm, ususta, usupv || "N", usuest || "N", usurca]
     );
+    await salvarTelasUsuario(result.rows[0].usucod, telas);
     return res.status(201).json({ message: "Usuário cadastrado com sucesso" });
   } catch (error) {
     console.error("Erro ao cadastrar usuário:", error);
@@ -131,7 +174,18 @@ exports.listarlogin = async (req, res) => {
 exports.listarUsuarios = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT * FROM usu WHERE ususta in ('A','I') and usuemail <> 'admin@orderup.com.br' ORDER BY ususta,usucod DESC`
+      `SELECT u.*,
+              COALESCE((
+                SELECT json_agg(t.telachave ORDER BY t.telaordem)
+                  FROM usu_telas ut
+                  JOIN telas t ON t.telacod = ut.usutelatelacod
+                 WHERE ut.usutelausucod = u.usucod
+                   AND ut.usutelapermitido = 'S'
+                   AND t.telaativa = 'S'
+              ), '[]'::json) AS telas
+         FROM usu u
+        WHERE u.ususta in ('A','I') and u.usuemail <> 'admin@orderup.com.br'
+        ORDER BY u.ususta,u.usucod DESC`
     );
     res.status(200).json(result.rows);
   } catch (error) {

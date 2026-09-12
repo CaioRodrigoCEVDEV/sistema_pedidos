@@ -43,9 +43,8 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // <-- pas
 // Middlewares
 const autenticarToken = require("./middlewares/middlewares");
 const requireAdmin = require("./middlewares/adminMiddleware");
-const requireAdminPv = require("./middlewares/adminPvMiddleware");
-const requireAdminEst = require("./middlewares/adminEstMiddleware");
 const requireAdminPages = require("./middlewares/adminPagesMiddleware");
+const requireTela = require("./middlewares/telaMiddleware");
 app.set("views", path.join(__dirname, "views"));
 
 // IP real do cliente quando a aplicação roda atrás de proxy/nginx.
@@ -129,6 +128,9 @@ app.use(munRoute);
 const partGroupRoutes = require("./routes/partGroupRoutes");
 app.use(partGroupRoutes);
 
+const releaseRoutes = require("./routes/releaseRoutes");
+app.use(releaseRoutes);
+
 app.get("/me/usuario", autenticarToken, (req, res) => {
   // o middleware colocou o payload em req.token
   return res.json({ usunome: req.token.usunome });
@@ -143,6 +145,9 @@ app.use(pedidoRoutesV2);
 
 const relatoriosRoutes = require("./routes/relatoriosRoutes");
 app.use(relatoriosRoutes);
+
+const telaRoutes = require("./routes/telaRoutes");
+app.use(telaRoutes);
 
 // Rotas de páginas
 
@@ -182,23 +187,23 @@ app.get("/perfil", autenticarToken, (req, res) => {
 app.get("/configuracoes", requireAdminPages, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/configuracoes.html"));
 });
-app.get("/painel", autenticarToken, (req, res) => {
+app.get("/painel", requireTela("produtos"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel.html")
   );
 });
 
-app.get("/pedidos", requireAdminPv, (req, res) => {
+app.get("/pedidos", requireTela("pedidos", { modulo: "pv" }), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-pedidos.html")
   );
 });
-app.get("/devolucoes", requireAdminPv, (req, res) => {
+app.get("/devolucoes", requireTela("devolucoes", { modulo: "pv" }), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-devolucoes.html")
   );
 });
-app.get("/estoque", requireAdminEst, (req, res) => {
+app.get("/estoque", requireTela("estoque", { modulo: "est" }), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-estoque.html")
   );
@@ -225,13 +230,13 @@ app.get("/dashboard/modelo/pecas/lista", autenticarToken, (req, res) => {
   );
 });
 
-app.get("/clientes", autenticarToken, (req, res) => {
+app.get("/clientes", requireTela("clientes"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-clientes.html")
   );
 });
 
-app.get("/part", requireAdmin, (req, res) => {
+app.get("/part", requireTela("grupos"), (req, res) => {
   res.sendFile(
     path.join(
       __dirname,
@@ -240,25 +245,25 @@ app.get("/part", requireAdmin, (req, res) => {
   );
 });
 
-app.get("/dash", autenticarToken, (req, res) => {
+app.get("/dash", requireTela("dashboard"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-dashboard.html")
   );
 });
 
-app.get("/backup", autenticarToken, (req, res) => {
+app.get("/backup", requireTela("backups"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-backups.html")
   );
 });
 
-app.get("/relatorios", autenticarToken, (req, res) => {
+app.get("/relatorios", requireTela("relatorios"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-relatorios.html")
   );
 });
 
-app.get("/estoque-grupos", autenticarToken, (req, res) => {
+app.get("/estoque-grupos", requireTela("estoque-grupos"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-estoque-grupos.html")
   );
@@ -589,14 +594,9 @@ app.post(
   }
 );
 
-// Releases são servidas de public/releases.json, gerado no deploy por
-// `npm run releases:sync`. Assim o dashboard não depende da API do GitHub em
-// runtime (sem rate-limit, sem token e sem rede do servidor no acesso do user).
-// Mantido apenas como alias para clientes antigos que ainda usam /api/releases.
-app.get("/api/releases", (req, res) => {
-  res.set("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "../public/releases.json"));
-});
+// Releases são servidas pela rota /api/releases (src/routes/releaseRoutes.js),
+// que lê exclusivamente a tabela system_releases no PostgreSQL. A API do GitHub
+// é usada apenas no script de sincronização `npm run releases:sync`.
 
 // Inicia o servidor
 (async () => {

@@ -5,29 +5,34 @@
 
 /**
  * Menu lateral configurável. Personalize livremente.
- * { href, route, label, icon } — "route" é o caminho absoluto usado para
+ * { href, route, label, icon, perm } — "route" é o caminho absoluto usado para
  * marcar o item ativo; "icon" é uma classe de Bootstrap Icons.
+ * "perm" define a regra de visibilidade:
+ *   always       -> sempre visível
+ *   admin        -> somente administrador
+ *   tela:<chave> -> tela liberada em usu_telas
  */
 var OU_NAV_GROUPS = [
   {
     title: "Principal",
     items: [
-      { href: "/index", route: "/index", label: "Ir para a loja", icon: "bi-shop" },
+      { href: "/index", route: "/index", label: "Ir para a loja", icon: "bi-shop", perm: "always" },
       {
         href: "/dash",
         route: "/dash",
         label: "Dashboard",
         icon: "bi-speedometer2",
+        perm: "tela:dashboard",
       },
-      { href: "/pedidos", route: "/pedidos", label: "Pedidos", icon: "bi-receipt" },
-      { href: "/clientes", route: "/clientes", label: "Clientes", icon: "bi-people" },
+      { href: "/pedidos", route: "/pedidos", label: "Pedidos", icon: "bi-receipt", perm: "tela:pedidos" },
+      { href: "/clientes", route: "/clientes", label: "Clientes", icon: "bi-people", perm: "tela:clientes" },
     ],
   },
   {
     title: "Catálogo",
     items: [
-      { href: "/painel", route: "/painel", label: "Produtos", icon: "bi-box-seam" },
-      { href: "/part", route: "/part", label: "Grupos", icon: "bi-diagram-3" },
+      { href: "/painel", route: "/painel", label: "Produtos", icon: "bi-box-seam", perm: "tela:produtos" },
+      { href: "/part", route: "/part", label: "Grupos", icon: "bi-diagram-3", perm: "tela:grupos" },
     ],
   },
   {
@@ -38,13 +43,15 @@ var OU_NAV_GROUPS = [
         route: "/devolucoes",
         label: "Devoluções",
         icon: "bi-arrow-counterclockwise",
+        perm: "tela:devolucoes",
       },
-      { href: "/estoque", route: "/estoque", label: "Estoque", icon: "bi-boxes" },
+      { href: "/estoque", route: "/estoque", label: "Estoque", icon: "bi-boxes", perm: "tela:estoque" },
       {
         href: "/estoque-grupos",
         route: "/estoque-grupos",
         label: "Estoque Grupos",
         icon: "bi-collection",
+        perm: "tela:estoque-grupos",
       },
     ],
   },
@@ -56,13 +63,15 @@ var OU_NAV_GROUPS = [
         route: "/relatorios",
         label: "Relatórios",
         icon: "bi-bar-chart",
+        perm: "tela:relatorios",
       },
-      { href: "/backup", route: "/backup", label: "Backup", icon: "bi-database" },
+      { href: "/backup", route: "/backup", label: "Backup", icon: "bi-database", perm: "tela:backups" },
       {
         href: "/users",
         route: "/users",
         label: "Usuários",
         icon: "bi-person-badge",
+        perm: "admin",
       },
     ],
   },
@@ -74,12 +83,14 @@ var OU_NAV_GROUPS = [
         route: "/configuracoes",
         label: "Configurações",
         icon: "bi-gear",
+        perm: "admin",
       },
       {
         href: "/perfil",
         route: "/perfil",
         label: "Minha conta",
         icon: "bi-person-circle",
+        perm: "always",
       },
     ],
   },
@@ -110,8 +121,8 @@ function ouIsActiveRoute(route) {
   return current === target || current.indexOf(target + "/") === 0;
 }
 
-function ouBuildSidebar() {
-  var groups = OU_NAV_GROUPS.map(function (group) {
+function ouBuildSidebar(navGroups) {
+  var groups = (navGroups || OU_NAV_GROUPS).map(function (group) {
     var links = group.items
       .map(function (item) {
         return (
@@ -316,9 +327,12 @@ function ouWireThemeToggle() {
   refresh();
 }
 
-function ouWireLogout() {
-  var buttons = document.querySelectorAll(".js-logout");
+function ouWireLogout(root) {
+  var scope = root || document;
+  var buttons = scope.querySelectorAll(".js-logout");
   for (var i = 0; i < buttons.length; i++) {
+    if (buttons[i].dataset.ouLogoutBound) continue;
+    buttons[i].dataset.ouLogoutBound = "1";
     buttons[i].addEventListener("click", function (event) {
       event.preventDefault();
       try { localStorage.removeItem("usuarioLogado"); } catch (err) { /* noop */ }
@@ -402,16 +416,50 @@ function ouToast(message, type) {
 }
 window.ouToast = ouToast;
 
+// Filtra os grupos do menu conforme as permissões do usuário.
+function ouFilterNavGroups(perms) {
+  if (!perms) return OU_NAV_GROUPS;
+
+  var isAdmin = perms.usuadm === "S";
+  var telas = perms.telas || [];
+
+  function isAllowed(item) {
+    var perm = item.perm || "always";
+    if (isAdmin) return true;
+    if (perm === "always") return true;
+    if (perm === "admin") return false;
+    if (perm.indexOf("tela:") === 0) {
+      return telas.indexOf(perm.slice(5)) !== -1;
+    }
+    return true;
+  }
+
+  return OU_NAV_GROUPS.map(function (group) {
+    return {
+      title: group.title,
+      items: group.items.filter(isAllowed),
+    };
+  }).filter(function (group) {
+    return group.items.length > 0;
+  });
+}
+
+function ouMountSidebar(navGroups) {
+  var sidebar = document.getElementById("ouSidebar");
+  if (!sidebar) {
+    document.body.insertAdjacentHTML("afterbegin", ouBuildSidebar(navGroups));
+  }
+  ouSetActiveLinks();
+  ouWireDrawer();
+  ouWireLogout();
+}
+
 function createHeader() {
   var header = document.getElementById("header-admin");
   if (!header) return;
   header.classList.add("ou-topbar");
   header.innerHTML = ouBuildTopbar();
 
-  var sidebar = document.getElementById("ouSidebar");
-  if (!sidebar) {
-    document.body.insertAdjacentHTML("afterbegin", ouBuildSidebar());
-  }
   if (!document.getElementById("ouDrawerOverlay")) {
     document.body.insertAdjacentHTML(
       "afterbegin",
@@ -421,11 +469,20 @@ function createHeader() {
 
   document.body.classList.add("ou-has-shell");
 
-  ouSetActiveLinks();
-  ouWireDrawer();
   ouWireThemeToggle();
-  ouWireLogout();
+  ouWireLogout(header);
   ouLoadUser();
+
+  fetch("/me/permissoes", { credentials: "include" })
+    .then(function (response) {
+      return response.ok ? response.json() : null;
+    })
+    .then(function (perms) {
+      ouMountSidebar(ouFilterNavGroups(perms));
+    })
+    .catch(function () {
+      ouMountSidebar(OU_NAV_GROUPS);
+    });
 }
 
 document.addEventListener("DOMContentLoaded", createHeader);
