@@ -2,6 +2,7 @@
  * Gerenciador central de aparência (Claro / Escuro / Automático).
  *
  * - Persiste a preferência em localStorage (chave: sistema_pedidos_theme).
+ * - Padrão "light" (white); "dark" e "auto" permanecem como opções.
  * - O valor "auto" é preservado (não é convertido para light/dark).
  * - Aplica o tema em <html> via data-theme e data-bs-theme (color mode do
  *   Bootstrap 5.3), evitando FOUC quando carregado no <head>.
@@ -13,7 +14,7 @@
 
   var STORAGE_KEY = "sistema_pedidos_theme";
   var VALID = ["light", "dark", "auto"];
-  var DEFAULT = "auto";
+  var DEFAULT = "light";
 
   var media =
     typeof window.matchMedia === "function"
