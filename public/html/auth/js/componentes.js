@@ -355,10 +355,56 @@ function ouLoadUser() {
     .catch(function () { /* mantém os fallbacks */ });
 }
 
+/**
+ * Feedback não intrusivo (substitui o alert() nativo).
+ * Mantém o padrão visual do Design System nos temas claro e escuro.
+ */
+function ouToast(message, type) {
+  type = type || "info";
+  var icons = {
+    success: "bi-check-circle-fill",
+    error: "bi-x-circle-fill",
+    warning: "bi-exclamation-triangle-fill",
+    info: "bi-info-circle-fill",
+  };
+
+  var container = document.getElementById("ouToastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "ouToastContainer";
+    container.className = "ou-toast-container";
+    container.setAttribute("role", "status");
+    container.setAttribute("aria-live", "polite");
+    document.body.appendChild(container);
+  }
+
+  var toast = document.createElement("div");
+  toast.className = "ou-toast ou-toast--" + type;
+  toast.innerHTML =
+    '<i class="bi ' +
+    (icons[type] || icons.info) +
+    '" aria-hidden="true"></i><span></span>';
+  toast.querySelector("span").textContent = message;
+  container.appendChild(toast);
+
+  window.requestAnimationFrame(function () {
+    toast.classList.add("ou-toast--in");
+  });
+
+  window.setTimeout(function () {
+    toast.classList.remove("ou-toast--in");
+    window.setTimeout(function () {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 220);
+  }, 3200);
+
+  return toast;
+}
+window.ouToast = ouToast;
+
 function createHeader() {
   var header = document.getElementById("header-admin");
   if (!header) return;
-
   header.classList.add("ou-topbar");
   header.innerHTML = ouBuildTopbar();
 
@@ -384,19 +430,13 @@ function createHeader() {
 
 document.addEventListener("DOMContentLoaded", createHeader);
 
-function createFooter() {
+/* O rodapé institucional é exclusivo da loja (rotas públicas).
+   No shell autenticado o footer é removido. */
+function removeFooter() {
   var footer = document.getElementById("footer");
-  if (!footer) return;
-  footer.className = "border-top py-2 bg-white shadow";
-  footer.innerHTML =
-    '<div class="container d-flex justify-content-center align-items-center">' +
-    '<a href="https://www.orderup.com.br" class="text-muted text-decoration-none" ' +
-    'style="font-size: 11px; opacity: .75;" target="_blank" rel="noopener noreferrer">' +
-    "Desenvolvido com OrderUp" +
-    "</a>" +
-    "</div>";
+  if (footer && footer.parentNode) footer.parentNode.removeChild(footer);
 }
-document.addEventListener("DOMContentLoaded", createFooter);
+document.addEventListener("DOMContentLoaded", removeFooter);
 
 // Hide "Estoque do Grupo" card in the part groups details view
 document.addEventListener("DOMContentLoaded", function () {
