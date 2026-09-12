@@ -30,6 +30,17 @@ const tabPedidosBtn = qs("tabPedidosBtn");
 const tabContaBtn = qs("tabContaBtn");
 const tabCobrancasBtn = qs("tabCobrancasBtn");
 
+// Abas exclusivas de cliente existente (Pedidos/Conta/Cobranças).
+// A navegação é removida do DOM no cadastro para não ser renderizada, clicada
+// nem disparar carregamentos antes do cliente existir. Os painéis permanecem
+// no DOM (ocultos) para que seus campos continuem acessíveis pelo formulário.
+const cliTabsNav = qs("cliTabs");
+const abasExtras = [
+  { link: tabPedidosBtn, li: tabPedidosBtn.closest(".nav-item"), pane: qs("tabPedidos") },
+  { link: tabContaBtn, li: tabContaBtn.closest(".nav-item"), pane: qs("tabConta") },
+  { link: tabCobrancasBtn, li: tabCobrancasBtn.closest(".nav-item"), pane: qs("tabCobrancas") },
+];
+
 // Cabeçalho da ficha
 const cliTitulo = qs("cliTitulo");
 const cliSubtitulo = qs("cliSubtitulo");
@@ -89,6 +100,9 @@ let cidadeSelecionadaCod = null;
 let cidadeAtiva = -1;
 let clienteAtual = null;
 let pedidosCliente = [];
+// Incrementado a cada abertura de ficha. Abortar cargas antigas evita que uma
+// edição resolvida tarde reintroduza as abas extras num cadastro em andamento.
+let fichaToken = 0;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -520,11 +534,23 @@ f_parsit.addEventListener("change", () => renderSituacao(f_parsit.value));
 // Abrir ficha
 // ---------------------------------------------------------------------------
 function definirAbasExtras(habilitado) {
-  [tabPedidosBtn, tabContaBtn, tabCobrancasBtn].forEach((btn) => {
-    btn.disabled = !habilitado;
-    btn.classList.toggle("disabled", !habilitado);
+  abasExtras.forEach(({ link, li, pane }) => {
+    if (habilitado) {
+      if (li && !li.isConnected) cliTabsNav.appendChild(li);
+      link.disabled = false;
+      link.classList.remove("disabled");
+    } else {
+      if (li) li.remove();
+    }
+    link.classList.remove("active");
+    link.setAttribute("aria-selected", "false");
+    if (pane) pane.classList.remove("active", "show");
   });
-  if (!habilitado) bootstrap.Tab.getOrCreateInstance(tabDadosBtn).show();
+  // Toda ficha (novo cadastro ou edição) começa na aba Dados.
+  tabDadosBtn.classList.remove("active");
+  const dadosPane = qs("tabDados");
+  if (dadosPane) dadosPane.classList.remove("active", "show");
+  bootstrap.Tab.getOrCreateInstance(tabDadosBtn).show();
 }
 function fecharPainelLancamento() {
   qs("lancamentoForm").classList.add("d-none");
@@ -552,6 +578,7 @@ function limparListas() {
 }
 
 function abrirNovaFicha() {
+  fichaToken += 1;
   cliForm.reset();
   f_parcod.value = "";
   f_parsit.value = "A";
@@ -571,8 +598,10 @@ function abrirNovaFicha() {
 }
 
 async function abrirFicha(id) {
+  const token = ++fichaToken;
   try {
     const data = await api(`/cli/${id}`);
+    if (token !== fichaToken) return;
     cliForm.reset();
     fecharPainelLancamento();
     fecharPainelCobranca();
