@@ -1,4 +1,5 @@
 const pool = require("./db");
+const TELAS = require("./telas");
 
 async function atualizarDB() {
   const LOCK_KEY = 20250911;
@@ -1398,6 +1399,165 @@ async function atualizarDB() {
 
     // ==================================================================================================================================
     // FIM CLIENTES: CONTA, MOVIMENTAÇÕES E COBRANÇAS
+    // ==================================================================================================================================
+
+    // ==================================================================================================================================
+    // PERMISSÕES POR TELA
+    // Cada tela controlável é registrada na tabela "telas". O vínculo com o
+    // usuário fica em "usu_telas" (a presença da linha com permitido='S'
+    // significa acesso liberado; a ausência significa negado).
+    // ==================================================================================================================================
+
+    // Detecta se é a primeira carga para popular as permissões dos usuários
+    // existentes sem sobrescrever escolhas feitas pelo administrador depois.
+    const telasPreExiste = await pool.query(
+      `SELECT to_regclass('public.telas') AS reg;`
+    );
+    const primeiraCargaTelas = !telasPreExiste.rows[0].reg;
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.telas (
+        telacod    SERIAL PRIMARY KEY,
+        telachave  VARCHAR(50) NOT NULL UNIQUE,
+        telanome   VARCHAR(100) NOT NULL,
+        telarota   VARCHAR(100),
+        telaicone  VARCHAR(60),
+        telagrupo  VARCHAR(60),
+        telaordem  INT NOT NULL DEFAULT 0,
+        telaativa  BPCHAR(1) NOT NULL DEFAULT 'S'
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.usu_telas (
+        usutelausucod     INT NOT NULL,
+        usutelatelacod    INT NOT NULL REFERENCES public.telas(telacod) ON DELETE CASCADE,
+        usutelapermitido  BPCHAR(1) NOT NULL DEFAULT 'N',
+        CONSTRAINT usu_telas_pkey PRIMARY KEY (usutelausucod, usutelatelacod),
+        CONSTRAINT usu_telas_usucod_fkey FOREIGN KEY (usutelausucod)
+          REFERENCES public.usu(usucod) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_usu_telas_usucod
+        ON public.usu_telas(usutelausucod);
+    `);
+
+    // Marca migrações que devem rodar apenas uma vez (evita reaplicar
+    // backfills e sobrescrever escolhas feitas pelo administrador).
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.app_migrations (
+        migracao     VARCHAR(80) PRIMARY KEY,
+        aplicada_em  TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `);
+
+    // Sincroniza o catálogo de telas com o registro em código.
+    for (const tela of TELAS) {
+      await pool.query(
+        `INSERT INTO public.telas
+           (telachave, telanome, telarota, telaicone, telagrupo, telaordem, telaativa)
+         VALUES ($1, $2, $3, $4, $5, $6, 'S')
+         ON CONFLICT (telachave) DO UPDATE SET
+           telanome  = EXCLUDED.telanome,
+           telarota  = EXCLUDED.telarota,
+           telaicone = EXCLUDED.telaicone,
+           telagrupo = EXCLUDED.telagrupo,
+           telaordem = EXCLUDED.telaordem;`,
+        [
+          tela.chave,
+          tela.nome,
+          tela.rota,
+          tela.icone,
+          tela.grupo,
+          tela.ordem,
+        ]
+      );
+    }
+
+    // Na primeira carga preserva o acesso atual: libera as novas telas para os
+    // usuários existentes, exceto "grupos" (restrita a admins) e as telas que
+    // já tinham controle próprio (pedidos/estoque), migradas logo abaixo.
+    if (primeiraCargaTelas) {
+      await pool.query(`
+        INSERT INTO public.usu_telas
+          (usutelausucod, usutelatelacod, usutelapermitido)
+        SELECT u.usucod, t.telacod, 'S'
+        FROM public.usu u
+        CROSS JOIN public.telas t
+        WHERE t.telachave NOT IN ('grupos', 'pedidos', 'estoque')
+        ON CONFLICT (usutelausucod, usutelatelacod) DO NOTHING;
+
+        INSERT INTO public.usu_telas
+          (usutelausucod, usutelatelacod, usutelapermitido)
+        SELECT u.usucod, t.telacod, 'S'
+        FROM public.usu u
+        CROSS JOIN public.telas t
+        WHERE t.telachave = 'grupos' AND u.usuadm = 'S'
+        ON CONFLICT (usutelausucod, usutelatelacod) DO NOTHING;
+      `);
+    }
+
+    // Migra as permissões legadas de tela (usu.usupv -> Pedidos,
+    // usu.usuest -> Estoque) para o modelo novo. Roda uma única vez para não
+    // recriar permissões que o administrador tenha revogado.
+    const migracaoLegado = await pool.query(
+      `SELECT 1 FROM public.app_migrations WHERE migracao = $1`,
+      ["telas_pedidos_estoque_v1"]
+    );
+    if (migracaoLegado.rowCount === 0) {
+      await pool.query(`
+        INSERT INTO public.usu_telas
+          (usutelausucod, usutelatelacod, usutelapermitido)
+        SELECT u.usucod, t.telacod, 'S'
+        FROM public.usu u
+        JOIN public.telas t ON t.telachave = 'pedidos'
+        WHERE u.usupv = 'S'
+        ON CONFLICT (usutelausucod, usutelatelacod) DO NOTHING;
+
+        INSERT INTO public.usu_telas
+          (usutelausucod, usutelatelacod, usutelapermitido)
+        SELECT u.usucod, t.telacod, 'S'
+        FROM public.usu u
+        JOIN public.telas t ON t.telachave = 'estoque'
+        WHERE u.usuest = 'S'
+        ON CONFLICT (usutelausucod, usutelatelacod) DO NOTHING;
+
+        INSERT INTO public.app_migrations (migracao)
+        VALUES ('telas_pedidos_estoque_v1')
+        ON CONFLICT (migracao) DO NOTHING;
+      `);
+    }
+
+    // Mantém as colunas legadas usupv/usuest coerentes com as telas liberadas.
+    // Assim qualquer código/middleware antigo que ainda leia essas colunas
+    // continua funcionando, sem precisar de re-login.
+    await pool.query(`
+      UPDATE public.usu u
+      SET usupv = d.ped, usuest = d.est
+      FROM (
+        SELECT u2.usucod,
+          CASE WHEN EXISTS (
+            SELECT 1 FROM public.usu_telas ut
+            JOIN public.telas t ON t.telacod = ut.usutelatelacod
+            WHERE ut.usutelausucod = u2.usucod
+              AND ut.usutelapermitido = 'S'
+              AND t.telachave = 'pedidos'
+          ) THEN 'S' ELSE 'N' END AS ped,
+          CASE WHEN EXISTS (
+            SELECT 1 FROM public.usu_telas ut
+            JOIN public.telas t ON t.telacod = ut.usutelatelacod
+            WHERE ut.usutelausucod = u2.usucod
+              AND ut.usutelapermitido = 'S'
+              AND t.telachave = 'estoque'
+          ) THEN 'S' ELSE 'N' END AS est
+        FROM public.usu u2
+      ) d
+      WHERE u.usucod = d.usucod
+        AND (u.usupv IS DISTINCT FROM d.ped OR u.usuest IS DISTINCT FROM d.est);
+    `);
+
+    // ==================================================================================================================================
+    // FIM PERMISSÕES POR TELA
     // ==================================================================================================================================
 
     await pool.query("COMMIT");

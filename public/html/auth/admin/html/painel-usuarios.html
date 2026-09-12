@@ -3,28 +3,28 @@
 
 <head>
 <meta charset="UTF-8" />
-  <script src="/js/theme-manager.js?v=2026.09.12.012745"></script>
+  <script src="/js/theme-manager.js?v=2026.09.12.134309"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title id="title"></title>
   <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
   <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png" />
   <!--Links proprios-->
-  <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.12.012745" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.12.012745" />
-  <link rel="stylesheet" href="/html/auth/admin/css/style-usuario-Tooltip.css?v=2026.09.12.012745"/>
+  <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.12.134309" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.12.134309" />
+  <link rel="stylesheet" href="/html/auth/admin/css/style-usuario-Tooltip.css?v=2026.09.12.134309"/>
 
   <!--links bootstrap-->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" />
   <!--Link tema personalizado bootstrap-->
-  <link rel="stylesheet" href="../../../../css/tema-bootstrap.css?v=2026.09.12.012745">
+  <link rel="stylesheet" href="../../../../css/tema-bootstrap.css?v=2026.09.12.134309">
   <!--link tema-->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
     integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <link rel="stylesheet" href="/css/theme.css?v=2026.09.12.012745" />
-  <link rel="stylesheet" href="/css/shell.css?v=2026.09.12.012745" />
-  <link rel="stylesheet" href="/css/ui.css?v=2026.09.12.012745" />
+  <link rel="stylesheet" href="/css/theme.css?v=2026.09.12.134309" />
+  <link rel="stylesheet" href="/css/shell.css?v=2026.09.12.134309" />
+  <link rel="stylesheet" href="/css/ui.css?v=2026.09.12.134309" />
 </head>
 
 <body class="bg-light">
@@ -100,7 +100,7 @@
       </div>
       <!-- Modal de detalhe / edição -->
       <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
           <form id="userForm" class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title" id="userModalLabel">
@@ -134,58 +134,60 @@
                 </div>
               </div>
               <!--   // INICIO CHECKSBOXERS -->
-              <div class="mb-3 form-check">
-                <input id="usuSta" type="checkbox" class="form-check-input" />
-                <label class="form-check-label" for="usuSta">Ativo</label>
-                <i class="fa-solid fa-circle-question info-icon"></i>
-                <span class="tooltip-text" role="tooltip" aria-hidden="true">
-                  ✅ Usuário ativo pode acessar o sistema normalmente.<br><br>
-                  ❌ Se estiver desmarcado, o acesso será bloqueado — o usuário não conseguirá fazer login.
-                </span>
-              </div>
-              <div class="mb-3 form-check">
-                <input id="usuAdm" type="checkbox" class="form-check-input" />
-                <label class="form-check-label" for="usuAdm">Administrador</label>
-                <i class="fa-solid fa-circle-question info-icon"></i>
-                <span class="tooltip-text" role="tooltip" aria-hidden="true">
-                  ✅ Administrador tem acesso total às seguintes áreas:<br>
-                  • <strong>Configurações</strong><br>
-                  • <strong>Usuários</strong><br>
-                  • <strong>Produtos</strong><br><br>
-                  🔹 Pode gerenciar todos os produtos e visualizar todos os pedidos,<br>
-                  mesmo que não sejam do seu próprio vendedor.
-                </span>
-              </div>
-              <div class="mb-3 form-check">
-                <input id="usuPv" type="checkbox" class="form-check-input" />
-                <label class="form-check-label" for="usuPv">Pedido</label>
-                <i class="fa-solid fa-circle-question info-icon"></i>
-                <span class="tooltip-text" role="tooltip" aria-hidden="true">
-                  🛒 Usuário com permissão de <strong>Pedido</strong> pode criar, editar e acompanhar pedidos.<br><br>
-                  🔹 Visualiza apenas os pedidos vinculados a ele (a menos que seja administrador).
-                </span>
-              </div>
-              <div class="mb-3 form-check">
-                <input id="usuEst" type="checkbox" class="form-check-input" />
-                <label class="form-check-label" for="usuEst">Estoque</label>
-                <i class="fa-solid fa-circle-question info-icon"></i>
-                <span class="tooltip-text" role="tooltip" aria-hidden="true">
-                  📦 Usuário com permissão de <strong>Estoque</strong> pode visualizar e atualizar quantidades de
-                  produtos.<br><br>
-                  🔹 Permite ajustar estoque, registrar entradas e saídas.
-                </span>
-              </div>
-              <div class="mb-3 form-check">
-                <input id="usuRca" type="checkbox" class="form-check-input" />
-                <label class="form-check-label" for="usuRca">Vendedor</label>
-                <i class="fa-solid fa-circle-question info-icon"></i>
-                <span class="tooltip-text" role="tooltip" aria-hidden="true">
-                  💼 Usuário marcado como <strong>Vendedor</strong> pode criar e gerenciar seus próprios
-                  pedidos.<br><br>
-                  🔹 Visualiza pedidos sem vendedor e feitos por ele mesmo.<br>
-                  🔹 Não tem acesso a cadastros ou configurações do sistema.
-                </span>
-              </div>
+              <section class="usu-section mb-3">
+                <div class="usu-section__header">
+                  <span class="usu-section__title">Perfil e acesso</span>
+                </div>
+                <div class="usu-access-grid">
+                  <div class="form-check">
+                    <input id="usuSta" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="usuSta">Ativo</label>
+                    <i class="fa-solid fa-circle-question info-icon"></i>
+                    <span class="tooltip-text" role="tooltip" aria-hidden="true">
+                      ✅ Usuário ativo pode acessar o sistema normalmente.<br><br>
+                      ❌ Se estiver desmarcado, o acesso será bloqueado — o usuário não conseguirá fazer login.
+                    </span>
+                  </div>
+                  <div class="form-check">
+                    <input id="usuAdm" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="usuAdm">Administrador</label>
+                    <i class="fa-solid fa-circle-question info-icon"></i>
+                    <span class="tooltip-text" role="tooltip" aria-hidden="true">
+                      ✅ Administrador tem acesso total às seguintes áreas:<br>
+                      • <strong>Configurações</strong><br>
+                      • <strong>Usuários</strong><br>
+                      • <strong>Produtos</strong><br><br>
+                      🔹 Pode gerenciar todos os produtos e visualizar todos os pedidos,<br>
+                      mesmo que não sejam do seu próprio vendedor.
+                    </span>
+                  </div>
+                  <div class="form-check">
+                    <input id="usuRca" type="checkbox" class="form-check-input" />
+                    <label class="form-check-label" for="usuRca">Vendedor</label>
+                    <i class="fa-solid fa-circle-question info-icon"></i>
+                    <span class="tooltip-text" role="tooltip" aria-hidden="true">
+                      💼 Usuário marcado como <strong>Vendedor</strong> pode criar e gerenciar seus próprios
+                      pedidos.<br><br>
+                      🔹 Visualiza pedidos sem vendedor e feitos por ele mesmo.<br>
+                      🔹 Não tem acesso a cadastros ou configurações do sistema.
+                    </span>
+                  </div>
+                </div>
+              </section>
+              <section class="usu-section mb-3">
+                <div class="usu-section__header">
+                  <span class="usu-section__title">Telas liberadas</span>
+                  <i class="fa-solid fa-circle-question info-icon"></i>
+                  <span class="tooltip-text" role="tooltip" aria-hidden="true">
+                    🖥️ Marque as telas que este usuário pode acessar.<br><br>
+                    🔹 Administradores têm acesso a todas as telas independentemente destas opções.
+                  </span>
+                </div>
+                <div id="usuTelasChecks" class="usu-telas-grid">
+                  <!-- preenchido via JS -->
+                </div>
+                <p class="usu-section__hint">Novas telas são adicionadas automaticamente a esta lista.</p>
+              </section>
               <!--   // FIM CHECKSBOXERS -->
             </div>
             <div class="modal-footer">
@@ -208,11 +210,11 @@
     </footer>
   </div>
 
-  <script src="html/auth/js/componentes.js?v=2026.09.12.012745"></script>
-  <script src="/config.js?v=2026.09.12.012745"></script>
-  <script src="../js/nomeEmpresa.js?v=2026.09.12.012745"></script>
+  <script src="html/auth/js/componentes.js?v=2026.09.12.134309"></script>
+  <script src="/config.js?v=2026.09.12.134309"></script>
+  <script src="../js/nomeEmpresa.js?v=2026.09.12.134309"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-  <script src="/html/auth/js/usuarios.js?v=2026.09.12.012745"></script>
+  <script src="/html/auth/js/usuarios.js?v=2026.09.12.134309"></script>
   <script></script>
 </body>
 

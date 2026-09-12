@@ -1,6 +1,13 @@
 {
-  "generatedAt": "2026-09-12T04:27:45.261Z",
+  "generatedAt": "2026-09-12T16:43:09.549Z",
   "releases": [
+    {
+      "id": 387454209,
+      "tag_name": "v5.1.0",
+      "name": "v5.1.0",
+      "body": "🎯 Objetivo\r\nImplementar melhorias no fluxo de autenticação, adicionando proteção contra tentativas excessivas de login e ajustando os redirecionamentos relacionados ao login e logout.\r\n\r\n🔨 Alterações\r\nImplementado limite de tentativas de login por IP e e-mail.\r\nAdicionado bloqueio para excesso de tentativas de autenticação.\r\nAjustado o fluxo de logout para redirecionar corretamente para a tela de login.\r\nAjustado o botão da tela de login para direcionar para a loja.\r\nAtualizados os assets com versionamento para garantir o carregamento das alterações.\r\n\r\n✅ Validação\r\nValidado o limite de tentativas utilizando IP e e-mail.\r\nValidado o bloqueio após exceder o limite configurado.\r\nValidado o redirecionamento após logout.\r\nValidado o redirecionamento do botão da tela de login para a loja.\r\nValidado o carregamento atualizado dos assets.\r\n\r\n🎉 Resultado\r\nMaior segurança contra tentativas abusivas de autenticação.\r\nFluxo de login e logout mais consistente.\r\nNavegação mais adequada entre sistema e loja.\r\nMelhor controle sobre tentativas de acesso à conta.",
+      "published_at": "2026-09-12T04:30:53Z"
+    },
     {
       "id": 387449712,
       "tag_name": "v5.0.0",

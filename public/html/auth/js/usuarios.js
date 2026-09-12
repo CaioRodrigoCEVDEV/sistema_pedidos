@@ -11,6 +11,7 @@ const usersData = [
 // Estado
 let users = [...usersData]; // clone para manipulação local
 let filtered = [...users];
+let telasRegistry = []; // catálogo de telas liberáveis
 // Carrega dados reais da API e atualiza users/usersData
 // --- Função central para recarregar usuários da API e atualizar UI ---
 async function refreshUsers({ keepSearch = true } = {}) {
@@ -36,8 +37,60 @@ async function refreshUsers({ keepSearch = true } = {}) {
 
 // Substitui seu IIFE loadUsers original — usa refreshUsers para inicializar
 (async function init() {
+  try {
+    const res = await fetch(`${BASE_URL}/telas`);
+    if (res.ok) {
+      telasRegistry = await res.json();
+    }
+  } catch (err) {
+    console.error("Falha ao carregar catálogo de telas:", err);
+  }
+  renderTelasChecks([]);
   await refreshUsers();
 })();
+
+// Renderiza as checkboxes de telas liberáveis, agrupadas por grupo.
+function renderTelasChecks(selected) {
+  const holder = document.getElementById("usuTelasChecks");
+  if (!holder) return;
+  const sel = new Set(selected || []);
+  const grupos = {};
+  for (const tela of telasRegistry) {
+    const grupo = tela.telagrupo || "Telas";
+    if (!grupos[grupo]) grupos[grupo] = [];
+    grupos[grupo].push(tela);
+  }
+
+  holder.innerHTML = Object.keys(grupos)
+    .map((grupo) => {
+      const checks = grupos[grupo]
+        .map(
+          (tela) => `
+        <div class="form-check">
+          <input class="form-check-input tela-check" type="checkbox"
+            value="${escapeHtml(tela.telachave)}" id="tela_${escapeHtml(
+              tela.telachave
+            )}" ${sel.has(tela.telachave) ? "checked" : ""}>
+          <label class="form-check-label" for="tela_${escapeHtml(
+            tela.telachave
+          )}"><i class="bi ${escapeHtml(
+            tela.telaicone || "bi-window"
+          )}"></i> ${escapeHtml(tela.telanome)}</label>
+        </div>`
+        )
+        .join("");
+      return `<div class="usu-telas-group"><div class="usu-telas-group__title">${escapeHtml(
+        grupo
+      )}</div>${checks}</div>`;
+    })
+    .join("");
+}
+
+function getSelectedTelas() {
+  return Array.from(
+    document.querySelectorAll("#usuTelasChecks .tela-check:checked")
+  ).map((input) => input.value);
+}
 
 // Elementos
 const tbody = document.getElementById("usersTbody");
@@ -55,8 +108,6 @@ const usuSenha = document.getElementById("usuSenha");
 const usuAdm = document.getElementById("usuAdm");
 const usuSta = document.getElementById("usuSta");
 const usuRca = document.getElementById("usuRca");
-const usuPv = document.getElementById("usuPv");
-const usuEst = document.getElementById("usuEst");
 const togglePwd = document.getElementById("togglePwd");
 const btnDelete = document.getElementById("btnDelete");
 const btnNew = document.getElementById("btnNew");
@@ -126,10 +177,9 @@ function openUserModal(usucod) {
     usuSenha.value = "";
     usuSenha.type = "password";
     usuAdm.checked = u.usuadm === "S";
-    usuPv.checked = u.usupv === "S";
-    usuEst.checked = u.usuest === "S";
     usuSta.checked = u.ususta === "A" ? true : u.ususta === "I" ? false : false;
     usuRca.checked = u.usurca === "S";
+    renderTelasChecks(u.telas || []);
     userModal.show();
   }
 }
@@ -144,10 +194,9 @@ userForm.addEventListener("submit", async (ev) => {
     usuemail: usuEmail.value.trim(),
     ususenha: usuSenha.value,
     usuadm: usuAdm.checked ? "S" : "N",
-    usupv: usuPv.checked ? "S" : "N",
-    usuest: usuEst.checked ? "S" : "N",
     ususta: usuSta.checked ? "A" : "I",
     usurca: usuRca.checked ? "S" : "N",
+    telas: getSelectedTelas(),
   };
 
   try {
@@ -223,10 +272,9 @@ btnNew.addEventListener("click", () => {
   usuSenha.value = "";
   usuSenha.type = "password";
   usuAdm.checked = false;
-  usuPv.checked = false;
-  usuEst.checked = false;
   usuSta.checked = true;
   usuRca.checked = false;
+  renderTelasChecks([]);
   userModal.show();
 });
 

@@ -1,22 +1,23 @@
 const express = require("express");
-const autenticarToken = require("../middlewares/middlewares");
+const requireTela = require("../middlewares/telaMiddleware");
 const devolucoesController = require("../controllers/devolucoesController");
 
 const router = express.Router();
+const requireDevolucoes = requireTela("devolucoes");
 
 router.get(
   "/devolucoes/itens",
-  autenticarToken,
+  requireDevolucoes,
   devolucoesController.buscarItensVendidos,
 );
 router.get(
   "/devolucoes/historico",
-  autenticarToken,
+  requireDevolucoes,
   devolucoesController.listarHistorico,
 );
 router.post(
   "/devolucoes",
-  autenticarToken,
+  requireDevolucoes,
   devolucoesController.registrarDevolucao,
 );
 
