@@ -113,44 +113,58 @@ document.addEventListener("DOMContentLoaded", function () {
     .then((res) => res.json())
     .then((dados) => {
       const corpoTabela = document.getElementById("corpoTabela");
-      corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
+      if (!corpoTabela) return;
+      corpoTabela.innerHTML = ""; // Limpa o conteúdo atual
       //console.log(dados);
+
+      if (!Array.isArray(dados) || dados.length === 0) {
+        corpoTabela.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-inbox"></i></span><div class="ou-empty__title">Nenhuma peça encontrada</div><div class="ou-empty__text">Nenhuma peça cadastrada para este filtro.</div></div>`;
+        return;
+      }
 
       dados.forEach((dado) => {
         const item = document.createElement("div");
-        item.className = "cart-item";
+        item.className = "ou-result-item";
         item.dataset.preco = dado.provl;
         const isDisabled = dado.prosemest === "S";
+        const safeName = String(dado.prodes || "Peça").replace(/</g, "&lt;");
+        const safeTipo = String(dado.tipodes || "").replace(/</g, "&lt;");
         item.innerHTML = `
-            <div class="item-name">${dado.prodes}</div>
-            <div class="item-tipo">${dado.tipodes}</div>
-            <div class="item-price">${formatarMoeda(dado.provl)} 
-              <button class="${
+            <div class="ou-result-item__main">
+              <div class="ou-result-item__name">${safeName}</div>
+              <div class="ou-result-item__meta">${safeTipo}</div>
+            </div>
+            <div class="ou-result-item__price">${formatarMoeda(dado.provl)}</div>
+            ${isDisabled ? `<span class="ou-badge ou-badge--danger">Em Falta</span>` : ""}
+            <button class="${
                 isDisabled
-                  ? "btn btn-danger btn-sm btn-add"
-                  : "btn btn-primary btn-add"
+                  ? "btn btn-secondary btn-sm"
+                  : "btn btn-success btn-sm"
               }" ${
           isDisabled
             ? 'disabled title="Em Falta"'
             : `onclick="adicionarAoCarrinho('${dado.procod}')"`
         }>
           ${isDisabled ? "Em Falta" : "Adicionar"}
-              </button>
-            </div>
+            </button>
           `;
 
         corpoTabela.appendChild(item);
       });
     })
-    .catch((erro) => console.error(erro));
+    .catch((erro) => {
+      console.error(erro);
+      const corpoTabela = document.getElementById("corpoTabela");
+      if (corpoTabela) corpoTabela.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-exclamation-triangle"></i></span><div class="ou-empty__title">Erro ao carregar</div><div class="ou-empty__text">Tente novamente em instantes.</div></div>`;
+    });
 });
 
 document.getElementById("pesquisa").addEventListener("input", function () {
   const pesquisa = this.value.toLowerCase();
-  const linhas = document.querySelectorAll("#corpoTabela .cart-item");
+  const linhas = document.querySelectorAll("#corpoTabela .ou-result-item");
 
   linhas.forEach((linha) => {
-    const celula = linha.querySelector(".item-name");
+    const celula = linha.querySelector(".ou-result-item__name");
     if (celula) {
       const conteudoCelula = celula.textContent.toLowerCase();
       linha.style.display = conteudoCelula.includes(pesquisa) ? "" : "none";
@@ -171,139 +185,21 @@ if (marcascod !== null) {
     });
 }
 
-// Função para atualizar o ícone do carrinho (exibe badge com quantidade de itens)
-function atualizarIconeCarrinho() {
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  let badge = document.getElementById("cartBadge");
-  const cartIcon =
-    document.getElementById("cartIcon") ||
-    document.getElementById("openCartModal");
-  if (!cartIcon) return;
-
-  if (getComputedStyle(cartIcon).position === "static") {
-    cartIcon.style.position = "relative";
-  }
-
-  if (!badge) {
-    badge = document.createElement("span");
-    badge.id = "cartBadge";
-    badge.className = "badge badge-danger";
-    badge.style.position = "absolute";
-    badge.style.left = "0";
-    badge.style.bottom = "0";
-    badge.style.transform = "translate(-40%, 40%)";
-    badge.style.minWidth = "1.1em";
-    badge.style.height = "1.1em";
-    badge.style.fontSize = "0.75em";
-    badge.style.padding = "0.1em 0.3em";
-    badge.style.borderRadius = "50%";
-    badge.style.display = "none";
-    badge.style.alignItems = "center";
-    badge.style.justifyContent = "center";
-    badge.style.background = "#dc3545";
-    badge.style.color = "#fff";
-    badge.style.boxSizing = "border-box";
-    badge.style.zIndex = 10;
-    badge.style.overflow = "hidden";
-    badge.style.textAlign = "center";
-    cartIcon.appendChild(badge);
-  }
-  const total = cart.reduce((sum, item) => sum + item.qt, 0);
-  badge.textContent = total > 0 ? total : "";
-  badge.style.display = total > 0 ? "flex" : "none";
-}
-
-// Função para mostrar popup de confirmação
-function mostrarPopupAdicionado() {
-  // Cria popup simples (pode customizar com Bootstrap Toast/Modal se quiser)
-  let popup = document.getElementById("popupAdicionado");
-  if (!popup) {
-    popup = document.createElement("div");
-    popup.id = "popupAdicionado";
-    popup.style.position = "fixed";
-    popup.style.top = "20px";
-    popup.style.right = "20px";
-    popup.style.background = "#28a745";
-    popup.style.color = "#fff";
-    popup.style.padding = "12px 24px";
-    popup.style.borderRadius = "6px";
-    popup.style.zIndex = 9999;
-    popup.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-    popup.style.fontWeight = "bold";
-    document.body.appendChild(popup);
-  }
-  popup.textContent = "Item adicionado ao carrinho!";
-  popup.style.display = "block";
-  setTimeout(() => {
-    popup.style.display = "none";
-  }, 1500);
-}
-
-document.getElementById("openCartModal").addEventListener("click", function () {
-  $("#cartModal").modal("show");
-
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  const cartItemsDiv = document.getElementById("cartItems");
-
-  if (cart.length === 0) {
-    cartItemsDiv.innerHTML = "<p>Nenhum item no carrinho.</p>";
-  } else {
-    cartItemsDiv.innerHTML =
-      '<ul class="list-group">' +
-      cart
-        .map(
-          (item, idx) => `
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>${item.nome} <small class="text-muted">(R$ ${
-            item.preco ? Number(item.preco).toFixed(2) : "0.00"
-          })</small></span>
-          <span>
-            <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
-          </span>
-          <span>
-            <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
-          </span>
-        </li>
-      `
-        )
-        .join("") +
-      "</ul>";
-  }
-
-  const cartModalFooter = document.querySelector("#cartModal .modal-footer");
-  if (cartModalFooter) {
-    const oldBtn = document.getElementById("goToCartBtn");
-    if (oldBtn) oldBtn.remove();
-
-    const goToCartBtn = document.createElement("a");
-    goToCartBtn.id = "goToCartBtn";
-    goToCartBtn.className = "btn btn-primary ml-2";
-    goToCartBtn.href = "carrinho"; // não precisa de param
-    goToCartBtn.textContent = "Ir para o carrinho";
-    goToCartBtn.style.marginLeft = "8px";
-
-    // Esconde o modal antes de navegar
-    goToCartBtn.addEventListener("click", function (e) {
-      $("#cartModal").modal("hide");
-    });
-
-    cartModalFooter.appendChild(goToCartBtn);
-  }
-});
+// Carrinho/badge/modal/toast centralizados em storefront-shared.js.
 
 window.adicionarAoCarrinho = async function (procod) {
   const qtde = 1;
   const button = event.target;
-  const itemDiv = button.closest(".cart-item");
+  const itemDiv = button.closest(".ou-result-item") || button.closest(".cart-item");
 
   if (!itemDiv) {
-    console.error("Elemento '.cart-item' não encontrado.");
+    console.error("Elemento do item não encontrado.");
     return;
   }
 
-  const nome = itemDiv.querySelector(".item-name")?.textContent || "Produto";
+  const nome = itemDiv.querySelector(".ou-result-item__name, .item-name")?.textContent || "Produto";
   const preco = parseFloat(itemDiv.dataset.preco || "0");
-  const tipo = itemDiv.querySelector(".item-tipo")?.textContent || "";
+  const tipo = itemDiv.querySelector(".ou-result-item__meta, .item-tipo")?.textContent || "";
   const marca = document.getElementById("marcaTitulo")?.textContent || "";
 
   try {
@@ -353,10 +249,12 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
   modal.style.top = "50%";
   modal.style.left = "50%";
   modal.style.transform = "translate(-50%, -50%)";
-  modal.style.background = "white";
+  modal.style.background = "var(--ou-surface, #fff)";
+  modal.style.color = "var(--ou-text, #0f172a)";
   modal.style.padding = "20px";
-  modal.style.borderRadius = "8px";
-  modal.style.boxShadow = "0 2px 10px rgba(0,0,0,0.3)";
+  modal.style.borderRadius = "18px";
+  modal.style.border = "1px solid var(--ou-border-soft, #eaeef5)";
+  modal.style.boxShadow = "var(--ou-shadow-lg, 0 18px 48px rgba(15,23,42,.12))";
   modal.style.zIndex = "9999";
 
   // Monta HTML do modal com indicação de cores sem estoque
@@ -545,22 +443,8 @@ function adicionarProdutoAoCarrinho(
   }
 
   localStorage.setItem("cart", JSON.stringify(cart));
-  atualizarIconeCarrinho();
-  mostrarPopupAdicionado();
+  if (window.ouStorefront) {
+    window.ouStorefront.atualizarIconeCarrinho();
+    window.ouStorefront.mostrarPopupAdicionado();
+  }
 }
-
-document.addEventListener("DOMContentLoaded", atualizarIconeCarrinho);
-
-// Função global para remover item do carrinho
-window.removerItemCarrinho = function (idx) {
-  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  cart.splice(idx, 1);
-  localStorage.setItem("cart", JSON.stringify(cart));
-  atualizarIconeCarrinho();
-  // Reabrir/atualizar modal
-  document.getElementById("openCartModal").click();
-};
-
-window.addEventListener("pageshow", function (event) {
-  atualizarIconeCarrinho();
-});
