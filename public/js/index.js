@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const dados = await res.json();
 
     if (!Array.isArray(dados) || dados.length === 0) {
-      holder.innerHTML = "<p>Nenhuma marca encontrada.</p>";
+      holder.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-phone"></i></span><div class="ou-empty__title">Nenhuma marca encontrada</div><div class="ou-empty__text">Cadastre marcas no painel para exibi-las aqui.</div></div>`;
       return;
     }
 
@@ -155,9 +155,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       link.setAttribute("aria-label", label);
 
       const btn = document.createElement("button");
-      btn.className = "brand-btn";
+      btn.className = "ou-brand-card";
       btn.type = "button";
 
+      const logoWrap = document.createElement("span");
+      logoWrap.className = "ou-brand-logo";
       const img = document.createElement("img");
       img.src = logoInfo.primary; // tenta logo do uploads
       img.alt = `${label} logo`;
@@ -170,10 +172,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
 
       const span = document.createElement("span");
+      span.className = "ou-brand-name";
       span.textContent = label;
 
-      btn.appendChild(img);
+      const chevron = document.createElement("i");
+      chevron.className = "bi bi-chevron-right";
+
+      logoWrap.appendChild(img);
+      btn.appendChild(logoWrap);
       btn.appendChild(span);
+      btn.appendChild(chevron);
       link.appendChild(btn);
       col.appendChild(link);
       row.appendChild(col);
@@ -183,7 +191,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     console.error("Erro ao carregar marcas:", err);
     holder.innerHTML =
-      "<p>Erro ao carregar marcas. Veja o console para detalhes.</p>";
+      `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-exclamation-triangle"></i></span><div class="ou-empty__title">Erro ao carregar marcas</div><div class="ou-empty__text">Verifique sua conexão e tente novamente.</div></div>`;
   }
 });
 
@@ -242,24 +250,24 @@ inputPesquisa.addEventListener("input", function () {
         // Ordena as peças
         filtrados.forEach((peca) => {
           const item = document.createElement("div");
-          item.className = "cart-item";
+          item.className = "ou-result-item";
           item.dataset.preco = peca.provl;
           const isDisabled = peca.prosemest === "S";
           item.innerHTML = `
-            <div class="item-name">${peca.prodes}</div>
-            <div class="item-tipo">${peca.tipodes}</div>
-            <div class="item-marca">${peca.marcasdes}</div>
-            <div class="item-price">${formatarMoeda(peca.provl)}
-              <button class="${
+            <div class="ou-result-item__main">
+              <div class="ou-result-item__name">${peca.prodes}</div>
+              <div class="ou-result-item__meta">${peca.tipodes || ""} · ${peca.marcasdes || ""}</div>
+            </div>
+            <div class="ou-result-item__price">${formatarMoeda(peca.provl)}</div>
+            <button class="${
                 isDisabled
-                  ? "btn btn-danger btn-sm btn-add"
-                  : "btn btn-success btn-sm btn-add"
+                  ? "btn btn-secondary btn-sm"
+                  : "btn btn-success btn-sm"
               }" ${
                 isDisabled
                   ? 'disabled title="Em Falta"'
                   : `onclick="adicionarAoCarrinho('${peca.procod}')"`
               }>${isDisabled ? "Em Falta" : "Adicionar"}</button>
-            </div>
 
           `;
           corpoTabela.appendChild(item);
@@ -310,14 +318,14 @@ inputPesquisa.addEventListener("input", function () {
         // Loop para inserir os modelos
         filtrados.forEach((modelo) => {
           const item = document.createElement("div");
-          item.className = "cart-item";
+          item.className = "ou-result-item";
           item.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <div class="item-name">${modelo.moddes}</div>
-              <a href="pecas?id=${modelo.modcod}&marcascod=${modelo.modmarcascod}">
-                <button class="btn btn-success btn-sm btn-add">Selecionar</button>
-              </a>
+            <div class="ou-result-item__main">
+              <div class="ou-result-item__name">${modelo.moddes}</div>
             </div>
+            <a href="pecas?id=${modelo.modcod}&marcascod=${modelo.modmarcascod}">
+              <button class="btn btn-primary btn-sm">Selecionar</button>
+            </a>
           `;
           corpoTabela.appendChild(item);
         });
@@ -350,124 +358,74 @@ function atualizarIconeCarrinho() {
   if (!badge) {
     badge = document.createElement("span");
     badge.id = "cartBadge";
-    badge.className = "badge badge-danger";
+    badge.className = "badge rounded-pill bg-danger";
     badge.style.position = "absolute";
-    badge.style.left = "0";
-    badge.style.bottom = "0";
-    badge.style.transform = "translate(-40%, 40%)";
-    badge.style.minWidth = "1.1em";
-    badge.style.height = "1.1em";
-    badge.style.fontSize = "0.75em";
-    badge.style.padding = "0.1em 0.3em";
-    badge.style.borderRadius = "50%";
+    badge.style.top = "-6px";
+    badge.style.right = "-6px";
+    badge.style.minWidth = "1.25em";
+    badge.style.height = "1.25em";
+    badge.style.fontSize = "0.7em";
+    badge.style.padding = "0.15em 0.35em";
     badge.style.display = "none";
     badge.style.alignItems = "center";
     badge.style.justifyContent = "center";
-    badge.style.background = "#dc3545";
-    badge.style.color = "#fff";
-    badge.style.boxSizing = "border-box";
     badge.style.zIndex = 10;
-    badge.style.overflow = "hidden";
-    badge.style.textAlign = "center";
     cartIcon.appendChild(badge);
   }
   const total = cart.reduce((sum, item) => sum + item.qt, 0);
   badge.textContent = total > 0 ? total : "";
-  badge.style.display = total > 0 ? "flex" : "none";
+  badge.style.display = total > 0 ? "inline-flex" : "none";
+}
+
+// Toast padrão OrderUp (usa .ou-toast do ui.css; cai para showToast legado)
+function ouNotify(message, type = "success") {
+  if (typeof showToast === "function" && !document.getElementById("ouToastContainer")) {
+    showToast(message, type === "success" ? "success" : "info");
+    return;
+  }
+  let container = document.getElementById("ouToastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "ouToastContainer";
+    container.className = "ou-toast-container";
+    document.body.appendChild(container);
+  }
+  const icons = { success: "bi-check-circle-fill", error: "bi-exclamation-circle-fill", info: "bi-info-circle-fill" };
+  const el = document.createElement("div");
+  el.className = `ou-toast ou-toast--${type}`;
+  el.innerHTML = `<i class="bi ${icons[type] || icons.success}"></i><span></span>`;
+  el.querySelector("span").textContent = message;
+  container.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("ou-toast--in"));
+  setTimeout(() => {
+    el.classList.remove("ou-toast--in");
+    setTimeout(() => el.remove(), 250);
+  }, 1800);
 }
 
 // Função para mostrar popup de confirmação
 function mostrarPopupAdicionado() {
-  // Cria popup simples (pode customizar com Bootstrap Toast/Modal se quiser)
-  let popup = document.getElementById("popupAdicionado");
-  if (!popup) {
-    popup = document.createElement("div");
-    popup.id = "popupAdicionado";
-    popup.style.position = "fixed";
-    popup.style.top = "20px";
-    popup.style.right = "20px";
-    popup.style.background = "#28a745";
-    popup.style.color = "#fff";
-    popup.style.padding = "12px 24px";
-    popup.style.borderRadius = "6px";
-    popup.style.zIndex = 9999;
-    popup.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-    popup.style.fontWeight = "bold";
-    document.body.appendChild(popup);
-  }
-  popup.textContent = "Item adicionado ao carrinho!";
-  popup.style.display = "block";
-  setTimeout(() => {
-    popup.style.display = "none";
-  }, 1500);
+  ouNotify("Item adicionado ao carrinho!", "success");
 }
 
-document.getElementById("openCartModal").addEventListener("click", function () {
-  $("#cartModal").modal("show");
-
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  const cartItemsDiv = document.getElementById("cartItems");
-
-  if (cart.length === 0) {
-    cartItemsDiv.innerHTML = "<p>Nenhum item no carrinho.</p>";
-  } else {
-    cartItemsDiv.innerHTML =
-      '<ul class="list-group">' +
-      cart
-        .map(
-          (item, idx) => `
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>${item.nome} <small class="text-muted">(R$ ${
-            item.preco ? Number(item.preco).toFixed(2) : "0.00"
-          })</small></span>
-          <span>
-            <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
-          </span>
-          <span>
-            <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
-          </span>
-        </li>
-      `
-        )
-        .join("") +
-      "</ul>";
-  }
-
-  const cartModalFooter = document.querySelector("#cartModal .modal-footer");
-  if (cartModalFooter) {
-    const oldBtn = document.getElementById("goToCartBtn");
-    if (oldBtn) oldBtn.remove();
-
-    const goToCartBtn = document.createElement("a");
-    goToCartBtn.id = "goToCartBtn";
-    goToCartBtn.className = "btn btn-primary ml-2";
-    goToCartBtn.href = "carrinho"; // não precisa de param
-    goToCartBtn.textContent = "Ir para o carrinho";
-    goToCartBtn.style.marginLeft = "8px";
-
-    // Esconde o modal antes de navegar
-    goToCartBtn.addEventListener("click", function (e) {
-      $("#cartModal").modal("hide");
-    });
-
-    cartModalFooter.appendChild(goToCartBtn);
-  }
-});
+// Modal do carrinho centralizado em storefront-shared.js (ensureCartModal +
+// openCartModal + renderCartModalItems). Sem duplicação aqui.
 
 window.adicionarAoCarrinho = async function (procod) {
   const qtde = 1;
   const button = event.target;
-  const itemDiv = button.closest(".cart-item");
+  const itemDiv = button.closest(".ou-result-item") || button.closest(".cart-item");
 
   if (!itemDiv) {
-    console.error("Elemento '.cart-item' não encontrado.");
+    console.error("Elemento do item não encontrado.");
     return;
   }
 
-  const nome = itemDiv.querySelector(".item-name")?.textContent || "Produto";
+  const nome = itemDiv.querySelector(".ou-result-item__name, .item-name")?.textContent || "Produto";
   const preco = parseFloat(itemDiv.dataset.preco || "0");
-  const tipo = itemDiv.querySelector(".item-tipo").textContent;
-  const marca = itemDiv.querySelector(".item-marca").textContent;
+  const meta = (itemDiv.querySelector(".ou-result-item__meta")?.textContent || "").split("·").map((s) => s.trim());
+  const tipo = itemDiv.querySelector(".item-tipo")?.textContent || meta[0] || "";
+  const marca = itemDiv.querySelector(".item-marca")?.textContent || meta[1] || "";
 
   try {
     const response = await fetch(`/proCoresDisponiveis/${procod}`);
@@ -501,10 +459,12 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
   modal.style.top = "50%";
   modal.style.left = "50%";
   modal.style.transform = "translate(-50%, -50%)";
-  modal.style.background = "white";
+  modal.style.background = "var(--ou-surface, #fff)";
+  modal.style.color = "var(--ou-text, #0f172a)";
   modal.style.padding = "20px";
-  modal.style.borderRadius = "8px";
-  modal.style.boxShadow = "0 2px 10px rgba(0,0,0,0.3)";
+  modal.style.borderRadius = "18px";
+  modal.style.border = "1px solid var(--ou-border-soft, #eaeef5)";
+  modal.style.boxShadow = "var(--ou-shadow-lg, 0 18px 48px rgba(15,23,42,.12))";
   modal.style.zIndex = "9999";
 
   // Monta HTML do modal incluindo indicação de cores sem estoque (procorsemest === 'S')
@@ -725,22 +685,30 @@ const btnInstall = document.getElementById("btnInstall");
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault(); // impede o banner automático
   deferredPrompt = e;
-  btnInstall.style.display = "block"; // mostra botão manual
+  if (btnInstall) btnInstall.style.display = "inline-flex"; // mostra botão manual
 });
 
 // Quando o usuário clicar no botão
-btnInstall.addEventListener("click", () => {
-  btnInstall.style.display = "none"; // esconde o botão
-  deferredPrompt.prompt(); // dispara o banner nativo
-  deferredPrompt.userChoice.then((choiceResult) => {
-    console.log("Usuário escolheu:", choiceResult.outcome);
-    deferredPrompt = null;
+if (btnInstall) {
+  btnInstall.addEventListener("click", () => {
+    btnInstall.style.display = "none"; // esconde o botão
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt(); // dispara o banner nativo
+    deferredPrompt.userChoice.then((choiceResult) => {
+      console.log("Usuário escolheu:", choiceResult.outcome);
+      deferredPrompt = null;
+    });
   });
-});
+}
 
 // Registro do Service Worker
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").then(() => {
-    console.log("Service Worker registrado");
-  });
+  navigator.serviceWorker.register("/sw.js").then(
+    () => {
+      console.log("Service Worker registrado");
+    },
+    (err) => {
+      console.log("Service Worker indisponível:", err);
+    }
+  );
 }

@@ -57,43 +57,65 @@ if (id !== null) {
     });
 }
 
-//popular table com os dados do modelo
+//popular lista com os dados do modelo
 document.addEventListener("DOMContentLoaded", function () {
+  const corpoTabela = document.getElementById("corpoTabela");
   if (id === null) {
+    if (corpoTabela) corpoTabela.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-tools"></i></span><div class="ou-empty__title">Modelo não informado</div><div class="ou-empty__text">Volte e selecione um modelo.</div></div>`;
     return;
   }
 
   fetch(`${BASE_URL}/tipo/${id}`)
     .then((res) => res.json())
     .then((dados) => {
-      const corpoTabela = document.getElementById("corpoTabela");
-      corpoTabela.innerHTML = ""; // Limpa o conteúdo atual da tabela
+      if (!corpoTabela) return;
+      corpoTabela.innerHTML = ""; // Limpa o conteúdo atual
+
+      if (!Array.isArray(dados) || dados.length === 0) {
+        corpoTabela.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-inbox"></i></span><div class="ou-empty__title">Nenhum tipo encontrado</div><div class="ou-empty__text">Nenhum tipo de peça para este modelo.</div></div>`;
+        return;
+      }
 
       dados.forEach((dado) => {
-        const tr = document.createElement("tr");
         const href = buildListaPecasHref(
           dado.tipocod,
           dado.promarcascod,
           dado.promodcod,
         );
-        tr.innerHTML = `
-                      <td style="white-space: pre-line;">${dado.tipodes}</td>
-                      <td class="text-center">
-                        ${
-                          href
-                            ? `<a href="${href}">
-                          <button class="btn btn-primary btn-add">
-                      Selecionar <i class="bi bi-arrow-right-short"></i>
-                          </button>
-                        </a>`
-                            : '<button class="btn btn-primary btn-add" disabled>Selecionar</button>'
-                        }
-                      </td>
+        const item = document.createElement("div");
+        item.className = "ou-result-item";
+        const safeName = String(dado.tipodes || "Tipo").replace(/</g, "&lt;");
+        item.innerHTML = `
+          <div class="ou-result-item__main">
+            <div class="ou-result-item__name">${safeName}</div>
+          </div>
+          ${
+            href
+              ? `<a href="${href}"><button class="btn btn-primary btn-sm">Selecionar <i class="bi bi-arrow-right-short"></i></button></a>`
+              : '<button class="btn btn-secondary btn-sm" disabled>Selecionar</button>'
+          }
         `;
-        corpoTabela.appendChild(tr);
+        corpoTabela.appendChild(item);
       });
     })
-    .catch((erro) => console.error(erro));
+    .catch((erro) => {
+      console.error(erro);
+      if (corpoTabela) corpoTabela.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-exclamation-triangle"></i></span><div class="ou-empty__title">Erro ao carregar</div><div class="ou-empty__text">Tente novamente em instantes.</div></div>`;
+    });
+});
+
+// Filtro local por tipo
+document.addEventListener("DOMContentLoaded", function () {
+  const input = document.getElementById("pesquisa");
+  if (!input) return;
+  input.addEventListener("input", function () {
+    const pesquisa = this.value.toLowerCase();
+    document.querySelectorAll("#corpoTabela .ou-result-item").forEach((linha) => {
+      const celula = linha.querySelector(".ou-result-item__name");
+      const txt = celula ? celula.textContent.toLowerCase() : "";
+      linha.style.display = txt.includes(pesquisa) ? "" : "none";
+    });
+  });
 });
 
 // Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
@@ -109,135 +131,16 @@ if (marcascod !== null) {
     });
 }
 
-// Função para atualizar o ícone do carrinho (exibe badge com quantidade de itens)
-function atualizarIconeCarrinho() {
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  let badge = document.getElementById("cartBadge");
-  const cartIcon =
-    document.getElementById("cartIcon") ||
-    document.getElementById("openCartModal");
-  if (!cartIcon) return;
-
-  if (getComputedStyle(cartIcon).position === "static") {
-    cartIcon.style.position = "relative";
-  }
-
-  if (!badge) {
-    badge = document.createElement("span");
-    badge.id = "cartBadge";
-    badge.className = "badge badge-danger";
-    badge.style.position = "absolute";
-    badge.style.left = "0";
-    badge.style.bottom = "0";
-    badge.style.transform = "translate(-40%, 40%)";
-    badge.style.minWidth = "1.1em";
-    badge.style.height = "1.1em";
-    badge.style.fontSize = "0.75em";
-    badge.style.padding = "0.1em 0.3em";
-    badge.style.borderRadius = "50%";
-    badge.style.display = "none";
-    badge.style.alignItems = "center";
-    badge.style.justifyContent = "center";
-    badge.style.background = "#dc3545";
-    badge.style.color = "#fff";
-    badge.style.boxSizing = "border-box";
-    badge.style.zIndex = 10;
-    badge.style.overflow = "hidden";
-    badge.style.textAlign = "center";
-    cartIcon.appendChild(badge);
-  }
-  const total = cart.reduce((sum, item) => sum + item.qt, 0);
-  badge.textContent = total > 0 ? total : "";
-  badge.style.display = total > 0 ? "flex" : "none";
-}
-
-// Função para mostrar popup de confirmação
-function mostrarPopupAdicionado() {
-  // Cria popup simples (pode customizar com Bootstrap Toast/Modal se quiser)
-  let popup = document.getElementById("popupAdicionado");
-  if (!popup) {
-    popup = document.createElement("div");
-    popup.id = "popupAdicionado";
-    popup.style.position = "fixed";
-    popup.style.top = "20px";
-    popup.style.right = "20px";
-    popup.style.background = "#28a745";
-    popup.style.color = "#fff";
-    popup.style.padding = "12px 24px";
-    popup.style.borderRadius = "6px";
-    popup.style.zIndex = 9999;
-    popup.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-    popup.style.fontWeight = "bold";
-    document.body.appendChild(popup);
-  }
-  popup.textContent = "Item adicionado ao carrinho!";
-  popup.style.display = "block";
-  setTimeout(() => {
-    popup.style.display = "none";
-  }, 1500);
-}
-
-document.getElementById("openCartModal").addEventListener("click", function () {
-  $("#cartModal").modal("show");
-
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  const cartItemsDiv = document.getElementById("cartItems");
-
-  if (cart.length === 0) {
-    cartItemsDiv.innerHTML = "<p>Nenhum item no carrinho.</p>";
-  } else {
-    cartItemsDiv.innerHTML =
-      '<ul class="list-group">' +
-      cart
-        .map(
-          (item, idx) => `
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>${item.nome} <small class="text-muted">(R$ ${
-            item.preco ? Number(item.preco).toFixed(2) : "0.00"
-          })</small></span>
-          <span>
-            <span class="badge badge-primary badge-pill mr-2">${item.qt}</span>
-          </span>
-          <span>
-            <button class="btn btn-danger btn-sm" onclick="removerItemCarrinho(${idx})">&times;</button>
-          </span>
-        </li>
-      `
-        )
-        .join("") +
-      "</ul>";
-  }
-
-  const cartModalFooter = document.querySelector("#cartModal .modal-footer");
-  if (cartModalFooter) {
-    const oldBtn = document.getElementById("goToCartBtn");
-    if (oldBtn) oldBtn.remove();
-
-    const goToCartBtn = document.createElement("a");
-    goToCartBtn.id = "goToCartBtn";
-    goToCartBtn.className = "btn btn-primary ml-2";
-    goToCartBtn.href = "carrinho"; // não precisa de param
-    goToCartBtn.textContent = "Ir para o carrinho";
-    goToCartBtn.style.marginLeft = "8px";
-
-    // Esconde o modal antes de navegar
-    goToCartBtn.addEventListener("click", function (e) {
-      $("#cartModal").modal("hide");
-    });
-
-    cartModalFooter.appendChild(goToCartBtn);
-  }
-});
-
-// Modifique a função adicionarAoCarrinho para salvar o preço no carrinho
+// Carrinho/badge/modal/toast centralizados em storefront-shared.js.
+// Mantido apenas o adicionar específico desta página (sem cores).
 window.adicionarAoCarrinho = function (procod) {
   const input = document.getElementById(`qtde_peca_${procod}`);
   const qtde = input ? parseInt(input.value, 10) || 1 : 1;
 
-  // Busca os dados da linha correspondente
-  const tr = input.closest("tr");
-  const nome = tr.querySelector("td").textContent;
-  const preco = parseFloat(tr.dataset.preco || 0);
+  // Busca os dados do item correspondente (lista nova ou tabela legada)
+  const row = input ? input.closest(".ou-result-item, tr") : null;
+  const nome = row ? (row.querySelector(".ou-result-item__name") || row.querySelector("td") || {}).textContent || "Produto" : "Produto";
+  const preco = parseFloat((row && row.dataset && row.dataset.preco) || 0);
 
   // Recupera o carrinho do localStorage
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
@@ -254,24 +157,8 @@ window.adicionarAoCarrinho = function (procod) {
   localStorage.setItem("cart", JSON.stringify(cart));
 
   // Atualiza ícone do carrinho
-  atualizarIconeCarrinho();
+  if (window.ouStorefront) window.ouStorefront.atualizarIconeCarrinho();
 
   // Mostra popup de confirmação
-  mostrarPopupAdicionado();
+  if (window.ouStorefront) window.ouStorefront.mostrarPopupAdicionado();
 };
-
-document.addEventListener("DOMContentLoaded", atualizarIconeCarrinho);
-
-// Função global para remover item do carrinho
-window.removerItemCarrinho = function (idx) {
-  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  cart.splice(idx, 1);
-  localStorage.setItem("cart", JSON.stringify(cart));
-  atualizarIconeCarrinho();
-  // Reabrir/atualizar modal
-  document.getElementById("openCartModal").click();
-};
-
-window.addEventListener("pageshow", function (event) {
-  atualizarIconeCarrinho();
-});

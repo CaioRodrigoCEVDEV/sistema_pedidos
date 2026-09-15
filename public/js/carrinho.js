@@ -1,739 +1,549 @@
-const params = new URLSearchParams(window.location.search);
+/* OrderUp Storefront — Carrinho / Checkout (fase 6).
+ * Fonte única do carrinho na página /carrinho.
+ * Delega badge/toast ao storefront-shared quando disponível.
+ */
+(function () {
+  "use strict";
 
-const id = params.get("id");
-const modelo = params.get("modelo");
-const marcascod = params.get("marcascod");
-const qtde = params.get("qtde");
-
-function formatarMoeda(valor) {
-  return Number(valor).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
-
-function limparCarrinho() {
-  localStorage.removeItem("cart");
-  renderCart(); // Atualiza a tabela para refletir o carrinho limpo
-  atualizarIconeCarrinho(); // Atualiza o ícone do carrinho, se necessário
-}
-
-async function carregarUsuarioLogado() {
-  const response = await fetch(`${BASE_URL}/me/usuario`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-  });
-  if (response.ok) {
-    const data = await response.json();
-    return data.usunome;
-  } else {
-    return null;
+  // ---------- utils ----------
+  function getCart() {
+    try {
+      var cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      return Array.isArray(cart) ? cart : [];
+    } catch (e) {
+      return [];
+    }
   }
-}
 
-//função para verificar se esta logado e mostrar o botão orçamento
-document.addEventListener("DOMContentLoaded", function () {
-  fetch(`${BASE_URL}/emp`)
-    .then((response) => response.json())
-    .then(async (data) => {
-      const empusapv = data.empusapv;
+  function saveCart(cart) {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }
 
-      const botaoOrcamento = document.getElementById("botao-orcamento");
-      const botaoRegistrar = document.getElementById("botao-registrar-pedido");
+  function notify(message, type, duration) {
+    if (typeof window.showToast === "function") {
+      window.showToast(message, type || "info", duration == null ? 3000 : duration);
+      return;
+    }
+    if (window.ouStorefront && typeof window.ouStorefront.ouNotify === "function") {
+      window.ouStorefront.ouNotify(message, type || "info");
+      return;
+    }
+    try {
+      alert(message);
+    } catch (e) {}
+  }
 
-      const usuarioLogado = await carregarUsuarioLogado();
+  function refreshBadge() {
+    if (window.ouStorefront && typeof window.ouStorefront.atualizarIconeCarrinho === "function") {
+      window.ouStorefront.atualizarIconeCarrinho();
+      return;
+    }
+    var cart = getCart();
+    var total = cart.reduce(function (s, it) { return s + (Number(it.qt) || 0); }, 0);
+    var badge = document.getElementById("cartBadge");
+    if (badge) {
+      badge.textContent = total > 0 ? total : "";
+      badge.style.display = total > 0 ? "inline-flex" : "none";
+    }
+  }
 
-      if (usuarioLogado && empusapv === "S") {
-        botaoOrcamento.style.display = "inline";
-        botaoRegistrar.style.display = "inline";
-      } else if (usuarioLogado && empusapv === "N") {
-        botaoOrcamento.style.display = "inline";
-        botaoRegistrar.style.display = "inline";
+  function findItemIndex(cart, rawId) {
+    var wanted = String(rawId == null ? "" : rawId);
+    for (var i = 0; i < cart.length; i++) {
+      if (String(cart[i] && cart[i].id) === wanted) return i;
+    }
+    return -1;
+  }
+
+  function setCheckoutLoading(loading) {
+    var box = document.getElementById("divFinalizar");
+    if (!box) return;
+    box.style.pointerEvents = loading ? "none" : "auto";
+    box.style.opacity = loading ? "0.6" : "1";
+    box.style.userSelect = loading ? "none" : "auto";
+    box.classList.toggle("is-loading", !!loading);
+    box.querySelectorAll("button").forEach(function (btn) {
+      btn.disabled = !!loading;
+    });
+  }
+
+  function formatarMoeda(valor) {
+    return Number(valor || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
+  function cartTotal(cart) {
+    return cart.reduce(function (s, it) {
+      return s + (parseFloat(it.preco) || 0) * (Number(it.qt) || 0);
+    }, 0);
+  }
+
+  function syncCartParam(cart) {
+    try {
+      var url = new URL(window.location);
+      if (cart.length > 0) {
+        var cartJson = encodeURIComponent(
+          btoa(unescape(encodeURIComponent(JSON.stringify(cart))))
+        );
+        url.searchParams.set("cart", cartJson);
       } else {
-        botaoOrcamento.style.display = "none";
-        botaoRegistrar.style.display = "none";
+        url.searchParams.delete("cart");
       }
-    })
-    .catch((error) => {
-      console.error("Erro ao buscar configurações da empresa:", error);
+      window.history.replaceState({}, document.title, url.pathname + url.search);
+    } catch (e) {
+      console.error("Error updating URL cart parameter:", e);
+    }
+  }
+
+  function clearCartAndRender() {
+    saveCart([]);
+    renderCart();
+    refreshBadge();
+    syncCartParam([]);
+  }
+
+  // ---------- render ----------
+  var EMPTY_CART_HTML =
+    '<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-cart"></i></span>' +
+    '<div class="ou-empty__title">Seu carrinho está vazio</div>' +
+    '<div class="ou-empty__text">Volte ao catálogo e adicione peças.</div></div>';
+
+  function renderCart() {
+    var corpo = document.getElementById("carrinhoCorpo");
+    var totalEl = document.getElementById("totalCarrinho");
+    if (!corpo || !totalEl) return;
+    corpo.innerHTML = "";
+
+    var cart = getCart();
+    if (cart.length === 0) {
+      corpo.innerHTML = EMPTY_CART_HTML;
+      totalEl.textContent = formatarMoeda(0);
+      syncCartParam([]);
+      return;
+    }
+
+    cart.forEach(function (item) {
+      var row = document.createElement("div");
+      row.className = "ou-cart-item";
+
+      var main = document.createElement("div");
+      main.className = "ou-cart-item__main";
+      var name = document.createElement("div");
+      name.className = "ou-result-item__name";
+      name.textContent = item.nome || "Produto";
+      var meta = document.createElement("div");
+      meta.className = "ou-result-item__meta";
+      var corTxt = item.corSelecionada ? " · Cor: " + item.corSelecionada : "";
+      meta.textContent =
+        "Marca: " + (item.marca || "-") + " · Tipo: " + (item.tipo || "-") + corTxt;
+      var sub = document.createElement("div");
+      sub.className = "ou-result-item__meta";
+      var valor = parseFloat(item.preco) || 0;
+      var qtde = Number(item.qt) || 0;
+      sub.textContent =
+        "Unitário: " + formatarMoeda(valor) + " · Subtotal: " + formatarMoeda(valor * qtde);
+      main.appendChild(name);
+      main.appendChild(meta);
+      main.appendChild(sub);
+
+      var actions = document.createElement("div");
+      actions.className = "ou-cart-item__actions";
+      var qty = document.createElement("span");
+      qty.className = "ou-qty";
+      var btnDec = document.createElement("button");
+      btnDec.className = "btn btn-sm btn-light btn-icon";
+      btnDec.type = "button";
+      btnDec.title = "Diminuir";
+      btnDec.textContent = "−";
+      btnDec.dataset.action = "dec";
+      btnDec.dataset.id = String(item.id);
+      var b = document.createElement("b");
+      b.textContent = String(qtde);
+      var btnInc = document.createElement("button");
+      btnInc.className = "btn btn-sm btn-light btn-icon";
+      btnInc.type = "button";
+      btnInc.title = "Aumentar";
+      btnInc.textContent = "+";
+      btnInc.dataset.action = "inc";
+      btnInc.dataset.id = String(item.id);
+      var btnDel = document.createElement("button");
+      btnDel.className = "btn btn-sm btn-outline-danger btn-icon";
+      btnDel.type = "button";
+      btnDel.title = "Remover";
+      btnDel.dataset.action = "del";
+      btnDel.dataset.id = String(item.id);
+      btnDel.innerHTML = '<i class="bi bi-trash"></i>';
+      qty.appendChild(btnDec);
+      qty.appendChild(b);
+      qty.appendChild(btnInc);
+      actions.appendChild(qty);
+      actions.appendChild(btnDel);
+
+      row.appendChild(main);
+      row.appendChild(actions);
+      corpo.appendChild(row);
     });
 
-  // Remove usuarioLogado do localStorage ao fechar a página
-  window.addEventListener("beforeunload", function () {
-    localStorage.removeItem("usuarioLogado");
+    totalEl.textContent = formatarMoeda(cartTotal(cart));
+    syncCartParam(cart);
+  }
+
+  // Delegação de cliques (sem inline onclick → sem XSS via id)
+  document.addEventListener("click", function (ev) {
+    var btn = ev.target && ev.target.closest ? ev.target.closest("[data-action]") : null;
+    if (!btn || !document.getElementById("carrinhoCorpo")) return;
+    var action = btn.dataset.action;
+    var id = btn.dataset.id;
+    if (action === "inc") incrementQuantity(id);
+    else if (action === "dec") decrementQuantity(id);
+    else if (action === "del") removeItem(id);
   });
-});
 
-async function buscarUsuario() {
-  try {
-    const response = await fetch(`${BASE_URL}/usuario/viuversao`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
+  function incrementQuantity(itemId) {
+    var cart = getCart();
+    var idx = findItemIndex(cart, itemId);
+    if (idx > -1) {
+      cart[idx].qt = (Number(cart[idx].qt) || 0) + 1;
+      saveCart(cart);
+      renderCart();
+      refreshBadge();
+    }
+  }
+
+  function decrementQuantity(itemId) {
+    var cart = getCart();
+    var idx = findItemIndex(cart, itemId);
+    if (idx > -1) {
+      cart[idx].qt = (Number(cart[idx].qt) || 0) - 1;
+      if (cart[idx].qt <= 0) cart.splice(idx, 1);
+      saveCart(cart);
+      renderCart();
+      refreshBadge();
+    }
+  }
+
+  function removeItem(itemId) {
+    var cart = getCart();
+    var idx = findItemIndex(cart, itemId);
+    if (idx > -1) {
+      cart.splice(idx, 1);
+      saveCart(cart);
+      renderCart();
+      refreshBadge();
+    }
+  }
+
+  function limparCarrinho() {
+    clearCartAndRender();
+  }
+
+  // ---------- checkout ----------
+  var EMOJI = {
+    caixa: "📦",
+    dinheiro: "💰",
+    loja: "🏬",
+    caminhao: "🚚",
+    obs: "📌",
+  };
+
+  function buildMensagem(cart, total, observacoes, canal) {
+    var msg = EMOJI.caixa + " Pedido de Peças:\n\n";
+    cart.forEach(function (item) {
+      var nome = item.nome || "---";
+      var qtde = Number(item.qt) || 0;
+      var valor = parseFloat(item.preco) || 0;
+      msg += "(" + qtde + ") " + nome + " R$" + valor.toFixed(2) + "\n\n";
     });
-    if (response.ok) {
-      const data = await response.json();
-      return data.usucod;
-    } else {
+    if (observacoes) msg += EMOJI.obs + " Observações: " + observacoes + "\n";
+    msg += EMOJI.dinheiro + " Total: R$ " + total.toFixed(2) + "\n";
+    return msg;
+  }
+
+  async function buscarUsuario() {
+    try {
+      var response = await fetch((window.BASE_URL || "") + "/usuario/viuversao", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (response.ok) {
+        var data = await response.json();
+        return data.usucod;
+      }
       console.error("Erro ao buscar usuário:", response.statusText);
       return null;
+    } catch (error) {
+      console.error("Erro na requisição:", error);
+      return null;
     }
-  } catch (error) {
-    console.error("Erro na requisição:", error);
-    return null;
-  }
-}
-
-function renderCart() {
-  const corpoTabela = document.getElementById("carrinhoCorpo");
-  const totalCarrinhoElement = document.getElementById("totalCarrinho");
-  corpoTabela.innerHTML = ""; // Limpa a lista antes de renderizar
-
-  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  let totalValue = 0;
-
-  if (cart.length === 0) {
-    corpoTabela.innerHTML =
-      '<div class="text-center">Seu carrinho está vazio.</div>';
-    totalCarrinhoElement.innerHTML = formatarMoeda(0);
-    // Opcional: remover o parâmetro 'cart' da URL se o carrinho do localStorage estiver vazio
-    const url = new URL(window.location);
-    if (url.searchParams.has("cart")) {
-      url.searchParams.delete("cart");
-      window.history.replaceState(
-        {},
-        document.title,
-        url.pathname + url.search
-      );
-    }
-    return;
   }
 
-  cart.forEach((item, index) => {
-    // Adicionado index para identificar o item
-    const nome = item.nome || " ";
-    const tipo = item.tipo || " ";
-    const marca = item.marca || " ";
-    const cor = item.corSelecionada || " ";
-    const corid = item.idCorSelecionada || " ";
-    const qtde = item.qt || 0;
-    const valor = parseFloat(item.preco) || 0;
-    const itemTotal = valor * qtde;
-    totalValue += itemTotal;
-
-    const tr = document.createElement("div");
-    tr.className = "cart-item";
-    // Usar item.id se disponível e único, caso contrário, index é uma fallback.
-    // Assumindo que item.id existe e é o procod.
-    const itemId = item.id;
-
-    // botão para limpar todos os i
-
-    tr.innerHTML = `
-            <div class="item-name">${nome}</div>
-            <div class="item-marca">${marcadorEmoji} Marca: ${marca}</div>
-            <div class="item-tipo"> ${marcadorEmoji} Tipo: ${tipo}</div>
-            <div class="item-qty">
-                <button class="btn btn-sm btn-outline-secondary" onclick="decrementQuantity('${itemId}')">-</button>
-                <span class="mx-2">${qtde}</span>
-                <button class="btn btn-sm btn-outline-secondary" onclick="incrementQuantity('${itemId}')">+</button>
-            </div>
-            <div class="item-price">Valor Unitário: ${formatarMoeda(
-              valor
-            )}</div>
-            <div class="item-total">SubTotal: ${formatarMoeda(itemTotal)}</div>
-        `;
-    corpoTabela.appendChild(tr);
-  });
-
-  totalCarrinhoElement.innerHTML = formatarMoeda(totalValue);
-
-  // Atualiza o parâmetro 'cart' na URL para refletir o estado do localStorage
-  // Isso é útil se o usuário recarregar a página ou compartilhar o link,
-  // embora o localStorage seja a fonte primária de verdade dentro da sessão.
-  try {
-    const cartJson = encodeURIComponent(
-      btoa(unescape(encodeURIComponent(JSON.stringify(cart))))
-    );
-    const url = new URL(window.location);
-    if (cart.length > 0) {
-      url.searchParams.set("cart", cartJson);
-    } else {
-      url.searchParams.delete("cart"); // Remove se o carrinho estiver vazio
-    }
-    window.history.replaceState({}, document.title, url.pathname + url.search);
-  } catch (e) {
-    console.error("Error updating URL cart parameter:", e);
-  }
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-
-  // Se quiser forçar limpar quando não houver nada:
-  if (!Array.isArray(cart)) cart = [];
-
-  renderCart(cart);
-});
-
-window.incrementQuantity = function (itemId) {
-  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  const itemIndex = cart.findIndex((item) => item.id === itemId);
-
-  if (itemIndex > -1) {
-    cart[itemIndex].qt += 1;
-    localStorage.setItem("cart", JSON.stringify(cart));
-    renderCart();
-    atualizarIconeCarrinho(); // Se houver um ícone de carrinho global para atualizar
-  }
-};
-
-window.decrementQuantity = function (itemId) {
-  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  const itemIndex = cart.findIndex((item) => item.id === itemId);
-
-  if (itemIndex > -1) {
-    cart[itemIndex].qt -= 1;
-    if (cart[itemIndex].qt <= 0) {
-      cart.splice(itemIndex, 1); // Remove item if quantity is 0 or less
-    }
-    localStorage.setItem("cart", JSON.stringify(cart));
-    renderCart();
-    atualizarIconeCarrinho(); // Se houver um ícone de carrinho global para atualizar
-  }
-};
-
-// Função para atualizar o ícone do carrinho (exemplo, pode já existir em outro script)
-// Se não existir ou precisar ser adaptada, defina-a aqui ou garanta que está acessível.
-function atualizarIconeCarrinho() {
-  // Esta função pode precisar ser importada ou adaptada de pecas.js ou globalmente
-  // Por enquanto, é um placeholder se não estiver já definida e funcionando globalmente.
-  // console.log("atualizarIconeCarrinho chamada em carrinho.js");
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  // Exemplo de lógica de atualização de badge (simplificado):
-  const totalItems = cart.reduce((sum, item) => sum + item.qt, 0);
-  const badgeElement = document.getElementById("cartBadge"); // Supondo que exista um badge com este ID
-  if (badgeElement) {
-    badgeElement.textContent = totalItems > 0 ? totalItems : "";
-    badgeElement.style.display = totalItems > 0 ? "flex" : "none";
-  }
-  // Se você tiver um ícone de carrinho mais complexo ou em outro local (ex: header),
-  // ajuste o seletor e a lógica de atualização conforme necessário.
-}
-// Chame atualizarIconeCarrinho no carregamento da página também, se necessário
-document.addEventListener("DOMContentLoaded", atualizarIconeCarrinho);
-
-window.addEventListener("pageshow", function (event) {
-  // carrinho.js already calls renderCart() on DOMContentLoaded,
-  // and renderCart() itself updates the total and the items based on localStorage.
-  // It also calls atualizarIconeCarrinho indirectly if it's part of renderCart or if renderCart affects the badge count.
-  // However, to be absolutely sure the badge is updated if only localStorage changed
-  // and the page is restored from bfcache (where DOMContentLoaded might not fire again),
-  // we explicitly call renderCart() which includes total and item updates,
-  // and ensure atualizarIconeCarrinho is also called if it's a separate global concern.
-  renderCart(); // This will re-read from localStorage and update the table and totals.
-  atualizarIconeCarrinho(); // Explicitly update badge, in case renderCart doesn't cover it or it's managed separately.
-});
-
-//Emojis para mensagens
-let listaEmoji = "\u{1F9FE}"; // 🧾
-let caixaEmoji = "\u{1F4E6}"; // 📦
-let celularEmoji = "\u{1F4F2}"; // 📲
-let sacoDinheiroEmoji = "\u{1F4B0}"; // 💰
-let dinheiroEmoji = "\u{1F4B5}"; // 💵
-let lojaEmoji = "\u{1F3EC}"; // 🏬
-let maoEmoji = "\u{1F91D}"; // 🤝
-let marcadorEmoji = "\u{25CF}"; // ● (usado em outros locais)
-let confirmeEmoji = "\u{2705}"; // ✅
-let caminhaoEmoji = "\u{1F69A}"; // 🚚
-let pessoaEmoji = "\u{1F464}"; // 👤
-let observacaoEmoji = "\u{1F4CC}"; // 📌
-
-const indent = "      "; // seis espaços para identação nas mensagens
-
-// Novos emojis para detalhamento da mensagem
-let descricaoEmoji = "\u{1F9FE}"; // 🧾
-let marcaEmoji = "\u{1F3F7}"; // 🏷️
-let tipoEmoji = "\u{1F9E9}"; // 🧩
-let quantidadeEmoji = "\u{1F522}"; // 🔢
-
-// função para retirar balcão pegar o id do produto e a quantidade e valor total gerar um formulario e abrir conversa no whatsapp
-async function enviarWhatsApp() {
-  const disabledDiv = document.getElementById("divFinalizar");
-  try {
-    disabledDiv.style.pointerEvents = "none";
-    disabledDiv.style.opacity = "0.6";
-    disabledDiv.status.userSelect = "none";
-  } catch (error) {
-    console.error("Failed", error);
-  }
-
-  const respSeq = await fetch("/pedidos/sequencia");
-  const seqData = await respSeq.json();
-  const pvcod = seqData.nextval;
-
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  const observacoes = document.getElementById("observacoes").value.trim();
-
-  if (cart.length === 0) {
-    showToast("Seu carrinho está vazio!", "warning");
-    reabilitarBotoes();
-    return;
-  }
-
-  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n`;
-  let totalValue = 0;
-  // detalhamento dos itens do pedido
-  cart.forEach((item) => {
-    const nome = item.nome || "---";
-    const qtde = item.qt || 0;
-    const valor = parseFloat(item.preco) || 0;
-    const marca = item.marca || "";
-    const tipo = item.tipo || "";
-    totalValue += valor * qtde;
-    const cor = item.idCorSelecionada || "";
-
-    mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
-  });
-  // fim detalhamento
-  // Enviar pedido para o servidor
-  try {
-    const respPedido = await fetch(`${BASE_URL}/pedidos/enviar`, {
+  async function criarPedidoNoServidor(pvcod, cart, total, observacoes, canal) {
+    var resp = await fetch((window.BASE_URL || "") + "/pedidos/enviar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        pvcod,
-        cart,
-        total: totalValue,
+        pvcod: pvcod,
+        cart: cart,
+        total: total,
         obs: observacoes,
-        canal: "BALCAO",
+        canal: canal,
         status: "A",
         confirmado: "N",
         codigoVendedor: (await buscarUsuario()) || null,
       }),
     });
-    const data = await respPedido.json();
-
-    // Verifica se houve erro (ex: estoque insuficiente)
-    if (!respPedido.ok) {
-      console.error("Erro ao criar pedido:", data);
-      const mensagemErro =
-        data.error || "Erro ao processar pedido. Tente novamente.";
-      showToast(mensagemErro, "error");
-      reabilitarBotoes();
-      return;
-    }
-
-    console.log("Pedido salvo com sucesso:", data);
-
-    if (observacoes) {
-      mensagem += `${observacaoEmoji} Observações: ${observacoes}\n`;
-    }
-    mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
-    mensagem += `${lojaEmoji} Retirada: No balcão\n`;
-    mensagem += `Pedido N°: ${pvcod}\n`;
-    // mensagem += `${celularEmoji} Por favor, confirme o pedido. ${confirmeEmoji}`;
-
-    fetch(`${BASE_URL}/emp`)
-      .then((response) => response.json())
-      .then((data) => {
-        // Use o número
-        const whatsappNumber1 = data.empwhatsapp1 || ""; // Use a default number if not found
-        const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
-          mensagem
-        )}`;
-        window.location.href = whatsappUrl;
-
-        // testes;
-
-        /// Limpa o carrinho no localStorage e na tela
-        localStorage.setItem("cart", JSON.stringify([]));
-        renderCart(); // Isso vai limpar a tabela e zerar o total
-
-        // Remove o parâmetro cart da URL
-        const url = new URL(window.location);
-        url.searchParams.delete("cart");
-        window.history.replaceState(
-          {},
-          document.title,
-          url.pathname + url.search
-        );
-
-        // Redireciona para o index após um pequeno delay
-        setTimeout(() => {
-          window.location.href = "index";
-        }, 500);
-        // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
-      })
-      .catch((error) => {
-        console.error("Erro ao buscar número do WhatsApp:", error);
-        // Notifica o usuário que houve um problema ao buscar o número
-        showToast(
-          "Pedido criado com sucesso! Não foi possível obter o número do WhatsApp. Você será redirecionado para selecionar um contato.",
-          "warning",
-          5000
-        );
-        const whatsappNumber1 = ""; // Fallback caso a API falhe
-        const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber1}&text=${encodeURIComponent(
-          mensagem
-        )}`;
-        window.location.href = whatsappUrl;
-
-        /// Limpa o carrinho no localStorage e na tela
-        localStorage.setItem("cart", JSON.stringify([]));
-        renderCart(); // Isso vai limpar a tabela e zerar o total
-
-        // Remove o parâmetro cart da URL
-        const url = new URL(window.location);
-        url.searchParams.delete("cart");
-        window.history.replaceState(
-          {},
-          document.title,
-          url.pathname + url.search
-        );
-
-        // Redireciona para o index após um pequeno delay
-        setTimeout(() => {
-          window.location.href = "index";
-        }, 500);
-        // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
-      });
-  } catch (error) {
-    console.error("Erro ao processar pedido:", error);
-    showToast("Erro ao processar pedido. Tente novamente.", "error");
-    reabilitarBotoes();
-  }
-}
-
-// Função auxiliar para reabilitar os botões após erro
-function reabilitarBotoes() {
-  const disabledDiv = document.getElementById("divFinalizar");
-  try {
-    disabledDiv.style.pointerEvents = "auto";
-    disabledDiv.style.opacity = "1";
-    disabledDiv.style.userSelect = "auto";
-  } catch (error) {
-    console.error("Erro ao reabilitar botões:", error);
-  }
-}
-
-// quando clicar lá no botão de entrega, abrir um popup com nome completo e endereço
-async function enviarWhatsAppEntrega() {
-  const disabledDiv = document.getElementById("divFinalizar");
-  try {
-    disabledDiv.style.pointerEvents = "none";
-    disabledDiv.style.opacity = "0.6";
-    disabledDiv.status.userSelect = "none";
-  } catch (error) {
-    console.error("Failed", error);
-  }
-
-  const respSeq = await fetch("/pedidos/sequencia");
-  const seqData = await respSeq.json();
-  const pvcod = seqData.nextval;
-
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  const observacoes = document.getElementById("observacoes").value.trim();
-  if (cart.length === 0) {
-    showToast("Seu carrinho está vazio!", "warning");
-    reabilitarBotoes();
-    return;
-  }
-
-  let mensagem = `${caixaEmoji} Pedido de Peças:\n\n`;
-  let totalValue = 0;
-
-  cart.forEach((item) => {
-    const nome = item.nome || "---";
-    const qtde = item.qt || 0;
-    const valor = parseFloat(item.preco) || 0;
-    const marca = item.marca || "";
-    const tipo = item.tipo || "";
-    const cor = item.corid || "";
-    totalValue += valor * qtde;
-
-    mensagem += `(${qtde}) ${nome} R$${valor.toFixed(2)}\n\n`;
-  });
-
-  try {
-    const respPedido = await fetch(`${BASE_URL}/pedidos/enviar`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pvcod,
-        cart,
-        total: totalValue,
-        obs: observacoes,
-        canal: "ENTREGA",
-        status: "A",
-        confirmado: "N",
-        codigoVendedor: (await buscarUsuario()) || null,
-      }),
-    });
-    const data = await respPedido.json();
-
-    // Verifica se houve erro (ex: estoque insuficiente)
-    if (!respPedido.ok) {
-      console.error("Erro ao criar pedido:", data);
-      const mensagemErro =
-        data.error || "Erro ao processar pedido. Tente novamente.";
-      showToast(mensagemErro, "error");
-      reabilitarBotoes();
-      return;
-    }
-
-    console.log("Pedido salvo com sucesso:", data);
-
-    if (observacoes) {
-      mensagem += `${observacaoEmoji} Observações: ${observacoes}\n`;
-    }
-
-    mensagem += `${sacoDinheiroEmoji} Total: R$ ${totalValue.toFixed(2)}\n`;
-    mensagem += `${caminhaoEmoji} Entrega\n`;
-    mensagem += `Pedido N°: ${pvcod}\n`;
-
-    fetch(`${BASE_URL}/emp`)
-      .then((response) => response.json())
-      .then((data) => {
-        // Use o número
-        const whatsappNumber2 = data.empwhatsapp2 || ""; // Use a default number if not found
-        const whatsappUrl2 = `https://api.whatsapp.com/send?phone=${whatsappNumber2}&text=${encodeURIComponent(
-          mensagem
-        )}`;
-
-        window.location.href = whatsappUrl2;
-
-        /// Limpa o carrinho no localStorage e na tela
-        localStorage.setItem("cart", JSON.stringify([]));
-        renderCart(); // Isso vai limpar a tabela e zerar o total
-
-        // Remove o parâmetro cart da URL
-        const url = new URL(window.location);
-        url.searchParams.delete("cart");
-        window.history.replaceState(
-          {},
-          document.title,
-          url.pathname + url.search
-        );
-
-        // Redireciona para o index após um pequeno delay
-        setTimeout(() => {
-          window.location.href = "index";
-        }, 500);
-        // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
-      })
-      .catch((error) => {
-        console.error("Erro ao buscar número do WhatsApp:", error);
-        // Notifica o usuário que houve um problema ao buscar o número
-        showToast(
-          "Pedido criado com sucesso! Não foi possível obter o número do WhatsApp. Você será redirecionado para selecionar um contato.",
-          "warning",
-          5000
-        );
-        const whatsappNumber2 = ""; // Fallback caso a API falhe
-        const whatsappUrl2 = `https://api.whatsapp.com/send?phone=${whatsappNumber2}&text=${encodeURIComponent(
-          mensagem
-        )}`;
-        window.location.href = whatsappUrl2;
-
-        /// Limpa o carrinho no localStorage e na tela
-        localStorage.setItem("cart", JSON.stringify([]));
-        renderCart(); // Isso vai limpar a tabela e zerar o total
-
-        // Remove o parâmetro cart da URL
-        const url = new URL(window.location);
-        url.searchParams.delete("cart");
-        window.history.replaceState(
-          {},
-          document.title,
-          url.pathname + url.search
-        );
-
-        // Redireciona para o index após um pequeno delay
-        setTimeout(() => {
-          window.location.href = "index";
-        }, 500);
-        // atualizarIconeCarrinho(); // renderCart já deve ter chamado isso ou atualizado o necessário
-      });
-  } catch (error) {
-    console.error("Erro ao processar pedido:", error);
-    showToast("Erro ao processar pedido. Tente novamente.", "error");
-    reabilitarBotoes();
-  }
-}
-
-// função botão orçamento será enviado apenas a lista de itens sem valor
-function copiarOrcamentoParaClipboard() {
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  const observacoes = document.getElementById("observacoes").value.trim();
-  const caixaEmoji = "📦";
-  const observacaoEmoji = "📝";
-
-  if (cart.length === 0) {
-    showToast("Seu carrinho está vazio!", "warning");
-    return;
-  }
-
-  let mensagem = `${caixaEmoji} Orçamento de Peças:\n\n`;
-
-  cart.forEach((item) => {
-    const nome = item.nome || "---";
-    const qtde = item.qt || 0;
-    const valor = parseFloat(item.preco) || 0;
-    mensagem += `(${qtde}) ${nome} - R$${valor.toFixed(2)}\n`;
-  });
-
-  if (observacoes) {
-    mensagem += `\n${observacaoEmoji} Observações: ${observacoes}\n`;
-  }
-
-  if (
-    navigator.clipboard &&
-    typeof navigator.clipboard.writeText === "function"
-  ) {
-    navigator.clipboard
-      .writeText(mensagem)
-      .then(() => {})
-      .catch((err) => {
-        showToast("Erro ao copiar: " + err, "error");
-      });
-  } else {
-    // Fallback usando textarea e execCommand
-    const textarea = document.createElement("textarea");
-    textarea.value = mensagem;
-    document.body.appendChild(textarea);
-    textarea.select();
+    var data = null;
     try {
-      document.execCommand("copy");
-    } catch (err) {
-      showToast("Falha ao copiar o texto. Copie manualmente.", "error");
+      data = await resp.json();
+    } catch (e) {}
+    if (!resp.ok) {
+      throw new Error((data && data.error) || "Erro ao processar pedido. Tente novamente.");
     }
-    document.body.removeChild(textarea);
-  }
-}
-
-// Abre um modal de confirmação no padrão do sistema e resolve true/false
-function confirmarRegistroPedido() {
-  return new Promise((resolve) => {
-    const modalEl = document.getElementById("confirmarRegistroModal");
-    const btnConfirmar = document.getElementById("confirmarRegistroBtn");
-
-    // Fallback caso o modal ou o Bootstrap não estejam disponíveis
-    if (!modalEl || !btnConfirmar || !window.bootstrap) {
-      resolve(
-        window.confirm(
-          "Confirmar o registro deste pedido? O carrinho será finalizado."
-        )
-      );
-      return;
-    }
-
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    let confirmou = false;
-
-    const onConfirmar = () => {
-      confirmou = true;
-      modal.hide();
-    };
-
-    const onHidden = () => {
-      btnConfirmar.removeEventListener("click", onConfirmar);
-      modalEl.removeEventListener("hidden.bs.modal", onHidden);
-      resolve(confirmou);
-    };
-
-    btnConfirmar.addEventListener("click", onConfirmar);
-    modalEl.addEventListener("hidden.bs.modal", onHidden);
-    modal.show();
-  });
-}
-
-// função para registrar o pedido diretamente, sem envio por WhatsApp e sem copiar orçamento
-async function registrarPedido() {
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-
-  if (cart.length === 0) {
-    showToast("Seu carrinho está vazio!", "warning");
-    return;
+    return data;
   }
 
-  if (!(await confirmarRegistroPedido())) {
-    return;
+  async function obterProximoPvcod() {
+    var resp = await fetch("/pedidos/sequencia");
+    if (!resp.ok) throw new Error("Não foi possível gerar o número do pedido.");
+    var seq = await resp.json();
+    return seq.nextval;
   }
 
-  const disabledDiv = document.getElementById("divFinalizar");
-  try {
-    disabledDiv.style.pointerEvents = "none";
-    disabledDiv.style.opacity = "0.6";
-    disabledDiv.style.userSelect = "none";
-  } catch (error) {
-    console.error("Failed", error);
+  async function obterWhatsApp(numero) {
+    var resp = await fetch((window.BASE_URL || "") + "/emp");
+    var data = await resp.json();
+    return (data && (numero === 2 ? data.empwhatsapp2 : data.empwhatsapp1)) || "";
   }
 
-  const observacoes = document.getElementById("observacoes").value.trim();
-
-  let totalValue = 0;
-  cart.forEach((item) => {
-    const valor = parseFloat(item.preco) || 0;
-    const qtde = item.qt || 0;
-    totalValue += valor * qtde;
-  });
-
-  try {
-    const respSeq = await fetch("/pedidos/sequencia");
-    const seqData = await respSeq.json();
-    const pvcod = seqData.nextval;
-
-    const respPedido = await fetch(`${BASE_URL}/pedidos/enviar`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pvcod,
-        cart,
-        total: totalValue,
-        obs: observacoes,
-        canal: "VENDA",
-        status: "A",
-        confirmado: "N",
-        codigoVendedor: (await buscarUsuario()) || null,
-      }),
-    });
-    const data = await respPedido.json();
-
-    if (!respPedido.ok) {
-      console.error("Erro ao criar pedido:", data);
-      const mensagemErro =
-        data.error || "Erro ao processar pedido. Tente novamente.";
-      showToast(mensagemErro, "error");
-      reabilitarBotoes();
-      return;
-    }
-
-    console.log("Pedido registrado com sucesso:", data);
-
-    /// Limpa o carrinho no localStorage e na tela
-    localStorage.setItem("cart", JSON.stringify([]));
-    renderCart(); // Isso vai limpar a tabela e zerar o total
-
-    // Remove o parâmetro cart da URL
-    const url = new URL(window.location);
-    url.searchParams.delete("cart");
-    window.history.replaceState({}, document.title, url.pathname + url.search);
-
-    showToast("Pedido registrado com sucesso!", "success");
-
-    // Redireciona para o index após um pequeno delay
-    setTimeout(() => {
+  function redirecionarWhats(clearFirst, numero, mensagem) {
+    var url = "https://api.whatsapp.com/send?phone=" + (numero || "") +
+      "&text=" + encodeURIComponent(mensagem);
+    clearCartAndRender();
+    window.location.href = url;
+    setTimeout(function () {
       window.location.href = "index";
     }, 500);
-  } catch (error) {
-    console.error("Erro ao processar pedido:", error);
-    showToast("Erro ao processar pedido. Tente novamente.", "error");
-    reabilitarBotoes();
   }
-}
+
+  async function finalizarViaWhatsApp(canal) {
+    var cart = getCart();
+    var obsEl = document.getElementById("observacoes");
+    var observacoes = obsEl ? obsEl.value.trim() : "";
+    if (cart.length === 0) {
+      notify("Seu carrinho está vazio!", "warning");
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      var pvcod = await obterProximoPvcod();
+      var total = cartTotal(cart);
+      await criarPedidoNoServidor(pvcod, cart, total, observacoes, canal);
+
+      var mensagem = buildMensagem(cart, total, observacoes, canal);
+      if (canal === "ENTREGA") {
+        mensagem += EMOJI.caminhao + " Entrega\n";
+      } else {
+        mensagem += EMOJI.loja + " Retirada: No balcão\n";
+      }
+      mensagem += "Pedido N°: " + pvcod + "\n";
+
+      var numero = "";
+      try {
+        numero = await obterWhatsApp(canal === "ENTREGA" ? 2 : 1);
+      } catch (e) {
+        console.error("Erro ao buscar número do WhatsApp:", e);
+        notify(
+          "Pedido criado com sucesso! Não foi possível obter o número do WhatsApp. Você será redirecionado para selecionar um contato.",
+          "warning",
+          5000
+        );
+      }
+      redirecionarWhats(true, numero, mensagem);
+    } catch (error) {
+      console.error("Erro ao processar pedido:", error);
+      notify(error.message || "Erro ao processar pedido. Tente novamente.", "error");
+      setCheckoutLoading(false);
+    }
+  }
+
+  function enviarWhatsApp() {
+    return finalizarViaWhatsApp("BALCAO");
+  }
+
+  function enviarWhatsAppEntrega() {
+    return finalizarViaWhatsApp("ENTREGA");
+  }
+
+  function reabilitarBotoes() {
+    setCheckoutLoading(false);
+  }
+
+  function copiarOrcamentoParaClipboard() {
+    var cart = getCart();
+    var obsEl = document.getElementById("observacoes");
+    var observacoes = obsEl ? obsEl.value.trim() : "";
+    if (cart.length === 0) {
+      notify("Seu carrinho está vazio!", "warning");
+      return;
+    }
+    var mensagem = EMOJI.caixa + " Orçamento de Peças:\n\n";
+    cart.forEach(function (item) {
+      var nome = item.nome || "---";
+      var qtde = Number(item.qt) || 0;
+      var valor = parseFloat(item.preco) || 0;
+      mensagem += "(" + qtde + ") " + nome + " - R$" + valor.toFixed(2) + "\n";
+    });
+    if (observacoes) mensagem += "\n📝 Observações: " + observacoes + "\n";
+
+    function ok() {
+      notify("Orçamento copiado!", "success");
+    }
+    function fail(err) {
+      notify("Erro ao copiar: " + err, "error");
+    }
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      navigator.clipboard.writeText(mensagem).then(ok, fail);
+    } else {
+      var ta = document.createElement("textarea");
+      ta.value = mensagem;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        ok();
+      } catch (err) {
+        notify("Falha ao copiar o texto. Copie manualmente.", "error");
+      }
+      document.body.removeChild(ta);
+    }
+  }
+
+  function confirmarRegistroPedido() {
+    return new Promise(function (resolve) {
+      var modalEl = document.getElementById("confirmarRegistroModal");
+      var btnConfirmar = document.getElementById("confirmarRegistroBtn");
+      if (!modalEl || !btnConfirmar || !window.bootstrap) {
+        resolve(window.confirm("Confirmar o registro deste pedido? O carrinho será finalizado."));
+        return;
+      }
+      var modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+      var confirmou = false;
+      function onConfirmar() {
+        confirmou = true;
+        modal.hide();
+      }
+      function onHidden() {
+        btnConfirmar.removeEventListener("click", onConfirmar);
+        modalEl.removeEventListener("hidden.bs.modal", onHidden);
+        resolve(confirmou);
+      }
+      btnConfirmar.addEventListener("click", onConfirmar);
+      modalEl.addEventListener("hidden.bs.modal", onHidden);
+      modal.show();
+    });
+  }
+
+  async function registrarPedido() {
+    var cart = getCart();
+    if (cart.length === 0) {
+      notify("Seu carrinho está vazio!", "warning");
+      return;
+    }
+    if (!(await confirmarRegistroPedido())) return;
+    setCheckoutLoading(true);
+    try {
+      var obsEl = document.getElementById("observacoes");
+      var observacoes = obsEl ? obsEl.value.trim() : "";
+      var total = cartTotal(cart);
+      var pvcod = await obterProximoPvcod();
+      await criarPedidoNoServidor(pvcod, cart, total, observacoes, "VENDA");
+      clearCartAndRender();
+      notify("Pedido registrado com sucesso!", "success");
+      setTimeout(function () {
+        window.location.href = "index";
+      }, 500);
+    } catch (error) {
+      console.error("Erro ao processar pedido:", error);
+      notify(error.message || "Erro ao processar pedido. Tente novamente.", "error");
+      setCheckoutLoading(false);
+    }
+  }
+
+  async function carregarUsuarioLogado() {
+    try {
+      var response = await fetch((window.BASE_URL || "") + "/me/usuario", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (response.ok) {
+        var data = await response.json();
+        return data.usunome;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ---------- boot ----------
+  document.addEventListener("DOMContentLoaded", function () {
+    renderCart();
+    refreshBadge();
+
+    var btnLimpar = document.getElementById("btnLimparCarrinho");
+    if (btnLimpar) btnLimpar.addEventListener("click", limparCarrinho);
+    var btnVoltar = document.getElementById("btnVoltar");
+    if (btnVoltar) btnVoltar.addEventListener("click", function () { window.history.back(); });
+    var btnBalcao = document.getElementById("btnBalcao");
+    if (btnBalcao) btnBalcao.addEventListener("click", enviarWhatsApp);
+    var btnEntrega = document.getElementById("btnEntrega");
+    if (btnEntrega) btnEntrega.addEventListener("click", enviarWhatsAppEntrega);
+    var btnOrc = document.getElementById("botao-orcamento");
+    if (btnOrc) btnOrc.addEventListener("click", copiarOrcamentoParaClipboard);
+    var btnReg = document.getElementById("botao-registrar-pedido");
+    if (btnReg) btnReg.addEventListener("click", registrarPedido);
+
+    fetch((window.BASE_URL || "") + "/emp")
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        var botaoOrcamento = document.getElementById("botao-orcamento");
+        var botaoRegistrar = document.getElementById("botao-registrar-pedido");
+        carregarUsuarioLogado().then(function (usuarioLogado) {
+          var show = usuarioLogado ? "inline" : "none";
+          if (botaoOrcamento) botaoOrcamento.style.display = show;
+          if (botaoRegistrar) botaoRegistrar.style.display = show;
+        });
+      })
+      .catch(function (error) {
+        console.error("Erro ao buscar configurações da empresa:", error);
+      });
+
+    window.addEventListener("beforeunload", function () {
+      try { localStorage.removeItem("usuarioLogado"); } catch (e) {}
+    });
+  });
+
+  window.addEventListener("pageshow", function () {
+    renderCart();
+    refreshBadge();
+  });
+
+  // Compat: HTML antigo em cache ainda chama via inline onclick
+  window.renderCart = renderCart;
+  window.limparCarrinho = limparCarrinho;
+  window.incrementQuantity = incrementQuantity;
+  window.decrementQuantity = decrementQuantity;
+  window.removeItem = removeItem;
+  window.enviarWhatsApp = enviarWhatsApp;
+  window.enviarWhatsAppEntrega = enviarWhatsAppEntrega;
+  window.copiarOrcamentoParaClipboard = copiarOrcamentoParaClipboard;
+  window.registrarPedido = registrarPedido;
+  window.reabilitarBotoes = reabilitarBotoes;
+  window.buscarUsuario = buscarUsuario;
+  window.formatarMoeda = window.formatarMoeda || formatarMoeda;
+  window.atualizarIconeCarrinho = window.atualizarIconeCarrinho || refreshBadge;
+})();

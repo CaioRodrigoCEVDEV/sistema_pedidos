@@ -5,19 +5,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title id="title"></title>
+    <script src="../js/theme-manager.js?v=2026.09.14.103903"></script>
     <!--Link proprios projeto-->
     <link rel="manifest" href="/manifest.json?v=3">
-    <link rel="stylesheet" href="../css/style-index.css?v=2026.09.12.140506" />
-    <link rel="stylesheet" href="../css/style.css?v=2026.09.12.140506">
-    <link rel="stylesheet" href="../css/style-flexbox.css?v=2026.09.12.140506">
+    <link rel="stylesheet" href="../css/style-index.css?v=2026.09.14.103903" />
+    <link rel="stylesheet" href="../css/style.css?v=2026.09.14.103903">
+    <link rel="stylesheet" href="../css/style-flexbox.css?v=2026.09.14.103903">
     <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png">
     <!--links bootstrap-->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous"/>
         <!--link tema bootstrap-->
-    <link rel="stylesheet" href="../css/tema-bootstrap.css?v=2026.09.12.140506"/>
+    <link rel="stylesheet" href="../css/tema-bootstrap.css?v=2026.09.14.103903"/>
     <!--Fim link tema bootstrap-->
+    <!--Design System OrderUp (mesmo da área logada)-->
+    <link rel="stylesheet" href="../css/theme.css?v=2026.09.14.103903"/>
+    <link rel="stylesheet" href="../css/ui.css?v=2026.09.14.103903"/>
+    <link rel="stylesheet" href="../css/storefront.css?v=2026.09.14.103903"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
         integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
@@ -30,70 +35,70 @@
             <!--Conteudo do header adicionado via JS-->
         </header>
 
-        <main>
+        <main class="container py-4" style="max-width: 1100px;">
             <!--Alert de Tutorial-->
-            <div class="container">
-                <div class="alert alert-dismissible fade show shadow p-3 m-auto bg-white rounded" id="tutorialAlert"
-                    style="max-width: 800px; margin: auto; display: none;" role="alert">
-                    <strong>Primeira vez utilizando nosso sistema de pedidos?</strong> Assista o tutorial caso tenha
-                    alguma dificuldade.
+            <div class="container px-0 mb-3">
+                <div class="alert alert-dismissible fade show shadow-sm p-3 m-auto rounded" id="tutorialAlert"
+                    style="max-width: 800px; margin: auto; display: none; background: var(--ou-surface); color: var(--ou-text); border: 1px solid var(--ou-border-soft);" role="alert">
+                    <div class="d-flex align-items-start gap-2">
+                        <span class="ou-page-header__icon" style="flex-basis: 40px; width: 40px; height: 40px; font-size: 1rem;"><i class="bi bi-play-circle"></i></span>
+                        <div class="flex-grow-1">
+                            <strong>Primeira vez utilizando nosso sistema de pedidos?</strong>
+                            <div class="small" style="color: var(--ou-text-2);">Assista o tutorial caso tenha alguma dificuldade.</div>
+                            <p class="mb-0 mt-2"><button type="button" class="btn btn-danger btn-sm"> <i class="bi bi-youtube"> </i> Tutorial em vídeo</button></p>
+                        </div>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"
                         id="tutorialAlertClose">
                     </button>
-                    <hr>
-                    <p class="mb-0"><button type="button" class="btn btn-danger"> <i class="bi bi-youtube"> </i>Tutorial
-                            em video </i></button></p>
                 </div>
             </div>
             <!--Pesquisa-->
-            <div class="row justify-content-center mb-5">
-                <div class="col-md-6">
-                    <label for="pesquisa" class="m-2 fw-medium">Pesquisa Geral</label>
-                    <div class="input-group">
-                        <span class="input-group-text text-primary bg-white border border-primary " for="pesquisa">
+            <div class="ou-page-header ou-store-hero mb-4">
+                <div class="ou-page-header__main">
+                    <span class="ou-page-header__icon"><i class="bi bi-phone"></i></span>
+                    <div>
+                        <span class="ou-page-header__eyebrow">Catálogo</span>
+                        <h1 class="ou-page-header__title">Selecione a marca do aparelho</h1>
+                        <p class="ou-page-header__sub mb-0">Toque em uma marca para ver os modelos, ou use a pesquisa geral.</p>
+                    </div>
+                </div>
+                <div class="ou-page-header__actions w-100">
+                    <div class="input-group search-input shadow-sm w-100">
+                        <span class="input-group-text" for="pesquisa">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </span>
-                        <input class="form-control border-primary" type="search" placeholder="Pesquisar" aria-label="Pesquisar"
+                        <input class="form-control" type="search" placeholder="Pesquisar modelo ou peça..." aria-label="Pesquisar"
                             id="pesquisa">
-                        
-                            <a class="btn btn-primary d-flex align-items-center gap-2" 
-                               id="openCartModal" 
-                               style="background: linear-gradient(145deg, #2196F3, #1976D2); 
-                                      border: none; 
-                                      box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
-                                      transition: all 0.3s ease;">
+                        <button class="btn btn-primary d-flex align-items-center gap-2 ou-cart-btn"
+                               id="openCartModal" type="button">
                                 <i class="bi bi-cart2"></i>
                                 <span>Carrinho</span>
-                            </a>
-                        </span>
+                        </button>
                     </div>
                 </div>
             </div>
             <div id="cardsArea">
-                <div class="container">
-                    <h2 class="text-center fw-medium mb-5">Selecione a Marca do Aparelho</h2>
-                </div>
-                <div class="container">
+                <div class="container px-0">
                     <div id="marcaTitulo">
+                        <div class="ou-loading"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div><span>Carregando marcas...</span></div>
                         <!--Conteudo inserido via js marcas cadastradas-->
                     </div>
                 </div>
             </div>
-            <div class="container" id="tabelaArea">
-                <h3 id="titulo-peca" class="mb-5"></h3>
-                <div id="corpoTabela" class="container">
+            <div class="container px-0" id="tabelaArea" style="display:none;">
+                <h3 id="titulo-peca" class="text-center mb-3"></h3>
+                <div id="corpoTabela" class="ou-result-list">
                     <!--Conteudo inserido via js Modelos ou Peças-->
                 </div>
             </div>
         </main>
 
         <div>
-
             <!-- Botão oculto que só aparece quando o Chrome liberar o install prompt -->
             <button id="btnInstall" class="btn btn-success">
-                📲 Instalar App
+                <i class="bi bi-phone me-1"></i> Instalar App
             </button>
-
         </div>
         <footer id="footer">
             <!--Conteudo do footer adicionado via JS-->
@@ -102,37 +107,17 @@
     <!-- Botão do carrinho flutuante -->
 
 
-    <!-- Modal do Carrinho -->
-    <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="cartModalLabel">Itens no Carrinho</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                </div>
-                <div class="modal-body" id="cartItems">
-                    <!-- Itens do carrinho serão inseridos aqui via JS -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                </div>
-            </div>
-        </div> 
-    </div>
+    <!-- Modal do carrinho injetado via storefront-shared.js (ensureCartModal) -->
+
+    <div class="ou-toast-container" id="ouToastContainer" aria-live="polite"></div>
 
 
-    <script src="../js/componentes.js?v=2026.09.12.140506"></script>
-    <script src="../js/nomeEmpresa.js?v=2026.09.12.140506"></script>
-    <script src="/config.js?v=2026.09.12.140506"></script>
-    <script src="../js/toast.js?v=2026.09.12.140506"></script>
-    <script src="../js/index.js?v=2026.09.12.140506"></script>
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-        crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
-        integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
-        crossorigin="anonymous"></script>
+    <script src="../js/componentes.js?v=2026.09.14.103903"></script>
+    <script src="../js/nomeEmpresa.js?v=2026.09.14.103903"></script>
+    <script src="/config.js?v=2026.09.14.103903"></script>
+    <script src="../js/toast.js?v=2026.09.14.103903"></script>
+    <script src="../js/storefront-shared.js?v=2026.09.14.103903"></script>
+    <script src="../js/index.js?v=2026.09.14.103903"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"></script>

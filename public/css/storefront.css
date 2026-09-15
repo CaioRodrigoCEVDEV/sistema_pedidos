@@ -1,0 +1,431 @@
+/* ==========================================================================
+   OrderUp — Storefront (loja pública: home / modelo / peças / lista)
+   Camada fina sobre o Design System (theme.css + ui.css).
+   Usa apenas tokens --ou-* → funciona em light e dark automaticamente.
+   ========================================================================== */
+
+/* ---------- Header da loja ---------- */
+.ou-store-header {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  background: color-mix(in srgb, var(--ou-surface) 88%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--ou-border-soft);
+}
+.ou-store-header .navbar {
+  background: transparent !important;
+  padding: 0.55rem 1rem;
+}
+.ou-store-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ou-text) !important;
+  text-decoration: none;
+}
+.ou-store-brand img {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 9px;
+  border: 1px solid var(--ou-border-soft);
+  background: var(--ou-surface-2);
+}
+.ou-store-brand .company-name {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.ou-store-header .nav-link {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--ou-text-2) !important;
+  border-radius: 10px;
+  padding: 0.45rem 0.8rem !important;
+}
+.ou-store-header .nav-link:hover,
+.ou-store-header .nav-link.active {
+  color: var(--ou-primary) !important;
+  background: var(--ou-primary-soft);
+}
+.ou-cart-btn {
+  position: relative;
+}
+/* O badge #cartBadge é filho do botão, que fica dentro de
+   .input-group.search-input (pílula com overflow:hidden no ui.css).
+   Sem este override o badge é cortado e aparece só uma "pontinha
+   vermelha" atrás do botão. :has restringe às pílulas da loja
+   (as do painel admin não têm .ou-cart-btn e seguem intactas). */
+.input-group.search-input:has(.ou-cart-btn) {
+  overflow: visible;
+}
+#cartBadge {
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ---------- Hero / page header da loja ---------- */
+.ou-store-hero {
+  max-width: 1100px;
+}
+
+/* ---------- Grid de marcas — cards padrão OrderUp ---------- */
+#marcaTitulo .brand-col {
+  display: flex;
+}
+#marcaTitulo .brand-link {
+  width: 100%;
+  text-decoration: none;
+}
+.ou-brand-card {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.95rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: var(--ou-radius-lg);
+  box-shadow: var(--ou-shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+.ou-brand-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--ou-primary) 45%, var(--ou-border));
+  box-shadow: var(--ou-shadow);
+}
+.ou-brand-card:active {
+  transform: translateY(0);
+}
+.ou-brand-card:focus-visible {
+  outline: 2px solid var(--ou-primary);
+  outline-offset: 2px;
+}
+.ou-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  background: var(--ou-surface-2);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: var(--ou-radius);
+  overflow: hidden;
+}
+.ou-brand-logo img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+.ou-brand-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--ou-text);
+}
+.ou-brand-card > i {
+  flex: 0 0 auto;
+  color: var(--ou-text-muted);
+  font-size: 0.85rem;
+}
+/* Compat: desativa o neumorphism antigo caso o JS ainda emita .brand-btn */
+#marcaTitulo .brand-btn {
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: var(--ou-radius-lg);
+  box-shadow: var(--ou-shadow-sm);
+  color: var(--ou-text);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+#marcaTitulo .brand-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ou-shadow);
+}
+
+/* ---------- Resultados da pesquisa ---------- */
+.ou-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.ou-result-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.85rem 1rem;
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: var(--ou-radius-lg);
+  box-shadow: var(--ou-shadow-sm);
+}
+.ou-result-item__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ou-result-item__name {
+  font-weight: 600;
+  color: var(--ou-text);
+  overflow-wrap: anywhere;
+}
+.ou-result-item__meta {
+  font-size: 0.8rem;
+  color: var(--ou-text-muted);
+}
+.ou-result-item__price {
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ou-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Footer da loja ---------- */
+.ou-store-footer {
+  background: var(--ou-surface) !important;
+  border-top: 1px solid var(--ou-border-soft) !important;
+}
+
+/* ---------- Breadcrumb da loja (substitui nav-tabs antigo) ---------- */
+.ou-crumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ou-crumb li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+.ou-crumb a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--ou-primary);
+  background: var(--ou-primary-soft);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.ou-crumb a:hover {
+  filter: brightness(0.97);
+}
+.ou-crumb .ou-crumb__current {
+  padding: 0.35rem 0.7rem;
+  font-weight: 600;
+  color: var(--ou-text-2);
+  background: var(--ou-surface-2);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: 999px;
+  max-width: 40vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ou-crumb__sep {
+  color: var(--ou-text-muted);
+  font-size: 0.75rem;
+}
+
+/* ---------- Página da loja ---------- */
+.ou-store-page {
+  max-width: 1100px;
+}
+.ou-store-card {
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: var(--ou-radius-xl);
+  box-shadow: var(--ou-shadow-sm);
+  overflow: hidden;
+}
+.ou-store-card__body {
+  padding: 1.25rem;
+}
+@media (max-width: 575.98px) {
+  .ou-store-card__body {
+    padding: 1rem;
+  }
+}
+
+/* ---------- Itens do carrinho ---------- */
+.ou-cart-item {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 0.9rem 1rem;
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: var(--ou-radius-lg);
+  box-shadow: var(--ou-shadow-sm);
+}
+.ou-cart-item__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ou-cart-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+#divFinalizar.is-loading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+.ou-qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.35rem;
+  background: var(--ou-surface-2);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: 999px;
+}
+.ou-qty b {
+  min-width: 1.5em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--ou-text);
+}
+
+/* ---------- Modal de cor ---------- */
+.ou-color-modal {
+  width: min(92vw, 340px);
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ou-color-modal p {
+  font-size: 1rem;
+  margin: 0;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ou-text, #0f172a);
+}
+.ou-color-modal select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--ou-border, #e2e8f0);
+  background: var(--ou-surface, #fff);
+  color: var(--ou-text, #0f172a);
+}
+
+/* ---------- PWA install ---------- */
+#btnInstall {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--ou-success);
+  border: none;
+  border-radius: 999px;
+  box-shadow: var(--ou-shadow-lg);
+}
+
+/* ---------- Tutorial ---------- */
+#tutorialAlert.slide-down {
+  animation: ou-slide-down 0.35s ease-out;
+}
+@keyframes ou-slide-down {
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ---------- Legado style.css ----------
+   O bloco .cart-item com display:table foi removido do style.css, então
+   nenhuma regra extra é necessária aqui. */
+
+/* ---------- Mobile ---------- */
+@media (max-width: 575.98px) {
+  .ou-store-brand .company-name {
+    max-width: 42vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+  }
+  .ou-brand-card {
+    padding: 0.8rem 0.85rem;
+    gap: 0.65rem;
+  }
+  .ou-brand-logo {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+  }
+  .ou-brand-logo img {
+    width: 28px;
+    height: 28px;
+  }
+  .ou-result-item {
+    flex-wrap: wrap;
+  }
+  .ou-result-item .btn {
+    width: 100%;
+  }
+  .ou-cart-item {
+    flex-wrap: wrap;
+  }
+  .ou-cart-item__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .ou-crumb {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    padding-bottom: 0.25rem;
+    scrollbar-width: thin;
+  }
+  .ou-crumb .ou-crumb__current {
+    max-width: 60vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ou-brand-card,
+  .ou-brand-card:hover {
+    transform: none !important;
+    transition: none !important;
+  }
+}
