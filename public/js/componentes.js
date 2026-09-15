@@ -6,30 +6,33 @@ function createHeaderUser() {
   const isActive = (name) => (current.includes(name) ? " active" : "");
   header.innerHTML = `
   <nav class="navbar navbar-expand-lg">
-    <div class="container-fluid" style="max-width: 1100px;">
-      <a class="ou-store-brand" href="index" id="nomeEmpresa"><img src="/uploads/logo.jpg" width="32" height="32" alt="Logo" /></a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+    <div class="container-fluid ou-store-header__inner">
+      <a class="ou-store-brand navbar-brand" href="index" id="nomeEmpresa" aria-label="Ir para o início">
+        <img src="/uploads/logo.jpg" width="36" height="36" alt="Logo" />
+      </a>
+      <button class="navbar-toggler ou-store-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
           aria-controls="navbarNav" aria-expanded="false" aria-label="Alterna navegação">
           <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav me-auto">
+          <ul class="navbar-nav ou-store-nav">
               <li class="nav-item">
                   <a class="nav-link${isActive("index") || current === "/" ? " active" : ""}" href="index">Início</a>
               </li>
               <li class="nav-item">
-                  <a class="nav-link${isActive("pedidos")}" href="pedidos"><i class="bi bi-receipt me-1"></i>Acesso</a>
+                  <a class="nav-link${isActive("pedidos")}" href="pedidos"><i class="bi bi-receipt" aria-hidden="true"></i>Acesso</a>
               </li>
           </ul>
-          <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
+          <div class="ou-store-actions">
               <div class="dropdown">
-                <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="themeToggleBtn" title="Aparência">
-                  <i class="bi bi-circle-half"></i><span class="d-none d-sm-inline"> Tema</span>
+                <button class="btn ou-store-theme-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="themeToggleBtn" title="Aparência" aria-label="Aparência">
+                  <i class="bi bi-circle-half" aria-hidden="true"></i><span class="ou-store-theme-btn__label d-none d-sm-inline">Tema</span>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li><button class="dropdown-item" type="button" data-ou-theme="light"><i class="bi bi-sun me-2"></i>Claro</button></li>
-                  <li><button class="dropdown-item" type="button" data-ou-theme="dark"><i class="bi bi-moon me-2"></i>Escuro</button></li>
-                  <li><button class="dropdown-item" type="button" data-ou-theme="auto"><i class="bi bi-display me-2"></i>Automático</button></li>
+                <ul class="dropdown-menu dropdown-menu-end ou-store-menu">
+                  <li class="dropdown-header">Aparência</li>
+                  <li><button class="dropdown-item" type="button" data-ou-theme="light"><i class="bi bi-sun me-2" aria-hidden="true"></i>Claro</button></li>
+                  <li><button class="dropdown-item" type="button" data-ou-theme="dark"><i class="bi bi-moon me-2" aria-hidden="true"></i>Escuro</button></li>
+                  <li><button class="dropdown-item" type="button" data-ou-theme="auto"><i class="bi bi-display me-2" aria-hidden="true"></i>Automático</button></li>
                 </ul>
               </div>
           </div>

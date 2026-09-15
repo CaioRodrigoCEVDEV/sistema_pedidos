@@ -9,15 +9,6 @@ function formatarMoeda(valor) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // Se existir, chama verificarLogin()
-  if (typeof verificarLogin === "function") {
-    try {
-      await verificarLogin();
-    } catch (err) {
-      console.error("Erro em verificarLogin:", err);
-    }
-  }
-
   // ======================================================
   //  MAPEAMENTO DE MARCAS
   // ======================================================
@@ -120,7 +111,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const row = document.createElement("div");
-    row.className = "row g-3";
+    row.className = "row g-3 g-lg-4";
 
     for (const item of dados) {
       const isString = typeof item === "string";
@@ -200,21 +191,8 @@ const tabelaArea = document.getElementById("tabelaArea");
 const cardsArea = document.getElementById("cardsArea");
 const corpoTabela = document.getElementById("corpoTabela");
 
-let usuarioLogado = false;
-
-async function verificarLogin() {
-  try {
-    const resp = await fetch(`${BASE_URL}/auth/listarlogin`, {
-      credentials: "include",
-    });
-    if (!resp.ok) throw new Error("Nao logado");
-    const dados = await resp.json();
-    usuarioLogado = !!(dados && dados.usucod);
-  } catch (err) {
-    usuarioLogado = false;
-  }
-}
-
+// Busca padronizada: sempre por modelo, independente de o usuário
+// estar logado ou não (não busca peças/produtos diretamente).
 inputPesquisa.addEventListener("input", function () {
   const pesquisa = this.value.trim().toLowerCase();
 
@@ -225,121 +203,60 @@ inputPesquisa.addEventListener("input", function () {
     return;
   }
 
-  if (usuarioLogado) {
-    fetch(`${BASE_URL}/v2/pros`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((pecas) => {
-        const filtrados = pecas.filter(
-          (peca) => peca.prodes && peca.prodes.toLowerCase().includes(pesquisa)
-        );
+  fetch(`${BASE_URL}/modelos`)
+    .then((res) => res.json())
+    .then((modelos) => {
+      const filtrados = modelos.filter(
+        (modelo) =>
+          modelo.moddes && modelo.moddes.toLowerCase().includes(pesquisa)
+      );
 
-        if (filtrados.length === 0) {
-          tabelaArea.style.display = "none"; // esconde tabela se nada encontrado
-          cardsArea.style.display = "block"; // mostra cards
-          corpoTabela.innerHTML = "";
-          return;
-        }
-
+      if (filtrados.length === 0) {
+        tabelaArea.style.display = "none"; // esconde tabela se nada encontrado
+        cardsArea.style.display = "block"; // mostra cards
         corpoTabela.innerHTML = "";
-        //adiciona o titulo apenas uma vez
-        if (filtrados.length > 0) {
-          const titulo = document.getElementById("titulo-peca");
-          titulo.innerHTML = " Selecione a peça";
-          titulo.style.textAlign = "center";
-        }
-        // Ordena as peças
-        filtrados.forEach((peca) => {
-          const item = document.createElement("div");
-          item.className = "ou-result-item";
-          item.dataset.preco = peca.provl;
-          const isDisabled = peca.prosemest === "S";
-          item.innerHTML = `
-            <div class="ou-result-item__main">
-              <div class="ou-result-item__name">${peca.prodes}</div>
-              <div class="ou-result-item__meta">${peca.tipodes || ""} · ${peca.marcasdes || ""}</div>
-            </div>
-            <div class="ou-result-item__price">${formatarMoeda(peca.provl)}</div>
-            <button class="${
-                isDisabled
-                  ? "btn btn-secondary btn-sm"
-                  : "btn btn-success btn-sm"
-              }" ${
-                isDisabled
-                  ? 'disabled title="Em Falta"'
-                  : `onclick="adicionarAoCarrinho('${peca.procod}')"`
-              }>${isDisabled ? "Em Falta" : "Adicionar"}</button>
+        return;
+      }
 
-          `;
-          corpoTabela.appendChild(item);
-        });
+      corpoTabela.innerHTML = "";
 
-        tabelaArea.style.display = "block"; // mostra tabela
-        cardsArea.style.display = "none"; // esconde cards
-      })
-      .catch((error) => {
-        console.error("Erro no fetch:", error);
-        tabelaArea.style.display = "none";
-        cardsArea.style.display = "block";
-        corpoTabela.innerHTML = "";
+      // Ordena os modelos
+      filtrados.sort((a, b) => {
+        const nomeA = a.moddes.replace(/\s/g, "");
+        const nomeB = b.moddes.replace(/\s/g, "");
+        return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
       });
-  } else {
-    fetch(`${BASE_URL}/modelos`)
-      .then((res) => res.json())
-      .then((modelos) => {
-        const filtrados = modelos.filter(
-          (modelo) =>
-            modelo.moddes && modelo.moddes.toLowerCase().includes(pesquisa)
-        );
 
-        if (filtrados.length === 0) {
-          tabelaArea.style.display = "none"; // esconde tabela se nada encontrado
-          cardsArea.style.display = "block"; // mostra cards
-          corpoTabela.innerHTML = "";
-          return;
-        }
+      // Adiciona o título apenas uma vez
+      const titulo = document.createElement("h3");
+      titulo.textContent = " Selecione o Modelo";
+      titulo.style.textAlign = "center";
+      corpoTabela.appendChild(titulo);
 
-        corpoTabela.innerHTML = "";
-
-        // Ordena os modelos
-        filtrados.sort((a, b) => {
-          const nomeA = a.moddes.replace(/\s/g, "");
-          const nomeB = b.moddes.replace(/\s/g, "");
-          return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
-        });
-
-        // Adiciona o título apenas uma vez
-        if (filtrados.length > 0) {
-          const titulo = document.createElement("h3");
-          titulo.textContent = " Selecione o Modelo";
-          titulo.style.textAlign = "center";
-          corpoTabela.appendChild(titulo);
-        }
-
-        // Loop para inserir os modelos
-        filtrados.forEach((modelo) => {
-          const item = document.createElement("div");
-          item.className = "ou-result-item";
-          item.innerHTML = `
-            <div class="ou-result-item__main">
-              <div class="ou-result-item__name">${modelo.moddes}</div>
-            </div>
-            <a href="pecas?id=${modelo.modcod}&marcascod=${modelo.modmarcascod}">
-              <button class="btn btn-primary btn-sm">Selecionar</button>
-            </a>
-          `;
-          corpoTabela.appendChild(item);
-        });
-
-        tabelaArea.style.display = "block"; // mostra tabela
-        cardsArea.style.display = "none"; // esconde cards
-      })
-      .catch((error) => {
-        console.error("Erro no fetch:", error);
-        tabelaArea.style.display = "none";
-        cardsArea.style.display = "block";
-        corpoTabela.innerHTML = "";
+      // Loop para inserir os modelos
+      filtrados.forEach((modelo) => {
+        const item = document.createElement("div");
+        item.className = "ou-result-item";
+        item.innerHTML = `
+          <div class="ou-result-item__main">
+            <div class="ou-result-item__name">${modelo.moddes}</div>
+          </div>
+          <a href="pecas?id=${modelo.modcod}&marcascod=${modelo.modmarcascod}">
+            <button class="btn btn-primary btn-sm">Selecionar</button>
+          </a>
+        `;
+        corpoTabela.appendChild(item);
       });
-  }
+
+      tabelaArea.style.display = "block"; // mostra tabela
+      cardsArea.style.display = "none"; // esconde cards
+    })
+    .catch((error) => {
+      console.error("Erro no fetch:", error);
+      tabelaArea.style.display = "none";
+      cardsArea.style.display = "block";
+      corpoTabela.innerHTML = "";
+    });
 });
 
 // Função para atualizar o ícone do carrinho (exibe badge com quantidade de itens)
