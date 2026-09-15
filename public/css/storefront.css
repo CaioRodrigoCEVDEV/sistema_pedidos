@@ -346,6 +346,90 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- Resultados da busca de modelos (exclusivo da home) ----------
+   Escopo em #tabelaArea (presente só no index) para não alterar as telas
+   de modelo/peças/lista, que reutilizam .ou-result-list/.ou-result-item. */
+.ou-model-results__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 0.85rem;
+  padding: 0 0.15rem;
+}
+.ou-model-results__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ou-text);
+}
+.ou-model-results__count {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ou-text-muted);
+  white-space: nowrap;
+}
+#tabelaArea .ou-result-list {
+  max-width: 100%;
+  margin: 0;
+}
+#tabelaArea .ou-result-list.ou-model-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+#tabelaArea .ou-result-item {
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+#tabelaArea a.ou-result-item:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--ou-primary) 45%, var(--ou-border));
+  box-shadow: var(--ou-shadow);
+}
+#tabelaArea a.ou-result-item:focus-visible {
+  outline: 2px solid var(--ou-primary);
+  outline-offset: 2px;
+}
+#tabelaArea .ou-result-item__name {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+#tabelaArea .ou-result-item__cta {
+  flex: 0 0 auto;
+}
+/* Reaproveita o chip de logo das marcas, em tamanho menor no card de modelo */
+#tabelaArea .ou-model-card__logo {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+}
+#tabelaArea .ou-model-card__logo img {
+  width: 28px;
+  height: 28px;
+}
+@media (max-width: 767.98px) {
+  #tabelaArea .ou-result-list.ou-model-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 575.98px) {
+  #tabelaArea .ou-result-item {
+    flex-wrap: wrap;
+  }
+  #tabelaArea .ou-result-item__cta {
+    width: 100%;
+  }
+}
+
 /* ---------- Footer da loja ---------- */
 .ou-store-footer {
   background: var(--ou-surface) !important;
