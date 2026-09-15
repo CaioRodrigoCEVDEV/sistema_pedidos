@@ -271,7 +271,7 @@ function renderizarResultadosBusca(modelos) {
   const total = modelos.length;
   if (resultadoQuantidade) {
     resultadoQuantidade.textContent =
-      total === 1 ? "1 modelo encontrado" : `${total} modelos encontrados`;
+      total === 1 ? "1 modelo" : `${total} modelos`;
   }
 
   corpoTabela.innerHTML = "";
@@ -280,6 +280,12 @@ function renderizarResultadosBusca(modelos) {
     const logo = marcaNome
       ? getBrandLogo(marcaNome)
       : { primary: "https://cdn.simpleicons.org/cog/000" };
+    const marcaHtml = marcaNome
+      ? `<div class="ou-result-item__brand">${String(marcaNome).replace(
+          /</g,
+          "&lt;"
+        )}</div>`
+      : "";
 
     const item = document.createElement("a");
     item.className = "ou-result-item";
@@ -297,6 +303,7 @@ function renderizarResultadosBusca(modelos) {
         <img src="${logo.primary}" alt="" loading="lazy" />
       </span>
       <div class="ou-result-item__main">
+        ${marcaHtml}
         <div class="ou-result-item__name">${String(modelo.moddes).replace(
           /</g,
           "&lt;"
