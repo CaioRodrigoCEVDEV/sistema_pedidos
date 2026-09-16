@@ -361,11 +361,37 @@
     return (data && (numero === 2 ? data.empwhatsapp2 : data.empwhatsapp1)) || "";
   }
 
+  // Aba reservada para o WhatsApp: aberta dentro do gesto do usuário (evita
+  // bloqueio de pop-up) e navegada ao link só depois de finalizar o pedido.
+  var janelaWhats = null;
+
+  function fecharJanelaWhats() {
+    if (janelaWhats && !janelaWhats.closed) {
+      try {
+        janelaWhats.close();
+      } catch (e) {}
+    }
+    janelaWhats = null;
+  }
+
   function redirecionarWhats(clearFirst, numero, mensagem) {
-    var url = "https://api.whatsapp.com/send?phone=" + (numero || "") +
-      "&text=" + encodeURIComponent(mensagem);
+    var url =
+      "https://api.whatsapp.com/send?phone=" +
+      (numero || "") +
+      "&text=" +
+      encodeURIComponent(mensagem);
     clearCartAndRender();
-    window.location.href = url;
+
+    if (janelaWhats && !janelaWhats.closed) {
+      janelaWhats.location.href = url; // abre o WhatsApp em nova aba
+    } else {
+      // Fallback (aba não reservada): tenta nova aba; se bloqueada, aba atual.
+      var win = window.open(url, "_blank");
+      if (!win) window.location.href = url;
+    }
+    janelaWhats = null;
+
+    // Retorna o usuário ao catálogo na aba atual.
     setTimeout(function () {
       window.location.href = "index";
     }, 500);
@@ -376,6 +402,7 @@
     var obsEl = document.getElementById("observacoes");
     var observacoes = obsEl ? obsEl.value.trim() : "";
     if (cart.length === 0) {
+      fecharJanelaWhats();
       notify("Seu carrinho está vazio!", "warning");
       return;
     }
@@ -407,6 +434,7 @@
       redirecionarWhats(true, numero, mensagem);
     } catch (error) {
       console.error("Erro ao processar pedido:", error);
+      fecharJanelaWhats();
       notify(error.message || "Erro ao processar pedido. Tente novamente.", "error");
       setCheckoutLoading(false);
     }
@@ -540,6 +568,14 @@
     });
     if (!confirmou) return;
     marcarCanalSelecionado(canal);
+    // Reserva a aba do WhatsApp ainda dentro do gesto do usuário; ela será
+    // navegada ao link somente após o pedido ser finalizado.
+    janelaWhats = window.open("about:blank", "_blank");
+    if (janelaWhats) {
+      try {
+        janelaWhats.opener = null;
+      } catch (e) {}
+    }
     if (entrega) return enviarWhatsAppEntrega();
     return enviarWhatsApp();
   }
