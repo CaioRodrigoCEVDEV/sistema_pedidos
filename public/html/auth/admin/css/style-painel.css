@@ -340,19 +340,49 @@
 }
 
 .peca-col {
-  width: 55%;
+  width: 40%;
 }
 .valor-col {
-  width: 15%;
+  width: 12%;
   text-align: right;
 }
 .custo-col {
-  width: 15%;
+  width: 12%;
   text-align: right;
+}
+.status-col {
+  width: 21%;
+  text-align: left;
 }
 .acoes-col {
   width: 15%;
   text-align: center;
+}
+
+/* Badges de status (Gerenciar Peças) */
+.peca-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  margin: 1px 4px 1px 0;
+  white-space: nowrap;
+}
+.peca-badge-sem {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+.peca-badge-acab {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+.peca-status-ok {
+  color: var(--ou-text-muted, #94a3b8);
 }
 
 /* Botões de ação */

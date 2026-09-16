@@ -1127,36 +1127,9 @@ async function atualizarDB() {
         AND pr.proqtde IS DISTINCT FROM pg.stock_quantity;
     `);
 
-    // Corrige os indicadores atuais. Isso faz grupos que ja estao zerados
-    // aparecerem imediatamente como indisponiveis.
-    await pool.query(`
-      UPDATE pro pr
-      SET prosemest = CASE WHEN EXISTS (
-        SELECT 1
-        FROM procor pc
-        WHERE pc.procorprocod = pr.procod
-          AND (
-            EXISTS (
-              SELECT 1
-              FROM part_group_items pgi
-              JOIN part_groups pg ON pg.id = pgi.group_id
-              WHERE pgi.procorid = pc.procorid
-                AND COALESCE(pg.stock_quantity, 0) > 0
-            )
-            OR (
-              NOT EXISTS (
-                SELECT 1 FROM part_group_items pgi
-                WHERE pgi.procorid = pc.procorid
-              )
-              AND COALESCE(TRIM(pc.procorsemest), 'N') <> 'S'
-            )
-          )
-      ) THEN 'N' ELSE 'S' END
-      WHERE EXISTS (
-        SELECT 1 FROM procor pc_existente
-        WHERE pc_existente.procorprocod = pr.procod
-      );
-    `);
+    // Preserva as marcações salvas no cadastro ao reiniciar o servidor.
+    // O catálogo calcula a disponibilidade por grupo/cor na consulta, e os
+    // triggers acima sincronizam as flags quando o estoque realmente muda.
 
     // pvivl e o preco unitario; mantem o total persistido coerente com as
     // quantidades atuais, inclusive para pedidos editados antes desta correcao.
