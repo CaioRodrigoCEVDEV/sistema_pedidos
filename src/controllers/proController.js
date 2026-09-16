@@ -5,6 +5,10 @@ const {
 } = require("../utils/disponibilidadeProdutoSql");
 const catalogoCache = require("../utils/catalogoCache");
 
+// A gestão mostra as marcações do formulário, sem calcular estoque por cor/grupo.
+const flagSemEstoqueSql = "COALESCE(UPPER(TRIM(pro.prosemest)), 'N')";
+const flagAcabandoSql = "COALESCE(UPPER(TRIM(pro.proacabando)), 'N')";
+
 exports.listarProduto = async (req, res) => {
   const tipoId = parseIntegerParam(req.params.id);
   const marcaId = parseIntegerParam(req.query.marca);
@@ -54,6 +58,8 @@ exports.listarProdutos = async (req, res) => {
   const marca = parseIntegerParam(req.query.marca);
   const modelo = parseIntegerParam(req.query.modelo);
   const tipo = parseIntegerParam(req.query.tipo);
+  const semest = String(req.query.semest || "").trim().toUpperCase();
+  const acabando = String(req.query.acabando || "").trim().toUpperCase();
 
   const paginado = req.query.page !== undefined || req.query.pageSize !== undefined;
   const off = (page - 1) * pageSize;
@@ -79,7 +85,17 @@ exports.listarProdutos = async (req, res) => {
     params.push(`%${q}%`);
     filters.push(`prodes ILIKE $${params.length}`);
   }
+  if (semest === "S") {
+    filters.push(`${flagSemEstoqueSql} = 'S'`);
+  }
+  if (acabando === "S") {
+    filters.push(`${flagAcabandoSql} = 'S'`);
+  }
   const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+  const from = `from pro
+      join tipo on tipocod = protipocod
+      join marcas on promarcascod = marcascod and marcassit = 'A'
+      ${where}`;
 
   const select = `
       select 
@@ -89,22 +105,20 @@ exports.listarProdutos = async (req, res) => {
       case when prodes is null then '' else prodes end as prodes, 
       case when provl is null then 0 else provl end as provl,
       case when procusto is null then 0 else procusto end as procusto,
-      ${disponibilidadeProdutoSql} as prosemest,
+      ${flagSemEstoqueSql} as prosemest,
+      ${flagAcabandoSql} as proacabando,
       (
         SELECT string_agg(m.moddes, ', ' ORDER BY m.moddes)
         FROM promod pm
         JOIN modelo m ON pm.promodmodcod = m.modcod
         WHERE pm.promodprocod = pro.procod
       ) as modelos
-      from pro
-      join tipo on tipocod = protipocod
-      join marcas on promarcascod = marcascod and marcassit = 'A'
-      ${where}`;
+      ${from}`;
 
   try {
     if (paginado) {
       const countResult = await pool.query(
-        `select count(*) from pro ${where}`,
+        `select count(*) ${from}`,
         params
       );
       const total = parseInt(countResult.rows[0].count, 10);
@@ -121,7 +135,7 @@ exports.listarProdutos = async (req, res) => {
         .json({ page, pageSize, total, data: result.rows });
     }
 
-    const result = await pool.query(`${select} order by procod desc`);
+    const result = await pool.query(`${select} order by procod desc`, params);
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -144,8 +158,8 @@ exports.listarProdutosPainelId = async (req, res) => {
        case when prodes is null then '' else prodes end as prodes,
        case when provl is null then 0 else provl end as provl, 
        case when procusto is null then 0 else procusto end as procusto, 
-       case when prosemest is null then 'N' else prosemest end as prosemest,
-       case when proacabando is null then 'N' else proacabando end as proacabando from pro where procod = $1`,
+       ${flagSemEstoqueSql} as prosemest,
+       ${flagAcabandoSql} as proacabando from pro where procod = $1`,
       [produtoId],
     );
     res.status(200).json(result.rows);

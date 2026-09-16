@@ -176,8 +176,10 @@ let pecasQ = "";
 let pecasMarca = null;
 let pecasModelo = null;
 let pecasTipo = null;
+let pecasMarcacao = "";
 let pecasDebounce = null;
 let pecasLoading = false;
+let pecasRequestController = null;
 let pecasTemMais = false;
 let pecasPopupAberto = false;
 
@@ -271,14 +273,14 @@ function editarProduto(codigo) {
             <div class="mb-3">
               <label class="form-label">📥 Produto sem estoque</label><br>
               <input type="checkbox" id="editar_prosemest"
-                ${produto.some((p) => p.prosemest === "S") ? "checked" : ""}>
+                ${produto.some((p) => normalizarFlagPeca(p.prosemest) === "S") ? "checked" : ""}>
               <label for="editar_prosemest">Sem estoque geral</label>
             </div>
 
             <div class="mb-3">
               <label class="form-label">📥 Produto acabando</label><br>
               <input type="checkbox" id="editar_proacabando"
-                ${produto.some((p) => p.proacabando === "S") ? "checked" : ""}>
+                ${produto.some((p) => normalizarFlagPeca(p.proacabando) === "S") ? "checked" : ""}>
               <label for="editar_proacabando">Produto acabando</label>
             </div>
 
@@ -411,16 +413,21 @@ function editarProduto(codigo) {
 
           try {
             // Atualiza dados básicos do produto
-            await fetch(`${BASE_URL}/pro/${codigo}`, {
+            const updRes = await fetch(`${BASE_URL}/pro/${codigo}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 prodes,
                 provl,
+                procusto: produto[0]?.procusto,
                 prosemest,
                 proacabando,
               }),
             });
+            if (!updRes.ok) {
+              const errorData = await updRes.json();
+              throw new Error(errorData.error || errorData.erro || "Erro ao atualizar produto");
+            }
 
             // Cores novas ou atualizadas
             for (const c of atuais) {
@@ -434,7 +441,7 @@ function editarProduto(codigo) {
                   throw new Error(errorData.erro || "Erro ao adicionar cor");
                 }
               } else if (anterioresMap[c.corcod] !== c.procorsemest) {
-                await fetch(
+                const colorResponse = await fetch(
                   `${BASE_URL}/proCoresDisponiveis/${codigo}?` +
                     `corescod=${c.corcod}` +
                     `&procorsemest=${anterioresMap[c.corcod]}` +
@@ -442,6 +449,9 @@ function editarProduto(codigo) {
                     `&procorsemestnovo=${c.procorsemest}`,
                   { method: "PUT" },
                 );
+                if (!colorResponse.ok) {
+                  throw new Error("Erro ao atualizar cor");
+                }
               }
             }
 
@@ -459,6 +469,12 @@ function editarProduto(codigo) {
               }
             }
 
+            // Releitura após salvar as cores: exibe o mesmo estado da edição.
+            const finalRes = await fetch(`${BASE_URL}/pro/painel/${codigo}`, { cache: "no-store" });
+            if (!finalRes.ok) throw new Error("Erro ao consultar o produto atualizado");
+            const [produtoFinal] = await finalRes.json();
+            if (!produtoFinal) throw new Error("Produto atualizado não encontrado");
+
             // Aviso de sucesso
             const msg = document.createElement("div");
             msg.textContent = "Produto atualizado com sucesso!";
@@ -471,7 +487,14 @@ function editarProduto(codigo) {
             setTimeout(() => msg.remove(), 2000);
 
             popup.remove();
-            carregarProPesquisa();
+            // Atualiza apenas a linha editada em tempo real, sem recarregar
+            // a tabela (preserva ordem, scroll e itens do scroll infinito).
+            if (linhaPecaForaDosFiltrosStatus(produtoFinal.prosemest, produtoFinal.proacabando)) {
+              await carregarPecas(1);
+            } else {
+              atualizarLinhaPecaEditada(codigo, produtoFinal.prodes, produtoFinal.provl,
+                produtoFinal.prosemest, produtoFinal.proacabando);
+            }
           } catch (erro) {
             popup.remove();
             alertPersonalizado(
@@ -488,6 +511,135 @@ function editarProduto(codigo) {
 
 function carregarProPesquisa() {
   carregarPecas(pecasPage);
+}
+
+// Atualiza em tempo real a linha da peça editada, sem recarregar a tabela.
+// Preserva ordem, posição do scroll e itens já carregados via scroll infinito.
+function normalizarFlagPeca(valor) {
+  return String(valor ?? "N").trim().toUpperCase() === "S" ? "S" : "N";
+}
+
+function montarBadgesStatusPeca(prosemest, proacabando) {
+  const badges = [];
+  if (normalizarFlagPeca(prosemest) === "S") {
+    badges.push(
+      '<span class="peca-badge peca-badge-sem" title="Sem estoque geral: marcado">✓ Sem estoque geral</span>'
+    );
+  }
+  if (normalizarFlagPeca(proacabando) === "S") {
+    badges.push(
+      '<span class="peca-badge peca-badge-acab" title="Produto acabando: marcado">✓ Produto acabando</span>'
+    );
+  }
+  if (!badges.length) {
+    return '<span class="peca-status-ok">Nenhuma marcada</span>';
+  }
+  return badges.join("");
+}
+
+function linhaPecaForaDosFiltrosStatus(prosemest, proacabando) {
+  if (pecasMarcacao === "prosemest") return normalizarFlagPeca(prosemest) !== "S";
+  if (pecasMarcacao === "proacabando") return normalizarFlagPeca(proacabando) !== "S";
+  return false;
+}
+
+function atualizarLinhaPecaEditada(codigo, prodes, provl, prosemest, proacabando) {
+  const btn = document.querySelector(
+    `.btn-editar-peca[data-id="${codigo}"]`
+  );
+  if (!btn) {
+    // Fallback: se a linha não estiver no DOM (filtro/paginação), não
+    // recarrega tudo para não bagunçar a ordem; apenas atualiza o total.
+    atualizarInfoTotal();
+    return;
+  }
+  const tr = btn.closest("tr");
+  if (!tr) return;
+
+  // Se houver busca ativa e o novo nome não corresponde mais, remove a linha.
+  const q = (pecasQ || "").trim().toLowerCase();
+  if (q && !(String(prodes || "").toLowerCase().includes(q))) {
+    tr.remove();
+    if (typeof pecasTotal === "number" && pecasTotal > 0) pecasTotal -= 1;
+    atualizarInfoTotal();
+    return;
+  }
+
+  // Se os filtros de status não correspondem mais, remove a linha.
+  if (
+    (prosemest !== undefined || proacabando !== undefined) &&
+    linhaPecaForaDosFiltrosStatus(prosemest, proacabando)
+  ) {
+    tr.remove();
+    if (typeof pecasTotal === "number" && pecasTotal > 0) pecasTotal -= 1;
+    atualizarInfoTotal();
+    return;
+  }
+
+  const nomeEl = tr.querySelector(".peca-nome");
+  if (nomeEl) nomeEl.textContent = prodes;
+
+  const valorEl = tr.querySelector(".valor-col");
+  if (valorEl) {
+    try {
+      valorEl.textContent = formatarMoeda(provl);
+    } catch (_) {
+      valorEl.textContent = provl;
+    }
+  }
+
+  if (prosemest !== undefined || proacabando !== undefined) {
+    const statusEl = tr.querySelector(".status-col");
+    if (statusEl) {
+      const semAtual =
+        prosemest !== undefined
+          ? prosemest
+          : btn.getAttribute("data-semest") || "N";
+      const acaAtual =
+        proacabando !== undefined
+          ? proacabando
+          : btn.getAttribute("data-acabando") || "N";
+      statusEl.innerHTML = montarBadgesStatusPeca(semAtual, acaAtual);
+    }
+    if (prosemest !== undefined)
+      btn.setAttribute("data-semest", String(prosemest));
+    if (proacabando !== undefined)
+      btn.setAttribute("data-acabando", String(proacabando));
+  }
+
+  btn.setAttribute("data-nome", String(prodes || "").replace(/"/g, "&quot;"));
+  btn.setAttribute("data-valor", String(provl ?? ""));
+
+  // Destaque sutil para feedback visual, sem mover o scroll.
+  try {
+    tr.style.transition = "background-color 0.6s";
+    const original = tr.style.backgroundColor;
+    tr.style.backgroundColor = "rgba(40,167,69,0.18)";
+    setTimeout(() => {
+      tr.style.backgroundColor = original || "";
+    }, 900);
+  } catch (_) {
+    /* sem destaque */
+  }
+
+  atualizarInfoTotal();
+}
+
+// Remove em tempo real a linha da peça excluída, sem recarregar a tabela.
+function removerLinhaPecaExcluida(codigo) {
+  const btn =
+    document.querySelector(`.btn-excluir-peca[data-id="${codigo}"]`) ||
+    document.querySelector(`.btn-editar-peca[data-id="${codigo}"]`);
+  const tr = btn ? btn.closest("tr") : null;
+  if (tr) tr.remove();
+  if (typeof pecasTotal === "number" && pecasTotal > 0) pecasTotal -= 1;
+  atualizarInfoTotal();
+
+  const tbody = document.getElementById("corpoTabela");
+  if (tbody && !tbody.querySelector("tr")) {
+    tbody.innerHTML =
+      '<tr><td colspan="5" class="text-center">Nenhuma peça encontrada</td></tr>';
+  }
 }
 
 async function excluirProduto(id) {
@@ -697,18 +849,21 @@ function renderMarcas() {
   filtradas.forEach((m) => {
     const tr = document.createElement("tr");
     tr.setAttribute("data-marca-id", m.marcascod);
+    tr.setAttribute("data-id", m.marcascod);
     tr.innerHTML = `
           <td class="peca-col marca-des">${m.marcasdes}</td>
           <td class="acoes-col">
             <div class="pecas-acoes">
-              <button class="pecas-btn-acao pecas-btn-editar" title="Editar marca"
+              <button class="pecas-btn-acao pecas-btn-editar btn-editar-marca" title="Editar marca"
+                data-id="${m.marcascod}"
                 onclick="editarMarca(${m.marcascod}, '${m.marcasdes.replace(
                   /'/g,
                   "\\'",
                 )}')">
                 <i class="fa-solid fa-pen"></i>
               </button>
-              <button class="pecas-btn-acao pecas-btn-excluir" title="Excluir marca"
+              <button class="pecas-btn-acao pecas-btn-excluir btn-excluir-marca" title="Excluir marca"
+                data-id="${m.marcascod}"
                 onclick="excluirMarca(${m.marcascod})">
                 <i class="fa-solid fa-trash"></i>
               </button>
@@ -817,16 +972,11 @@ function editarMarca(id, nome) {
       msg.style.borderRadius = "6px";
       msg.style.zIndex = "10000";
       document.body.appendChild(msg);
-
-      // fechar modal DEPOIS de mostrar mensagem
-      setTimeout(() => {
-        msg.remove();
-        popup.remove();
-        carregarMarcas();
-      }, 1500);
+      setTimeout(() => msg.remove(), 2000);
 
       popup.remove();
-      carregarMarcas();
+      // Atualiza só a linha em tempo real (preserva ordem/scroll/busca).
+      atualizarLinhaMarcaEditada(id, descricao);
     } catch (err) {
       alert("Erro ao atualizar a marca!");
       console.error(err);
@@ -915,7 +1065,8 @@ async function excluirMarca(id) {
         msg.remove();
       }, 2000);
       document.body.removeChild(popup);
-      carregarMarcas();
+      // Remove só a linha em tempo real (preserva ordem/scroll/busca).
+      removerLinhaMarcaExcluida(id);
     } catch (error) {
       if (error.message === "403") {
         alertPersonalizado(
@@ -964,18 +1115,22 @@ function renderModelos() {
 
   filtradas.forEach((m) => {
     const tr = document.createElement("tr");
+    tr.setAttribute("data-modelo-id", m.modcod);
+    tr.setAttribute("data-id", m.modcod);
     tr.innerHTML = `
-          <td class="peca-col">${m.moddes}</td>
+          <td class="peca-col modelo-des">${m.moddes}</td>
           <td class="acoes-col">
             <div class="pecas-acoes">
-              <button class="pecas-btn-acao pecas-btn-editar" title="Editar modelo"
+              <button class="pecas-btn-acao pecas-btn-editar btn-editar-modelo" title="Editar modelo"
+                data-id="${m.modcod}"
                 onclick="editarModelo(${m.modcod}, '${m.moddes.replace(
                   /'/g,
-                  "'",
+                  "\\'",
                 )}', ${m.modmarcascod})">
                 <i class="fa-solid fa-pen"></i>
               </button>
-              <button class="pecas-btn-acao pecas-btn-excluir" title="Excluir modelo"
+              <button class="pecas-btn-acao pecas-btn-excluir btn-excluir-modelo" title="Excluir modelo"
+                data-id="${m.modcod}"
                 onclick="excluirModelo(${m.modcod})">
                 <i class="fa-solid fa-trash"></i>
               </button>
@@ -1083,7 +1238,8 @@ function editarModelo(id, nome, marca) {
           msg.remove();
         }, 2000);
         document.body.removeChild(popup);
-        carregarModelos();
+        // Atualiza só a linha em tempo real (preserva ordem/scroll/busca).
+        atualizarLinhaModeloEditada(id, moddes, modmarcascod);
       })
       .catch((error) => {
         if (error.message === "403") {
@@ -1161,7 +1317,7 @@ async function excluirModelo(id) {
           msg.remove();
         }, 2000);
         document.body.removeChild(popup);
-        carregarModelos();
+        removerLinhaModeloExcluida(id);
       } catch (e) {
         if (e.message === "403") {
           alertPersonalizado(
@@ -1209,18 +1365,22 @@ function renderTipos() {
 
   filtradas.forEach((t) => {
     const tr = document.createElement("tr");
+    tr.setAttribute("data-tipo-id", t.tipocod);
+    tr.setAttribute("data-id", t.tipocod);
     tr.innerHTML = `
-          <td class="peca-col">${t.tipodes}</td>
+          <td class="peca-col tipo-des">${t.tipodes}</td>
           <td class="acoes-col">
             <div class="pecas-acoes">
-              <button class="pecas-btn-acao pecas-btn-editar" title="Editar tipo"
+              <button class="pecas-btn-acao pecas-btn-editar btn-editar-tipo" title="Editar tipo"
+                data-id="${t.tipocod}"
                 onclick="editarTipo(${t.tipocod}, '${t.tipodes.replace(
                   /'/g,
-                  "'",
+                  "\\'",
                 )}')">
                 <i class="fa-solid fa-pen"></i>
               </button>
-              <button class="pecas-btn-acao pecas-btn-excluir" title="Excluir tipo"
+              <button class="pecas-btn-acao pecas-btn-excluir btn-excluir-tipo" title="Excluir tipo"
+                data-id="${t.tipocod}"
                 onclick="excluirTipo(${t.tipocod})">
                 <i class="fa-solid fa-trash"></i>
               </button>
@@ -1307,7 +1467,7 @@ function editarTipo(id, nome) {
           msg.remove();
         }, 2000);
         document.body.removeChild(popup);
-        carregarTipos();
+        atualizarLinhaTipoEditada(id, tipodes);
       })
       .catch((error) => {
         if (error.message === "403") {
@@ -1378,7 +1538,7 @@ async function excluirTipo(id) {
         msg.remove();
       }, 2000);
       document.body.removeChild(popup);
-      carregarTipos();
+      removerLinhaTipoExcluida(id);
     } catch (error) {
       if (error.message === "403") {
         alertPersonalizado(
@@ -1426,13 +1586,16 @@ function renderCores() {
 
   filtradas.forEach((c) => {
     const tr = document.createElement("tr");
+    tr.setAttribute("data-cor-id", c.corcod);
+    tr.setAttribute("data-id", c.corcod);
     tr.innerHTML = `
-          <td class="peca-col">${c.cornome}</td>
+          <td class="peca-col cor-des">${c.cornome}</td>
           <td class="acoes-col">
             <div class="pecas-acoes">
               <button
-                class="pecas-btn-acao pecas-btn-editar"
+                class="pecas-btn-acao pecas-btn-editar btn-editar-cor"
                 title="Editar cor"
+                data-id="${c.corcod}"
                 data-cod="${c.corcod}"
                 data-nome="${c.cornome.replace(/"/g, "&quot;")}"
                 onclick="editarCor(this.dataset.cod, this.dataset.nome)"
@@ -1440,8 +1603,9 @@ function renderCores() {
                 <i class="fa-solid fa-pen"></i>
               </button>
               <button
-                class="pecas-btn-acao pecas-btn-excluir"
+                class="pecas-btn-acao pecas-btn-excluir btn-excluir-cor"
                 title="Excluir cor"
+                data-id="${c.corcod}"
                 onclick="excluirCor(${c.corcod})"
               >
                 <i class="fa-solid fa-trash"></i>
@@ -1526,7 +1690,7 @@ function editarCor(id, nome) {
           msg.remove();
         }, 2000);
         document.body.removeChild(popup);
-        carregarCores();
+        atualizarLinhaCorEditada(id, cornome);
       })
       .catch((error) => {
         if (error.message === "403") {
@@ -1597,7 +1761,7 @@ async function excluirCor(id) {
         msg.remove();
       }, 2000);
       document.body.removeChild(popup);
-      carregarCores();
+      removerLinhaCorExcluida(id);
     } catch (error) {
       if (error.message === "403") {
         alertPersonalizado(
@@ -1610,6 +1774,230 @@ async function excluirCor(id) {
       document.body.removeChild(popup);
     }
   };
+}
+
+// ------- Helpers tempo real (Gerenciar Marcas/Modelos/Tipos/Cores) ---------
+// Atualizam só a linha afetada, sem refetch/re-render: preserva ordem,
+// scroll, foco da busca e filtros aplicados.
+function destacarLinhaTemporario(tr) {
+  if (!tr) return;
+  try {
+    tr.style.transition = "background-color 0.6s";
+    const original = tr.style.backgroundColor;
+    tr.style.backgroundColor = "rgba(40,167,69,0.18)";
+    setTimeout(() => {
+      tr.style.backgroundColor = original || "";
+    }, 900);
+  } catch (_) {
+    /* sem destaque */
+  }
+}
+
+function preservarScroll(areaId, fn) {
+  const area = areaId ? document.getElementById(areaId) : null;
+  const box = area ? area.querySelector(".pecas-modal-body") : null;
+  const top = box ? box.scrollTop : null;
+  try {
+    fn();
+  } finally {
+    if (box && top !== null) box.scrollTop = top;
+    if (document.activeElement && document.activeElement.blur) {
+      // não rouba o foco; mantém busca focada se já estava
+    }
+  }
+}
+
+function atualizarInfoGestao(tbodyId, infoId, unidade) {
+  const tbody = document.getElementById(tbodyId);
+  const info = document.getElementById(infoId);
+  if (!tbody || !info) return;
+  const total = tbody.querySelectorAll("tr[data-id]").length;
+  info.textContent = `${total} ${unidade}`;
+}
+
+function linhaVaziaGestao(tbodyId, texto) {
+  const tbody = document.getElementById(tbodyId);
+  if (tbody && !tbody.querySelector("tr")) {
+    tbody.innerHTML = `<tr><td colspan="2" class="text-center">${texto}</td></tr>`;
+  }
+}
+
+function escaparAspasSimples(s) {
+  return String(s || "").replace(/'/g, "\\'");
+}
+
+// ---- Marcas ----
+function atualizarLinhaMarcaEditada(id, novoNome) {
+  const nome = String(novoNome || "").trim();
+  const item = (marcasLista || []).find(
+    (m) => String(m.marcascod) === String(id)
+  );
+  if (item) item.marcasdes = nome;
+  preservarScroll("areaMarcas", () => {
+    const tr =
+      document.querySelector(`#listaMarcas tr[data-marca-id="${id}"]`) ||
+      document.querySelector(`#listaMarcas tr[data-id="${id}"]`);
+    if (!tr) return;
+    const q = (marcasQ || "").toLowerCase();
+    if (q && !nome.toLowerCase().includes(q)) {
+      tr.remove();
+    } else {
+      const cel = tr.querySelector(".marca-des");
+      if (cel) cel.textContent = nome;
+      const btn = tr.querySelector(".btn-editar-marca");
+      if (btn) {
+        btn.setAttribute("data-id", String(id));
+        btn.setAttribute(
+          "onclick",
+          `editarMarca(${id}, '${escaparAspasSimples(nome)}')`
+        );
+      }
+      destacarLinhaTemporario(tr);
+    }
+  });
+  atualizarInfoGestao("listaMarcas", "infoTotalMarcas", "marca(s)");
+}
+
+function removerLinhaMarcaExcluida(id) {
+  marcasLista = (marcasLista || []).filter(
+    (m) => String(m.marcascod) !== String(id)
+  );
+  preservarScroll("areaMarcas", () => {
+    const tr =
+      document.querySelector(`#listaMarcas tr[data-marca-id="${id}"]`) ||
+      document.querySelector(`#listaMarcas tr[data-id="${id}"]`);
+    if (tr) tr.remove();
+  });
+  atualizarInfoGestao("listaMarcas", "infoTotalMarcas", "marca(s)");
+  linhaVaziaGestao("listaMarcas", "Nenhuma marca encontrada");
+}
+
+// ---- Modelos ----
+function atualizarLinhaModeloEditada(id, novoNome, novaMarca) {
+  const nome = String(novoNome || "").trim();
+  const item = (modelosLista || []).find(
+    (m) => String(m.modcod) === String(id)
+  );
+  if (item) {
+    item.moddes = nome;
+    if (novaMarca !== undefined && novaMarca !== null && novaMarca !== "") {
+      item.modmarcascod = Number(novaMarca);
+    }
+  }
+  preservarScroll("areaModelos", () => {
+    const tr = document.querySelector(`#listaModelos tr[data-id="${id}"]`);
+    if (!tr) return;
+    const q = (modelosQ || "").toLowerCase();
+    const marcaFiltroOk =
+      modelosMarca === null ||
+      String(item ? item.modmarcascod : novaMarca) === String(modelosMarca);
+    if ((q && !nome.toLowerCase().includes(q)) || !marcaFiltroOk) {
+      tr.remove();
+    } else {
+      const cel = tr.querySelector(".modelo-des") || tr.querySelector(".peca-col");
+      if (cel) cel.textContent = nome;
+      const btn = tr.querySelector(".btn-editar-modelo");
+      if (btn) {
+        btn.setAttribute(
+          "onclick",
+          `editarModelo(${id}, '${escaparAspasSimples(nome)}', ${item ? item.modmarcascod : novaMarca})`
+        );
+      }
+      destacarLinhaTemporario(tr);
+    }
+  });
+  atualizarInfoGestao("listaModelos", "infoTotalModelos", "modelo(s)");
+}
+
+function removerLinhaModeloExcluida(id) {
+  modelosLista = (modelosLista || []).filter(
+    (m) => String(m.modcod) !== String(id)
+  );
+  preservarScroll("areaModelos", () => {
+    const tr = document.querySelector(`#listaModelos tr[data-id="${id}"]`);
+    if (tr) tr.remove();
+  });
+  atualizarInfoGestao("listaModelos", "infoTotalModelos", "modelo(s)");
+  linhaVaziaGestao("listaModelos", "Nenhum modelo encontrado");
+}
+
+// ---- Tipos ----
+function atualizarLinhaTipoEditada(id, novoNome) {
+  const nome = String(novoNome || "").trim();
+  const item = (tiposLista || []).find(
+    (t) => String(t.tipocod) === String(id)
+  );
+  if (item) item.tipodes = nome;
+  preservarScroll("areaTipos", () => {
+    const tr = document.querySelector(`#listaTipos tr[data-id="${id}"]`);
+    if (!tr) return;
+    const q = (tiposQ || "").toLowerCase();
+    if (q && !nome.toLowerCase().includes(q)) {
+      tr.remove();
+    } else {
+      const cel = tr.querySelector(".tipo-des") || tr.querySelector(".peca-col");
+      if (cel) cel.textContent = nome;
+      const btn = tr.querySelector(".btn-editar-tipo");
+      if (btn) {
+        btn.setAttribute(
+          "onclick",
+          `editarTipo(${id}, '${escaparAspasSimples(nome)}')`
+        );
+      }
+      destacarLinhaTemporario(tr);
+    }
+  });
+  atualizarInfoGestao("listaTipos", "infoTotalTipos", "tipo(s)");
+}
+
+function removerLinhaTipoExcluida(id) {
+  tiposLista = (tiposLista || []).filter(
+    (t) => String(t.tipocod) !== String(id)
+  );
+  preservarScroll("areaTipos", () => {
+    const tr = document.querySelector(`#listaTipos tr[data-id="${id}"]`);
+    if (tr) tr.remove();
+  });
+  atualizarInfoGestao("listaTipos", "infoTotalTipos", "tipo(s)");
+  linhaVaziaGestao("listaTipos", "Nenhum tipo encontrado");
+}
+
+// ---- Cores ----
+function atualizarLinhaCorEditada(id, novoNome) {
+  const nome = String(novoNome || "").trim();
+  const item = (coresLista || []).find(
+    (c) => String(c.corcod) === String(id)
+  );
+  if (item) item.cornome = nome;
+  preservarScroll("areaCores", () => {
+    const tr = document.querySelector(`#listaCores tr[data-id="${id}"]`);
+    if (!tr) return;
+    const q = (coresQ || "").toLowerCase();
+    if (q && !nome.toLowerCase().includes(q)) {
+      tr.remove();
+    } else {
+      const cel = tr.querySelector(".cor-des") || tr.querySelector(".peca-col");
+      if (cel) cel.textContent = nome;
+      const btn = tr.querySelector(".btn-editar-cor");
+      if (btn) {
+        btn.setAttribute("data-nome", nome.replace(/"/g, "&quot;"));
+      }
+      destacarLinhaTemporario(tr);
+    }
+  });
+  atualizarInfoGestao("listaCores", "infoTotalCores", "cor(es)");
+}
+
+function removerLinhaCorExcluida(id) {
+  coresLista = (coresLista || []).filter(
+    (c) => String(c.corcod) !== String(id)
+  );
+  preservarScroll("areaCores", () => {
+    const tr = document.querySelector(`#listaCores tr[data-id="${id}"]`);
+    if (tr) tr.remove();
+  });
+  atualizarInfoGestao("listaCores", "infoTotalCores", "cor(es)");
+  linhaVaziaGestao("listaCores", "Nenhuma cor encontrada");
 }
 
 // ------- GESTÃO PEÇAS ---------
@@ -1736,7 +2124,10 @@ async function carregarModelosFiltro(marcascod) {
 }
 
 async function carregarPecas(page = 1, append = false) {
-  if (pecasLoading) return;
+  if (append && pecasLoading) return;
+  if (pecasRequestController) pecasRequestController.abort();
+  const requestController = new AbortController();
+  pecasRequestController = requestController;
   pecasLoading = true;
   pecasPage = page;
 
@@ -1748,6 +2139,8 @@ async function carregarPecas(page = 1, append = false) {
   if (pecasMarca !== null) params.set("marca", String(pecasMarca));
   if (pecasModelo !== null) params.set("modelo", String(pecasModelo));
   if (pecasTipo !== null) params.set("tipo", String(pecasTipo));
+  if (pecasMarcacao === "prosemest") params.set("semest", "S");
+  if (pecasMarcacao === "proacabando") params.set("acabando", "S");
 
   const tbody = document.getElementById("corpoTabela");
   const scrollBox = document.querySelector("#tabelaArea .pecas-modal-body");
@@ -1755,17 +2148,21 @@ async function carregarPecas(page = 1, append = false) {
   if (append) {
     tbody.insertAdjacentHTML(
       "beforeend",
-      '<tr id="linhaCarregando"><td colspan="4" class="text-center text-muted py-2"><small>Carregando mais...</small></td></tr>'
+      '<tr id="linhaCarregando"><td colspan="5" class="text-center text-muted py-2"><small>Carregando mais...</small></td></tr>'
     );
   } else {
     tbody.innerHTML =
-      '<tr><td colspan="4" class="text-center">Carregando...</td></tr>';
+      '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
     if (scrollBox) scrollBox.scrollTop = 0;
   }
 
   try {
-    const res = await fetch(`${BASE_URL}/pros?${params.toString()}`);
+    const res = await fetch(`${BASE_URL}/pros?${params.toString()}`, {
+      signal: requestController.signal,
+      cache: "no-store",
+    });
     const dados = await res.json();
+    if (requestController !== pecasRequestController) return;
     if (!res.ok) throw new Error(dados?.error || `Erro ${res.status}`);
 
     pecasTotal = dados.total || 0;
@@ -1778,15 +2175,16 @@ async function carregarPecas(page = 1, append = false) {
     renderPecas(lista, append);
     atualizarInfoTotal();
   } catch (err) {
+    if (requestController !== pecasRequestController || err.name === "AbortError") return;
     console.error(err);
     const linhaCarregando = document.getElementById("linhaCarregando");
     if (linhaCarregando) linhaCarregando.remove();
     if (!append) {
       tbody.innerHTML =
-        '<tr><td colspan="4" class="text-center">Erro ao carregar peças</td></tr>';
+        '<tr><td colspan="5" class="text-center">Erro ao carregar peças</td></tr>';
     }
   } finally {
-    pecasLoading = false;
+    if (requestController === pecasRequestController) pecasLoading = false;
   }
 }
 
@@ -1797,17 +2195,20 @@ function renderPecas(dados, append = false) {
   if (!dados.length) {
     if (!append) {
       tbody.innerHTML =
-        '<tr><td colspan="4" class="text-center">Nenhuma peça encontrada</td></tr>';
+        '<tr><td colspan="5" class="text-center">Nenhuma peça encontrada</td></tr>';
     }
     return;
   }
 
   dados.forEach((t) => {
     const tr = document.createElement("tr");
+    const semest = normalizarFlagPeca(t.prosemest);
+    const acab = normalizarFlagPeca(t.proacabando);
     tr.innerHTML = `
           <td class="peca-col"><span class="peca-nome">${t.prodes}</span></td>
           <td class="valor-col">${formatarMoeda(t.provl)}</td>
           <td class="custo-col">${formatarMoeda(t.procusto)}</td>
+          <td class="status-col">${montarBadgesStatusPeca(semest, acab)}</td>
           <td class="acoes-col">
             <div class="pecas-acoes">
               <button
@@ -1816,6 +2217,8 @@ function renderPecas(dados, append = false) {
                 data-nome="${t.prodes.replace(/"/g, "&quot;")}"
                 data-valor="${t.provl}"
                 data-custo="${t.procusto}"
+                data-semest="${semest}"
+                data-acabando="${acab}"
                 title="Editar peça"
               >
                 <i class="fa-solid fa-pen"></i>
@@ -1844,6 +2247,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const selMarca = document.getElementById("filtroMarcaPeca");
   const selModelo = document.getElementById("filtroModeloPeca");
   const selTipo = document.getElementById("filtroTipoPeca");
+  const selMarcacao = document.getElementById("filtroMarcacaoPeca");
   const inputBusca = document.getElementById("pecasBusca");
   const btnAplicar = document.getElementById("btnAplicarFiltroPeca");
   const btnLimpar = document.getElementById("btnLimparFiltroPeca");
@@ -1937,19 +2341,24 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 300);
     });
   }
-  if (btnAplicar) {
-    btnAplicar.addEventListener("click", () => {
-      pecasMarca = parseIntegerParam(selMarca?.value);
-      pecasModelo = parseIntegerParam(selModelo?.value);
-      pecasTipo = parseIntegerParam(selTipo?.value);
-      carregarPecas(1);
-    });
+  function aplicarFiltrosPecas() {
+    clearTimeout(pecasDebounce);
+    pecasQ = (inputBusca?.value || "").trim().toLowerCase();
+    pecasMarca = parseIntegerParam(selMarca?.value);
+    pecasModelo = parseIntegerParam(selModelo?.value);
+    pecasTipo = parseIntegerParam(selTipo?.value);
+    pecasMarcacao = selMarcacao?.value || "";
+    carregarPecas(1);
   }
+  if (btnAplicar) btnAplicar.addEventListener("click", aplicarFiltrosPecas);
+  if (selMarcacao) selMarcacao.addEventListener("change", aplicarFiltrosPecas);
   if (btnLimpar) {
     btnLimpar.addEventListener("click", () => {
+      clearTimeout(pecasDebounce);
       pecasMarca = null;
       pecasModelo = null;
       pecasTipo = null;
+      pecasMarcacao = "";
       pecasQ = "";
       if (selMarca) selMarca.value = "";
       if (selModelo) {
@@ -1957,6 +2366,7 @@ document.addEventListener("DOMContentLoaded", () => {
         selModelo.innerHTML = '<option value="">Todos os modelos</option>';
       }
       if (selTipo) selTipo.value = "";
+      if (selMarcacao) selMarcacao.value = "";
       if (inputBusca) inputBusca.value = "";
       const busca = document.getElementById("pesquisa");
       if (busca) busca.value = "";
@@ -2155,7 +2565,8 @@ async function excluirPro(id) {
           msg.remove();
         }, 2000);
         document.body.removeChild(popup);
-        carregarPecas();
+        // Remove só a linha excluída em tempo real (preserva ordem/scroll).
+        removerLinhaPecaExcluida(id);
       } else if (res.status === 403) {
         document.body.removeChild(popup);
         throw new Error("403");
