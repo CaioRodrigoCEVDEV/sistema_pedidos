@@ -46,3 +46,191 @@
   }
 }
 
+/* --------------------------------------------------------------------------
+   Listagens mobile de pedidos (padrão .ou-mobile-list / .ou-mobile-card)
+   O card possui botão de ação explícito, então não é clicável.
+   -------------------------------------------------------------------------- */
+.ou-mobile-list--pedidos .ou-mobile-card {
+  cursor: default;
+}
+.ou-mobile-list--pedidos .ou-mobile-card:hover {
+  border-color: var(--ou-border);
+}
+.ou-mobile-list--pedidos .ou-mobile-card:active {
+  transform: none;
+  background: var(--ou-surface);
+}
+.ou-mobile-list--pedidos .ou-mobile-card__head .check-pedido {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+}
+.ou-mobile-list--pedidos .ou-mobile-card__foot .button-color-3,
+.ou-mobile-list--pedidos .ou-mobile-card__foot .button-color-4 {
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Modal de detalhes do pedido
+   -------------------------------------------------------------------------- */
+.ou-pedido-modal .modal-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ou-pedido-modal .modal-header {
+  gap: 0.75rem;
+}
+.ou-pedido-modal .modal-header .btn-close {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 767.98px) {
+  /* O modal ocupa quase toda a largura, com um respiro lateral confortável */
+  .ou-pedido-modal {
+    width: auto;
+    max-width: calc(100% - 1.5rem);
+    margin: 0.75rem;
+  }
+  .ou-pedido-modal .modal-content {
+    width: 100%;
+  }
+  .ou-pedido-modal .modal-header {
+    align-items: flex-start;
+  }
+
+  /* Cabeçalho e rodapé permanecem visíveis; o corpo rola internamente */
+  .ou-pedido-modal .modal-body {
+    max-height: 58vh;
+    overflow-y: auto;
+  }
+
+  /* Rodapé: botões empilhados, sem quebra de texto e com toque confortável */
+  .ou-pedido-modal .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .ou-pedido-modal .modal-footer > .btn {
+    width: 100% !important;
+    min-height: 46px;
+    margin: 0 !important;
+  }
+
+  /* Itens do pedido: a tabela vira uma lista vertical de cards */
+  .ou-detail-table,
+  .ou-detail-table tbody,
+  .ou-detail-table tfoot,
+  .ou-detail-table tr,
+  .ou-detail-table td,
+  .ou-detail-table th {
+    display: block;
+    width: 100%;
+  }
+  .ou-detail-table thead {
+    display: none;
+  }
+
+  .ou-detail-table tbody tr.ou-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.7rem;
+    background: var(--ou-surface-2);
+    border: 1px solid var(--ou-border);
+    border-radius: var(--ou-radius);
+  }
+  .ou-detail-table tbody tr.ou-detail-item:last-child {
+    margin-bottom: 0;
+  }
+  .ou-detail-table tbody tr.ou-detail-item > td {
+    padding: 0;
+  }
+
+  /* Número do item */
+  .ou-detail-table tbody tr.ou-detail-item > td:first-child {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ou-text-muted);
+  }
+  .ou-detail-table tbody tr.ou-detail-item > td:first-child::before {
+    content: "Item ";
+  }
+
+  /* Nome do produto: nunca cortado */
+  .ou-detail-table tbody tr.ou-detail-item > td:nth-child(2) {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--ou-text);
+    overflow-wrap: anywhere;
+  }
+
+  /* Qtd / Unit. / Subtotal em linhas rótulo-valor */
+  .ou-detail-table tbody tr.ou-detail-item > td:nth-child(3),
+  .ou-detail-table tbody tr.ou-detail-item > td:nth-child(4),
+  .ou-detail-table tbody tr.ou-detail-item > td:nth-child(5) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--ou-text-2);
+  }
+  .ou-detail-table tbody tr.ou-detail-item > td:nth-child(3)::before,
+  .ou-detail-table tbody tr.ou-detail-item > td:nth-child(4)::before,
+  .ou-detail-table tbody tr.ou-detail-item > td:nth-child(5)::before {
+    content: attr(data-label);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ou-text-muted);
+  }
+  .ou-detail-table tbody tr.ou-detail-item > td:nth-child(3) .qtd-input {
+    flex: 0 0 auto;
+    width: 96px !important;
+    text-align: center;
+  }
+  .ou-detail-table tbody tr.ou-detail-item > td:nth-child(5) {
+    font-weight: 600;
+    color: var(--ou-text);
+  }
+
+  /* Coluna vazia de ações não é necessária no mobile */
+  .ou-detail-table tbody tr.ou-detail-item > td:last-child {
+    display: none;
+  }
+
+  /* Total destacado */
+  .ou-detail-table tfoot tr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    background: var(--ou-surface-3);
+    border: 1px solid var(--ou-border);
+    border-radius: var(--ou-radius);
+  }
+  .ou-detail-table tfoot th {
+    width: auto;
+    padding: 0;
+  }
+  .ou-detail-table tfoot th:first-child {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ou-text-muted);
+  }
+  .ou-detail-table tfoot th:last-child {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ou-primary);
+  }
+}
+

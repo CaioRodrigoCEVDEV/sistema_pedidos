@@ -14,6 +14,10 @@ const btnAplicar = document.getElementById("btnAplicarFiltroPeriodo");
 const btnLimpar = document.getElementById("btnLimparFiltroPeriodo");
 const tabelaConfirmados = document.getElementById("corpoTabelaConfirmados"); // onde preencher
 const tabelaPendentes = document.getElementById("corpoTabela");
+const tabelaConfirmadosMobile = document.getElementById(
+  "corpoTabelaConfirmadosMobile"
+);
+const tabelaPendentesMobile = document.getElementById("corpoTabelaMobile");
 
 function setRange(startDate, endDate) {
   inputInicio.value = startDate ? toInputDate(startDate) : "";
@@ -65,6 +69,8 @@ btnLimpar.addEventListener("click", function () {
   // opcional: limpar tabela
   tabelaConfirmados.innerHTML = "";
   tabelaPendentes.innerHTML = "";
+  if (tabelaConfirmadosMobile) tabelaConfirmadosMobile.innerHTML = "";
+  if (tabelaPendentesMobile) tabelaPendentesMobile.innerHTML = "";
 });
 
 // Fim filtro
@@ -74,6 +80,75 @@ function formatarMoeda(valor) {
     style: "currency",
     currency: "BRL",
   });
+}
+
+// Escapa valores dinâmicos antes de injetar em HTML
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, function (c) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[c];
+  });
+}
+
+// Card de pedido usado nas listagens mobile (padrão .ou-mobile-card do DS)
+function criarCardPedidoMobile(dado, status, comCheckbox) {
+  const pvcod = dado.pvcod;
+  const canal = escapeHtml(dado.pvcanal || "—");
+  const vendedor = escapeHtml(dado.usunome || "Sem Vendedor");
+  const valor = formatarMoeda(dado.pvvl);
+
+  const checkboxHtml = comCheckbox
+    ? `<input type="checkbox" class="form-check-input check-pedido" data-pvcod="${pvcod}" aria-label="Selecionar pedido ${pvcod}" />`
+    : "";
+
+  const acaoHtml =
+    status === "confirmados"
+      ? `<button type="button" class="button-color-4" onclick="abriDetalhePedido(${pvcod}, 'confirmados')">
+          <i class="fa-solid fa-eye"></i> Detalhes
+        </button>`
+      : `<button type="button" class="button-color-3" onclick="abriDetalhePedido(${pvcod})">
+          <i class="fa-solid fa-wrench"></i> Detalhes
+        </button>`;
+
+  const card = document.createElement("div");
+  card.className = "ou-mobile-card";
+  card.innerHTML = `
+    <div class="ou-mobile-card__head">
+      ${checkboxHtml}
+      <span class="ou-mobile-card__identity">
+        <span class="ou-mobile-card__name">Pedido #${pvcod}</span>
+        <span class="ou-mobile-card__fantasia">${canal}</span>
+      </span>
+    </div>
+    <div class="ou-mobile-card__info">
+      <div class="ou-mobile-card__block">
+        <span class="ou-mobile-card__label">Vendedor</span>
+        <span class="ou-mobile-card__value ou-mobile-card__value--wrap">${vendedor}</span>
+      </div>
+      <div class="ou-mobile-card__block">
+        <span class="ou-mobile-card__label">Valor</span>
+        <span class="ou-mobile-card__value">${valor}</span>
+      </div>
+    </div>
+    <div class="ou-mobile-card__foot">
+      ${acaoHtml}
+    </div>
+  `;
+  return card;
+}
+
+// Estado vazio reutilizado nas listagens mobile
+function criarEstadoVazioMobile(icone, titulo, texto) {
+  return `<div class="ou-empty">
+    <span class="ou-empty__icon"><i class="bi ${icone}"></i></span>
+    <span class="ou-empty__title">${titulo}</span>
+    <span class="ou-empty__text">${texto}</span>
+  </div>`;
 }
 
 //buscar usuario logado
@@ -153,7 +228,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
 
     // Atualiza o conteúdo do modal dinamicamente
     modalEl.innerHTML = `
-      <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-dialog modal-lg modal-dialog-centered ou-pedido-modal">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Detalhes do Pedido #${pvcod}${status === "confirmados" ? ' <span class="badge bg-success ms-2">Aprovado</span>' : ''}</h5>
@@ -192,10 +267,10 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             const pv = it.pvcod || pvcod;
             // For confirmed orders: inputs are disabled by default (enabled when "Editar" is clicked)
             const inputDisabled = status === "confirmados" ? "disabled" : "";
-            return `<tr>
+            return `<tr class="ou-detail-item">
               <td class="text-center" data-procod="${procod}" data-pviprocorid="${pviprocorid}">${i + 1}</td>
               <td>${descricao}${cornome}</td>
-              <td style="padding: 0.2rem;">
+              <td style="padding: 0.2rem;" data-label="Qtd.">
                 <input type="number" class="form-control form-control-sm text-end qtd-input" 
                       data-procod="${procod}"
                       data-pviprocorid="${pviprocorid}"
@@ -204,8 +279,8 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
                       ${inputDisabled}
                       style="width: 100%; height: auto; border-radius: 0.25rem; padding: 0.25rem;">
               </td>
-              <td class="text-end">${formatarMoeda(preco)}</td>
-              <td class="text-end">${formatarMoeda(subtotal)}</td>
+              <td class="text-end" data-label="Unit.">${formatarMoeda(preco)}</td>
+              <td class="text-end" data-label="Subtotal">${formatarMoeda(subtotal)}</td>
               <td class="text-center">
 
               </td>
@@ -221,7 +296,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
 
     const conteudoHtml = `
       <div class="table-responsive">
-        <table class="table table-sm">
+        <table class="table table-sm ou-detail-table">
           <thead>
             <tr>
               <th class="text-center">#</th>
@@ -236,7 +311,7 @@ async function abriDetalhePedido(pvcod, status = "pendentes") {
             ${linhasItens}
           </tbody>
           <tfoot>
-            <tr>
+            <tr class="ou-detail-total">
               <th colspan="4" class="text-end">Total</th>
               <th class="text-end">${formatarMoeda(totalPedido)}</th>
             </tr>
@@ -643,6 +718,7 @@ function mostrarPopupMensagem(mensagem, onOk) {
 
       // Preencher tabela - adapte conforme o formato de 'data' da sua API
       tabelaConfirmados.innerHTML = ""; // limpa
+      if (tabelaConfirmadosMobile) tabelaConfirmadosMobile.innerHTML = "";
       if (Array.isArray(data) && data.length) {
         data.forEach((dado) => {
           const tr = document.createElement("tr");
@@ -666,10 +742,22 @@ function mostrarPopupMensagem(mensagem, onOk) {
           </td>
         `;
           tabelaConfirmados.appendChild(tr);
+          if (tabelaConfirmadosMobile) {
+            tabelaConfirmadosMobile.appendChild(
+              criarCardPedidoMobile(dado, "confirmados", false)
+            );
+          }
         });
       } else {
         tabelaConfirmados.innerHTML =
           '<tr><td colspan="5" class="border-0"><div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-inbox"></i></span><span class="ou-empty__title">Nenhum pedido encontrado</span><span class="ou-empty__text">Ajuste o período para ver resultados.</span></div></td></tr>';
+        if (tabelaConfirmadosMobile) {
+          tabelaConfirmadosMobile.innerHTML = criarEstadoVazioMobile(
+            "bi-inbox",
+            "Nenhum pedido encontrado",
+            "Ajuste o período para ver resultados."
+          );
+        }
       }
     } catch (err) {
       console.error(err);
@@ -696,6 +784,7 @@ function mostrarPopupMensagem(mensagem, onOk) {
 
       // Preencher tabela - adapte conforme o formato de 'data' da sua API
       tabelaPendentes.innerHTML = ""; // limpa
+      if (tabelaPendentesMobile) tabelaPendentesMobile.innerHTML = "";
       if (checkAllPendentes) checkAllPendentes.checked = false;
       atualizarContadorSelecionados();
       if (Array.isArray(data) && data.length) {
@@ -722,10 +811,22 @@ function mostrarPopupMensagem(mensagem, onOk) {
           </td>
         `;
           tabelaPendentes.appendChild(tr);
+          if (tabelaPendentesMobile) {
+            tabelaPendentesMobile.appendChild(
+              criarCardPedidoMobile(dado, "pendentes", true)
+            );
+          }
         });
       } else {
         tabelaPendentes.innerHTML =
           '<tr><td colspan="6" class="border-0"><div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-inbox"></i></span><span class="ou-empty__title">Nenhum pedido encontrado</span><span class="ou-empty__text">Ajuste o período para ver resultados.</span></div></td></tr>';
+        if (tabelaPendentesMobile) {
+          tabelaPendentesMobile.innerHTML = criarEstadoVazioMobile(
+            "bi-inbox",
+            "Nenhum pedido encontrado",
+            "Ajuste o período para ver resultados."
+          );
+        }
       }
     } catch (err) {
       console.error(err);
@@ -759,10 +860,16 @@ function mostrarPopupMensagem(mensagem, onOk) {
   );
   const contSelecionados = document.getElementById("contSelecionados");
 
-  function atualizarContadorSelecionados() {
-    const selecionados = document.querySelectorAll(
-      "#corpoTabela .check-pedido:checked"
+  // Apenas os checkboxes da listagem visível (desktop OU mobile) contam,
+  // evitando seleção/contagem duplicada entre as duas renderizações.
+  function checkboxesSelecionaveis() {
+    return Array.from(document.querySelectorAll(".check-pedido")).filter(
+      (cb) => cb.offsetParent !== null
     );
+  }
+
+  function atualizarContadorSelecionados() {
+    const selecionados = checkboxesSelecionaveis().filter((cb) => cb.checked);
     if (contSelecionados) contSelecionados.textContent = selecionados.length;
     if (btnCancelarSelecionados)
       btnCancelarSelecionados.disabled = selecionados.length === 0;
@@ -770,9 +877,9 @@ function mostrarPopupMensagem(mensagem, onOk) {
 
   if (checkAllPendentes) {
     checkAllPendentes.addEventListener("change", () => {
-      document
-        .querySelectorAll("#corpoTabela .check-pedido")
-        .forEach((cb) => (cb.checked = checkAllPendentes.checked));
+      checkboxesSelecionaveis().forEach(
+        (cb) => (cb.checked = checkAllPendentes.checked)
+      );
       atualizarContadorSelecionados();
     });
   }
@@ -784,9 +891,9 @@ function mostrarPopupMensagem(mensagem, onOk) {
 
   if (btnCancelarSelecionados) {
     btnCancelarSelecionados.addEventListener("click", () => {
-      const selecionados = Array.from(
-        document.querySelectorAll("#corpoTabela .check-pedido:checked")
-      ).map((cb) => Number(cb.dataset.pvcod));
+      const selecionados = checkboxesSelecionaveis()
+        .filter((cb) => cb.checked)
+        .map((cb) => Number(cb.dataset.pvcod));
 
       if (!selecionados.length) return;
 
