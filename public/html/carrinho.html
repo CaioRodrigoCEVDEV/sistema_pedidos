@@ -192,7 +192,7 @@
       </footer>
     </div>
 
-    <!-- Modal de confirmação: Registrar Pedido -->
+    <!-- Modal de confirmação (Registrar Pedido / Retirada no balcão / Entrega) -->
     <div
       class="modal fade"
       id="confirmarRegistroModal"
@@ -205,10 +205,12 @@
           <div class="modal-header">
             <div>
               <h2 class="modal-title h5 mb-1" id="confirmarRegistroModalLabel">
-                <i class="bi bi-check2-circle text-primary me-1"></i>Registrar
-                pedido
+                <i
+                  id="confirmarRegistroIcon"
+                  class="bi bi-check2-circle text-primary me-1"
+                ></i><span id="confirmarRegistroTitle">Registrar pedido</span>
               </h2>
-              <div class="small text-muted">
+              <div class="small text-muted" id="confirmarRegistroDesc">
                 O pedido será finalizado e o carrinho esvaziado.
               </div>
             </div>
@@ -220,7 +222,7 @@
             ></button>
           </div>
           <div class="modal-body">
-            <p class="mb-0">
+            <p class="mb-0" id="confirmarRegistroQuestion">
               Deseja realmente registrar este pedido?
             </p>
           </div>
@@ -233,7 +235,7 @@
               Cancelar
             </button>
             <button type="button" id="confirmarRegistroBtn" class="btn btn-primary">
-              <i class="bi bi-check-lg me-1"></i>Registrar pedido
+              <i class="bi bi-check-lg me-1"></i><span id="confirmarRegistroBtnLabel">Registrar pedido</span>
             </button>
           </div>
         </div>

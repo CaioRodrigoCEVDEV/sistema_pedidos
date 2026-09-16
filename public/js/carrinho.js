@@ -464,14 +464,32 @@
     }
   }
 
-  function confirmarRegistroPedido() {
+  // Abre o modal de confirmação (#confirmarRegistroModal) com conteúdo
+  // configurável e resolve true (confirmou) / false (cancelou).
+  function confirmarAcao(config) {
+    config = config || {};
     return new Promise(function (resolve) {
       var modalEl = document.getElementById("confirmarRegistroModal");
       var btnConfirmar = document.getElementById("confirmarRegistroBtn");
       if (!modalEl || !btnConfirmar || !window.bootstrap) {
-        resolve(window.confirm("Confirmar o registro deste pedido? O carrinho será finalizado."));
+        resolve(window.confirm(config.fallbackMessage || "Confirmar esta ação?"));
         return;
       }
+
+      var iconEl = document.getElementById("confirmarRegistroIcon");
+      var titleEl = document.getElementById("confirmarRegistroTitle");
+      var descEl = document.getElementById("confirmarRegistroDesc");
+      var questionEl = document.getElementById("confirmarRegistroQuestion");
+      var labelEl = document.getElementById("confirmarRegistroBtnLabel");
+      if (iconEl) {
+        iconEl.className =
+          "bi " + (config.icon || "bi-check2-circle") + " text-primary me-1";
+      }
+      if (titleEl) titleEl.textContent = config.title || "Confirmar";
+      if (descEl) descEl.textContent = config.description || "";
+      if (questionEl) questionEl.textContent = config.question || "";
+      if (labelEl) labelEl.textContent = config.confirmLabel || "Confirmar";
+
       var modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
       var confirmou = false;
       function onConfirmar() {
@@ -487,6 +505,43 @@
       modalEl.addEventListener("hidden.bs.modal", onHidden);
       modal.show();
     });
+  }
+
+  function confirmarRegistroPedido() {
+    return confirmarAcao({
+      icon: "bi-check2-circle",
+      title: "Registrar pedido",
+      description: "O pedido será finalizado e o carrinho esvaziado.",
+      question: "Deseja realmente registrar este pedido?",
+      confirmLabel: "Registrar pedido",
+      fallbackMessage:
+        "Confirmar o registro deste pedido? O carrinho será finalizado.",
+    });
+  }
+
+  // Confirma e finaliza pelo WhatsApp na forma de atendimento escolhida.
+  async function finalizarCanalComConfirmacao(canal) {
+    if (getCart().length === 0) {
+      notify("Seu carrinho está vazio!", "warning");
+      return;
+    }
+    var entrega = canal === "ENTREGA";
+    var confirmou = await confirmarAcao({
+      icon: entrega ? "bi-truck" : "bi-shop",
+      title: entrega ? "Entrega" : "Retirada no balcão",
+      description: "O pedido será finalizado e enviado pelo WhatsApp.",
+      question: entrega
+        ? "Deseja finalizar o pedido com entrega?"
+        : "Deseja finalizar o pedido com retirada no balcão?",
+      confirmLabel: entrega ? "Confirmar entrega" : "Confirmar retirada",
+      fallbackMessage: entrega
+        ? "Confirmar pedido com entrega?"
+        : "Confirmar pedido com retirada no balcão?",
+    });
+    if (!confirmou) return;
+    marcarCanalSelecionado(canal);
+    if (entrega) return enviarWhatsAppEntrega();
+    return enviarWhatsApp();
   }
 
   async function registrarPedido() {
@@ -544,15 +599,13 @@
     var btnBalcao = document.getElementById("btnBalcao");
     if (btnBalcao) {
       btnBalcao.addEventListener("click", function () {
-        marcarCanalSelecionado("BALCAO");
-        enviarWhatsApp();
+        finalizarCanalComConfirmacao("BALCAO");
       });
     }
     var btnEntrega = document.getElementById("btnEntrega");
     if (btnEntrega) {
       btnEntrega.addEventListener("click", function () {
-        marcarCanalSelecionado("ENTREGA");
-        enviarWhatsAppEntrega();
+        finalizarCanalComConfirmacao("ENTREGA");
       });
     }
     var btnOrc = document.getElementById("botao-orcamento");
