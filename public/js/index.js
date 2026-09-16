@@ -8,93 +8,41 @@ function formatarMoeda(valor) {
   });
 }
 
+// Logo/ícone de marca vem de public/js/brand-logo.js (fonte única,
+// compartilhada com a tela de modelos).
+const getBrandLogo = (name) => window.OrderUpBrandLogo.get(name);
+
+// Mapa marcascod -> marcasdes (preenchido ao carregar /marcas/) para
+// identificar o logo da marca nos resultados da busca de modelos.
+let marcasPorCodigo = {};
+let marcasPromise = null;
+
+function carregarMarcas() {
+  if (!marcasPromise) {
+    marcasPromise = fetch(`${BASE_URL}/marcas/`, { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Erro ao buscar marcas: " + res.status);
+        return res.json();
+      })
+      .then((dados) => {
+        const lista = Array.isArray(dados) ? dados : [];
+        marcasPorCodigo = {};
+        lista.forEach((item) => {
+          if (item && typeof item === "object" && item.marcascod != null) {
+            marcasPorCodigo[String(item.marcascod)] = item.marcasdes || "";
+          }
+        });
+        return lista;
+      })
+      .catch((err) => {
+        marcasPromise = null; // permite nova tentativa em uma próxima busca
+        throw err;
+      });
+  }
+  return marcasPromise;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
-  // Se existir, chama verificarLogin()
-  if (typeof verificarLogin === "function") {
-    try {
-      await verificarLogin();
-    } catch (err) {
-      console.error("Erro em verificarLogin:", err);
-    }
-  }
-
-  // ======================================================
-  //  MAPEAMENTO DE MARCAS
-  // ======================================================
-
-  const brandMap = {
-    samsung: { icon: "samsung", domain: "samsung.com" },
-    motorola: { icon: "motorola", domain: "motorola.com" },
-    xiaomi: { icon: "xiaomi", domain: "mi.com" },
-    iphone: { icon: "apple", domain: "apple.com" },
-    apple: { icon: "apple", domain: "apple.com" },
-    realme: { icon: null, domain: "realme.com" },
-    infinix: { icon: null, domain: "infinixmobility.com" },
-    nokia: { icon: "nokia", domain: "nokia.com" },
-    lg: { icon: "lg", domain: "lg.com" },
-    asus: { icon: "asus", domain: "asus.com" },
-    tecnospark: { icon: null, domain: "www.tecno-mobile.com" },
-    itel: { icon: null, domain: "itel-mobile.com" },
-    acessorios: { icon: null, domain: "www.orderup.com.br" },
-    oppo: { icon: "oppo", domain: "oppo.com" },
-    caio: { icon: null, domain: "xvideos.com" },
-    huawei: { icon: "huawei", domain: "huawei.com" },
-  };
-
-  // Normaliza marca (remove acentos, espaços...)
-  function normalize(name) {
-    return String(name || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/\s+/g, "");
-  }
-
-  // Pega o ícone do brandMap
-  function getIconURL(brand) {
-    const slug = normalize(brand);
-    const info = brandMap[slug];
-    if (!info) return "https://cdn.simpleicons.org/cog";
-
-    if (info.icon) return `https://cdn.simpleicons.org/${info.icon}`;
-
-    return `https://www.google.com/s2/favicons?sz=64&domain=${info.domain}`;
-  }
-
-  // ================================================
-  //   LÓGICA DE QUAL LOGO USAR (SEM HEAD!)
-  // ================================================
-
-  function getBrandLogo(brandName) {
-    const slug = normalize(brandName);
-    const info = brandMap[slug];
-
-    // 1) Se tem ícone oficial → usar e NUNCA tentar uploads
-    if (info && info.icon) {
-      return {
-        primary: `https://cdn.simpleicons.org/${info.icon}/000`,
-        isUploaded: false,
-        slug,
-      };
-    }
-
-    // 2) Se não tem ícone mas tem domínio → usar favicon, NUNCA uploads
-    if (info && info.domain) {
-      return {
-        primary: `https://www.google.com/s2/favicons?sz=64&domain=${info.domain}`,
-        isUploaded: false,
-        slug,
-      };
-    }
-
-    // 3) Marca criada pelo usuário → tentar uploads primeiro
-    return {
-      primary: `/uploads/${slug}.jpg`,
-      isUploaded: true,
-      slug,
-    };
-  }
-
   // ======================================================
   //  RENDERIZAÇÃO DAS MARCAS NO FRONT
   // ======================================================
@@ -109,10 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   holder.innerHTML = "";
 
   try {
-    const res = await fetch(`${BASE_URL}/marcas/`, { credentials: "include" });
-    if (!res.ok) throw new Error("Erro ao buscar marcas: " + res.status);
-
-    const dados = await res.json();
+    const dados = await carregarMarcas();
 
     if (!Array.isArray(dados) || dados.length === 0) {
       holder.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-phone"></i></span><div class="ou-empty__title">Nenhuma marca encontrada</div><div class="ou-empty__text">Cadastre marcas no painel para exibi-las aqui.</div></div>`;
@@ -120,7 +65,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const row = document.createElement("div");
-    row.className = "row g-3";
+    row.className = "row g-3 g-lg-4";
 
     for (const item of dados) {
       const isString = typeof item === "string";
@@ -199,146 +144,153 @@ const inputPesquisa = document.getElementById("pesquisa");
 const tabelaArea = document.getElementById("tabelaArea");
 const cardsArea = document.getElementById("cardsArea");
 const corpoTabela = document.getElementById("corpoTabela");
+const resultadoQuantidade = document.getElementById("resultadoQuantidade");
 
-let usuarioLogado = false;
+// Busca padronizada: sempre por modelo, independente de o usuário
+// estar logado ou não (nunca busca peças/produtos diretamente).
+// O token evita que uma resposta antiga sobrescreva uma busca mais recente.
+let buscaToken = 0;
 
-async function verificarLogin() {
-  try {
-    const resp = await fetch(`${BASE_URL}/auth/listarlogin`, {
-      credentials: "include",
-    });
-    if (!resp.ok) throw new Error("Nao logado");
-    const dados = await resp.json();
-    usuarioLogado = !!(dados && dados.usucod);
-  } catch (err) {
-    usuarioLogado = false;
-  }
+function exibirAreaBusca() {
+  tabelaArea.style.display = "block";
+  cardsArea.style.display = "none";
 }
 
-inputPesquisa.addEventListener("input", function () {
+function limparBusca() {
+  tabelaArea.style.display = "none"; // mostra novamente os cards de marca
+  cardsArea.style.display = "block";
+  corpoTabela.innerHTML = "";
+  corpoTabela.classList.remove("ou-model-grid");
+  if (resultadoQuantidade) resultadoQuantidade.textContent = "";
+}
+
+function renderizarCarregandoBusca() {
+  exibirAreaBusca();
+  corpoTabela.classList.remove("ou-model-grid");
+  if (resultadoQuantidade) resultadoQuantidade.textContent = "";
+  corpoTabela.innerHTML = `
+    <div class="ou-loading py-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <span>Buscando modelos...</span>
+    </div>`;
+}
+
+function renderizarVazioBusca() {
+  exibirAreaBusca();
+  corpoTabela.classList.remove("ou-model-grid");
+  if (resultadoQuantidade) resultadoQuantidade.textContent = "";
+  corpoTabela.innerHTML = `
+    <div class="ou-empty">
+      <span class="ou-empty__icon"><i class="bi bi-search"></i></span>
+      <div class="ou-empty__title">Nenhum modelo encontrado para sua busca.</div>
+      <div class="ou-empty__text">Tente outro termo ou selecione uma marca acima.</div>
+    </div>`;
+}
+
+function renderizarResultadosBusca(modelos) {
+  exibirAreaBusca();
+  corpoTabela.classList.add("ou-model-grid");
+
+  const total = modelos.length;
+  if (resultadoQuantidade) {
+    resultadoQuantidade.textContent =
+      total === 1 ? "1 modelo" : `${total} modelos`;
+  }
+
+  corpoTabela.innerHTML = "";
+  modelos.forEach((modelo) => {
+    const marcaNome = marcasPorCodigo[String(modelo.modmarcascod)] || "";
+    const logo = marcaNome
+      ? getBrandLogo(marcaNome)
+      : { primary: "https://cdn.simpleicons.org/cog/000" };
+    const marcaHtml = marcaNome
+      ? `<div class="ou-result-item__brand">${String(marcaNome).replace(
+          /</g,
+          "&lt;"
+        )}</div>`
+      : "";
+
+    const item = document.createElement("a");
+    item.className = "ou-result-item";
+    item.href = `pecas?id=${encodeURIComponent(
+      modelo.modcod
+    )}&marcascod=${encodeURIComponent(modelo.modmarcascod)}`;
+    item.setAttribute(
+      "aria-label",
+      marcaNome
+        ? `Selecionar modelo ${modelo.moddes} da marca ${marcaNome}`
+        : `Selecionar modelo ${modelo.moddes}`
+    );
+    item.innerHTML = `
+      <span class="ou-brand-logo ou-model-card__logo" aria-hidden="true">
+        <img src="${logo.primary}" alt="" loading="lazy" />
+      </span>
+      <div class="ou-result-item__main">
+        ${marcaHtml}
+        <div class="ou-result-item__name">${String(modelo.moddes).replace(
+          /</g,
+          "&lt;"
+        )}</div>
+      </div>
+      <span class="btn btn-primary btn-sm ou-result-item__cta">
+        Selecionar <i class="bi bi-arrow-right-short" aria-hidden="true"></i>
+      </span>
+    `;
+
+    const logoImg = item.querySelector(".ou-model-card__logo img");
+    if (logoImg) {
+      logoImg.onerror = () => {
+        logoImg.onerror = null;
+        logoImg.src = "https://cdn.simpleicons.org/cog/000";
+      };
+    }
+
+    corpoTabela.appendChild(item);
+  });
+}
+
+inputPesquisa.addEventListener("input", async function () {
   const pesquisa = this.value.trim().toLowerCase();
 
   if (!pesquisa) {
-    tabelaArea.style.display = "none"; // esconde tabela
-    cardsArea.style.display = "block"; // mostra cards
-    corpoTabela.innerHTML = ""; // limpa tabela
+    limparBusca();
     return;
   }
 
-  if (usuarioLogado) {
-    fetch(`${BASE_URL}/v2/pros`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((pecas) => {
-        const filtrados = pecas.filter(
-          (peca) => peca.prodes && peca.prodes.toLowerCase().includes(pesquisa)
-        );
+  const token = ++buscaToken;
+  renderizarCarregandoBusca();
 
-        if (filtrados.length === 0) {
-          tabelaArea.style.display = "none"; // esconde tabela se nada encontrado
-          cardsArea.style.display = "block"; // mostra cards
-          corpoTabela.innerHTML = "";
-          return;
-        }
+  try {
+    const [modelos] = await Promise.all([
+      fetch(`${BASE_URL}/modelos`).then((res) => res.json()),
+      carregarMarcas().catch(() => []), // garante o mapa de logos sem travar a busca
+    ]);
 
-        corpoTabela.innerHTML = "";
-        //adiciona o titulo apenas uma vez
-        if (filtrados.length > 0) {
-          const titulo = document.getElementById("titulo-peca");
-          titulo.innerHTML = " Selecione a peça";
-          titulo.style.textAlign = "center";
-        }
-        // Ordena as peças
-        filtrados.forEach((peca) => {
-          const item = document.createElement("div");
-          item.className = "ou-result-item";
-          item.dataset.preco = peca.provl;
-          const isDisabled = peca.prosemest === "S";
-          item.innerHTML = `
-            <div class="ou-result-item__main">
-              <div class="ou-result-item__name">${peca.prodes}</div>
-              <div class="ou-result-item__meta">${peca.tipodes || ""} · ${peca.marcasdes || ""}</div>
-            </div>
-            <div class="ou-result-item__price">${formatarMoeda(peca.provl)}</div>
-            <button class="${
-                isDisabled
-                  ? "btn btn-secondary btn-sm"
-                  : "btn btn-success btn-sm"
-              }" ${
-                isDisabled
-                  ? 'disabled title="Em Falta"'
-                  : `onclick="adicionarAoCarrinho('${peca.procod}')"`
-              }>${isDisabled ? "Em Falta" : "Adicionar"}</button>
+    if (token !== buscaToken) return; // ignora resposta obsoleta
 
-          `;
-          corpoTabela.appendChild(item);
-        });
-
-        tabelaArea.style.display = "block"; // mostra tabela
-        cardsArea.style.display = "none"; // esconde cards
-      })
-      .catch((error) => {
-        console.error("Erro no fetch:", error);
-        tabelaArea.style.display = "none";
-        cardsArea.style.display = "block";
-        corpoTabela.innerHTML = "";
+    const lista = Array.isArray(modelos) ? modelos : [];
+    const filtrados = lista
+      .filter(
+        (modelo) =>
+          modelo.moddes && modelo.moddes.toLowerCase().includes(pesquisa)
+      )
+      .sort((a, b) => {
+        const nomeA = a.moddes.replace(/\s/g, "");
+        const nomeB = b.moddes.replace(/\s/g, "");
+        return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
       });
-  } else {
-    fetch(`${BASE_URL}/modelos`)
-      .then((res) => res.json())
-      .then((modelos) => {
-        const filtrados = modelos.filter(
-          (modelo) =>
-            modelo.moddes && modelo.moddes.toLowerCase().includes(pesquisa)
-        );
 
-        if (filtrados.length === 0) {
-          tabelaArea.style.display = "none"; // esconde tabela se nada encontrado
-          cardsArea.style.display = "block"; // mostra cards
-          corpoTabela.innerHTML = "";
-          return;
-        }
-
-        corpoTabela.innerHTML = "";
-
-        // Ordena os modelos
-        filtrados.sort((a, b) => {
-          const nomeA = a.moddes.replace(/\s/g, "");
-          const nomeB = b.moddes.replace(/\s/g, "");
-          return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
-        });
-
-        // Adiciona o título apenas uma vez
-        if (filtrados.length > 0) {
-          const titulo = document.createElement("h3");
-          titulo.textContent = " Selecione o Modelo";
-          titulo.style.textAlign = "center";
-          corpoTabela.appendChild(titulo);
-        }
-
-        // Loop para inserir os modelos
-        filtrados.forEach((modelo) => {
-          const item = document.createElement("div");
-          item.className = "ou-result-item";
-          item.innerHTML = `
-            <div class="ou-result-item__main">
-              <div class="ou-result-item__name">${modelo.moddes}</div>
-            </div>
-            <a href="pecas?id=${modelo.modcod}&marcascod=${modelo.modmarcascod}">
-              <button class="btn btn-primary btn-sm">Selecionar</button>
-            </a>
-          `;
-          corpoTabela.appendChild(item);
-        });
-
-        tabelaArea.style.display = "block"; // mostra tabela
-        cardsArea.style.display = "none"; // esconde cards
-      })
-      .catch((error) => {
-        console.error("Erro no fetch:", error);
-        tabelaArea.style.display = "none";
-        cardsArea.style.display = "block";
-        corpoTabela.innerHTML = "";
-      });
+    if (filtrados.length === 0) {
+      renderizarVazioBusca();
+      return;
+    }
+    renderizarResultadosBusca(filtrados);
+  } catch (error) {
+    if (token !== buscaToken) return;
+    console.error("Erro no fetch:", error);
+    renderizarVazioBusca();
   }
 });
 
@@ -650,31 +602,6 @@ window.removerItemCarrinho = function (idx) {
 
 window.addEventListener("pageshow", function (event) {
   atualizarIconeCarrinho();
-});
-
-// Controle de exibição do alerta de tutorial na página inicial
-document.addEventListener("DOMContentLoaded", () => {
-  const alertEl = document.getElementById("tutorialAlert");
-  const closeBtn = document.getElementById("tutorialAlertClose");
-  if (!alertEl) return;
-
-  if (localStorage.getItem("tutorialAlertClosed") === "true") {
-    alertEl.remove();
-    return;
-  }
-
-  // Hide the alert initially and display it after a brief delay with animation
-  alertEl.style.display = "none";
-  setTimeout(() => {
-    alertEl.style.display = "block";
-    alertEl.classList.add("slide-down");
-  }, 1500);
-
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      localStorage.setItem("tutorialAlertClosed", "true");
-    });
-  }
 });
 
 // Botão de instalação PWA

@@ -6,12 +6,88 @@
 (function () {
   "use strict";
 
+  var LOGO_FALLBACK = "https://cdn.simpleicons.org/cog/000";
+
   function getCart() {
     try {
       return JSON.parse(localStorage.getItem("cart") || "[]");
     } catch (e) {
       return [];
     }
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  function formatBRL(value) {
+    return "R$ " + (Number(value) || 0).toFixed(2).replace(".", ",");
+  }
+
+  // Bloco de identidade do item do carrinho (reutilizado no modal e na página):
+  // logo da marca + contexto (marca · modelo · tipo com ícone) + nome + unitário.
+  function montarIdentidadeItem(item) {
+    var nome = escapeHtml(item.nome || "Produto");
+    var marca = String(item.marca || "").trim();
+    var modelo = String(item.modelo || "").trim();
+    var tipo = String(item.tipo || "").trim();
+    var valor = Number(item.preco) || 0;
+
+    var logo = { primary: LOGO_FALLBACK };
+    if (marca && window.OrderUpBrandLogo && window.OrderUpBrandLogo.get) {
+      logo = window.OrderUpBrandLogo.get(marca);
+    }
+    var icone =
+      tipo && window.OrderUpTipoIcon ? window.OrderUpTipoIcon(tipo) : "bi-tools";
+
+    var partes = [];
+    if (marca) {
+      partes.push('<span class="ou-cart-id__label">' + escapeHtml(marca) + "</span>");
+    }
+    if (modelo) {
+      partes.push('<span class="ou-cart-id__label">' + escapeHtml(modelo) + "</span>");
+    }
+    if (tipo) {
+      partes.push(
+        '<span class="ou-cart-id__type"><i class="bi ' +
+          icone +
+          '" aria-hidden="true"></i>' +
+          escapeHtml(tipo) +
+          "</span>"
+      );
+    }
+    var contexto = partes.length
+      ? '<div class="ou-cart-id__context">' +
+        partes.join('<span class="ou-cart-id__sep" aria-hidden="true">·</span>') +
+        "</div>"
+      : "";
+
+    var wrap = document.createElement("div");
+    wrap.className = "ou-cart-id";
+    wrap.innerHTML =
+      '<span class="ou-cart-id__logo"><img src="' +
+      logo.primary +
+      '" alt="" loading="lazy" /></span>' +
+      '<div class="ou-cart-id__body">' +
+      contexto +
+      '<h3 class="ou-cart-id__name">' +
+      nome +
+      "</h3>" +
+      '<div class="ou-cart-id__unit">Unitário: ' +
+      formatBRL(valor) +
+      "</div>" +
+      "</div>";
+
+    var img = wrap.querySelector("img");
+    if (img) {
+      img.onerror = function () {
+        img.onerror = null;
+        img.src = LOGO_FALLBACK;
+      };
+    }
+    return wrap;
   }
 
   function ouNotify(message, type) {
@@ -84,12 +160,20 @@
   // Modal do carrinho — fonte única (antes duplicado nos 4 HTMLs da loja).
   // Injetado via JS para não repetir ~20 linhas de markup por página.
   var CART_MODAL_HTML =
-    '<div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel" aria-hidden="true">' +
-    '<div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content">' +
-    '<div class="modal-header"><h5 class="modal-title" id="cartModalLabel"><i class="bi bi-cart2 me-2 text-primary"></i>Itens no Carrinho</h5>' +
-    '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div>' +
-    '<div class="modal-body" id="cartItems"></div>' +
-    '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button></div>' +
+    '<div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">' +
+    '<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable ou-cart-modal__dialog" role="document">' +
+    '<div class="modal-content">' +
+    '<div class="modal-header ou-cart-modal__header">' +
+    '<h5 class="modal-title ou-cart-modal__title" id="cartModalLabel">' +
+    '<span class="ou-cart-modal__icon"><i class="bi bi-cart2" aria-hidden="true"></i></span>' +
+    "Itens no Carrinho" +
+    "</h5>" +
+    '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>' +
+    "</div>" +
+    '<div class="modal-body ou-cart-modal__body" id="cartItems"></div>' +
+    '<div class="modal-footer ou-cart-modal__footer">' +
+    '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>' +
+    "</div>" +
     "</div></div></div>";
 
   function ensureCartModal() {
@@ -117,32 +201,47 @@
     var modalEl = document.getElementById("cartModal");
     var box = document.getElementById("cartItems");
     if (!box) return;
+    box.innerHTML = "";
     var cart = getCart();
+
     if (cart.length === 0) {
-      box.innerHTML = '<div class="ou-empty" style="padding:1.5rem 1rem;"><span class="ou-empty__icon"><i class="bi bi-cart"></i></span><div class="ou-empty__title">Carrinho vazio</div><div class="ou-empty__text">Adicione peças pelo catálogo.</div></div>';
-    } else {
       box.innerHTML =
-        '<ul class="list-group list-group-flush">' +
-        cart
-          .map(function (item, idx) {
-            return (
-              '<li class="list-group-item d-flex justify-content-between align-items-center gap-2 flex-wrap">' +
-              '<span class="flex-grow-1"><span class="ou-cell-title">' +
-              String(item.nome || "Produto").replace(/</g, "&lt;") +
-              '</span><br><small class="ou-cell-sub">R$ ' +
-              (item.preco ? Number(item.preco).toFixed(2) : "0.00") +
-              " · qtd " +
-              (Number(item.qt) || 0) +
-              "</small></span>" +
-              '<span class="d-flex align-items-center gap-2"><span class="ou-badge ou-badge--neutral">' +
-              (Number(item.qt) || 0) +
-              'x</span><button class="btn btn-outline-danger btn-sm btn-icon" onclick="removerItemCarrinho(' +
-              idx +
-              ')" title="Remover"><i class="bi bi-trash"></i></button></span></li>'
-            );
-          })
-          .join("") +
-        "</ul>";
+        '<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-cart"></i></span>' +
+        '<div class="ou-empty__title">Seu carrinho está vazio</div>' +
+        '<div class="ou-empty__text">Adicione peças pelo catálogo.</div></div>';
+    } else {
+      var list = document.createElement("ul");
+      list.className = "ou-cart-modal__list";
+
+      cart.forEach(function (item, idx) {
+        var li = document.createElement("li");
+        li.className = "ou-cart-modal__item";
+        li.appendChild(montarIdentidadeItem(item));
+
+        var actions = document.createElement("div");
+        actions.className = "ou-cart-modal__actions";
+
+        var qty = document.createElement("span");
+        qty.className = "ou-cart-modal__qty";
+        qty.textContent = "qtd. " + (Number(item.qt) || 0);
+        actions.appendChild(qty);
+
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn btn-outline-danger btn-sm btn-icon";
+        btn.title = "Remover";
+        btn.setAttribute("aria-label", "Remover item");
+        btn.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
+        btn.addEventListener("click", function () {
+          removerItemCarrinho(idx);
+        });
+        actions.appendChild(btn);
+
+        li.appendChild(actions);
+        list.appendChild(li);
+      });
+
+      box.appendChild(list);
     }
     var footer = document.querySelector("#cartModal .modal-footer");
     if (footer) {
@@ -181,6 +280,8 @@
     openCartModal: openCartModal,
     renderCartModalItems: renderCartModalItems,
     removerItemCarrinho: removerItemCarrinho,
+    montarIdentidadeItem: montarIdentidadeItem,
+    formatBRL: formatBRL,
   };
   window.atualizarIconeCarrinho = window.atualizarIconeCarrinho || atualizarIconeCarrinho;
   window.mostrarPopupAdicionado = window.mostrarPopupAdicionado || mostrarPopupAdicionado;

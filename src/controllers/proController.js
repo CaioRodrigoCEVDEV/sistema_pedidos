@@ -27,7 +27,8 @@ exports.listarProduto = async (req, res) => {
     // ou pelo campo legado promodcod (para compatibilidade)
     const result = await pool.query(
       `select distinct procod, prodes, provl, procusto, tipodes,
-        ${disponibilidadeProdutoSql} as prosemest, proordem from pro
+        ${disponibilidadeProdutoSql} as prosemest,
+        COALESCE(pro.proacabando, 'N') as proacabando, proordem from pro
         join tipo on tipocod = protipocod
         left join promod on promodprocod = procod
         where promarcascod = $1 
