@@ -42,6 +42,89 @@ function buildListaPecasHref(tipoId, marcaId, modeloId) {
   return `lista-pecas?${query.toString()}`;
 }
 
+// Ícone do tipo vem de public/js/tipo-icon.js (fonte única, compartilhada
+// com a lista de peças).
+const getTipoIcon = (nome) => window.OrderUpTipoIcon(nome);
+
+// Plural simples do nome do tipo (1ª palavra), com fallback neutro.
+// Ex.: TELA -> telas, PLACA DE CARGA -> placas de carga.
+function pluralizarTipo(nome) {
+  const texto = String(nome || "").trim();
+  if (!texto) return null;
+
+  const partes = texto.split(/\s+/);
+  const palavra = partes[0].toLowerCase();
+  const resto = partes.slice(1).join(" ").toLowerCase();
+
+  let plural;
+  if (/[aeiou]$/.test(palavra)) plural = palavra + "s";
+  else if (/[rz]$/.test(palavra)) plural = palavra + "es";
+  else if (/m$/.test(palavra)) plural = palavra.slice(0, -1) + "ns";
+  else if (/s$/.test(palavra)) plural = palavra;
+  else return null; // pluralização incerta -> usa "itens"
+
+  return resto ? `${plural} ${resto}` : plural;
+}
+
+// Texto da quantidade real de peças do tipo, deixando claro que são
+// variantes daquele tipo. Ex.: "8 tipos de telas disponíveis",
+// "1 tipo de bateria disponível".
+function textoQuantidade(total, tipoNome) {
+  const n = Number(total) || 0;
+  const singular = String(tipoNome || "").trim().toLowerCase();
+
+  if (n === 1) {
+    return `1 tipo de ${singular || "item"} disponível`;
+  }
+
+  const plural = pluralizarTipo(tipoNome);
+  return plural
+    ? `${n} tipos de ${plural} disponíveis`
+    : `${n} itens disponíveis`;
+}
+
+// Monta o card de categoria (inteiro clicável) para um tipo de peça.
+function criarCardTipo(dado) {
+  const href = buildListaPecasHref(
+    dado.tipocod,
+    dado.promarcascod,
+    dado.promodcod
+  );
+  const nome = String(dado.tipodes || "Tipo").replace(/</g, "&lt;");
+  const icone = getTipoIcon(dado.tipodes);
+  const quantidade = textoQuantidade(dado.total, dado.tipodes);
+
+  if (!href) {
+    const card = document.createElement("div");
+    card.className = "ou-catalog-card ou-catalog-card--disabled";
+    card.innerHTML = `
+      <span class="ou-catalog-card__icon"><i class="bi ${icone}" aria-hidden="true"></i></span>
+      <span class="ou-catalog-card__body">
+        <span class="ou-catalog-card__name">${nome}</span>
+        <span class="ou-catalog-card__qty">${quantidade}</span>
+      </span>
+    `;
+    return card;
+  }
+
+  const card = document.createElement("a");
+  card.className = "ou-catalog-card";
+  card.href = href;
+  card.setAttribute(
+    "aria-label",
+    `Ver peças do tipo ${dado.tipodes || "Tipo"} — ${quantidade}`
+  );
+  card.innerHTML = `
+    <span class="ou-catalog-card__icon"><i class="bi ${icone}" aria-hidden="true"></i></span>
+    <span class="ou-catalog-card__body">
+      <span class="ou-catalog-card__name">${nome}</span>
+      <span class="ou-catalog-card__qty">${quantidade}</span>
+    </span>
+    <span class="ou-catalog-card__arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+  `;
+  return card;
+}
+
 //Busca o nome do modelo pelo id usando fetch e exibe no elemento com id 'modeloTitulo'
 if (id !== null) {
   fetch(`${BASE_URL}/mod/${id}`)
@@ -65,7 +148,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
 
-  fetch(`${BASE_URL}/tipo/${id}`)
+  fetch(`${BASE_URL}/tipo/${id}?comTotal=1`)
     .then((res) => res.json())
     .then((dados) => {
       if (!corpoTabela) return;
@@ -77,25 +160,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       dados.forEach((dado) => {
-        const href = buildListaPecasHref(
-          dado.tipocod,
-          dado.promarcascod,
-          dado.promodcod,
-        );
-        const item = document.createElement("div");
-        item.className = "ou-result-item";
-        const safeName = String(dado.tipodes || "Tipo").replace(/</g, "&lt;");
-        item.innerHTML = `
-          <div class="ou-result-item__main">
-            <div class="ou-result-item__name">${safeName}</div>
-          </div>
-          ${
-            href
-              ? `<a href="${href}"><button class="btn btn-primary btn-sm">Selecionar <i class="bi bi-arrow-right-short"></i></button></a>`
-              : '<button class="btn btn-secondary btn-sm" disabled>Selecionar</button>'
-          }
-        `;
-        corpoTabela.appendChild(item);
+        corpoTabela.appendChild(criarCardTipo(dado));
       });
     })
     .catch((erro) => {
@@ -104,17 +169,29 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-// Filtro local por tipo
+// Filtro local por tipo (mantém a regra: apenas esconde/mostra os cards)
 document.addEventListener("DOMContentLoaded", function () {
   const input = document.getElementById("pesquisa");
   if (!input) return;
   input.addEventListener("input", function () {
-    const pesquisa = this.value.toLowerCase();
-    document.querySelectorAll("#corpoTabela .ou-result-item").forEach((linha) => {
-      const celula = linha.querySelector(".ou-result-item__name");
+    const pesquisa = this.value.trim().toLowerCase();
+    const cards = document.querySelectorAll("#corpoTabela .ou-catalog-card");
+    let visiveis = 0;
+
+    cards.forEach((card) => {
+      const celula = card.querySelector(".ou-catalog-card__name");
       const txt = celula ? celula.textContent.toLowerCase() : "";
-      linha.style.display = txt.includes(pesquisa) ? "" : "none";
+      const combina = txt.includes(pesquisa);
+      card.style.display = combina ? "" : "none";
+      if (combina) visiveis++;
     });
+
+    // Estado vazio amigável quando a busca não retorna nenhum tipo
+    const semResultado = document.getElementById("tiposSemResultado");
+    const grid = document.getElementById("corpoTabela");
+    const esconderGrid = pesquisa !== "" && cards.length > 0 && visiveis === 0;
+    if (semResultado) semResultado.style.display = esconderGrid ? "" : "none";
+    if (grid) grid.style.display = esconderGrid ? "none" : "";
   });
 });
 

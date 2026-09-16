@@ -4,6 +4,10 @@ const id = parseIntegerParam(params.get("id"));
 const modelo = parseIntegerParam(params.get("modelo"));
 const marcascod = parseIntegerParam(params.get("marcascod"));
 
+// Nome do modelo (preenchido ao carregar) — guardado no item do carrinho
+// para enriquecer a exibição (campo opcional; itens antigos não possuem).
+let modeloAtual = "";
+
 function parseIntegerParam(value) {
   if (value === undefined || value === null) {
     return null;
@@ -66,6 +70,138 @@ function formatarMoeda(valor) {
   });
 }
 
+// Estado da listagem (dados já carregados; filtro/ordenação locais).
+let todasAsPecas = [];
+let pesquisaAtual = "";
+let ordenacaoAtual = "nome-asc";
+let dadosCarregados = false;
+
+// Contador de resultados com concordância singular/plural.
+function atualizarContadorPecas(total) {
+  const el = document.getElementById("resultadoQuantidade");
+  if (!el) return;
+  const n = Number(total) || 0;
+  if (n === 0) el.textContent = "Nenhuma peça encontrada";
+  else if (n === 1) el.textContent = "1 peça encontrada";
+  else el.textContent = `${n} peças encontradas`;
+}
+
+// Status de estoque derivado dos dados reais (sem inventar quantidade).
+// prosemest 'S' = sem estoque; proacabando 'S' = últimas unidades.
+function obterStatusPeca(dado) {
+  if (dado.prosemest === "S") {
+    return {
+      classe: "ou-product-card__status--out",
+      texto: "Sem estoque",
+      disponivel: false,
+    };
+  }
+  if (dado.proacabando === "S") {
+    return {
+      classe: "ou-product-card__status--low",
+      texto: "Últimas unidades",
+      disponivel: true,
+    };
+  }
+  return {
+    classe: "ou-product-card__status--in",
+    texto: "Em estoque",
+    disponivel: true,
+  };
+}
+
+// Monta o card da peça reaproveitando os padrões visuais do catálogo.
+function criarCardPeca(dado) {
+  const status = obterStatusPeca(dado);
+  const nome = String(dado.prodes || "Peça").replace(/</g, "&lt;");
+  const tipo = String(dado.tipodes || "").replace(/</g, "&lt;");
+  const icone = window.OrderUpTipoIcon(dado.tipodes);
+
+  const botao = status.disponivel
+    ? `<button type="button" class="btn btn-success btn-sm ou-product-card__add" data-add-procod="${dado.procod}" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button>`
+    : '<button type="button" class="btn btn-secondary btn-sm ou-product-card__add" disabled title="Indisponível">Indisponível</button>';
+
+  const card = document.createElement("article");
+  card.className = "ou-product-card";
+  card.dataset.preco = dado.provl;
+  card.innerHTML = `
+    <span class="ou-product-card__icon"><i class="bi ${icone}" aria-hidden="true"></i></span>
+    <div class="ou-product-card__main">
+      <h3 class="ou-product-card__name">${nome}</h3>
+      <div class="ou-product-card__meta">
+        ${tipo ? `<span class="ou-product-card__type">${tipo}</span>` : ""}
+        <span class="ou-product-card__status ${status.classe}">${status.texto}</span>
+      </div>
+    </div>
+    <div class="ou-product-card__aside">
+      <div class="ou-product-card__price">${formatarMoeda(dado.provl)}</div>
+      ${botao}
+    </div>
+  `;
+  return card;
+}
+
+// Aplica pesquisa + ordenação sobre os dados já carregados e renderiza.
+function renderPecas() {
+  if (!dadosCarregados) return; // mantém o loading até a primeira carga
+  const corpoTabela = document.getElementById("corpoTabela");
+  if (!corpoTabela) return;
+
+  const termo = pesquisaAtual.trim().toLowerCase();
+  const lista = todasAsPecas.filter((dado) =>
+    String(dado.prodes || "").toLowerCase().includes(termo)
+  );
+
+  const [campo, direcao] = ordenacaoAtual.split("-");
+  if (campo === "nome") {
+    lista.sort((a, b) =>
+      String(a.prodes || "").localeCompare(String(b.prodes || ""), "pt-BR", {
+        sensitivity: "base",
+        numeric: true,
+      })
+    );
+  } else if (campo === "preco") {
+    lista.sort((a, b) => (Number(a.provl) || 0) - (Number(b.provl) || 0));
+  }
+  if (direcao === "desc") lista.reverse();
+
+  corpoTabela.innerHTML = "";
+  lista.forEach((dado) => corpoTabela.appendChild(criarCardPeca(dado)));
+
+  atualizarContadorPecas(lista.length);
+
+  const semResultado = document.getElementById("pecasSemResultado");
+  const semProdutos = todasAsPecas.length === 0;
+  const semBusca = !semProdutos && lista.length === 0 && termo !== "";
+
+  if (semProdutos) {
+    corpoTabela.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-inbox"></i></span><div class="ou-empty__title">Nenhuma peça encontrada</div><div class="ou-empty__text">Nenhuma peça cadastrada para este filtro.</div></div>`;
+    corpoTabela.style.display = "";
+    if (semResultado) semResultado.style.display = "none";
+    return;
+  }
+
+  corpoTabela.style.display = semBusca ? "none" : "";
+  if (semResultado) semResultado.style.display = semBusca ? "" : "none";
+}
+
+// Feedback rápido no próprio botão após adicionar (sem modal).
+function mostrarFeedbackAdicionado(procod) {
+  const btn = document.querySelector(
+    `#corpoTabela [data-add-procod="${procod}"]`
+  );
+  if (!btn || btn.dataset.feedbackAtivo === "1") return;
+
+  btn.dataset.feedbackAtivo = "1";
+  const original = btn.innerHTML;
+  btn.innerHTML = 'Adicionado <i class="bi bi-check-lg" aria-hidden="true"></i>';
+
+  window.setTimeout(() => {
+    btn.innerHTML = original;
+    delete btn.dataset.feedbackAtivo;
+  }, 1600);
+}
+
 // Busca o nome do modelo pelo id e exibe no elemento com id 'modeloTitulo'
 if (modelo !== null) {
   fetch(`${BASE_URL}/mod/${modelo}`)
@@ -74,6 +210,7 @@ if (modelo !== null) {
       const nome = Array.isArray(modeloData)
         ? modeloData[0]?.moddes
         : modeloData?.moddes;
+      modeloAtual = nome || "";
       document.getElementById("modeloTitulo").textContent =
         nome || "Modelo não encontrado";
     })
@@ -112,65 +249,51 @@ document.addEventListener("DOMContentLoaded", function () {
   fetch(produtosUrl)
     .then((res) => res.json())
     .then((dados) => {
-      const corpoTabela = document.getElementById("corpoTabela");
-      if (!corpoTabela) return;
-      corpoTabela.innerHTML = ""; // Limpa o conteúdo atual
-      //console.log(dados);
-
-      if (!Array.isArray(dados) || dados.length === 0) {
-        corpoTabela.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-inbox"></i></span><div class="ou-empty__title">Nenhuma peça encontrada</div><div class="ou-empty__text">Nenhuma peça cadastrada para este filtro.</div></div>`;
-        return;
-      }
-
-      dados.forEach((dado) => {
-        const item = document.createElement("div");
-        item.className = "ou-result-item";
-        item.dataset.preco = dado.provl;
-        const isDisabled = dado.prosemest === "S";
-        const safeName = String(dado.prodes || "Peça").replace(/</g, "&lt;");
-        const safeTipo = String(dado.tipodes || "").replace(/</g, "&lt;");
-        item.innerHTML = `
-            <div class="ou-result-item__main">
-              <div class="ou-result-item__name">${safeName}</div>
-              <div class="ou-result-item__meta">${safeTipo}</div>
-            </div>
-            <div class="ou-result-item__price">${formatarMoeda(dado.provl)}</div>
-            ${isDisabled ? `<span class="ou-badge ou-badge--danger">Em Falta</span>` : ""}
-            <button class="${
-                isDisabled
-                  ? "btn btn-secondary btn-sm"
-                  : "btn btn-success btn-sm"
-              }" ${
-          isDisabled
-            ? 'disabled title="Em Falta"'
-            : `onclick="adicionarAoCarrinho('${dado.procod}')"`
-        }>
-          ${isDisabled ? "Em Falta" : "Adicionar"}
-            </button>
-          `;
-
-        corpoTabela.appendChild(item);
-      });
+      todasAsPecas = Array.isArray(dados) ? dados : [];
+      dadosCarregados = true;
+      renderPecas();
     })
     .catch((erro) => {
       console.error(erro);
       const corpoTabela = document.getElementById("corpoTabela");
+      todasAsPecas = [];
+      dadosCarregados = true;
+      atualizarContadorPecas(0);
       if (corpoTabela) corpoTabela.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-exclamation-triangle"></i></span><div class="ou-empty__title">Erro ao carregar</div><div class="ou-empty__text">Tente novamente em instantes.</div></div>`;
     });
 });
 
-document.getElementById("pesquisa").addEventListener("input", function () {
-  const pesquisa = this.value.toLowerCase();
-  const linhas = document.querySelectorAll("#corpoTabela .ou-result-item");
-
-  linhas.forEach((linha) => {
-    const celula = linha.querySelector(".ou-result-item__name");
-    if (celula) {
-      const conteudoCelula = celula.textContent.toLowerCase();
-      linha.style.display = conteudoCelula.includes(pesquisa) ? "" : "none";
-    }
+// Pesquisa em tempo real (filtragem local, sem nova chamada à API)
+const inputPesquisa = document.getElementById("pesquisa");
+if (inputPesquisa) {
+  inputPesquisa.addEventListener("input", function () {
+    pesquisaAtual = this.value;
+    renderPecas();
   });
-});
+}
+
+// Ordenação (local)
+const selectOrdenacao = document.getElementById("ordenacao");
+if (selectOrdenacao) {
+  ordenacaoAtual = selectOrdenacao.value || "nome-asc";
+  selectOrdenacao.addEventListener("change", function () {
+    ordenacaoAtual = this.value;
+    renderPecas();
+  });
+}
+
+// Limpar pesquisa (estado vazio)
+const btnLimparPesquisa = document.getElementById("limparPesquisa");
+if (btnLimparPesquisa) {
+  btnLimparPesquisa.addEventListener("click", function () {
+    if (inputPesquisa) {
+      inputPesquisa.value = "";
+      inputPesquisa.focus();
+    }
+    pesquisaAtual = "";
+    renderPecas();
+  });
+}
 
 // Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
 if (marcascod !== null) {
@@ -190,28 +313,27 @@ if (marcascod !== null) {
 window.adicionarAoCarrinho = async function (procod) {
   const qtde = 1;
   const button = event.target;
-  const itemDiv = button.closest(".ou-result-item") || button.closest(".cart-item");
+  const itemDiv = button.closest(".ou-product-card") || button.closest(".cart-item");
 
   if (!itemDiv) {
     console.error("Elemento do item não encontrado.");
     return;
   }
 
-  const nome = itemDiv.querySelector(".ou-result-item__name, .item-name")?.textContent || "Produto";
+  const nome = itemDiv.querySelector(".ou-product-card__name, .item-name")?.textContent || "Produto";
   const preco = parseFloat(itemDiv.dataset.preco || "0");
-  const tipo = itemDiv.querySelector(".ou-result-item__meta, .item-tipo")?.textContent || "";
+  const tipo = itemDiv.querySelector(".ou-product-card__type, .item-tipo")?.textContent || "";
   const marca = document.getElementById("marcaTitulo")?.textContent || "";
 
   try {
     const response = await fetch(`/proCoresDisponiveis/${procod}`);
     const cores = await response.json();
 
-     console.log("Cores disponíveis:", cores);
-
     if (cores && cores.length > 0 && cores[0].cornome !== "") {
       exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde);
     } else {
       adicionarProdutoAoCarrinho(procod, nome, tipo, marca, preco, qtde);
+      mostrarFeedbackAdicionado(procod);
     }
   } catch (error) {
     console.error("Erro ao buscar cores:", error);
@@ -401,6 +523,7 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       idCorSelecionada
     );
 
+    mostrarFeedbackAdicionado(procod);
     fecharModalCores();
   });
 
@@ -439,7 +562,17 @@ function adicionarProdutoAoCarrinho(
   if (idx > -1) {
     cart[idx].qt += qtde;
   } else {
-    cart.push({ id, nome, tipo, marca, preco, qt: qtde, corSelecionada,idCorSelecionada });
+    cart.push({
+      id,
+      nome,
+      tipo,
+      marca,
+      modelo: modeloAtual,
+      preco,
+      qt: qtde,
+      corSelecionada,
+      idCorSelecionada,
+    });
   }
 
   localStorage.setItem("cart", JSON.stringify(cart));

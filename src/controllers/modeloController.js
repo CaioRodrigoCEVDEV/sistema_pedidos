@@ -8,11 +8,27 @@ exports.listarModelo = async (req, res) => {
     return res.status(400).json({ error: "Marca invalida ou nao informada" });
   }
 
+  // ?comTotal=1 devolve, na mesma consulta, a quantidade de tipos de peça
+  // por modelo (mesma fonte da tela de tipos: vw_tipo_pecas).
+  // Mantido opcional para não pesar as chamadas do painel administrativo.
+  const comTotal = String(req.query.comTotal || "") === "1";
+
   try {
-    const result = await pool.query(
-      `select * from vw_modelos where modmarcascod = $1 order by ordem`,
-      [marcaId]
-    );
+    const query = comTotal
+      ? `SELECT m.*, COALESCE(t.total, 0) AS total_tipos
+           FROM vw_modelos m
+           LEFT JOIN (
+             SELECT v.promodcod, COUNT(*)::int AS total
+               FROM vw_tipo_pecas v
+               JOIN vw_modelos vm ON vm.modcod = v.promodcod
+              WHERE vm.modmarcascod = $1
+              GROUP BY v.promodcod
+           ) t ON t.promodcod = m.modcod
+          WHERE m.modmarcascod = $1
+          ORDER BY m.ordem`
+      : `select * from vw_modelos where modmarcascod = $1 order by ordem`;
+
+    const result = await pool.query(query, [marcaId]);
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);

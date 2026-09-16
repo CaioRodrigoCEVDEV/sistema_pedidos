@@ -8,11 +8,37 @@ exports.listarTipo = async (req, res) => {
     return res.status(400).json({ error: "Modelo invalido ou nao informado" });
   }
 
+  // ?comTotal=1 devolve, na mesma consulta, a quantidade de peças por tipo
+  // (mesma relação usada na tela de peças: pro + promod pelo modelo/marca).
+  // Mantido opcional para não pesar as chamadas do painel administrativo.
+  const comTotal = String(req.query.comTotal || "") === "1";
+
   try {
-    const result = await pool.query(
-      "select tipocod,tipodes, promarcascod,promodcod from vw_tipo_pecas where promodcod = $1 order by tipoordem ",
-      [modeloId]
-    );
+    const query = comTotal
+      ? `WITH contagens AS (
+           SELECT p.protipocod AS tipocod,
+                  p.promarcascod,
+                  COUNT(DISTINCT p.procod)::int AS total
+             FROM pro p
+            WHERE p.promodcod = $1
+               OR EXISTS (
+                    SELECT 1 FROM promod pm
+                     WHERE pm.promodprocod = p.procod
+                       AND pm.promodmodcod = $1
+                  )
+            GROUP BY p.protipocod, p.promarcascod
+         )
+         SELECT v.tipocod, v.tipodes, v.promarcascod, v.promodcod,
+                COALESCE(c.total, 0) AS total
+           FROM vw_tipo_pecas v
+           LEFT JOIN contagens c
+             ON c.tipocod = v.tipocod
+            AND c.promarcascod = v.promarcascod
+          WHERE v.promodcod = $1
+          ORDER BY v.tipoordem`
+      : "select tipocod,tipodes, promarcascod,promodcod from vw_tipo_pecas where promodcod = $1 order by tipoordem";
+
+    const result = await pool.query(query, [modeloId]);
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);

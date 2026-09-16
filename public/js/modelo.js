@@ -38,6 +38,51 @@ function buildPecasHref(modeloId, marcaId) {
   return `pecas?${query.toString()}`;
 }
 
+// Texto da quantidade real de tipos de peça do modelo.
+function textoTotalTipos(total) {
+  const n = Number(total) || 0;
+  if (n === 0) return "Nenhum tipo de peça disponível";
+  if (n === 1) return "1 tipo de peça disponível";
+  return `${n} tipos de peças disponíveis`;
+}
+
+// Monta o card do modelo no mesmo padrão visual da tela de tipos.
+function criarCardModelo(dado) {
+  const href = buildPecasHref(dado.modcod, dado.modmarcascod);
+  const nome = String(dado.moddes || "Modelo").replace(/</g, "&lt;");
+  const quantidade = textoTotalTipos(dado.total_tipos);
+
+  if (!href) {
+    const card = document.createElement("div");
+    card.className = "ou-catalog-card ou-catalog-card--disabled";
+    card.innerHTML = `
+      <span class="ou-catalog-card__icon"><i class="bi bi-phone" aria-hidden="true"></i></span>
+      <span class="ou-catalog-card__body">
+        <span class="ou-catalog-card__name">${nome}</span>
+        <span class="ou-catalog-card__qty">${quantidade}</span>
+      </span>
+    `;
+    return card;
+  }
+
+  const card = document.createElement("a");
+  card.className = "ou-catalog-card";
+  card.href = href;
+  card.setAttribute(
+    "aria-label",
+    `Ver tipos de peça do modelo ${dado.moddes || "Modelo"} — ${quantidade}`
+  );
+  card.innerHTML = `
+    <span class="ou-catalog-card__icon"><i class="bi bi-phone" aria-hidden="true"></i></span>
+    <span class="ou-catalog-card__body">
+      <span class="ou-catalog-card__name">${nome}</span>
+      <span class="ou-catalog-card__qty">${quantidade}</span>
+    </span>
+    <span class="ou-catalog-card__arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+  `;
+  return card;
+}
+
 //popular lista com os dados do modelo
 document.addEventListener("DOMContentLoaded", function () {
   const corpoTabela = document.getElementById("corpoTabela");
@@ -46,7 +91,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
 
-  fetch(`${BASE_URL}/modelo/${id}`)
+  fetch(`${BASE_URL}/modelo/${id}?comTotal=1`)
     .then((res) => res.json())
     .then((dados) => {
       if (!corpoTabela) return;
@@ -58,21 +103,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       dados.forEach((dado) => {
-        const href = buildPecasHref(dado.modcod, dado.modmarcascod);
-        const item = document.createElement("div");
-        item.className = "ou-result-item";
-        const safeName = String(dado.moddes || "Modelo").replace(/</g, "&lt;");
-        item.innerHTML = `
-          <div class="ou-result-item__main">
-            <div class="ou-result-item__name">${safeName}</div>
-          </div>
-          ${
-            href
-              ? `<a href="${href}"><button type="button" class="btn btn-primary btn-sm">Selecionar <i class="bi bi-arrow-right-short"></i></button></a>`
-              : '<button type="button" class="btn btn-secondary btn-sm" disabled>Selecionar</button>'
-          }
-        `;
-        corpoTabela.appendChild(item);
+        corpoTabela.appendChild(criarCardModelo(dado));
       });
     })
     .catch((erro) => {
@@ -81,32 +112,45 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-// função para pesquisar modelo usando o input com id "pesquisa"
-document.getElementById("pesquisa").addEventListener("input", function () {
-  const pesquisa = this.value.toLowerCase();
-  const linhas = document.querySelectorAll("#corpoTabela .ou-result-item");
-
-  linhas.forEach((linha) => {
-    const celula = linha.querySelector(".ou-result-item__name");
-    if (celula) {
-      const conteudoCelula = celula.textContent.toLowerCase();
-      linha.style.display = conteudoCelula.includes(pesquisa) ? "" : "none";
-    }
-  });
-});
-
-// Busca o nome da marca pelo id usando fetch e exibe no elemento com id 'marcaTitulo'
+// Busca o nome da marca pelo id e exibe no breadcrumb
 if (marcascod !== null) {
   fetch(`${BASE_URL}/marcas/${marcascod}`)
     .then((res) => res.json())
     .then((marcas) => {
-      document.getElementById("marcaTitulo").textContent =
-        marcas[0].marcasdes || "Marca não encontrada";
+      const el = document.getElementById("marcaTitulo");
+      if (el) {
+        el.textContent =
+          (Array.isArray(marcas) && marcas[0] && marcas[0].marcasdes) ||
+          "Marca não encontrada";
+      }
     })
     .catch(() => {
-      document.getElementById("marcaTitulo").textContent = "";
+      const el = document.getElementById("marcaTitulo");
+      if (el) el.textContent = "";
     });
 }
+
+// função para pesquisar modelo usando o input com id "pesquisa"
+document.getElementById("pesquisa").addEventListener("input", function () {
+  const pesquisa = this.value.trim().toLowerCase();
+  const cards = document.querySelectorAll("#corpoTabela .ou-catalog-card");
+  let visiveis = 0;
+
+  cards.forEach((card) => {
+    const celula = card.querySelector(".ou-catalog-card__name");
+    const txt = celula ? celula.textContent.toLowerCase() : "";
+    const combina = txt.includes(pesquisa);
+    card.style.display = combina ? "" : "none";
+    if (combina) visiveis++;
+  });
+
+  // Estado vazio amigável quando a busca não retorna nenhum modelo
+  const semResultado = document.getElementById("modelosSemResultado");
+  const grid = document.getElementById("corpoTabela");
+  const esconderGrid = pesquisa !== "" && cards.length > 0 && visiveis === 0;
+  if (semResultado) semResultado.style.display = esconderGrid ? "" : "none";
+  if (grid) grid.style.display = esconderGrid ? "none" : "";
+});
 
 // Carrinho/badge/modal/toast centralizados em storefront-shared.js.
 // Mantido apenas o adicionar específico desta página (sem cores).

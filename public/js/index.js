@@ -8,84 +8,9 @@ function formatarMoeda(valor) {
   });
 }
 
-// ======================================================
-//  MAPEAMENTO DE MARCAS
-//  Compartilhado entre os cards de marca e os resultados da
-//  busca de modelos (mesma lógica de logo/favicon).
-// ======================================================
-
-const brandMap = {
-  samsung: { icon: "samsung", domain: "samsung.com" },
-  motorola: { icon: "motorola", domain: "motorola.com" },
-  xiaomi: { icon: "xiaomi", domain: "mi.com" },
-  iphone: { icon: "apple", domain: "apple.com" },
-  apple: { icon: "apple", domain: "apple.com" },
-  realme: { icon: null, domain: "realme.com" },
-  infinix: { icon: null, domain: "infinixmobility.com" },
-  nokia: { icon: "nokia", domain: "nokia.com" },
-  lg: { icon: "lg", domain: "lg.com" },
-  asus: { icon: "asus", domain: "asus.com" },
-  tecnospark: { icon: null, domain: "www.tecno-mobile.com" },
-  itel: { icon: null, domain: "itel-mobile.com" },
-  acessorios: { icon: null, domain: "www.orderup.com.br" },
-  oppo: { icon: "oppo", domain: "oppo.com" },
-  caio: { icon: null, domain: "xvideos.com" },
-  huawei: { icon: "huawei", domain: "huawei.com" },
-};
-
-// Normaliza marca (remove acentos, espaços...)
-function normalize(name) {
-  return String(name || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, "");
-}
-
-// Pega o ícone do brandMap
-function getIconURL(brand) {
-  const slug = normalize(brand);
-  const info = brandMap[slug];
-  if (!info) return "https://cdn.simpleicons.org/cog";
-
-  if (info.icon) return `https://cdn.simpleicons.org/${info.icon}`;
-
-  return `https://www.google.com/s2/favicons?sz=64&domain=${info.domain}`;
-}
-
-// ================================================
-//   LÓGICA DE QUAL LOGO USAR (SEM HEAD!)
-// ================================================
-
-function getBrandLogo(brandName) {
-  const slug = normalize(brandName);
-  const info = brandMap[slug];
-
-  // 1) Se tem ícone oficial → usar e NUNCA tentar uploads
-  if (info && info.icon) {
-    return {
-      primary: `https://cdn.simpleicons.org/${info.icon}/000`,
-      isUploaded: false,
-      slug,
-    };
-  }
-
-  // 2) Se não tem ícone mas tem domínio → usar favicon, NUNCA uploads
-  if (info && info.domain) {
-    return {
-      primary: `https://www.google.com/s2/favicons?sz=64&domain=${info.domain}`,
-      isUploaded: false,
-      slug,
-    };
-  }
-
-  // 3) Marca criada pelo usuário → tentar uploads primeiro
-  return {
-    primary: `/uploads/${slug}.jpg`,
-    isUploaded: true,
-    slug,
-  };
-}
+// Logo/ícone de marca vem de public/js/brand-logo.js (fonte única,
+// compartilhada com a tela de modelos).
+const getBrandLogo = (name) => window.OrderUpBrandLogo.get(name);
 
 // Mapa marcascod -> marcasdes (preenchido ao carregar /marcas/) para
 // identificar o logo da marca nos resultados da busca de modelos.

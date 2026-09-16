@@ -57,13 +57,31 @@
 
   function setCheckoutLoading(loading) {
     var box = document.getElementById("divFinalizar");
-    if (!box) return;
-    box.style.pointerEvents = loading ? "none" : "auto";
-    box.style.opacity = loading ? "0.6" : "1";
-    box.style.userSelect = loading ? "none" : "auto";
-    box.classList.toggle("is-loading", !!loading);
-    box.querySelectorAll("button").forEach(function (btn) {
-      btn.disabled = !!loading;
+    if (box) {
+      box.style.pointerEvents = loading ? "none" : "auto";
+      box.style.opacity = loading ? "0.6" : "1";
+      box.style.userSelect = loading ? "none" : "auto";
+      box.classList.toggle("is-loading", !!loading);
+    }
+    document
+      .querySelectorAll("#divFinalizar button, #cartResumoAcoes button")
+      .forEach(function (btn) {
+        btn.disabled = !!loading;
+      });
+  }
+
+  // Marca visualmente a forma de atendimento escolhida (a ação finaliza o pedido).
+  function marcarCanalSelecionado(canal) {
+    var opcoes = [
+      { id: "btnBalcao", canal: "BALCAO" },
+      { id: "btnEntrega", canal: "ENTREGA" },
+    ];
+    opcoes.forEach(function (opt) {
+      var el = document.getElementById(opt.id);
+      if (!el) return;
+      var selecionado = opt.canal === canal;
+      el.classList.toggle("is-selected", selecionado);
+      el.setAttribute("aria-pressed", selecionado ? "true" : "false");
     });
   }
 
@@ -105,88 +123,113 @@
   }
 
   // ---------- render ----------
-  var EMPTY_CART_HTML =
-    '<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-cart"></i></span>' +
-    '<div class="ou-empty__title">Seu carrinho está vazio</div>' +
-    '<div class="ou-empty__text">Volte ao catálogo e adicione peças.</div></div>';
+  function mostrarCarrinhoVazio(vazio) {
+    var layout = document.getElementById("cartConteudo");
+    var vazioEl = document.getElementById("cartVazio");
+    var btnLimpar = document.getElementById("btnLimparCarrinho");
+    if (layout) layout.style.display = vazio ? "none" : "";
+    if (vazioEl) vazioEl.style.display = vazio ? "" : "none";
+    if (btnLimpar) btnLimpar.disabled = vazio;
+  }
+
+  function atualizarResumo(cart) {
+    var total = cartTotal(cart);
+    var itens = cart.reduce(function (s, it) {
+      return s + (Number(it.qt) || 0);
+    }, 0);
+    var totalEl = document.getElementById("totalCarrinho");
+    var subEl = document.getElementById("cartSubtotal");
+    var itensEl = document.getElementById("cartItensCount");
+    if (totalEl) totalEl.textContent = formatarMoeda(total);
+    if (subEl) subEl.textContent = formatarMoeda(total);
+    if (itensEl) itensEl.textContent = itens === 1 ? "1 item" : itens + " itens";
+  }
+
+  function criarLinhaCarrinho(item) {
+    var valor = parseFloat(item.preco) || 0;
+    var qtde = Number(item.qt) || 0;
+    var subtotal = valor * qtde;
+
+    var row = document.createElement("article");
+    row.className = "ou-cart-item";
+    row.dataset.preco = item.preco;
+
+    // Bloco de identidade compartilhado (logo da marca, marca/modelo/tipo,
+    // ícone do tipo, nome e valor unitário) — o mesmo usado no modal.
+    if (window.ouStorefront && window.ouStorefront.montarIdentidadeItem) {
+      row.appendChild(window.ouStorefront.montarIdentidadeItem(item));
+    }
+
+    var side = document.createElement("div");
+    side.className = "ou-cart-item__side";
+
+    var price = document.createElement("div");
+    price.className = "ou-cart-item__price";
+    price.textContent = formatarMoeda(subtotal);
+
+    var controls = document.createElement("div");
+    controls.className = "ou-cart-item__controls";
+
+    var qty = document.createElement("span");
+    qty.className = "ou-qty";
+    var btnDec = document.createElement("button");
+    btnDec.className = "btn btn-sm btn-light btn-icon";
+    btnDec.type = "button";
+    btnDec.title = "Diminuir";
+    btnDec.setAttribute("aria-label", "Diminuir quantidade");
+    btnDec.textContent = "−";
+    btnDec.dataset.action = "dec";
+    btnDec.dataset.id = String(item.id);
+    btnDec.disabled = qtde <= 1;
+    var b = document.createElement("b");
+    b.textContent = String(qtde);
+    var btnInc = document.createElement("button");
+    btnInc.className = "btn btn-sm btn-light btn-icon";
+    btnInc.type = "button";
+    btnInc.title = "Aumentar";
+    btnInc.setAttribute("aria-label", "Aumentar quantidade");
+    btnInc.textContent = "+";
+    btnInc.dataset.action = "inc";
+    btnInc.dataset.id = String(item.id);
+    qty.appendChild(btnDec);
+    qty.appendChild(b);
+    qty.appendChild(btnInc);
+
+    var btnDel = document.createElement("button");
+    btnDel.className = "btn btn-sm btn-outline-danger btn-icon";
+    btnDel.type = "button";
+    btnDel.title = "Remover";
+    btnDel.setAttribute("aria-label", "Remover item");
+    btnDel.dataset.action = "del";
+    btnDel.dataset.id = String(item.id);
+    btnDel.innerHTML = '<i class="bi bi-trash"></i>';
+
+    controls.appendChild(qty);
+    controls.appendChild(btnDel);
+    side.appendChild(price);
+    side.appendChild(controls);
+    row.appendChild(side);
+    return row;
+  }
 
   function renderCart() {
     var corpo = document.getElementById("carrinhoCorpo");
-    var totalEl = document.getElementById("totalCarrinho");
-    if (!corpo || !totalEl) return;
+    if (!corpo) return;
     corpo.innerHTML = "";
 
     var cart = getCart();
     if (cart.length === 0) {
-      corpo.innerHTML = EMPTY_CART_HTML;
-      totalEl.textContent = formatarMoeda(0);
+      atualizarResumo(cart);
+      mostrarCarrinhoVazio(true);
       syncCartParam([]);
       return;
     }
 
+    mostrarCarrinhoVazio(false);
     cart.forEach(function (item) {
-      var row = document.createElement("div");
-      row.className = "ou-cart-item";
-
-      var main = document.createElement("div");
-      main.className = "ou-cart-item__main";
-      var name = document.createElement("div");
-      name.className = "ou-result-item__name";
-      name.textContent = item.nome || "Produto";
-      var meta = document.createElement("div");
-      meta.className = "ou-result-item__meta";
-      var corTxt = item.corSelecionada ? " · Cor: " + item.corSelecionada : "";
-      meta.textContent =
-        "Marca: " + (item.marca || "-") + " · Tipo: " + (item.tipo || "-") + corTxt;
-      var sub = document.createElement("div");
-      sub.className = "ou-result-item__meta";
-      var valor = parseFloat(item.preco) || 0;
-      var qtde = Number(item.qt) || 0;
-      sub.textContent =
-        "Unitário: " + formatarMoeda(valor) + " · Subtotal: " + formatarMoeda(valor * qtde);
-      main.appendChild(name);
-      main.appendChild(meta);
-      main.appendChild(sub);
-
-      var actions = document.createElement("div");
-      actions.className = "ou-cart-item__actions";
-      var qty = document.createElement("span");
-      qty.className = "ou-qty";
-      var btnDec = document.createElement("button");
-      btnDec.className = "btn btn-sm btn-light btn-icon";
-      btnDec.type = "button";
-      btnDec.title = "Diminuir";
-      btnDec.textContent = "−";
-      btnDec.dataset.action = "dec";
-      btnDec.dataset.id = String(item.id);
-      var b = document.createElement("b");
-      b.textContent = String(qtde);
-      var btnInc = document.createElement("button");
-      btnInc.className = "btn btn-sm btn-light btn-icon";
-      btnInc.type = "button";
-      btnInc.title = "Aumentar";
-      btnInc.textContent = "+";
-      btnInc.dataset.action = "inc";
-      btnInc.dataset.id = String(item.id);
-      var btnDel = document.createElement("button");
-      btnDel.className = "btn btn-sm btn-outline-danger btn-icon";
-      btnDel.type = "button";
-      btnDel.title = "Remover";
-      btnDel.dataset.action = "del";
-      btnDel.dataset.id = String(item.id);
-      btnDel.innerHTML = '<i class="bi bi-trash"></i>';
-      qty.appendChild(btnDec);
-      qty.appendChild(b);
-      qty.appendChild(btnInc);
-      actions.appendChild(qty);
-      actions.appendChild(btnDel);
-
-      row.appendChild(main);
-      row.appendChild(actions);
-      corpo.appendChild(row);
+      corpo.appendChild(criarLinhaCarrinho(item));
     });
-
-    totalEl.textContent = formatarMoeda(cartTotal(cart));
+    atualizarResumo(cart);
     syncCartParam(cart);
   }
 
@@ -499,9 +542,19 @@
     var btnVoltar = document.getElementById("btnVoltar");
     if (btnVoltar) btnVoltar.addEventListener("click", function () { window.history.back(); });
     var btnBalcao = document.getElementById("btnBalcao");
-    if (btnBalcao) btnBalcao.addEventListener("click", enviarWhatsApp);
+    if (btnBalcao) {
+      btnBalcao.addEventListener("click", function () {
+        marcarCanalSelecionado("BALCAO");
+        enviarWhatsApp();
+      });
+    }
     var btnEntrega = document.getElementById("btnEntrega");
-    if (btnEntrega) btnEntrega.addEventListener("click", enviarWhatsAppEntrega);
+    if (btnEntrega) {
+      btnEntrega.addEventListener("click", function () {
+        marcarCanalSelecionado("ENTREGA");
+        enviarWhatsAppEntrega();
+      });
+    }
     var btnOrc = document.getElementById("botao-orcamento");
     if (btnOrc) btnOrc.addEventListener("click", copiarOrcamentoParaClipboard);
     var btnReg = document.getElementById("botao-registrar-pedido");
