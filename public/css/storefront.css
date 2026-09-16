@@ -1284,21 +1284,6 @@ a.ou-catalog-card:hover .ou-catalog-card__arrow {
   box-shadow: var(--ou-shadow-lg);
 }
 
-/* ---------- Tutorial ---------- */
-#tutorialAlert.slide-down {
-  animation: ou-slide-down 0.35s ease-out;
-}
-@keyframes ou-slide-down {
-  from {
-    transform: translateY(-12px);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-
 /* ---------- Legado style.css ----------
    O bloco .cart-item com display:table foi removido do style.css, então
    nenhuma regra extra é necessária aqui. */
