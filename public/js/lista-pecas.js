@@ -73,7 +73,7 @@ function formatarMoeda(valor) {
 // Estado da listagem (dados já carregados; filtro/ordenação locais).
 let todasAsPecas = [];
 let pesquisaAtual = "";
-let ordenacaoAtual = "nome-asc";
+let ordenacaoAtual = "ordem-asc";
 let dadosCarregados = false;
 
 // Contador de resultados com concordância singular/plural.
@@ -275,7 +275,7 @@ if (inputPesquisa) {
 // Ordenação (local)
 const selectOrdenacao = document.getElementById("ordenacao");
 if (selectOrdenacao) {
-  ordenacaoAtual = selectOrdenacao.value || "nome-asc";
+  ordenacaoAtual = selectOrdenacao.value || "ordem-asc";
   selectOrdenacao.addEventListener("change", function () {
     ordenacaoAtual = this.value;
     renderPecas();
