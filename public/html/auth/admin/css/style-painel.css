@@ -269,6 +269,22 @@
   white-space: nowrap;
 }
 
+/* Busca geral da listagem - fora do grupo recolhível "Filtros" */
+.pecas-search-bar {
+  flex: 0 0 auto;
+  padding: 12px 18px;
+  background: var(--ou-surface);
+  border-bottom: 1px solid var(--ou-border);
+}
+.pecas-search-bar .pecas-filter-label {
+  display: block;
+  margin-bottom: 4px;
+}
+.pecas-search-bar .form-control {
+  height: 38px;
+  max-width: 420px;
+}
+
 /* Botão de recolher/expandir filtros (visível apenas no mobile) */
 .pecas-filters-toggle {
   display: none;
@@ -494,33 +510,16 @@
     transform: rotate(180deg);
   }
 
-  /* Tabela: colunas compactas para caber na tela (sem scroll horizontal) */
-  #tabelaProdutos {
-    width: 100%;
-    min-width: 0;
+  /* Busca geral: largura total e alvo de toque confortável,
+     permanece visível mesmo com os filtros recolhidos */
+  .pecas-search-bar {
+    padding: 10px 14px;
+    background: var(--ou-surface);
+    border-bottom: 1px solid var(--ou-border);
   }
-  #tabelaProdutos .peca-col {
-    width: auto;
-  }
-  #tabelaProdutos .valor-col,
-  #tabelaProdutos .custo-col {
-    width: 80px;
-    padding: 12px 4px;
-    font-size: 0.78rem;
-    white-space: nowrap;
-  }
-  #tabelaProdutos thead .valor-col,
-  #tabelaProdutos thead .custo-col {
-    padding: 11px 4px;
-  }
-  #tabelaProdutos .acoes-col {
-    width: 88px;
-    white-space: nowrap;
-  }
-  #tabelaProdutos .peca-col .peca-nome {
-    display: block;
-    white-space: normal;
-    overflow-wrap: anywhere;
+  .pecas-search-bar .form-control {
+    height: 44px;
+    max-width: none;
   }
 
   /* Linhas mais altas para toque, com padding lateral reduzido */
@@ -541,4 +540,42 @@
     height: 32px;
     font-size: 0.85rem;
   }
+}
+
+/* =========================================================
+   Gerenciar Peças - cards da listagem mobile
+   Reutiliza o padrão .ou-mobile-card do Design System (ui.css)
+   ========================================================= */
+.ou-mobile-list--pecas .ou-mobile-card {
+  cursor: default;
+}
+.ou-mobile-list--pecas .ou-mobile-card:hover {
+  border-color: var(--ou-border);
+}
+.ou-mobile-list--pecas .ou-mobile-card:active {
+  transform: none;
+  background: var(--ou-surface);
+}
+
+/* Nome da peça pode ocupar quantas linhas precisar, sem cortes */
+.ou-mobile-list--pecas .ou-mobile-card__name {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  overflow-wrap: break-word;
+}
+
+/* Ações do card: lado a lado, com alvo de toque confortável */
+.pecas-card-acoes {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.pecas-card-acoes .pecas-btn-acao {
+  flex: 1 1 0;
+  width: auto;
+  height: 44px;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
 }

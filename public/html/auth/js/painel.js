@@ -543,6 +543,26 @@ function linhaPecaForaDosFiltrosStatus(prosemest, proacabando) {
   return false;
 }
 
+// Localiza o card mobile de uma peça pelo código.
+function obterCardPecaMobile(codigo) {
+  return document.querySelector(
+    `#corpoTabelaPecasMobile .ou-mobile-card[data-id="${codigo}"]`
+  );
+}
+
+// Exibe o estado vazio no card list quando não há mais cards renderizados.
+function atualizarEstadoVazioPecasMobile() {
+  const mobileBox = document.getElementById("corpoTabelaPecasMobile");
+  if (!mobileBox) return;
+  if (!mobileBox.querySelector(".ou-mobile-card")) {
+    mobileBox.innerHTML = htmlEstadoPecaMobile(
+      "bi-inbox",
+      "Nenhuma peça encontrada",
+      "Ajuste os filtros ou a busca para ver resultados."
+    );
+  }
+}
+
 function atualizarLinhaPecaEditada(codigo, prodes, provl, prosemest, proacabando) {
   const btn = document.querySelector(
     `.btn-editar-peca[data-id="${codigo}"]`
@@ -556,10 +576,14 @@ function atualizarLinhaPecaEditada(codigo, prodes, provl, prosemest, proacabando
   const tr = btn.closest("tr");
   if (!tr) return;
 
+  const card = obterCardPecaMobile(codigo);
+
   // Se houver busca ativa e o novo nome não corresponde mais, remove a linha.
   const q = (pecasQ || "").trim().toLowerCase();
   if (q && !(String(prodes || "").toLowerCase().includes(q))) {
     tr.remove();
+    if (card) card.remove();
+    atualizarEstadoVazioPecasMobile();
     if (typeof pecasTotal === "number" && pecasTotal > 0) pecasTotal -= 1;
     atualizarInfoTotal();
     return;
@@ -571,6 +595,8 @@ function atualizarLinhaPecaEditada(codigo, prodes, provl, prosemest, proacabando
     linhaPecaForaDosFiltrosStatus(prosemest, proacabando)
   ) {
     tr.remove();
+    if (card) card.remove();
+    atualizarEstadoVazioPecasMobile();
     if (typeof pecasTotal === "number" && pecasTotal > 0) pecasTotal -= 1;
     atualizarInfoTotal();
     return;
@@ -588,19 +614,19 @@ function atualizarLinhaPecaEditada(codigo, prodes, provl, prosemest, proacabando
     }
   }
 
+  let semAtual;
+  let acaAtual;
   if (prosemest !== undefined || proacabando !== undefined) {
     const statusEl = tr.querySelector(".status-col");
-    if (statusEl) {
-      const semAtual =
-        prosemest !== undefined
-          ? prosemest
-          : btn.getAttribute("data-semest") || "N";
-      const acaAtual =
-        proacabando !== undefined
-          ? proacabando
-          : btn.getAttribute("data-acabando") || "N";
-      statusEl.innerHTML = montarBadgesStatusPeca(semAtual, acaAtual);
-    }
+    semAtual =
+      prosemest !== undefined
+        ? prosemest
+        : btn.getAttribute("data-semest") || "N";
+    acaAtual =
+      proacabando !== undefined
+        ? proacabando
+        : btn.getAttribute("data-acabando") || "N";
+    if (statusEl) statusEl.innerHTML = montarBadgesStatusPeca(semAtual, acaAtual);
     if (prosemest !== undefined)
       btn.setAttribute("data-semest", String(prosemest));
     if (proacabando !== undefined)
@@ -609,6 +635,24 @@ function atualizarLinhaPecaEditada(codigo, prodes, provl, prosemest, proacabando
 
   btn.setAttribute("data-nome", String(prodes || "").replace(/"/g, "&quot;"));
   btn.setAttribute("data-valor", String(provl ?? ""));
+
+  // Mantém o card mobile sincronizado com a edição.
+  if (card) {
+    const cardNome = card.querySelector(".ou-mobile-card__name");
+    if (cardNome) cardNome.textContent = prodes;
+    const cardValor = card.querySelector(".peca-card-valor");
+    if (cardValor) {
+      try {
+        cardValor.textContent = formatarMoeda(provl);
+      } catch (_) {
+        cardValor.textContent = provl;
+      }
+    }
+    const cardStatus = card.querySelector(".peca-card-status");
+    if (cardStatus && (prosemest !== undefined || proacabando !== undefined)) {
+      cardStatus.innerHTML = montarBadgesStatusPeca(semAtual, acaAtual);
+    }
+  }
 
   // Destaque sutil para feedback visual, sem mover o scroll.
   try {
@@ -632,6 +676,10 @@ function removerLinhaPecaExcluida(codigo) {
     document.querySelector(`.btn-editar-peca[data-id="${codigo}"]`);
   const tr = btn ? btn.closest("tr") : null;
   if (tr) tr.remove();
+
+  const card = obterCardPecaMobile(codigo);
+  if (card) card.remove();
+
   if (typeof pecasTotal === "number" && pecasTotal > 0) pecasTotal -= 1;
   atualizarInfoTotal();
 
@@ -640,6 +688,7 @@ function removerLinhaPecaExcluida(codigo) {
     tbody.innerHTML =
       '<tr><td colspan="5" class="text-center">Nenhuma peça encontrada</td></tr>';
   }
+  atualizarEstadoVazioPecasMobile();
 }
 
 async function excluirProduto(id) {
@@ -2143,6 +2192,7 @@ async function carregarPecas(page = 1, append = false) {
   if (pecasMarcacao === "proacabando") params.set("acabando", "S");
 
   const tbody = document.getElementById("corpoTabela");
+  const mobileBox = document.getElementById("corpoTabelaPecasMobile");
   const scrollBox = document.querySelector("#tabelaArea .pecas-modal-body");
 
   if (append) {
@@ -2153,6 +2203,10 @@ async function carregarPecas(page = 1, append = false) {
   } else {
     tbody.innerHTML =
       '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
+    if (mobileBox) {
+      mobileBox.innerHTML =
+        '<div class="text-center text-muted py-3"><small>Carregando...</small></div>';
+    }
     if (scrollBox) scrollBox.scrollTop = 0;
   }
 
@@ -2182,20 +2236,106 @@ async function carregarPecas(page = 1, append = false) {
     if (!append) {
       tbody.innerHTML =
         '<tr><td colspan="5" class="text-center">Erro ao carregar peças</td></tr>';
+      if (mobileBox) {
+        mobileBox.innerHTML = htmlEstadoPecaMobile(
+          "bi-exclamation-triangle",
+          "Erro ao carregar peças",
+          "Tente novamente em instantes."
+        );
+      }
     }
   } finally {
     if (requestController === pecasRequestController) pecasLoading = false;
   }
 }
 
+// Estado vazio/erro da listagem mobile de peças (padrão .ou-empty do DS)
+function htmlEstadoPecaMobile(icone, titulo, texto) {
+  return `<div class="ou-empty">
+    <span class="ou-empty__icon"><i class="bi ${icone}"></i></span>
+    <span class="ou-empty__title">${titulo}</span>
+    <span class="ou-empty__text">${texto}</span>
+  </div>`;
+}
+
+// Card de peça usado na listagem mobile (padrão .ou-mobile-card do DS)
+function criarCardPecaMobile(t, semest, acab) {
+  const card = document.createElement("div");
+  card.className = "ou-mobile-card";
+  card.setAttribute("data-id", t.procod);
+  card.innerHTML = `
+    <div class="ou-mobile-card__head">
+      <span class="ou-mobile-card__identity">
+        <span class="ou-mobile-card__name">${t.prodes}</span>
+      </span>
+    </div>
+    <div class="ou-mobile-card__info">
+      <div class="ou-mobile-card__block">
+        <span class="ou-mobile-card__label">Valor</span>
+        <span class="ou-mobile-card__value peca-card-valor">${formatarMoeda(
+          t.provl
+        )}</span>
+      </div>
+      <div class="ou-mobile-card__block">
+        <span class="ou-mobile-card__label">Custo</span>
+        <span class="ou-mobile-card__value peca-card-custo">${formatarMoeda(
+          t.procusto
+        )}</span>
+      </div>
+      <div class="ou-mobile-card__block ou-mobile-card__block--full">
+        <span class="ou-mobile-card__label">Marcações</span>
+        <span class="ou-mobile-card__value ou-mobile-card__value--wrap peca-card-status">${montarBadgesStatusPeca(
+          semest,
+          acab
+        )}</span>
+      </div>
+    </div>
+    <div class="ou-mobile-card__foot">
+      <div class="pecas-card-acoes">
+        <button
+          class="pecas-btn-acao pecas-btn-editar btn-editar-peca"
+          data-id="${t.procod}"
+          data-nome="${String(t.prodes || "").replace(/"/g, "&quot;")}"
+          data-valor="${t.provl}"
+          data-custo="${t.procusto}"
+          data-semest="${semest}"
+          data-acabando="${acab}"
+          title="Editar peça"
+        >
+          <i class="fa-solid fa-pen"></i> Editar
+        </button>
+
+        <button
+          class="pecas-btn-acao pecas-btn-excluir btn-excluir-peca"
+          data-id="${t.procod}"
+          title="Excluir peça"
+        >
+          <i class="fa-solid fa-trash"></i> Excluir
+        </button>
+      </div>
+    </div>`;
+  return card;
+}
+
 function renderPecas(dados, append = false) {
   const tbody = document.getElementById("corpoTabela");
-  if (!append) tbody.innerHTML = "";
+  const mobileBox = document.getElementById("corpoTabelaPecasMobile");
+  if (!append) {
+    tbody.innerHTML = "";
+    if (mobileBox) mobileBox.innerHTML = "";
+  }
 
   if (!dados.length) {
     if (!append) {
       tbody.innerHTML =
         '<tr><td colspan="5" class="text-center">Nenhuma peça encontrada</td></tr>';
+      if (mobileBox) {
+        mobileBox.innerHTML = htmlEstadoPecaMobile(
+          "bi-inbox",
+          "Nenhuma peça encontrada",
+          "Ajuste os filtros ou a busca para ver resultados."
+        );
+      }
     }
     return;
   }
@@ -2234,6 +2374,7 @@ function renderPecas(dados, append = false) {
             </div>
           </td>`;
     tbody.appendChild(tr);
+    if (mobileBox) mobileBox.appendChild(criarCardPecaMobile(t, semest, acab));
   });
 }
 
@@ -2498,7 +2639,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Delegação de eventos para os botões de editar/excluir peças
-document.getElementById("corpoTabela").addEventListener("click", function (e) {
+// (tabela desktop e cards mobile ficam dentro de #tabelaArea)
+document.getElementById("tabelaArea").addEventListener("click", function (e) {
   if (e.target.closest(".btn-editar-peca")) {
     const btn = e.target.closest(".btn-editar-peca");
     // Usa a mesma lógica de edição de produto com suporte a cores

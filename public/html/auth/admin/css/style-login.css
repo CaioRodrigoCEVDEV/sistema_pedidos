@@ -2,7 +2,8 @@
    OrderUp — Tela de login (independente de framework)
    HTML + CSS + JS puro. Referência estrutural: login do Finance AI,
    adaptado à identidade OrderUp (azul-marinho + azul).
-   Modo claro (always white): o login ignora o tema do sistema.
+   Respeita o tema do sistema (Claro / Escuro / Automático), aplicado em
+   <html data-theme="light|dark"> pelo public/js/theme-manager.js.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -40,6 +41,31 @@
   --radius-field: 12px;
 
   color-scheme: light;
+}
+
+/* Tema escuro — mesmas superfícies/tokens do design system OrderUp. */
+[data-theme="dark"] {
+  --page-1: #0b1220;
+  --page-2: #0f172a;
+  --surface: #162033;
+  --surface-panel: #1d293d;
+  --surface-field: #1d293d;
+  --surface-soft: #243149;
+
+  --border: #2a3852;
+  --border-strong: #3a4a68;
+
+  --text: #e8edf6;
+  --text-soft: #b7c3d7;
+  --text-muted: #8b9ab3;
+  --text-dim: #6b7a94;
+
+  --primary-1: #3b82f6;
+  --primary-2: #2563eb;
+  --focus: #60a5fa;
+  --focus-ring: rgba(96, 165, 250, 0.22);
+
+  color-scheme: dark;
 }
 
 /* --------------------------------------------------------------------------
@@ -86,11 +112,17 @@ body {
   border-radius: var(--radius-card);
   overflow: hidden;
   background: var(--surface);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--border);
   box-shadow:
     0 30px 80px rgba(15, 23, 42, 0.14),
     0 2px 6px rgba(15, 23, 42, 0.05);
   animation: loginFade 0.5s ease both;
+}
+
+[data-theme="dark"] .login-card {
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.5),
+    0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 @keyframes loginFade {
