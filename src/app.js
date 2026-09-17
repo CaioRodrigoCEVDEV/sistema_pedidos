@@ -149,6 +149,9 @@ app.use(relatoriosRoutes);
 const telaRoutes = require("./routes/telaRoutes");
 app.use(telaRoutes);
 
+const showcaseRoutes = require("./routes/showcaseRoutes");
+app.use(showcaseRoutes);
+
 // Rotas de páginas
 
 app.get("/", (req, res) => {
@@ -186,6 +189,11 @@ app.get("/perfil", autenticarToken, (req, res) => {
 });
 app.get("/configuracoes", requireAdminPages, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/configuracoes.html"));
+});
+app.get("/vitrines", requireAdminPages, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-vitrines.html")
+  );
 });
 app.get("/painel", requireTela("produtos"), (req, res) => {
   res.sendFile(

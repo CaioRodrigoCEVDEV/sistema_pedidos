@@ -1,0 +1,185 @@
+/* ==========================================================================
+   OrderUp — Tour guiado (camada de orientação sobre telas existentes).
+   Usa apenas tokens --ou-* (theme.css) para funcionar em claro/escuro.
+   O motor está em /html/auth/js/tour.js.
+   ========================================================================== */
+
+.ou-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+}
+
+/* Máscara escura recortada ao redor do elemento destacado (4 partes) */
+.ou-tour__mask-part {
+  position: fixed;
+  z-index: 1080;
+  background: rgba(15, 23, 42, 0.62);
+  pointer-events: auto;
+}
+[data-theme="dark"] .ou-tour__mask-part {
+  /* slate escuro, nunca preto absoluto */
+  background: rgba(11, 18, 32, 0.72);
+}
+
+.ou-tour__ring {
+  position: fixed;
+  z-index: 1080;
+  pointer-events: none;
+  border: 2px solid var(--ou-primary);
+  border-radius: var(--ou-radius);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ou-primary) 22%, transparent);
+  transition: top 0.18s ease, left 0.18s ease, width 0.18s ease,
+    height 0.18s ease;
+}
+
+/* Popover */
+.ou-tour__popover {
+  position: fixed;
+  z-index: 1081;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: min(360px, calc(100vw - 20px));
+  padding: 1rem 1.1rem 0.9rem;
+  color: var(--ou-text);
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border);
+  border-radius: var(--ou-radius-lg);
+  box-shadow: var(--ou-shadow-lg);
+}
+.ou-tour__popover--measuring {
+  visibility: hidden;
+}
+.ou-tour__popover:focus {
+  outline: none;
+}
+
+.ou-tour__arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border);
+  transform: rotate(45deg);
+}
+.ou-tour__popover[data-placement="bottom"] .ou-tour__arrow {
+  top: -7px;
+  border-right: none;
+  border-bottom: none;
+}
+.ou-tour__popover[data-placement="top"] .ou-tour__arrow {
+  bottom: -7px;
+  border-left: none;
+  border-top: none;
+}
+.ou-tour__popover[data-placement="center"] .ou-tour__arrow {
+  display: none;
+}
+
+.ou-tour__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: var(--ou-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.ou-tour__close:hover,
+.ou-tour__close:focus-visible {
+  color: var(--ou-text);
+  background: var(--ou-surface-hover);
+}
+
+.ou-tour__step {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ou-primary);
+}
+
+.ou-tour__title {
+  margin: 0;
+  padding-right: 1.6rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--ou-text);
+}
+.ou-tour__title:focus {
+  outline: none;
+}
+
+.ou-tour__text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--ou-text-2);
+}
+
+.ou-tour__dontshow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  color: var(--ou-text-2);
+  cursor: pointer;
+}
+.ou-tour__dontshow .form-check-input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.ou-tour__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+.ou-tour__nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.ou-tour__skip {
+  padding-inline: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--ou-text-muted);
+  text-decoration: none;
+}
+.ou-tour__skip:hover,
+.ou-tour__skip:focus-visible {
+  color: var(--ou-text);
+  text-decoration: underline;
+}
+
+@media (max-width: 575.98px) {
+  .ou-tour__popover {
+    width: calc(100vw - 20px);
+    padding: 0.9rem 0.95rem 0.8rem;
+  }
+  .ou-tour__title {
+    font-size: 1rem;
+  }
+  .ou-tour__footer {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ou-tour__ring,
+  .ou-tour__close {
+    transition: none !important;
+  }
+}

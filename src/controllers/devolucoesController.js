@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const catalogoCache = require("../utils/catalogoCache");
+const showcasesCache = require("../utils/showcasesCache");
 
 function parsePositiveInteger(value) {
   const parsed = Number(value);
@@ -298,6 +299,7 @@ exports.registrarDevolucao = async (req, res) => {
 
     await client.query("COMMIT");
     catalogoCache.invalidate();
+    showcasesCache.invalidate();
     return res.status(201).json({
       message: "Devolucao registrada com sucesso",
       devolucao: {

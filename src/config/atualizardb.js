@@ -1,6 +1,7 @@
 const pool = require("./db");
 const TELAS = require("./telas");
 const { ensureReleasesSchema } = require("./releasesSchema");
+const { ensureShowcasesSchema } = require("./showcasesSchema");
 
 async function atualizarDB() {
   const LOCK_KEY = 20250911;
@@ -49,6 +50,14 @@ async function atualizarDB() {
     );
     await pool.query(
       `ALTER TABLE public.usu ADD IF NOT exists usuviuversao varchar(1) default 'N';`
+    );
+    // Preferência por usuário: já visualizou o tour guiado da tela de Vitrines.
+    await pool.query(
+      `ALTER TABLE public.usu ADD IF NOT exists usuvitour varchar(1) default 'N';`
+    );
+    // Preferência por usuário: já viu o tour que apresenta o item Vitrines no menu.
+    await pool.query(
+      `ALTER TABLE public.usu ADD IF NOT exists usuvitourmenu varchar(1) default 'N';`
     );
     await pool.query(
       `ALTER TABLE public.emp ADD IF NOT exists empusapv varchar(1) default 'N';`
@@ -259,6 +268,16 @@ async function atualizarDB() {
 
     // ==================================================================================================================================
     // FIM RELEASES DO SISTEMA
+    // ==================================================================================================================================
+
+    // ==================================================================================================================================
+    // VITRINES DA PÁGINA INICIAL (Destaques / Mais vendidos / Novidades)
+    // ==================================================================================================================================
+
+    await ensureShowcasesSchema(pool);
+
+    // ==================================================================================================================================
+    // FIM VITRINES DA PÁGINA INICIAL
     // ==================================================================================================================================
 
     // ==================================================================================================================================

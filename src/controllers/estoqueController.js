@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const catalogoCache = require("../utils/catalogoCache");
+const showcasesCache = require("../utils/showcasesCache");
 
 exports.mostrarEstoqueItens = async (req, res) => {
 
@@ -49,6 +50,7 @@ exports.atualizarEstoque = async (req, res) => {
       [proqtde, id]
     );
     catalogoCache.invalidate();
+    showcasesCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
