@@ -89,7 +89,6 @@ async function atualizarDB() {
         ALTER TABLE public.procor ALTER COLUMN procorsemest SET DEFAULT 'S'::bpchar;
 
     `);
-    await pool.query(`update usu set usuviuversao = 'N';`);
 
     //fim temporatrio
 
