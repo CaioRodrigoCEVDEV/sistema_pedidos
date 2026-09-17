@@ -1400,3 +1400,178 @@ a.ou-catalog-card:hover .ou-catalog-card__arrow {
     transition: none !important;
   }
 }
+
+/* ---------- Vitrines da home (carrosséis de produtos) ----------
+   Seções configuráveis (Destaques / Mais vendidos / Novidades) exibidas na
+   página inicial. O scroll horizontal existe apenas dentro do trilho. */
+.ou-showcases {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+.ou-showcases[hidden] {
+  display: none;
+}
+.ou-showcase {
+  min-width: 0;
+}
+.ou-showcase .ou-results-head {
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.ou-showcase__nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.ou-showcase__nav[hidden] {
+  display: none;
+}
+.ou-showcase__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  font-size: 0.95rem;
+  color: var(--ou-text-2);
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: 999px;
+  transition: background-color 0.15s ease, color 0.15s ease,
+    border-color 0.15s ease;
+}
+.ou-showcase__arrow:hover:not(:disabled),
+.ou-showcase__arrow:focus-visible:not(:disabled) {
+  color: #fff;
+  background: var(--ou-primary);
+  border-color: var(--ou-primary);
+}
+.ou-showcase__arrow:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ou-showcase__track {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 100%;
+  margin: 0 -0.2rem;
+  padding: 0.2rem 0.2rem 0.65rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ou-border) transparent;
+}
+.ou-showcase__track::-webkit-scrollbar {
+  height: 8px;
+}
+.ou-showcase__track::-webkit-scrollbar-thumb {
+  background: var(--ou-border);
+  border-radius: 999px;
+}
+.ou-showcase__track::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ou-showcase__item {
+  display: flex;
+  flex: 0 0 auto;
+  width: 260px;
+  scroll-snap-align: start;
+}
+.ou-showcase__item > .ou-product-card {
+  width: 100%;
+}
+a.ou-product-card {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+a.ou-product-card:focus-visible {
+  outline: 2px solid var(--ou-primary);
+  outline-offset: 2px;
+}
+/* Card em modo vitrine: empilhado e com contexto de marca/modelo */
+.ou-product-card--shelf {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.65rem;
+  padding: 0.95rem;
+}
+.ou-product-card__context {
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: var(--ou-text-muted);
+  overflow-wrap: anywhere;
+}
+/* Logo da marca no topo do card da vitrine (não há foto de produto no
+   catálogo; a marca é a identidade visual disponível). Chip claro, mesmo
+   padrão do .ou-brand-logo, para manter contraste de logos pretos no dark. */
+.ou-product-card__brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  background: #ffffff;
+  border: 1px solid var(--ou-border-soft);
+  border-radius: var(--ou-radius);
+  overflow: hidden;
+}
+.ou-product-card__brand-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+.ou-product-card--shelf .ou-product-card__type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.ou-product-card--shelf .ou-product-card__type i {
+  font-size: 0.85rem;
+  color: var(--ou-primary);
+}
+.ou-product-card--shelf .ou-product-card__aside {
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+.ou-product-card--shelf .ou-product-card__add {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 0.85rem;
+  white-space: nowrap;
+  text-align: center;
+}
+@media (max-width: 991.98px) {
+  .ou-showcase__item {
+    width: 232px;
+  }
+}
+@media (max-width: 575.98px) {
+  .ou-showcases {
+    gap: 1.4rem;
+  }
+  .ou-showcase__item {
+    width: 208px;
+  }
+  .ou-product-card--shelf {
+    padding: 0.85rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ou-showcase__track {
+    scroll-behavior: auto;
+  }
+  .ou-showcase__arrow {
+    transition: none !important;
+  }
+}

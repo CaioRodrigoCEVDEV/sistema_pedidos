@@ -1,5 +1,6 @@
 const partGroupModels = require("../models/partGroupModels");
 const catalogoCache = require("../utils/catalogoCache");
+const showcasesCache = require("../utils/showcasesCache");
 
 /**
  * Controlador de Grupos de Compatibilidade
@@ -94,6 +95,7 @@ exports.updateGroup = async (req, res) => {
       return res.status(404).json({ error: "Grupo não encontrado" });
     }
     catalogoCache.invalidate();
+    showcasesCache.invalidate();
     res.status(200).json(group);
   } catch (error) {
     console.error("Erro ao atualizar grupo de compatibilidade:", error);
@@ -142,6 +144,7 @@ exports.updateGroupStock = async (req, res) => {
     );
 
     catalogoCache.invalidate();
+    showcasesCache.invalidate();
     res.status(200).json({
       ...group,
       partsUpdated: partsResult.partsUpdated,
@@ -208,6 +211,7 @@ exports.adjustGroupStock = async (req, res) => {
     );
 
     catalogoCache.invalidate();
+    showcasesCache.invalidate();
     res.status(200).json({
       ...group,
       partsUpdated: partsResult.partsUpdated,
@@ -232,6 +236,7 @@ exports.deleteGroup = async (req, res) => {
       return res.status(404).json({ error: "Grupo não encontrado" });
     }
     catalogoCache.invalidate();
+    showcasesCache.invalidate();
     res.status(200).json({ message: "Grupo excluído com sucesso", group });
   } catch (error) {
     console.error("Erro ao excluir grupo de compatibilidade:", error);
@@ -263,6 +268,7 @@ exports.addPartToGroup = async (req, res) => {
       return res.status(200).json({ ...result, message: "Variação já pertence a este grupo" });
     }
     catalogoCache.invalidate();
+    showcasesCache.invalidate();
     res.status(200).json(result);
   } catch (error) {
     console.error("Erro ao adicionar peça ao grupo:", error);
@@ -280,6 +286,7 @@ exports.removePartFromGroup = async (req, res) => {
       return res.status(404).json({ error: "Variação não encontrada no grupo" });
     }
     catalogoCache.invalidate();
+    showcasesCache.invalidate();
     res.status(200).json(result);
   } catch (error) {
     console.error("Erro ao remover peça do grupo:", error);

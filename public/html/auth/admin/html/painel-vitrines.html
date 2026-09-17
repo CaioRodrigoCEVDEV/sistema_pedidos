@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="/js/theme-manager.js?v=2026.09.17.180002"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vitrines da Página Inicial</title>
+    <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/uploads/apple-touch-icon.png"
+    />
+
+    <!-- Styles do projeto -->
+    <link rel="stylesheet" href="/html/auth/admin/css/style-flexbox.css?v=2026.09.17.180002" />
+    <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.17.180002" />
+
+    <!-- Bootstrap + ícones -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="../../../../css/tema-bootstrap.css?v=2026.09.17.180002" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <style>
+      .badge-tipo-manual {
+        color: var(--ou-primary);
+        background-color: var(--ou-primary-soft);
+        border: 1px solid color-mix(in srgb, var(--ou-primary) 30%, transparent);
+      }
+      .badge-tipo-automatica {
+        color: var(--ou-text-2);
+        background-color: var(--ou-surface-2);
+        border: 1px solid var(--ou-border);
+      }
+      .badge-vitrine-inativo {
+        color: var(--ou-danger);
+        background-color: var(--ou-danger-soft);
+        border: 1px solid color-mix(in srgb, var(--ou-danger) 30%, transparent);
+      }
+      .vitrine-desc {
+        font-size: 0.78rem;
+        color: var(--ou-text-muted);
+      }
+      .vitrine-ordem {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+      .vitrine-max {
+        width: 84px;
+      }
+      .vitrine-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 0.75rem;
+        background: var(--ou-surface);
+        border: 1px solid var(--ou-border-soft);
+        border-radius: var(--ou-radius);
+      }
+      .vitrine-item + .vitrine-item {
+        margin-top: 0.5rem;
+      }
+      .vitrine-item__main {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .vitrine-item__name {
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.25;
+        color: var(--ou-text);
+        overflow-wrap: anywhere;
+      }
+      .vitrine-item__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem 0.6rem;
+        font-size: 0.78rem;
+        color: var(--ou-text-muted);
+      }
+      .vitrine-item__pos {
+        flex: 0 0 auto;
+        min-width: 1.4rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-align: center;
+        color: var(--ou-text-muted);
+      }
+      .busca-resultado {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.55rem 0.75rem;
+        border: 1px solid var(--ou-border-soft);
+        border-radius: var(--ou-radius);
+        background: var(--ou-surface);
+      }
+      .busca-resultado + .busca-resultado {
+        margin-top: 0.4rem;
+      }
+      .busca-resultado__main {
+        min-width: 0;
+      }
+      .busca-resultado__name {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--ou-text);
+        overflow-wrap: anywhere;
+      }
+      .busca-resultado__meta {
+        font-size: 0.76rem;
+        color: var(--ou-text-muted);
+      }
+    </style>
+    <link rel="stylesheet" href="/css/theme.css?v=2026.09.17.180002" />
+    <link rel="stylesheet" href="/css/shell.css?v=2026.09.17.180002" />
+    <link rel="stylesheet" href="/css/ui.css?v=2026.09.17.180002" />
+  </head>
+
+  <body class="bg-light">
+    <div class="wrapper">
+      <header id="header-admin"><!-- preenchido via JS global --></header>
+
+      <main class="p-3">
+        <div class="container">
+          <div class="ou-page-header mb-4">
+            <div class="ou-page-header__main">
+              <span class="ou-page-header__icon" aria-hidden="true">
+                <i class="fa-solid fa-shop"></i>
+              </span>
+              <div>
+                <span class="ou-page-header__eyebrow">Catálogo</span>
+                <h1 class="h4 mb-0 ou-page-header__title">Vitrines da Página Inicial</h1>
+                <p class="ou-page-header__sub mb-0">
+                  Defina quais vitrines aparecem no catálogo público, a ordem delas e o que cada uma exibe.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="container">
+          <div class="app-container">
+            <div class="card shadow-sm">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-shop-window"></i> Vitrines</h5>
+                <span class="text-muted small d-none d-md-inline">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Vitrines inativas não aparecem na loja
+                </span>
+              </div>
+
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-hover mb-0" id="vitrinesTable">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Vitrine</th>
+                        <th class="text-center">Tipo</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Ordem</th>
+                        <th class="text-center">Exibição</th>
+                        <th class="text-end">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="vitrinesTableBody">
+                      <!-- Dados dinâmicos -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <div id="emptyState" class="ou-empty" style="display: none">
+                  <span class="ou-empty__icon" aria-hidden="true"><i class="bi bi-inbox"></i></span>
+                  <span class="ou-empty__title">Nenhuma vitrine encontrada</span>
+                  <span class="ou-empty__text">As vitrines padrão são criadas na instalação do sistema.</span>
+                </div>
+
+                <div id="loadingState" class="ou-loading" style="display: none">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                  </div>
+                  <span>Carregando vitrines...</span>
+                </div>
+              </div>
+
+              <div class="card-footer text-muted">
+                <small>
+                  <i class="bi bi-info-circle me-1"></i>
+                  Destaques é manual (você escolhe e ordena os produtos); Mais vendidos e Novidades são automáticas.
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer id="footer"></footer>
+    </div>
+
+    <!-- Modal: gerenciar produtos dos Destaques -->
+    <div
+      class="modal fade"
+      id="modalGerenciar"
+      tabindex="-1"
+      aria-labelledby="modalGerenciarLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalGerenciarLabel">
+              <i class="bi bi-star me-1"></i> Gerenciar Destaques
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Fechar"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label" for="buscaProduto">Adicionar produto</label>
+            <div class="input-group mb-2">
+              <input
+                type="search"
+                class="form-control"
+                id="buscaProduto"
+                placeholder="Pesquisar peça pelo nome..."
+                aria-label="Pesquisar peça"
+              />
+              <button class="btn btn-primary" type="button" id="btnBuscarProduto">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+            <div id="resultadoBusca" class="mb-3"></div>
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0">
+                Produtos na vitrine
+                <span class="badge text-bg-secondary" id="qtdSelecionados">0</span>
+              </h6>
+              <small class="text-muted">A ordem abaixo é a mesma exibida na loja</small>
+            </div>
+            <div id="listaSelecionados">
+              <!-- Itens da vitrine -->
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: prévia das vitrines automáticas -->
+    <div
+      class="modal fade"
+      id="modalPreview"
+      tabindex="-1"
+      aria-labelledby="modalPreviewLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalPreviewLabel">Vitrine</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Fechar"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small" id="previewDescricao"></p>
+            <div id="listaPreview"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- Componentes globais (header/footer) -->
+    <script src="/html/auth/js/componentes.js?v=2026.09.17.180002"></script>
+
+    <script src="/config.js?v=2026.09.17.180002"></script>
+    <script src="../js/nomeEmpresa.js?v=2026.09.17.180002"></script>
+
+    <!-- Script da página -->
+    <script src="/html/auth/js/painel-vitrines.js?v=2026.09.17.180002"></script>
+  </body>
+</html>
