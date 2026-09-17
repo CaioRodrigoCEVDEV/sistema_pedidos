@@ -679,17 +679,6 @@
                     <option value="proacabando">Produto acabando</option>
                   </select>
                 </div>
-                <div class="pecas-filter-item pecas-filter-busca">
-                  <label class="pecas-filter-label" for="pecasBusca"
-                    >Buscar peça</label
-                  >
-                  <input
-                    type="text"
-                    id="pecasBusca"
-                    class="form-control"
-                    placeholder="Digite para buscar..."
-                  />
-                </div>
                 <div class="pecas-filter-actions">
                   <button
                     type="button"
@@ -709,19 +698,37 @@
               </div>
             </div>
 
+            <div class="pecas-search-bar">
+              <label class="pecas-filter-label" for="pecasBusca"
+                >Buscar peça</label
+              >
+              <input
+                type="text"
+                id="pecasBusca"
+                class="form-control"
+                placeholder="Digite para buscar..."
+              />
+            </div>
+
             <div class="pecas-modal-body">
-              <table class="table table-hover align-middle mb-0 pecas-modal-table" id="tabelaProdutos">
-                <thead>
-                  <tr>
-                    <th scope="col" class="peca-col">Peça</th>
-                    <th scope="col" class="valor-col">Valor</th>
-                    <th scope="col" class="custo-col">Custo</th>
-                    <th scope="col" class="status-col">Marcações</th>
-                    <th scope="col" class="acoes-col">Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="corpoTabela"></tbody>
-              </table>
+              <div class="d-none d-md-block">
+                <table class="table table-hover align-middle mb-0 pecas-modal-table" id="tabelaProdutos">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="peca-col">Peça</th>
+                      <th scope="col" class="valor-col">Valor</th>
+                      <th scope="col" class="custo-col">Custo</th>
+                      <th scope="col" class="status-col">Marcações</th>
+                      <th scope="col" class="acoes-col">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="corpoTabela"></tbody>
+                </table>
+              </div>
+              <div
+                id="corpoTabelaPecasMobile"
+                class="ou-mobile-list ou-mobile-list--pecas d-md-none"
+              ></div>
             </div>
           </div>
         </div>
