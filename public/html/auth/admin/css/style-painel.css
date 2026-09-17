@@ -146,6 +146,19 @@
   box-shadow: none;
 }
 
+/* Ordem das peças: tela cheia somente no mobile;
+   no desktop mantém o popup centralizado padrão */
+@media (max-width: 768px) {
+  .ordem-popup {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+}
+
 /* Header fixo */
 .pecas-modal-header {
   flex: 0 0 auto;

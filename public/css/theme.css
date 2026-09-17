@@ -579,7 +579,7 @@ body.bg-light,
 }
 
 /* Variáveis próprias da tela de releases */
-[data-theme="dark"] {
+html[data-theme="dark"] {
   --card-bg: var(--ou-surface);
   --muted: var(--ou-text-muted);
   --accent: #60a5fa;

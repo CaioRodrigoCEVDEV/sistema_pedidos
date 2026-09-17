@@ -314,6 +314,7 @@ body.ou-has-shell #header-admin.ou-topbar {
 }
 
 .ou-icon-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -338,6 +339,23 @@ body.ou-has-shell #header-admin.ou-topbar {
 
 .ou-icon-btn i {
   font-size: 18px;
+}
+
+/* Marcador de "não visualizado" exibido no canto do botão. */
+.ou-icon-btn__badge {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 2px var(--ou-surface);
+  pointer-events: none;
+}
+
+.ou-icon-btn__badge[hidden] {
+  display: none;
 }
 
 .ou-user-btn {

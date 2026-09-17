@@ -190,6 +190,10 @@ function ouBuildTopbar() {
     "</a>" +
     "</div>" +
     '<div class="ou-topbar__actions">' +
+    '<button type="button" class="ou-icon-btn js-open-releases" id="ouReleasesBtn" aria-label="Novidades" title="Novidades">' +
+    '<i class="bi bi-megaphone" aria-hidden="true"></i>' +
+    '<span class="ou-icon-btn__badge" id="ouReleasesBadge" hidden></span>' +
+    "</button>" +
     '<div class="dropdown">' +
     '<button type="button" class="ou-icon-btn" id="ouQuickTheme" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Alterar tema" title="Alterar tema">' +
     '<i class="bi bi-circle-half" aria-hidden="true"></i>' +
@@ -347,6 +351,60 @@ function ouWireLogout(root) {
   }
 }
 
+/* Carrega o módulo global de atualizações (modal de releases) uma única vez
+   por página. O próprio módulo decide se deve abrir automaticamente após o
+   login, respeitando a flag "visto" do usuário. */
+function ouLoadReleases() {
+  if (document.getElementById("ouReleasesLoader")) return;
+
+  // Reaproveita o ?v= do próprio componentes.js para o cache-busting, já que
+  // o script de bump de assets só atualiza referências dentro de arquivos HTML.
+  var version = "";
+  var scripts = document.getElementsByTagName("script");
+  for (var i = 0; i < scripts.length; i++) {
+    var src = scripts[i].getAttribute("src") || "";
+    if (src.indexOf("componentes.js") === -1) continue;
+    var match = src.match(/[?&]v=([^&]+)/);
+    if (match) version = match[1];
+    break;
+  }
+
+  var script = document.createElement("script");
+  script.id = "ouReleasesLoader";
+  script.src =
+    "/html/auth/js/releases-global.js" + (version ? "?v=" + version : "");
+  script.defer = true;
+  document.body.appendChild(script);
+}
+
+/* Abre o modal de atualizações pelo botão "Novidades" da topbar. */
+function ouWireReleases(root) {
+  var scope = root || document;
+  var buttons = scope.querySelectorAll(".js-open-releases");
+  for (var i = 0; i < buttons.length; i++) {
+    if (buttons[i].dataset.ouReleasesBound) continue;
+    buttons[i].dataset.ouReleasesBound = "1";
+    buttons[i].addEventListener("click", function (event) {
+      event.preventDefault();
+      if (window.ouOpenReleases) {
+        window.ouOpenReleases();
+        return;
+      }
+      ouLoadReleases();
+      var attempts = 0;
+      var timer = window.setInterval(function () {
+        attempts += 1;
+        if (window.ouOpenReleases) {
+          window.clearInterval(timer);
+          window.ouOpenReleases();
+        } else if (attempts > 50) {
+          window.clearInterval(timer);
+        }
+      }, 100);
+    });
+  }
+}
+
 function ouLoadUser() {
   fetch("/me/usuario", { credentials: "include" })
     .then(function (response) {
@@ -452,6 +510,7 @@ function ouMountSidebar(navGroups) {
   ouSetActiveLinks();
   ouWireDrawer();
   ouWireLogout();
+  ouWireReleases();
 }
 
 function createHeader() {
@@ -471,7 +530,9 @@ function createHeader() {
 
   ouWireThemeToggle();
   ouWireLogout(header);
+  ouWireReleases(header);
   ouLoadUser();
+  ouLoadReleases();
 
   fetch("/me/permissoes", { credentials: "include" })
     .then(function (response) {
