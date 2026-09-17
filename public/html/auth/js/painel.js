@@ -242,95 +242,98 @@ function editarProduto(codigo) {
       // ------------------------------
       let popup = document.createElement("div");
       popup.id = "popupEditarProduto";
-      popup.style = `
-        position:fixed;top:0;left:0;width:100vw;height:100vh;
-        background:rgba(0,0,0,0.5);display:flex;
-        align-items:center;justify-content:center;z-index:9999;
-      `;
+      popup.className = "editar-overlay";
 
       popup.innerHTML = `
-        <div style="
-          background:var(--ou-surface);padding:24px;border-radius:8px;
-          min-width:300px;width:40vw;max-height:80vh;overflow:auto;
-        ">
-          <h5>📦 Editar Produto</h5>
-          <hr>
+        <div class="editar-dialog modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">📦 Editar Peça</h5>
+            <button
+              type="button"
+              class="btn-close"
+              id="fecharEditarProduto"
+              aria-label="Fechar"
+            ></button>
+          </div>
 
-          <form id="formEditarProduto">
+          <form id="formEditarProduto" class="editar-form">
+            <div class="modal-body">
 
-            <div class="mb-3">
-              <label class="form-label">📝 Descrição</label>
-              <input type="text" class="form-control" id="editarDescricao" required
-                value="${produto[0]?.prodes || ""}">
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">💰 Valor</label>
-              <input type="number" step="0.01" class="form-control" id="editarValor" required
-                value="${Number(produto[0]?.provl).toFixed(2) || ""}">
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">📥 Produto sem estoque</label><br>
-              <input type="checkbox" id="editar_prosemest"
-                ${produto.some((p) => normalizarFlagPeca(p.prosemest) === "S") ? "checked" : ""}>
-              <label for="editar_prosemest">Sem estoque geral</label>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">📥 Produto acabando</label><br>
-              <input type="checkbox" id="editar_proacabando"
-                ${produto.some((p) => normalizarFlagPeca(p.proacabando) === "S") ? "checked" : ""}>
-              <label for="editar_proacabando">Produto acabando</label>
-            </div>
-
-            <details>
-              <summary class="mb-2">🎨 Vincule as cores do produto</summary>
-              <div id="editarProdutoCores" style="max-height:220px;overflow:auto;padding-right:8px;">
-                ${coresDisponiveis
-                  .map((c) => {
-                    const ligada = coresProduto.some(
-                      (cp) => cp.corcod == c.corcod,
-                    );
-                    const semEst = coresProduto.some(
-                      (cp) => cp.corcod == c.corcod && cp.procorsemest === "S",
-                    );
-
-                    return `
-                    <div class="form-check row align-items-center py-1" data-cor="${
-                      c.corcod
-                    }">
-                      <div class="col-6">
-                        <input type="checkbox" class="form-check-input checkbox-cor"
-                          value="${c.corcod}" id="editar_cor_${c.corcod}"
-                          ${ligada ? "checked" : ""}>
-                        <label class="form-check-label" for="editar_cor_${
-                          c.corcod
-                        }">
-                          ${c.cornome}
-                        </label>
-                      </div>
-
-                      <div class="col-6">
-                        <input type="checkbox" class="form-check-input checkbox-cor-semest"
-                          data-cor-semest="${c.corcod}"
-                          id="editar_cor_semest_${c.corcod}"
-                          ${semEst ? "checked" : ""}
-                          ${!ligada ? "disabled" : ""}>
-                        <label class="form-check-label" for="editar_cor_semest_${
-                          c.corcod
-                        }">
-                          Sem estoque
-                        </label>
-                      </div>
-                    </div>
-                  `;
-                  })
-                  .join("")}
+              <div class="mb-3">
+                <label class="form-label" for="editarDescricao">📝 Descrição</label>
+                <input type="text" class="form-control" id="editarDescricao" required
+                  value="${produto[0]?.prodes || ""}">
               </div>
-            </details>
 
-            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+              <div class="mb-3">
+                <label class="form-label" for="editarValor">💰 Valor</label>
+                <input type="number" step="0.01" class="form-control" id="editarValor" required
+                  value="${Number(produto[0]?.provl).toFixed(2) || ""}">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">📥 Produto sem estoque</label><br>
+                <input type="checkbox" id="editar_prosemest"
+                  ${produto.some((p) => normalizarFlagPeca(p.prosemest) === "S") ? "checked" : ""}>
+                <label for="editar_prosemest">Sem estoque geral</label>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">📥 Produto acabando</label><br>
+                <input type="checkbox" id="editar_proacabando"
+                  ${produto.some((p) => normalizarFlagPeca(p.proacabando) === "S") ? "checked" : ""}>
+                <label for="editar_proacabando">Produto acabando</label>
+              </div>
+
+              <details>
+                <summary class="mb-2">🎨 Vincule as cores do produto</summary>
+                <div id="editarProdutoCores" class="editar-produto-cores">
+                  ${coresDisponiveis
+                    .map((c) => {
+                      const ligada = coresProduto.some(
+                        (cp) => cp.corcod == c.corcod,
+                      );
+                      const semEst = coresProduto.some(
+                        (cp) => cp.corcod == c.corcod && cp.procorsemest === "S",
+                      );
+
+                      return `
+                      <div class="form-check row align-items-center py-1" data-cor="${
+                        c.corcod
+                      }">
+                        <div class="col-6">
+                          <input type="checkbox" class="form-check-input checkbox-cor"
+                            value="${c.corcod}" id="editar_cor_${c.corcod}"
+                            ${ligada ? "checked" : ""}>
+                          <label class="form-check-label" for="editar_cor_${
+                            c.corcod
+                          }">
+                            ${c.cornome}
+                          </label>
+                        </div>
+
+                        <div class="col-6">
+                          <input type="checkbox" class="form-check-input checkbox-cor-semest"
+                            data-cor-semest="${c.corcod}"
+                            id="editar_cor_semest_${c.corcod}"
+                            ${semEst ? "checked" : ""}
+                            ${!ligada ? "disabled" : ""}>
+                          <label class="form-check-label" for="editar_cor_semest_${
+                            c.corcod
+                          }">
+                            Sem estoque
+                          </label>
+                        </div>
+                      </div>
+                    `;
+                    })
+                    .join("")}
+                </div>
+              </details>
+
+            </div>
+
+            <div class="modal-footer">
               <button type="button" class="btn btn-secondary" id="cancelarEditarProduto">
                 Cancelar
               </button>
@@ -338,7 +341,6 @@ function editarProduto(codigo) {
                 Salvar
               </button>
             </div>
-
           </form>
         </div>
       `;
@@ -348,6 +350,11 @@ function editarProduto(codigo) {
       document.getElementById("cancelarEditarProduto").onclick = () => {
         popup.remove();
       };
+
+      const fecharEditarProduto = document.getElementById("fecharEditarProduto");
+      if (fecharEditarProduto) {
+        fecharEditarProduto.onclick = () => popup.remove();
+      }
 
       // ------------------------------
       // HABILITA / DESABILITA "sem estoque" por cor
@@ -555,7 +562,7 @@ function atualizarEstadoVazioPecasMobile() {
   const mobileBox = document.getElementById("corpoTabelaPecasMobile");
   if (!mobileBox) return;
   if (!mobileBox.querySelector(".ou-mobile-card")) {
-    mobileBox.innerHTML = htmlEstadoPecaMobile(
+    mobileBox.innerHTML = htmlEstadoListaMobile(
       "bi-inbox",
       "Nenhuma peça encontrada",
       "Ajuste os filtros ou a busca para ver resultados."
@@ -887,7 +894,9 @@ function carregarMarcas() {
 
 function renderMarcas() {
   const tbody = document.getElementById("listaMarcas");
+  const mobileBox = document.getElementById("listaMarcasMobile");
   tbody.innerHTML = "";
+  if (mobileBox) mobileBox.innerHTML = "";
   const q = marcasQ.toLowerCase();
   const filtradas = q
     ? marcasLista.filter((m) =>
@@ -919,7 +928,18 @@ function renderMarcas() {
             </div>
           </td>`;
     tbody.appendChild(tr);
+    if (mobileBox) {
+      mobileBox.appendChild(criarCardGestaoMobile(m.marcascod, m.marcasdes));
+    }
   });
+
+  if (mobileBox && !filtradas.length) {
+    mobileBox.innerHTML = htmlEstadoListaMobile(
+      "bi-inbox",
+      "Nenhuma marca encontrada",
+      ""
+    );
+  }
 
   const info = document.getElementById("infoTotalMarcas");
   if (info) info.textContent = `${filtradas.length} marca(s)`;
@@ -928,40 +948,35 @@ function renderMarcas() {
 function editarMarca(id, nome) {
   let popup = document.createElement("div");
   popup.id = "popupEditarMarca";
-  popup.style.position = "fixed";
-  popup.style.top = "0";
-  popup.style.left = "0";
-  popup.style.width = "100vw";
-  popup.style.height = "100vh";
-  popup.style.background = "rgba(0,0,0,0.5)";
-  popup.style.display = "flex";
-  popup.style.alignItems = "center";
-  popup.style.justifyContent = "center";
-  popup.style.zIndex = "9999";
+  popup.className = "editar-overlay";
 
   popup.innerHTML = `
-    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;width:40vw;">
-      <h5>🏷️ Editar Marca</h5>
-      <hr style="width:100%; border:1px solid #ddd;">
+    <div class="editar-dialog modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🏷️ Editar Marca</h5>
+        <button type="button" class="btn-close" id="fecharEditarMarca" aria-label="Fechar"></button>
+      </div>
 
-      <form id="formEditarMarca">
-        
-        <div class="mb-3">
-          <label class="form-label">📝 Descrição</label>
-          <input type="text" class="form-control" id="editarMarcaDescricao"
-                 name="marcasdes" value="${nome || ""}" required>
+      <form id="formEditarMarca" class="editar-form">
+        <div class="modal-body">
+
+          <div class="mb-3">
+            <label class="form-label" for="editarMarcaDescricao">📝 Descrição</label>
+            <input type="text" class="form-control" id="editarMarcaDescricao"
+                   name="marcasdes" value="${nome || ""}" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">📁 Logo da Marca (JPG/PNG)</label>
+            <div class="input-group" id="fileWrapper"></div>
+          </div>
+
         </div>
 
-        <div class="mb-3">
-          <label class="form-label">📁 Logo da Marca (JPG/PNG)</label>
-          <div class="input-group" id="fileWrapper"></div>
-        </div>
-
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="cancelarEditarMarca">Cancelar</button>
           <button type="submit" class="btn btn-primary">Salvar</button>
         </div>
-
       </form>
     </div>
   `;
@@ -977,6 +992,9 @@ function editarMarca(id, nome) {
   popup.querySelector("#fileWrapper").appendChild(fileInput);
 
   document.getElementById("cancelarEditarMarca").onclick = () => popup.remove();
+
+  const fecharEditarMarca = document.getElementById("fecharEditarMarca");
+  if (fecharEditarMarca) fecharEditarMarca.onclick = () => popup.remove();
 
   document.getElementById("formEditarMarca").onsubmit = async function (e) {
     e.preventDefault();
@@ -1148,7 +1166,9 @@ function carregarModelos() {
 
 function renderModelos() {
   const tbody = document.getElementById("listaModelos");
+  const mobileBox = document.getElementById("listaModelosMobile");
   tbody.innerHTML = "";
+  if (mobileBox) mobileBox.innerHTML = "";
   const q = modelosQ.toLowerCase();
 
   const filtradas = modelosLista.filter((m) => {
@@ -1186,7 +1206,23 @@ function renderModelos() {
             </div>
           </td>`;
     tbody.appendChild(tr);
+    if (mobileBox) {
+      const marca = (marcasCache || []).find(
+        (mc) => String(mc.marcascod) === String(m.modmarcascod)
+      );
+      mobileBox.appendChild(
+        criarCardGestaoMobile(m.modcod, m.moddes, marca ? marca.marcasdes : "")
+      );
+    }
   });
+
+  if (mobileBox && !filtradas.length) {
+    mobileBox.innerHTML = htmlEstadoListaMobile(
+      "bi-inbox",
+      "Nenhum modelo encontrado",
+      ""
+    );
+  }
 
   const info = document.getElementById("infoTotalModelos");
   if (info) info.textContent = `${filtradas.length} modelo(s)`;
@@ -1196,35 +1232,32 @@ function editarModelo(id, nome, marca) {
   // Cria o popup
   let popup = document.createElement("div");
   popup.id = "popupEditarModelo";
-  popup.style.position = "fixed";
-  popup.style.top = "0";
-  popup.style.left = "0";
-  popup.style.width = "100vw";
-  popup.style.height = "100vh";
-  popup.style.background = "rgba(0,0,0,0.5)";
-  popup.style.display = "flex";
-  popup.style.alignItems = "center";
-  popup.style.justifyContent = "center";
-  popup.style.zIndex = "9999";
+  popup.className = "editar-overlay";
 
   popup.innerHTML = `
-    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
-      <h5>📱 Editar Modelo</h5>
-      <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
-      <form id="formEditarModelo">
-        <div class="mb-3">
-          <label for="editarModeloDescricao" class="form-label">📝 Descrição</label>
-          <input type="text" class="form-control" id="editarModeloDescricao" name="moddes" value="${
-            nome || ""
-          }" required>
+    <div class="editar-dialog modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📱 Editar Modelo</h5>
+        <button type="button" class="btn-close" id="fecharEditarModelo" aria-label="Fechar"></button>
+      </div>
+
+      <form id="formEditarModelo" class="editar-form">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="editarModeloDescricao" class="form-label">📝 Descrição</label>
+            <input type="text" class="form-control" id="editarModeloDescricao" name="moddes" value="${
+              nome || ""
+            }" required>
+          </div>
+          <div class="mb-3">
+            <label for="editarModeloMarca" class="form-label">🏷️ Marca</label>
+            <select class="form-control" id="editarModeloMarca" name="modmarcascod" required>
+              <option value="">Carregando marcas...</option>
+            </select>
+          </div>
         </div>
-        <div class="mb-3">
-          <label for="editarModeloMarca" class="form-label">🏷️ Marca</label>
-          <select class="form-control" id="editarModeloMarca" name="modmarcascod" required>
-            <option value="">Carregando marcas...</option>
-          </select>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
+
+        <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="cancelarEditarModelo">Cancelar</button>
           <button type="submit" class="btn btn-primary">Salvar</button>
         </div>
@@ -1250,6 +1283,9 @@ function editarModelo(id, nome, marca) {
   document.getElementById("cancelarEditarModelo").onclick = function () {
     document.body.removeChild(popup);
   };
+
+  const fecharEditarModelo = document.getElementById("fecharEditarModelo");
+  if (fecharEditarModelo) fecharEditarModelo.onclick = () => popup.remove();
 
   document.getElementById("formEditarModelo").onsubmit = function (e) {
     e.preventDefault();
@@ -1404,7 +1440,9 @@ function carregarTipos() {
 
 function renderTipos() {
   const tbody = document.getElementById("listaTipos");
+  const mobileBox = document.getElementById("listaTiposMobile");
   tbody.innerHTML = "";
+  if (mobileBox) mobileBox.innerHTML = "";
   const q = tiposQ.toLowerCase();
   const filtradas = q
     ? tiposLista.filter((t) =>
@@ -1436,7 +1474,18 @@ function renderTipos() {
             </div>
           </td>`;
     tbody.appendChild(tr);
+    if (mobileBox) {
+      mobileBox.appendChild(criarCardGestaoMobile(t.tipocod, t.tipodes));
+    }
   });
+
+  if (mobileBox && !filtradas.length) {
+    mobileBox.innerHTML = htmlEstadoListaMobile(
+      "bi-inbox",
+      "Nenhum tipo encontrado",
+      ""
+    );
+  }
 
   const info = document.getElementById("infoTotalTipos");
   if (info) info.textContent = `${filtradas.length} tipo(s)`;
@@ -1446,29 +1495,26 @@ function editarTipo(id, nome) {
   // Cria o popup
   let popup = document.createElement("div");
   popup.id = "popupEditarTipo";
-  popup.style.position = "fixed";
-  popup.style.top = "0";
-  popup.style.left = "0";
-  popup.style.width = "100vw";
-  popup.style.height = "100vh";
-  popup.style.background = "rgba(0,0,0,0.5)";
-  popup.style.display = "flex";
-  popup.style.alignItems = "center";
-  popup.style.justifyContent = "center";
-  popup.style.zIndex = "9999";
+  popup.className = "editar-overlay";
 
   popup.innerHTML = `
-    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;width:40vw;">
-      <h5>📋 Editar Tipo</h5>
-      <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
-      <form id="formEditarTipo">
-        <div class="mb-3">
-          <label for="editarTipoDescricao" class="form-label">📝 Descrição</label>
-          <input type="text" class="form-control" id="editarTipoDescricao" name="tipodes" value="${
-            nome || ""
-          }" required>
+    <div class="editar-dialog modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📋 Editar Tipo</h5>
+        <button type="button" class="btn-close" id="fecharEditarTipo" aria-label="Fechar"></button>
+      </div>
+
+      <form id="formEditarTipo" class="editar-form">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="editarTipoDescricao" class="form-label">📝 Descrição</label>
+            <input type="text" class="form-control" id="editarTipoDescricao" name="tipodes" value="${
+              nome || ""
+            }" required>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
+
+        <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="cancelarEditarTipo">Cancelar</button>
           <button type="submit" class="btn btn-primary">Salvar</button>
         </div>
@@ -1481,6 +1527,9 @@ function editarTipo(id, nome) {
   document.getElementById("cancelarEditarTipo").onclick = function () {
     document.body.removeChild(popup);
   };
+
+  const fecharEditarTipo = document.getElementById("fecharEditarTipo");
+  if (fecharEditarTipo) fecharEditarTipo.onclick = () => popup.remove();
 
   document.getElementById("formEditarTipo").onsubmit = function (e) {
     e.preventDefault();
@@ -1625,7 +1674,9 @@ function carregarCores() {
 
 function renderCores() {
   const tbody = document.getElementById("listaCores");
+  const mobileBox = document.getElementById("listaCoresMobile");
   tbody.innerHTML = "";
+  if (mobileBox) mobileBox.innerHTML = "";
   const q = coresQ.toLowerCase();
   const filtradas = q
     ? coresLista.filter((c) =>
@@ -1662,7 +1713,18 @@ function renderCores() {
             </div>
           </td>`;
     tbody.appendChild(tr);
+    if (mobileBox) {
+      mobileBox.appendChild(criarCardGestaoMobile(c.corcod, c.cornome));
+    }
   });
+
+  if (mobileBox && !filtradas.length) {
+    mobileBox.innerHTML = htmlEstadoListaMobile(
+      "bi-inbox",
+      "Nenhuma cor encontrada",
+      ""
+    );
+  }
 
   const info = document.getElementById("infoTotalCores");
   if (info) info.textContent = `${filtradas.length} cor(es)`;
@@ -1671,30 +1733,26 @@ function renderCores() {
 function editarCor(id, nome) {
   let popup = document.createElement("div");
   popup.id = "popupEditarCor";
-  popup.style.position = "fixed";
-  popup.style.top = "0";
-  popup.style.left = "0";
-  popup.style.width = "100vw";
-  popup.style.height = "100vh";
-  popup.style.background = "rgba(0,0,0,0.5)";
-  popup.style.display = "flex";
-  popup.style.alignItems = "center";
-  popup.style.justifyContent = "center";
-  popup.style.zIndex = "9999";
+  popup.className = "editar-overlay";
 
   popup.innerHTML = `
-    <div style="background:var(--ou-surface);padding:24px;border-radius:8px;min-width:300px;max-width:90vw;">
-      <h5>🎨 Editar Cor</h5>
-      <hr style="width: 100%; margin-left: 0; margin-right: 0; border: 1px solid #ddd;">
-      <form id="formEditarCor">
-        <div class="mb-3">
-          <label for="editarCorDescricao" class="form-label">📝 Descrição</label>
-          <input type="text" class="form-control" id="editarCorDescricao" name="cornome" value="${(
-            nome || ""
-          ).replace(/"/g, "&quot;")}"
-          }" required>
+    <div class="editar-dialog modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🎨 Editar Cor</h5>
+        <button type="button" class="btn-close" id="fecharEditarCor" aria-label="Fechar"></button>
+      </div>
+
+      <form id="formEditarCor" class="editar-form">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="editarCorDescricao" class="form-label">📝 Descrição</label>
+            <input type="text" class="form-control" id="editarCorDescricao" name="cornome" value="${(
+              nome || ""
+            ).replace(/"/g, "&quot;")}" required>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
+
+        <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="cancelarEditarCor">Cancelar</button>
           <button type="submit" class="btn btn-primary">Salvar</button>
         </div>
@@ -1706,6 +1764,9 @@ function editarCor(id, nome) {
   document.getElementById("cancelarEditarCor").onclick = function () {
     document.body.removeChild(popup);
   };
+
+  const fecharEditarCor = document.getElementById("fecharEditarCor");
+  if (fecharEditarCor) fecharEditarCor.onclick = () => popup.remove();
 
   document.getElementById("formEditarCor").onsubmit = function (e) {
     e.preventDefault();
@@ -1871,6 +1932,82 @@ function linhaVaziaGestao(tbodyId, texto) {
   }
 }
 
+// ---- Cards mobile dos gerenciais (Marcas/Modelos/Tipos/Cores) ----
+function criarCardGestaoMobile(id, nome, extra) {
+  const card = document.createElement("div");
+  card.className = "ou-mobile-card";
+  card.setAttribute("data-id", id);
+  card.innerHTML = `
+    <div class="ou-mobile-card__head">
+      <span class="ou-mobile-card__identity">
+        <span class="ou-mobile-card__name">${nome}</span>
+        ${
+          extra
+            ? `<span class="ou-mobile-card__fantasia">${extra}</span>`
+            : ""
+        }
+      </span>
+    </div>
+    <div class="ou-mobile-card__foot">
+      <div class="pecas-card-acoes">
+        <button type="button" class="pecas-btn-acao pecas-btn-editar" title="Editar">
+          <i class="fa-solid fa-pen"></i> Editar
+        </button>
+        <button type="button" class="pecas-btn-acao pecas-btn-excluir" title="Excluir">
+          <i class="fa-solid fa-trash"></i> Excluir
+        </button>
+      </div>
+    </div>`;
+  return card;
+}
+
+function obterCardGestaoMobile(mobileId, id) {
+  return document.querySelector(
+    `#${mobileId} .ou-mobile-card[data-id="${id}"]`
+  );
+}
+
+function atualizarCardGestaoMobile(mobileId, id, nome, extra) {
+  const card = obterCardGestaoMobile(mobileId, id);
+  if (!card) return;
+  const nomeEl = card.querySelector(".ou-mobile-card__name");
+  if (nomeEl) nomeEl.textContent = nome;
+  if (extra === undefined) return;
+  let extraEl = card.querySelector(".ou-mobile-card__fantasia");
+  if (extra) {
+    if (!extraEl) {
+      extraEl = document.createElement("span");
+      extraEl.className = "ou-mobile-card__fantasia";
+      const identity = card.querySelector(".ou-mobile-card__identity");
+      if (identity) identity.appendChild(extraEl);
+    }
+    extraEl.textContent = extra;
+  } else if (extraEl) {
+    extraEl.remove();
+  }
+}
+
+function atualizarEstadoVazioGestaoMobile(mobileId, texto) {
+  const box = document.getElementById(mobileId);
+  if (!box) return;
+  if (!box.querySelector(".ou-mobile-card")) {
+    box.innerHTML = htmlEstadoListaMobile("bi-inbox", texto, "");
+  }
+}
+
+// Delegação de eventos dos botões dos cards mobile dos gerenciais.
+function configurarCardsGestaoMobile(mobileId, editarFn, excluirFn) {
+  const box = document.getElementById(mobileId);
+  if (!box) return;
+  box.addEventListener("click", (e) => {
+    const card = e.target.closest(".ou-mobile-card");
+    if (!card) return;
+    const id = card.getAttribute("data-id");
+    if (e.target.closest(".pecas-btn-editar")) editarFn(id);
+    else if (e.target.closest(".pecas-btn-excluir")) excluirFn(id);
+  });
+}
+
 function escaparAspasSimples(s) {
   return String(s || "").replace(/'/g, "\\'");
 }
@@ -1882,28 +2019,36 @@ function atualizarLinhaMarcaEditada(id, novoNome) {
     (m) => String(m.marcascod) === String(id)
   );
   if (item) item.marcasdes = nome;
+  const q = (marcasQ || "").toLowerCase();
+  const foraDoFiltro = q && !nome.toLowerCase().includes(q);
   preservarScroll("areaMarcas", () => {
     const tr =
       document.querySelector(`#listaMarcas tr[data-marca-id="${id}"]`) ||
       document.querySelector(`#listaMarcas tr[data-id="${id}"]`);
-    if (!tr) return;
-    const q = (marcasQ || "").toLowerCase();
-    if (q && !nome.toLowerCase().includes(q)) {
-      tr.remove();
-    } else {
-      const cel = tr.querySelector(".marca-des");
-      if (cel) cel.textContent = nome;
-      const btn = tr.querySelector(".btn-editar-marca");
-      if (btn) {
-        btn.setAttribute("data-id", String(id));
-        btn.setAttribute(
-          "onclick",
-          `editarMarca(${id}, '${escaparAspasSimples(nome)}')`
-        );
+    if (tr) {
+      if (foraDoFiltro) {
+        tr.remove();
+      } else {
+        const cel = tr.querySelector(".marca-des");
+        if (cel) cel.textContent = nome;
+        const btn = tr.querySelector(".btn-editar-marca");
+        if (btn) {
+          btn.setAttribute("data-id", String(id));
+          btn.setAttribute(
+            "onclick",
+            `editarMarca(${id}, '${escaparAspasSimples(nome)}')`
+          );
+        }
+        destacarLinhaTemporario(tr);
       }
-      destacarLinhaTemporario(tr);
+    }
+    const card = obterCardGestaoMobile("listaMarcasMobile", id);
+    if (card) {
+      if (foraDoFiltro) card.remove();
+      else atualizarCardGestaoMobile("listaMarcasMobile", id, nome, undefined);
     }
   });
+  atualizarEstadoVazioGestaoMobile("listaMarcasMobile", "Nenhuma marca encontrada");
   atualizarInfoGestao("listaMarcas", "infoTotalMarcas", "marca(s)");
 }
 
@@ -1916,9 +2061,12 @@ function removerLinhaMarcaExcluida(id) {
       document.querySelector(`#listaMarcas tr[data-marca-id="${id}"]`) ||
       document.querySelector(`#listaMarcas tr[data-id="${id}"]`);
     if (tr) tr.remove();
+    const card = obterCardGestaoMobile("listaMarcasMobile", id);
+    if (card) card.remove();
   });
   atualizarInfoGestao("listaMarcas", "infoTotalMarcas", "marca(s)");
   linhaVaziaGestao("listaMarcas", "Nenhuma marca encontrada");
+  atualizarEstadoVazioGestaoMobile("listaMarcasMobile", "Nenhuma marca encontrada");
 }
 
 // ---- Modelos ----
@@ -1933,28 +2081,42 @@ function atualizarLinhaModeloEditada(id, novoNome, novaMarca) {
       item.modmarcascod = Number(novaMarca);
     }
   }
+  const q = (modelosQ || "").toLowerCase();
+  const marcaAtual = item ? item.modmarcascod : novaMarca;
+  const marcaFiltroOk =
+    modelosMarca === null || String(marcaAtual) === String(modelosMarca);
+  const foraDoFiltro =
+    (q && !nome.toLowerCase().includes(q)) || !marcaFiltroOk;
+  const marcaNome =
+    ((marcasCache || []).find(
+      (mc) => String(mc.marcascod) === String(marcaAtual)
+    ) || {}).marcasdes || "";
   preservarScroll("areaModelos", () => {
     const tr = document.querySelector(`#listaModelos tr[data-id="${id}"]`);
-    if (!tr) return;
-    const q = (modelosQ || "").toLowerCase();
-    const marcaFiltroOk =
-      modelosMarca === null ||
-      String(item ? item.modmarcascod : novaMarca) === String(modelosMarca);
-    if ((q && !nome.toLowerCase().includes(q)) || !marcaFiltroOk) {
-      tr.remove();
-    } else {
-      const cel = tr.querySelector(".modelo-des") || tr.querySelector(".peca-col");
-      if (cel) cel.textContent = nome;
-      const btn = tr.querySelector(".btn-editar-modelo");
-      if (btn) {
-        btn.setAttribute(
-          "onclick",
-          `editarModelo(${id}, '${escaparAspasSimples(nome)}', ${item ? item.modmarcascod : novaMarca})`
-        );
+    if (tr) {
+      if (foraDoFiltro) {
+        tr.remove();
+      } else {
+        const cel =
+          tr.querySelector(".modelo-des") || tr.querySelector(".peca-col");
+        if (cel) cel.textContent = nome;
+        const btn = tr.querySelector(".btn-editar-modelo");
+        if (btn) {
+          btn.setAttribute(
+            "onclick",
+            `editarModelo(${id}, '${escaparAspasSimples(nome)}', ${marcaAtual})`
+          );
+        }
+        destacarLinhaTemporario(tr);
       }
-      destacarLinhaTemporario(tr);
+    }
+    const card = obterCardGestaoMobile("listaModelosMobile", id);
+    if (card) {
+      if (foraDoFiltro) card.remove();
+      else atualizarCardGestaoMobile("listaModelosMobile", id, nome, marcaNome);
     }
   });
+  atualizarEstadoVazioGestaoMobile("listaModelosMobile", "Nenhum modelo encontrado");
   atualizarInfoGestao("listaModelos", "infoTotalModelos", "modelo(s)");
 }
 
@@ -1965,9 +2127,12 @@ function removerLinhaModeloExcluida(id) {
   preservarScroll("areaModelos", () => {
     const tr = document.querySelector(`#listaModelos tr[data-id="${id}"]`);
     if (tr) tr.remove();
+    const card = obterCardGestaoMobile("listaModelosMobile", id);
+    if (card) card.remove();
   });
   atualizarInfoGestao("listaModelos", "infoTotalModelos", "modelo(s)");
   linhaVaziaGestao("listaModelos", "Nenhum modelo encontrado");
+  atualizarEstadoVazioGestaoMobile("listaModelosMobile", "Nenhum modelo encontrado");
 }
 
 // ---- Tipos ----
@@ -1977,25 +2142,33 @@ function atualizarLinhaTipoEditada(id, novoNome) {
     (t) => String(t.tipocod) === String(id)
   );
   if (item) item.tipodes = nome;
+  const q = (tiposQ || "").toLowerCase();
+  const foraDoFiltro = q && !nome.toLowerCase().includes(q);
   preservarScroll("areaTipos", () => {
     const tr = document.querySelector(`#listaTipos tr[data-id="${id}"]`);
-    if (!tr) return;
-    const q = (tiposQ || "").toLowerCase();
-    if (q && !nome.toLowerCase().includes(q)) {
-      tr.remove();
-    } else {
-      const cel = tr.querySelector(".tipo-des") || tr.querySelector(".peca-col");
-      if (cel) cel.textContent = nome;
-      const btn = tr.querySelector(".btn-editar-tipo");
-      if (btn) {
-        btn.setAttribute(
-          "onclick",
-          `editarTipo(${id}, '${escaparAspasSimples(nome)}')`
-        );
+    if (tr) {
+      if (foraDoFiltro) {
+        tr.remove();
+      } else {
+        const cel = tr.querySelector(".tipo-des") || tr.querySelector(".peca-col");
+        if (cel) cel.textContent = nome;
+        const btn = tr.querySelector(".btn-editar-tipo");
+        if (btn) {
+          btn.setAttribute(
+            "onclick",
+            `editarTipo(${id}, '${escaparAspasSimples(nome)}')`
+          );
+        }
+        destacarLinhaTemporario(tr);
       }
-      destacarLinhaTemporario(tr);
+    }
+    const card = obterCardGestaoMobile("listaTiposMobile", id);
+    if (card) {
+      if (foraDoFiltro) card.remove();
+      else atualizarCardGestaoMobile("listaTiposMobile", id, nome, undefined);
     }
   });
+  atualizarEstadoVazioGestaoMobile("listaTiposMobile", "Nenhum tipo encontrado");
   atualizarInfoGestao("listaTipos", "infoTotalTipos", "tipo(s)");
 }
 
@@ -2006,9 +2179,12 @@ function removerLinhaTipoExcluida(id) {
   preservarScroll("areaTipos", () => {
     const tr = document.querySelector(`#listaTipos tr[data-id="${id}"]`);
     if (tr) tr.remove();
+    const card = obterCardGestaoMobile("listaTiposMobile", id);
+    if (card) card.remove();
   });
   atualizarInfoGestao("listaTipos", "infoTotalTipos", "tipo(s)");
   linhaVaziaGestao("listaTipos", "Nenhum tipo encontrado");
+  atualizarEstadoVazioGestaoMobile("listaTiposMobile", "Nenhum tipo encontrado");
 }
 
 // ---- Cores ----
@@ -2018,22 +2194,30 @@ function atualizarLinhaCorEditada(id, novoNome) {
     (c) => String(c.corcod) === String(id)
   );
   if (item) item.cornome = nome;
+  const q = (coresQ || "").toLowerCase();
+  const foraDoFiltro = q && !nome.toLowerCase().includes(q);
   preservarScroll("areaCores", () => {
     const tr = document.querySelector(`#listaCores tr[data-id="${id}"]`);
-    if (!tr) return;
-    const q = (coresQ || "").toLowerCase();
-    if (q && !nome.toLowerCase().includes(q)) {
-      tr.remove();
-    } else {
-      const cel = tr.querySelector(".cor-des") || tr.querySelector(".peca-col");
-      if (cel) cel.textContent = nome;
-      const btn = tr.querySelector(".btn-editar-cor");
-      if (btn) {
-        btn.setAttribute("data-nome", nome.replace(/"/g, "&quot;"));
+    if (tr) {
+      if (foraDoFiltro) {
+        tr.remove();
+      } else {
+        const cel = tr.querySelector(".cor-des") || tr.querySelector(".peca-col");
+        if (cel) cel.textContent = nome;
+        const btn = tr.querySelector(".btn-editar-cor");
+        if (btn) {
+          btn.setAttribute("data-nome", nome.replace(/"/g, "&quot;"));
+        }
+        destacarLinhaTemporario(tr);
       }
-      destacarLinhaTemporario(tr);
+    }
+    const card = obterCardGestaoMobile("listaCoresMobile", id);
+    if (card) {
+      if (foraDoFiltro) card.remove();
+      else atualizarCardGestaoMobile("listaCoresMobile", id, nome, undefined);
     }
   });
+  atualizarEstadoVazioGestaoMobile("listaCoresMobile", "Nenhuma cor encontrada");
   atualizarInfoGestao("listaCores", "infoTotalCores", "cor(es)");
 }
 
@@ -2044,9 +2228,12 @@ function removerLinhaCorExcluida(id) {
   preservarScroll("areaCores", () => {
     const tr = document.querySelector(`#listaCores tr[data-id="${id}"]`);
     if (tr) tr.remove();
+    const card = obterCardGestaoMobile("listaCoresMobile", id);
+    if (card) card.remove();
   });
   atualizarInfoGestao("listaCores", "infoTotalCores", "cor(es)");
   linhaVaziaGestao("listaCores", "Nenhuma cor encontrada");
+  atualizarEstadoVazioGestaoMobile("listaCoresMobile", "Nenhuma cor encontrada");
 }
 
 // ------- GESTÃO PEÇAS ---------
@@ -2237,7 +2424,7 @@ async function carregarPecas(page = 1, append = false) {
       tbody.innerHTML =
         '<tr><td colspan="5" class="text-center">Erro ao carregar peças</td></tr>';
       if (mobileBox) {
-        mobileBox.innerHTML = htmlEstadoPecaMobile(
+        mobileBox.innerHTML = htmlEstadoListaMobile(
           "bi-exclamation-triangle",
           "Erro ao carregar peças",
           "Tente novamente em instantes."
@@ -2250,7 +2437,7 @@ async function carregarPecas(page = 1, append = false) {
 }
 
 // Estado vazio/erro da listagem mobile de peças (padrão .ou-empty do DS)
-function htmlEstadoPecaMobile(icone, titulo, texto) {
+function htmlEstadoListaMobile(icone, titulo, texto) {
   return `<div class="ou-empty">
     <span class="ou-empty__icon"><i class="bi ${icone}"></i></span>
     <span class="ou-empty__title">${titulo}</span>
@@ -2330,7 +2517,7 @@ function renderPecas(dados, append = false) {
       tbody.innerHTML =
         '<tr><td colspan="5" class="text-center">Nenhuma peça encontrada</td></tr>';
       if (mobileBox) {
-        mobileBox.innerHTML = htmlEstadoPecaMobile(
+        mobileBox.innerHTML = htmlEstadoListaMobile(
           "bi-inbox",
           "Nenhuma peça encontrada",
           "Ajuste os filtros ou a busca para ver resultados."
@@ -2651,6 +2838,48 @@ document.getElementById("tabelaArea").addEventListener("click", function (e) {
     excluirPro(btn.getAttribute("data-id"));
   }
 });
+
+// Delegação dos botões dos cards mobile dos gerenciais (Marcas/Modelos/Tipos/Cores)
+configurarCardsGestaoMobile(
+  "listaMarcasMobile",
+  (id) => {
+    const item = (marcasLista || []).find(
+      (m) => String(m.marcascod) === String(id)
+    );
+    editarMarca(id, item ? item.marcasdes : "");
+  },
+  (id) => excluirMarca(id)
+);
+configurarCardsGestaoMobile(
+  "listaModelosMobile",
+  (id) => {
+    const item = (modelosLista || []).find(
+      (m) => String(m.modcod) === String(id)
+    );
+    editarModelo(id, item ? item.moddes : "", item ? item.modmarcascod : "");
+  },
+  (id) => excluirModelo(id)
+);
+configurarCardsGestaoMobile(
+  "listaTiposMobile",
+  (id) => {
+    const item = (tiposLista || []).find(
+      (t) => String(t.tipocod) === String(id)
+    );
+    editarTipo(id, item ? item.tipodes : "");
+  },
+  (id) => excluirTipo(id)
+);
+configurarCardsGestaoMobile(
+  "listaCoresMobile",
+  (id) => {
+    const item = (coresLista || []).find(
+      (c) => String(c.corcod) === String(id)
+    );
+    editarCor(id, item ? item.cornome : "");
+  },
+  (id) => excluirCor(id)
+);
 
 async function excluirPro(id) {
   // Cria o popup de confirmação customizado

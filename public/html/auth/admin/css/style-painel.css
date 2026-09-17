@@ -546,19 +546,23 @@
    Gerenciar Peças - cards da listagem mobile
    Reutiliza o padrão .ou-mobile-card do Design System (ui.css)
    ========================================================= */
-.ou-mobile-list--pecas .ou-mobile-card {
+.ou-mobile-list--pecas .ou-mobile-card,
+.ou-mobile-list--gestao .ou-mobile-card {
   cursor: default;
 }
-.ou-mobile-list--pecas .ou-mobile-card:hover {
+.ou-mobile-list--pecas .ou-mobile-card:hover,
+.ou-mobile-list--gestao .ou-mobile-card:hover {
   border-color: var(--ou-border);
 }
-.ou-mobile-list--pecas .ou-mobile-card:active {
+.ou-mobile-list--pecas .ou-mobile-card:active,
+.ou-mobile-list--gestao .ou-mobile-card:active {
   transform: none;
   background: var(--ou-surface);
 }
 
-/* Nome da peça pode ocupar quantas linhas precisar, sem cortes */
-.ou-mobile-list--pecas .ou-mobile-card__name {
+/* Nome do registro pode ocupar quantas linhas precisar, sem cortes */
+.ou-mobile-list--pecas .ou-mobile-card__name,
+.ou-mobile-list--gestao .ou-mobile-card__name {
   display: block;
   overflow: visible;
   -webkit-line-clamp: unset;
@@ -578,4 +582,77 @@
   gap: 8px;
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+/* =========================================================
+   Gerenciar (rota de produto) - formulários de edição
+   Desktop: modal centralizado (padrão .modal-content do projeto)
+   Mobile:  tela cheia, com header e ações fixos e conteúdo rolável
+   Reutilizado por Editar Peça/Marca/Modelo/Tipo/Cor
+   ========================================================= */
+.editar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.editar-dialog.modal-content {
+  display: flex;
+  flex-direction: column;
+  width: 40vw;
+  min-width: 300px;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.editar-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.editar-dialog .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.editar-produto-cores {
+  max-height: 220px;
+  overflow: auto;
+  padding-right: 8px;
+}
+
+@media (max-width: 768px) {
+  .editar-overlay {
+    align-items: stretch;
+    background: var(--ou-surface);
+  }
+
+  .editar-dialog.modal-content {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    max-height: 100%;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .editar-dialog .modal-footer .btn {
+    flex: 1 1 0;
+    min-height: 46px;
+  }
+
+  /* Evita rolagem dupla: o corpo do formulário rola, a lista de cores não */
+  .editar-produto-cores {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
 }
