@@ -632,6 +632,8 @@
 .editar-dialog .modal-body {
   flex: 1 1 auto;
   min-height: 0;
+  /* Garante que o corpo preencha todo o formulário (tela cheia no mobile) */
+  max-height: none;
   overflow-y: auto;
 }
 
