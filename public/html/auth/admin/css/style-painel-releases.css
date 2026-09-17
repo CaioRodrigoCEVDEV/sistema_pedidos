@@ -70,10 +70,11 @@
     /* Empty state */
     .empty-state { text-align:center; padding: 3rem 1rem; color:var(--muted); }
 
-    /* scrollbar - modal body */
-    .modal-body { max-height:70vh; overflow:auto; padding-right: .5rem; }
-    .modal-body::-webkit-scrollbar { width: 9px; }
-    .modal-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 8px; }
+    /* scrollbar - modal body (escopo restrito ao modal de releases para
+       não vazar max-height/overflow para os demais modais da aplicação) */
+    #releasesModal .modal-body { max-height:70vh; overflow:auto; padding-right: .5rem; }
+    #releasesModal .modal-body::-webkit-scrollbar { width: 9px; }
+    #releasesModal .modal-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 8px; }
 
     /* small responsive */
     @media (max-width:720px){
