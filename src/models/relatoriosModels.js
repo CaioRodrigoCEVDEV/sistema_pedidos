@@ -51,25 +51,54 @@ async function getTopPecas(filters = {}) {
   if (groupBy === "grupo") {
     // Agrupado por part_group — busca o vínculo de grupo pela peça (qualquer variante de cor),
     // evitando que vendas sem cor ou com cor diferente da cadastrada no grupo sejam excluídas.
+    // A quantidade vendida é líquida: devoluções ativas da mesma peça são descontadas do
+    // grupo correspondente (mesmo vínculo usado na venda), sem permitir valores negativos.
     const query = `
+      WITH vendas AS (
+        SELECT
+          pg.id AS group_id,
+          pg.name AS grupo,
+          SUM(pvi.pviqtde) AS qtde_vendida,
+          STRING_AGG(DISTINCT m.moddes, ', ' ORDER BY m.moddes) AS modelo,
+          STRING_AGG(DISTINCT p.prodes, ', ' ORDER BY p.prodes) AS peca,
+          COALESCE(MAX(p.procusto), 0) AS custo
+        FROM pvi
+        JOIN pv ON pvcod = pvipvcod
+        JOIN pro p ON pviprocod = p.procod
+        LEFT JOIN modelo m ON m.modcod = p.promodcod
+        JOIN (
+          SELECT DISTINCT pc2.procorprocod, pgi2.group_id
+          FROM procor pc2
+          JOIN part_group_items pgi2 ON pgi2.procorid = pc2.procorid
+        ) grp ON grp.procorprocod = p.procod
+        JOIN part_groups pg ON pg.id = grp.group_id
+        WHERE ${whereClause}
+        GROUP BY pg.id, pg.name
+      ),
+      devolvidas AS (
+        SELECT
+          grp.group_id,
+          SUM(di.deviqtde) AS qtde_devolvida
+        FROM devolucoes d
+        JOIN devolucao_itens di ON di.devidevcod = d.devcod
+        JOIN pv ON pv.pvcod = d.devpvcod
+        JOIN pro p ON p.procod = di.deviprocod
+        JOIN (
+          SELECT DISTINCT pc.procorprocod, pgi.group_id
+          FROM procor pc
+          JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+        ) grp ON grp.procorprocod = p.procod
+        WHERE d.devsta = 'A' AND ${whereClause}
+        GROUP BY grp.group_id
+      )
       SELECT
-        pg.name AS grupo,
-        SUM(pviqtde) AS qtde_vendida,
-        STRING_AGG(DISTINCT m.moddes, ', ' ORDER BY m.moddes) AS modelo,
-        STRING_AGG(DISTINCT p.prodes, ', ' ORDER BY p.prodes) AS peca,
-        COALESCE(MAX(p.procusto), 0) AS custo
-      FROM pvi
-      JOIN pv ON pvcod = pvipvcod
-      JOIN pro p ON pviprocod = p.procod
-      LEFT JOIN modelo m ON m.modcod = p.promodcod
-      JOIN (
-        SELECT DISTINCT pc2.procorprocod, pgi2.group_id
-        FROM procor pc2
-        JOIN part_group_items pgi2 ON pgi2.procorid = pc2.procorid
-      ) grp ON grp.procorprocod = p.procod
-      JOIN part_groups pg ON pg.id = grp.group_id
-      WHERE ${whereClause}
-      GROUP BY pg.id, pg.name
+        v.grupo,
+        GREATEST(v.qtde_vendida - COALESCE(dv.qtde_devolvida, 0), 0) AS qtde_vendida,
+        v.modelo,
+        v.peca,
+        v.custo
+      FROM vendas v
+      LEFT JOIN devolvidas dv ON dv.group_id = v.group_id
       ORDER BY qtde_vendida DESC
     `;
 
@@ -204,25 +233,56 @@ async function getEstoqueGruposTopPecas(filters = {}) {
 
   const whereClause = whereClauses.join(" AND ");
 
+  // Quantidade vendida líquida: devoluções ativas são descontadas do grupo vinculado
+  // à peça/variação vendida (part_group_items + part_groups), sem valores negativos.
   const query = `
+    WITH vendas AS (
+      SELECT
+        pg.id AS group_id,
+        SUM(pvi.pviqtde) AS qtde_vendida
+      FROM pvi
+      JOIN pv ON pvcod = pvipvcod
+      JOIN pro p ON pviprocod = p.procod
+      JOIN procor pc ON pc.procorprocod = p.procod
+        AND (
+          (pvi.pviprocorid IS NOT NULL AND pc.procorcorescod = pvi.pviprocorid)
+          OR (pvi.pviprocorid IS NULL AND pc.procorcorescod IS NULL)
+        )
+      JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+      JOIN part_groups pg ON pg.id = pgi.group_id
+      WHERE ${whereClause}
+      GROUP BY pg.id
+    ),
+    devolvidas AS (
+      SELECT
+        pg.id AS group_id,
+        SUM(di.deviqtde) AS qtde_devolvida
+      FROM devolucoes d
+      JOIN devolucao_itens di ON di.devidevcod = d.devcod
+      JOIN pv ON pv.pvcod = d.devpvcod
+      JOIN pro p ON p.procod = di.deviprocod
+      JOIN procor pc ON pc.procorprocod = p.procod
+        AND (
+          (di.deviprocorid IS NOT NULL AND pc.procorcorescod = di.deviprocorid)
+          OR (di.deviprocorid IS NULL AND pc.procorcorescod IS NULL)
+        )
+      JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+      JOIN part_groups pg ON pg.id = pgi.group_id
+      WHERE d.devsta = 'A' AND ${whereClause}
+      GROUP BY pg.id
+    )
     SELECT
       pg.id,
       pg.name AS grupo,
       COALESCE(pg.stock_quantity, 0) AS estoque_atual,
       pg.qtde_ideal,
-      SUM(pviqtde) AS qtde_vendida
-    FROM pvi
-    JOIN pv ON pvcod = pvipvcod
-    JOIN pro p ON pviprocod = p.procod
-    JOIN procor pc ON pc.procorprocod = p.procod
-      AND (
-        (pvi.pviprocorid IS NOT NULL AND pc.procorcorescod = pvi.pviprocorid)
-        OR (pvi.pviprocorid IS NULL AND pc.procorcorescod IS NULL)
-      )
-    JOIN part_group_items pgi ON pgi.procorid = pc.procorid
-    JOIN part_groups pg ON pg.id = pgi.group_id
-    WHERE ${whereClause}
-    GROUP BY pg.id, pg.name, pg.stock_quantity, pg.qtde_ideal
+      GREATEST(
+        COALESCE(v.qtde_vendida, 0) - COALESCE(dv.qtde_devolvida, 0),
+        0
+      ) AS qtde_vendida
+    FROM part_groups pg
+    JOIN vendas v ON v.group_id = pg.id
+    LEFT JOIN devolvidas dv ON dv.group_id = pg.id
     ORDER BY qtde_vendida DESC
   `;
 

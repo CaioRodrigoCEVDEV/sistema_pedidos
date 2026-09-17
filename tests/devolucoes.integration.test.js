@@ -4,6 +4,7 @@ const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const pool = require("../src/config/db");
 const controller = require("../src/controllers/devolucoesController");
+const relatoriosModels = require("../src/models/relatoriosModels");
 
 function callController(handler, req) {
   return new Promise((resolve, reject) => {
@@ -22,10 +23,17 @@ function callController(handler, req) {
   });
 }
 
+async function getGrupoVendido(groupId) {
+  const rows = await relatoriosModels.getEstoqueGruposTopPecas({});
+  return rows.find((row) => Number(row.id) === Number(groupId));
+}
+
 async function run() {
   let pvcod;
   let procod;
   let groupId;
+  let segundoProcod;
+  let segundoGroupId;
   try {
     const base = await pool.query(
       `SELECT
@@ -59,17 +67,46 @@ async function run() {
       [groupId, procorResult.rows[0].procorid],
     );
 
+    // Grupo adicional, sem vinculo com a peca devolvida, para garantir que a
+    // devolucao nao altera a quantidade vendida de outros grupos.
+    const segundoPartResult = await pool.query(
+      `INSERT INTO pro (prodes, promarcascod, protipocod, provl, proqtde, prosemest)
+       VALUES ($1, $2, $3, 10, 0, 'S') RETURNING procod`,
+      [`Teste devolucao isolado ${Date.now()}`, marca, tipo],
+    );
+    segundoProcod = segundoPartResult.rows[0].procod;
+    const segundoGroupResult = await pool.query(
+      `INSERT INTO part_groups (name, stock_quantity)
+       VALUES ($1, 0) RETURNING id`,
+      [`Grupo devolucao isolado ${Date.now()}`],
+    );
+    segundoGroupId = segundoGroupResult.rows[0].id;
+    const segundoProcorResult = await pool.query(
+      `INSERT INTO procor (procorprocod, procorcorescod, procorqtde, procorsemest)
+       VALUES ($1, $2, 0, 'S') RETURNING procorid`,
+      [segundoProcod, cor],
+    );
+    await pool.query(
+      "INSERT INTO part_group_items (group_id, procorid) VALUES ($1, $2)",
+      [segundoGroupId, segundoProcorResult.rows[0].procorid],
+    );
+
     const orderResult = await pool.query("SELECT nextval('pv_seq') AS pvcod");
     pvcod = orderResult.rows[0].pvcod;
     await pool.query(
       `INSERT INTO pv (pvcod, pvvl, pvobs, pvcanal, pvsta, pvconfirmado, pvrcacod)
-       VALUES ($1, 30, 'Teste devolucao', 'BALCAO', 'A', 'S', $2)`,
+       VALUES ($1, 50, 'Teste devolucao', 'BALCAO', 'A', 'S', $2)`,
       [pvcod, usuario || null],
     );
     await pool.query(
       `INSERT INTO pvi (pvipvcod, pviprocod, pviqtde, pvivl, pviprocorid)
-       VALUES ($1, $2, 3, 10, $3)`,
+       VALUES ($1, $2, 5, 10, $3)`,
       [pvcod, procod, cor],
+    );
+    await pool.query(
+      `INSERT INTO pvi (pvipvcod, pviprocod, pviqtde, pvivl, pviprocorid)
+       VALUES ($1, $2, 4, 10, $3)`,
+      [pvcod, segundoProcod, cor],
     );
 
     const searchBefore = await callController(controller.buscarItensVendidos, {
@@ -80,7 +117,13 @@ async function run() {
       (item) => Number(item.pvcod) === Number(pvcod) && Number(item.procod) === Number(procod),
     );
     assert(soldItem, "Item vendido deve aparecer na busca");
-    assert.strictEqual(Number(soldItem.quantidade_disponivel), 3);
+    assert.strictEqual(Number(soldItem.quantidade_disponivel), 5);
+
+    // Venda de 5 + primeira devolucao parcial de 2 = quantidade vendida liquida 3.
+    const primeiroGrupoAntes = await getGrupoVendido(groupId);
+    assert.strictEqual(Number(primeiroGrupoAntes.qtde_vendida), 5);
+    const segundoGrupoAntes = await getGrupoVendido(segundoGroupId);
+    assert.strictEqual(Number(segundoGrupoAntes.qtde_vendida), 4);
 
     const returned = await callController(controller.registrarDevolucao, {
       token: { usucod: usuario || null },
@@ -113,6 +156,30 @@ async function run() {
     assert.strictEqual(stock.rows[0].procorsemest, "N");
     assert.strictEqual(stock.rows[0].prosemest, "N");
 
+    const primeiroGrupoAposParcial = await getGrupoVendido(groupId);
+    assert.strictEqual(Number(primeiroGrupoAposParcial.qtde_vendida), 3);
+    const segundoGrupoAposParcial = await getGrupoVendido(segundoGroupId);
+    assert.strictEqual(Number(segundoGrupoAposParcial.qtde_vendida), 4);
+
+    // Multiplas devolucoes da mesma venda acumulam sobre a quantidade liquida.
+    const segundaDevolucao = await callController(controller.registrarDevolucao, {
+      token: { usucod: usuario || null },
+      body: {
+        pvcod,
+        procod,
+        pviprocorid: cor,
+        quantidade: 2,
+        motivo: "Defeito",
+        reporEstoque: true,
+      },
+    });
+    assert.strictEqual(segundaDevolucao.status, 201);
+
+    const primeiroGrupoAposMultiplas = await getGrupoVendido(groupId);
+    assert.strictEqual(Number(primeiroGrupoAposMultiplas.qtde_vendida), 1);
+    const segundoGrupoAposMultiplas = await getGrupoVendido(segundoGroupId);
+    assert.strictEqual(Number(segundoGrupoAposMultiplas.qtde_vendida), 4);
+
     const excessive = await callController(controller.registrarDevolucao, {
       token: { usucod: usuario || null },
       body: {
@@ -127,6 +194,7 @@ async function run() {
     assert.strictEqual(excessive.status, 409);
     assert.strictEqual(excessive.body.tipo, "quantidade_devolucao_excedida");
 
+    // Devolucao total (restante 1) zera a quantidade vendida considerada.
     const finalReturn = await callController(controller.registrarDevolucao, {
       token: { usucod: usuario || null },
       body: {
@@ -145,7 +213,12 @@ async function run() {
       "SELECT stock_quantity FROM part_groups WHERE id = $1",
       [groupId],
     );
-    assert.strictEqual(Number(stockAfterNoRestock.rows[0].stock_quantity), 2);
+    assert.strictEqual(Number(stockAfterNoRestock.rows[0].stock_quantity), 4);
+
+    const primeiroGrupoAposTotal = await getGrupoVendido(groupId);
+    assert.strictEqual(Number(primeiroGrupoAposTotal.qtde_vendida), 0);
+    const segundoGrupoAposTotal = await getGrupoVendido(segundoGroupId);
+    assert.strictEqual(Number(segundoGrupoAposTotal.qtde_vendida), 4);
 
     const searchAfter = await callController(controller.buscarItensVendidos, {
       query: { q: String(pvcod) },
@@ -167,16 +240,22 @@ async function run() {
       await pool.query("DELETE FROM pvi WHERE pvipvcod = $1", [pvcod]).catch(() => {});
       await pool.query("DELETE FROM pv WHERE pvcod = $1", [pvcod]).catch(() => {});
     }
-    if (groupId) {
-      await pool.query("DELETE FROM part_group_audit WHERE part_group_id = $1", [groupId]).catch(() => {});
-      await pool.query("DELETE FROM part_group_items WHERE group_id = $1", [groupId]).catch(() => {});
+    for (const gid of [groupId, segundoGroupId]) {
+      if (gid) {
+        await pool.query("DELETE FROM part_group_audit WHERE part_group_id = $1", [gid]).catch(() => {});
+        await pool.query("DELETE FROM part_group_items WHERE group_id = $1", [gid]).catch(() => {});
+      }
     }
-    if (procod) {
-      await pool.query("DELETE FROM procor WHERE procorprocod = $1", [procod]).catch(() => {});
-      await pool.query("DELETE FROM pro WHERE procod = $1", [procod]).catch(() => {});
+    for (const pcod of [procod, segundoProcod]) {
+      if (pcod) {
+        await pool.query("DELETE FROM procor WHERE procorprocod = $1", [pcod]).catch(() => {});
+        await pool.query("DELETE FROM pro WHERE procod = $1", [pcod]).catch(() => {});
+      }
     }
-    if (groupId) {
-      await pool.query("DELETE FROM part_groups WHERE id = $1", [groupId]).catch(() => {});
+    for (const gid of [groupId, segundoGroupId]) {
+      if (gid) {
+        await pool.query("DELETE FROM part_groups WHERE id = $1", [gid]).catch(() => {});
+      }
     }
     await pool.end();
   }
