@@ -280,3 +280,36 @@ exports.usuViuTour = async (req, res) => {
     res.status(500).json({ error: "Erro ao obter preferência do tour" });
   }
 };
+
+// Preferência "já viu o tour do item Vitrines no menu" (apresentado no shell
+// autenticado). Também usa sempre o usuário do token.
+exports.viuTourMenu = async (req, res) => {
+  const viuTourMenu = req.body && req.body.viuTourMenu === "S" ? "S" : "N";
+
+  try {
+    await pool.query(`UPDATE usu SET usuvitourmenu = $1 WHERE usucod = $2`, [
+      viuTourMenu,
+      req.token.usucod,
+    ]);
+
+    res.status(200).json({ mensagem: "Preferência do tour do menu atualizada" });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ error: "Erro ao atualizar preferência do tour do menu" });
+  }
+};
+
+exports.usuViuTourMenu = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT usucod,usuvitourmenu FROM usu WHERE usucod = $1`,
+      [req.token.usucod]
+    );
+    res.status(200).json(result.rows[0] || {});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao obter preferência do tour do menu" });
+  }
+};

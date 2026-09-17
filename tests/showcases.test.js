@@ -879,6 +879,15 @@ async function runTests() {
       "Content-Type": "application/json",
     };
 
+    const recursos = [
+      { path: "/usuario/viutour/", campo: "usuvitour", body: "viuTour" },
+      {
+        path: "/usuario/viutourmenu/",
+        campo: "usuvitourmenu",
+        body: "viuTourMenu",
+      },
+    ];
+
     const semToken = await fetch(`${servidorBaseUrl}/usuario/viutour/`, {
       redirect: "manual",
     });
@@ -887,31 +896,42 @@ async function runTests() {
       "Sem token não deveria acessar a preferência do tour"
     );
 
-    const inicialRes = await fetch(`${servidorBaseUrl}/usuario/viutour/`, {
-      headers: authHeaders,
-    });
-    assertEqual(inicialRes.status, 200, "Admin deveria consultar a preferência");
-    const estadoInicial = (await inicialRes.json()).usuvitour || "N";
-
-    try {
-      const marcar = await fetch(`${servidorBaseUrl}/usuario/viutour/`, {
-        method: "POST",
-        headers: jsonHeaders,
-        body: JSON.stringify({ viuTour: "S" }),
-      });
-      assertEqual(marcar.status, 200, "Marcar como visto deveria funcionar");
-
-      const depois = await fetch(`${servidorBaseUrl}/usuario/viutour/`, {
+    for (const recurso of recursos) {
+      const inicialRes = await fetch(servidorBaseUrl + recurso.path, {
         headers: authHeaders,
       });
-      const marcado = (await depois.json()).usuvitour;
-      assertEqual(marcado, "S", "Preferência deveria ficar 'S' no banco");
-    } finally {
-      await fetch(`${servidorBaseUrl}/usuario/viutour/`, {
-        method: "POST",
-        headers: jsonHeaders,
-        body: JSON.stringify({ viuTour: estadoInicial === "S" ? "S" : "N" }),
-      });
+      assertEqual(
+        inicialRes.status,
+        200,
+        `Admin deveria consultar ${recurso.path}`
+      );
+      const estadoInicial = (await inicialRes.json())[recurso.campo] || "N";
+
+      const corpo = {};
+      corpo[recurso.body] = "S";
+
+      try {
+        const marcar = await fetch(servidorBaseUrl + recurso.path, {
+          method: "POST",
+          headers: jsonHeaders,
+          body: JSON.stringify(corpo),
+        });
+        assertEqual(marcar.status, 200, "Marcar como visto deveria funcionar");
+
+        const depois = await fetch(servidorBaseUrl + recurso.path, {
+          headers: authHeaders,
+        });
+        const marcado = (await depois.json())[recurso.campo];
+        assertEqual(marcado, "S", `Preferência ${recurso.campo} deveria ser 'S'`);
+      } finally {
+        const restaurar = {};
+        restaurar[recurso.body] = estadoInicial === "S" ? "S" : "N";
+        await fetch(servidorBaseUrl + recurso.path, {
+          method: "POST",
+          headers: jsonHeaders,
+          body: JSON.stringify(restaurar),
+        });
+      }
     }
   });
 

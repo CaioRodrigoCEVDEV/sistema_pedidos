@@ -49,4 +49,17 @@ router.post("/usuario/viutour/", autenticarToken, usuarioController.viuTour);
 router.get("/usuario/viutour/", autenticarToken, usuarioController.usuViuTour);
 // fim viutour
 
+// Preferência do tour que apresenta o item Vitrines no menu
+router.post(
+  "/usuario/viutourmenu/",
+  autenticarToken,
+  usuarioController.viuTourMenu
+);
+router.get(
+  "/usuario/viutourmenu/",
+  autenticarToken,
+  usuarioController.usuViuTourMenu
+);
+// fim viutourmenu
+
 module.exports = router;

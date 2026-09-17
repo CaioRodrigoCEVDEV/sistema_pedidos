@@ -156,14 +156,14 @@ function renderizarVitrines() {
     tr.dataset.vitrineId = vitrine.id;
     tr.dataset.vitrineType = vitrine.type;
     tr.innerHTML = `
-      <td>
+      <td data-label="Vitrine">
         <strong>${escapeHtml(vitrine.title)}</strong>
         <div class="vitrine-desc">${escapeHtml(tipo.descricao)}</div>
       </td>
-      <td class="text-center">
+      <td class="text-center" data-label="Tipo">
         <span class="badge ${tipo.classe}">${escapeHtml(tipo.label)}</span>
       </td>
-      <td class="text-center">
+      <td class="text-center" data-label="Status">
         <div class="form-check form-switch d-inline-block m-0">
           <input
             class="form-check-input"
@@ -176,7 +176,7 @@ function renderizarVitrines() {
         </div>
         <div class="vitrine-desc">${vitrine.active ? "Ativa" : "Inativa"}</div>
       </td>
-      <td class="text-center" data-tour="ordem">
+      <td class="text-center" data-tour="ordem" data-label="Ordem">
         <div class="vitrine-ordem justify-content-center">
           <button
             type="button"
@@ -201,8 +201,8 @@ function renderizarVitrines() {
           </button>
         </div>
       </td>
-      <td class="text-center">${exibicao}</td>
-      <td class="text-end">${acao}</td>
+      <td class="text-center" data-label="Exibição">${exibicao}</td>
+      <td class="text-end" data-label="Ações">${acao}</td>
     `;
 
     vitrinesTableBody.appendChild(tr);

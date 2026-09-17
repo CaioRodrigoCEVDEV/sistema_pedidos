@@ -208,6 +208,8 @@
     setLocked(true);
 
     state.popover.classList.add("ou-tour__popover--measuring");
+    state.stepEl.style.display = total > 1 ? "" : "none";
+    state.prevBtn.style.display = total > 1 ? "" : "none";
     state.stepEl.textContent = "Passo " + (state.index + 1) + " de " + total;
     state.titleEl.textContent = step.title || "";
     state.textEl.textContent = step.text || "";

@@ -384,6 +384,42 @@ function ouLoadReleases() {
   document.body.appendChild(script);
 }
 
+/* Carrega o tour guiado global (motor + apresentação do item Vitrines no
+   menu) uma única vez por página do shell. Segue o mesmo padrão do releases:
+   reaproveita o ?v= do componentes.js e injeta os scripts em ordem. */
+function ouLoadTour() {
+  if (document.getElementById("ouTourLoader")) return;
+
+  var version = "";
+  var scripts = document.getElementsByTagName("script");
+  for (var i = 0; i < scripts.length; i++) {
+    var src = scripts[i].getAttribute("src") || "";
+    if (src.indexOf("componentes.js") === -1) continue;
+    var match = src.match(/[?&]v=([^&]+)/);
+    if (match) version = match[1];
+    break;
+  }
+
+  var suffix = version ? "?v=" + version : "";
+
+  // Em telas que já carregam o motor no HTML (ex.: /vitrines), não duplica.
+  if (!window.OrderUpTour) {
+    var lib = document.createElement("script");
+    lib.id = "ouTourLib";
+    lib.src = "/html/auth/js/tour.js" + suffix;
+    lib.async = false;
+    lib.defer = true;
+    document.body.appendChild(lib);
+  }
+
+  var menu = document.createElement("script");
+  menu.id = "ouTourLoader";
+  menu.src = "/html/auth/js/menu-tour.js" + suffix;
+  menu.async = false;
+  menu.defer = true;
+  document.body.appendChild(menu);
+}
+
 /* Abre o modal de atualizações pelo botão "Novidades" da topbar. */
 function ouWireReleases(root) {
   var scope = root || document;
@@ -540,6 +576,7 @@ function createHeader() {
   ouWireReleases(header);
   ouLoadUser();
   ouLoadReleases();
+  ouLoadTour();
 
   fetch("/me/permissoes", { credentials: "include" })
     .then(function (response) {

@@ -55,6 +55,10 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.usu ADD IF NOT exists usuvitour varchar(1) default 'N';`
     );
+    // Preferência por usuário: já viu o tour que apresenta o item Vitrines no menu.
+    await pool.query(
+      `ALTER TABLE public.usu ADD IF NOT exists usuvitourmenu varchar(1) default 'N';`
+    );
     await pool.query(
       `ALTER TABLE public.emp ADD IF NOT exists empusapv varchar(1) default 'N';`
     );
