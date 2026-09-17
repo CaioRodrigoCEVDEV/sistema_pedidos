@@ -869,6 +869,52 @@ async function runTests() {
     );
   });
 
+  await test("HTTP: preferência do tour é persistida por usuário", async () => {
+    assertNotNull(servidorBaseUrl, "Servidor de teste deveria estar no ar");
+
+    const tokenAdmin = tokenPara("S");
+    const authHeaders = { Cookie: `token=${tokenAdmin}` };
+    const jsonHeaders = {
+      Cookie: `token=${tokenAdmin}`,
+      "Content-Type": "application/json",
+    };
+
+    const semToken = await fetch(`${servidorBaseUrl}/usuario/viutour/`, {
+      redirect: "manual",
+    });
+    assert(
+      semToken.status !== 200,
+      "Sem token não deveria acessar a preferência do tour"
+    );
+
+    const inicialRes = await fetch(`${servidorBaseUrl}/usuario/viutour/`, {
+      headers: authHeaders,
+    });
+    assertEqual(inicialRes.status, 200, "Admin deveria consultar a preferência");
+    const estadoInicial = (await inicialRes.json()).usuvitour || "N";
+
+    try {
+      const marcar = await fetch(`${servidorBaseUrl}/usuario/viutour/`, {
+        method: "POST",
+        headers: jsonHeaders,
+        body: JSON.stringify({ viuTour: "S" }),
+      });
+      assertEqual(marcar.status, 200, "Marcar como visto deveria funcionar");
+
+      const depois = await fetch(`${servidorBaseUrl}/usuario/viutour/`, {
+        headers: authHeaders,
+      });
+      const marcado = (await depois.json()).usuvitour;
+      assertEqual(marcado, "S", "Preferência deveria ficar 'S' no banco");
+    } finally {
+      await fetch(`${servidorBaseUrl}/usuario/viutour/`, {
+        method: "POST",
+        headers: jsonHeaders,
+        body: JSON.stringify({ viuTour: estadoInicial === "S" ? "S" : "N" }),
+      });
+    }
+  });
+
   await test("HTTP: ativar/desativar pelo painel reflete no público", async () => {
     assertNotNull(servidorBaseUrl, "Servidor de teste deveria estar no ar");
 

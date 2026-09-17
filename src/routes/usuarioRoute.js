@@ -44,4 +44,9 @@ router.get(
 );
 // fim viuversao
 
+// Preferência do tour guiado da tela de Vitrines
+router.post("/usuario/viutour/", autenticarToken, usuarioController.viuTour);
+router.get("/usuario/viutour/", autenticarToken, usuarioController.usuViuTour);
+// fim viutour
+
 module.exports = router;

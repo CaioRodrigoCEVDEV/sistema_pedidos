@@ -154,6 +154,7 @@ function renderizarVitrines() {
 
     const tr = document.createElement("tr");
     tr.dataset.vitrineId = vitrine.id;
+    tr.dataset.vitrineType = vitrine.type;
     tr.innerHTML = `
       <td>
         <strong>${escapeHtml(vitrine.title)}</strong>
@@ -175,7 +176,7 @@ function renderizarVitrines() {
         </div>
         <div class="vitrine-desc">${vitrine.active ? "Ativa" : "Inativa"}</div>
       </td>
-      <td class="text-center">
+      <td class="text-center" data-tour="ordem">
         <div class="vitrine-ordem justify-content-center">
           <button
             type="button"
@@ -589,6 +590,108 @@ function abrirPreview(id) {
   modalPreview.show();
 }
 
+// ------------------------------------------------------- tour guiado
+// Orienta o administrador no primeiro acesso. O motor genérico fica em
+// tour.js (window.OrderUpTour); aqui ficam os passos e a persistência da
+// preferência "já visualizou" (por usuário logado, em usu.usuvitour).
+
+const TOUR_STORAGE_KEY = "vitrinesTourVisto";
+
+const TOUR_STEPS = [
+  {
+    target: "#vitrinesTourCard",
+    title: "Conheça as Vitrines",
+    text: "Aqui você controla quais vitrines aparecem na página inicial da loja e define a ordem em que elas serão exibidas.",
+  },
+  {
+    target: '[data-vitrine-type="featured"]',
+    title: "Destaques",
+    text: "Vitrine manual: escolha os produtos que deseja destacar e organize a ordem em que eles serão apresentados aos clientes.",
+  },
+  {
+    target: '[data-vitrine-type="featured"] [data-status-id]',
+    title: "Ative ou desative uma vitrine",
+    text: "Quando estiver ativa, a vitrine aparecerá na página inicial. Quando estiver inativa, ela ficará oculta para os clientes.",
+  },
+  {
+    target: '[data-vitrine-type="best_sellers"]',
+    title: "Mais vendidos",
+    text: "Esta vitrine é automática e utiliza as vendas registradas no sistema para apresentar os produtos com maior quantidade vendida.",
+  },
+  {
+    target: '[data-vitrine-type="new_arrivals"]',
+    title: "Novidades",
+    text: "Esta vitrine mostra automaticamente os produtos cadastrados mais recentemente.",
+  },
+  {
+    target: '#vitrinesTableBody [data-tour="ordem"]',
+    title: "Organize a ordem",
+    text: "Use os controles para definir em que sequência as vitrines aparecerão na página inicial. A ordem configurada aqui é a mesma exibida na loja pública.",
+  },
+  {
+    target: "#vitrinesTourCard",
+    title: "Tudo pronto!",
+    text: "Agora você pode configurar suas vitrines. As alterações feitas aqui serão refletidas na página inicial da loja.",
+  },
+];
+
+function iniciarTour() {
+  if (!window.OrderUpTour) return;
+  window.OrderUpTour.start({ steps: TOUR_STEPS, onClose: aoFecharTour });
+}
+
+async function tourJaVisualizado() {
+  try {
+    if (localStorage.getItem(TOUR_STORAGE_KEY) === "true") return true;
+  } catch (error) {
+    /* localStorage indisponível */
+  }
+
+  try {
+    const response = await fetch(`${BASE_URL}/usuario/viutour/`, {
+      credentials: "include",
+    });
+    if (!response.ok) return false;
+    const data = await response.json();
+    return String(data.usuvitour || "N").toUpperCase() === "S";
+  } catch (error) {
+    console.error("Erro ao consultar preferência do tour:", error);
+    return false;
+  }
+}
+
+function aoFecharTour(resultado) {
+  if (!resultado || resultado.noTargets) return;
+
+  // "Concluir" respeita o checkbox; "Pular"/fechar sempre marca como visto
+  // para não interromper o usuário novamente. O usuário pode reabrir pelo
+  // botão "Ver tour".
+  const persistir = resultado.dontShowAgain || resultado.forcePersist;
+  if (!persistir) return;
+
+  try {
+    localStorage.setItem(TOUR_STORAGE_KEY, "true");
+  } catch (error) {
+    /* localStorage indisponível */
+  }
+
+  fetch(`${BASE_URL}/usuario/viutour/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ viuTour: "S" }),
+  }).catch(function (error) {
+    console.error("Erro ao salvar preferência do tour:", error);
+  });
+}
+
+async function iniciarTourSeNecessario() {
+  if (!vitrines.length) return;
+  if (document.querySelector(".modal.show")) return;
+  if (await tourJaVisualizado()) return;
+  iniciarTour();
+}
+
 // -------------------------------------------------------------- eventos
 
 vitrinesTableBody.addEventListener("change", function (event) {
@@ -659,4 +762,12 @@ listaSelecionados.addEventListener("click", function (event) {
   }
 });
 
-document.addEventListener("DOMContentLoaded", carregarVitrines);
+const btnVerTour = document.getElementById("btnVerTour");
+if (btnVerTour) {
+  btnVerTour.addEventListener("click", iniciarTour);
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await carregarVitrines();
+  iniciarTourSeNecessario();
+});
