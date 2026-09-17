@@ -3346,7 +3346,8 @@ function toggleOrdemPeca() {
   if (!tiposCache.length) return alert("Nenhum tipo carregado ainda!");
 
   const overlay = criarOverlay();
-  const popup = criarPopup("Gerenciar Ordem Tipos");
+  const popup = criarPopup("Gerenciar Ordem");
+  popup.classList.add("ordem-popup");
 
   // Select de marcas + botão buscar
   let selectHtml = `<select id="marcaSelectOrdem" class="form-control mb-2">
