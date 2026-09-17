@@ -62,7 +62,7 @@
       '<div class="modal-content">' +
       '<div class="modal-header">' +
       '<div>' +
-      '<h5 class="modal-title" id="releasesModalLabel">🚀 Atualizações — OrderUp</h5>' +
+      '<h5 class="modal-title" id="releasesModalLabel">🚀 Atualizações</h5>' +
       '<p class="text-muted small mb-0">Confira as novidades e melhorias das versões mais recentes</p>' +
       "</div>" +
       '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>' +
