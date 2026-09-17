@@ -2,9 +2,12 @@
    Atualizações — OrderUp (global no shell autenticado)
 
    Carregado por public/html/auth/js/componentes.js em todas as páginas com
-   #header-admin. Abre o modal de atualizações automaticamente na primeira
-   página após o login e marca como visto (flag por usuário + localStorage),
-   de modo que não reaparece nos próximos logins.
+   #header-admin. Exibe um marcador no botão "Novidades" da topbar enquanto o
+   usuário ainda não visualizou as atualizações; ao abrir o modal o marcador
+   desaparece e a flag de "visto" é gravada (banco + localStorage).
+
+   A abertura automática do modal após o login está desativada no momento
+   (AUTO_OPEN_ON_LOGIN = false) e pode ser reativada quando desejado.
 
    O modal é renderizado de forma DOM-safe: nenhum innerHTML é usado com o
    conteúdo externo das releases, apenas com markup estático confiável.
@@ -13,6 +16,10 @@
   "use strict";
 
   var SEEN_KEY = "releaseIDClose";
+
+  // Abertura automática do modal após o login desativada por enquanto.
+  // Basta voltar para true para reativar o fluxo de "visto uma vez".
+  var AUTO_OPEN_ON_LOGIN = false;
 
   // Reaproveita o ?v= do próprio script (definido por componentes.js) para
   // manter o cache-busting do CSS de releases em sincronia.
@@ -29,6 +36,7 @@
   var modalInstance = null;
   var usucod = null;
   var seenChecked = false;
+  var seen = false;
 
   function baseUrl() {
     return typeof BASE_URL !== "undefined" ? BASE_URL : "";
@@ -76,7 +84,17 @@
   }
 
   // ---------- "Visto": flag no banco + localStorage (mesma lógica do painel) ----------
+  function setBadge(visible) {
+    var badge = document.getElementById("ouReleasesBadge");
+    if (!badge) return;
+    badge.hidden = !visible;
+  }
+
   function markSeen() {
+    if (seen) return;
+    seen = true;
+    setBadge(false);
+
     try {
       localStorage.setItem(SEEN_KEY, "true");
     } catch (err) {
@@ -95,14 +113,15 @@
     }
   }
 
-  function bindHidden() {
+  function bindModal() {
     var el = document.getElementById("releasesModal");
     if (!el || el.dataset.ouReleasesBound) return;
     el.dataset.ouReleasesBound = "1";
-    el.addEventListener("hidden.bs.modal", markSeen);
+    // Ao visualizar o modal, o marcador de "não visto" desaparece.
+    el.addEventListener("shown.bs.modal", markSeen);
   }
 
-  function checkSeenAndMaybeOpen() {
+  function refreshSeenState() {
     if (seenChecked) return;
     seenChecked = true;
 
@@ -125,9 +144,14 @@
           /* noop */
         }
 
-        if (viuversao === "S" && localSeen) return;
+        // Já visto se o usuário marcou em qualquer dispositivo (flag no banco)
+        // ou neste navegador (localStorage).
+        seen = seen || viuversao === "S" || localSeen;
+        setBadge(!seen);
 
-        window.setTimeout(openModal, 1500);
+        if (AUTO_OPEN_ON_LOGIN && !seen) {
+          window.setTimeout(openModal, 1500);
+        }
       })
       .catch(function (err) {
         console.error("Erro ao buscar versão do usuário:", err);
@@ -138,7 +162,7 @@
   function openModal() {
     ensureStyles();
     ensureMarkup();
-    bindHidden();
+    bindModal();
 
     var el = document.getElementById("releasesModal");
     if (!el || typeof bootstrap === "undefined") return;
@@ -450,8 +474,8 @@
   function init() {
     ensureStyles();
     ensureMarkup();
-    bindHidden();
-    checkSeenAndMaybeOpen();
+    bindModal();
+    refreshSeenState();
   }
 
   if (document.readyState === "loading") {

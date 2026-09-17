@@ -73,14 +73,6 @@ var OU_NAV_GROUPS = [
         icon: "bi-person-badge",
         perm: "admin",
       },
-      {
-        href: "#releases",
-        route: "#releases",
-        label: "Novidades",
-        icon: "bi-megaphone",
-        perm: "always",
-        action: "releases",
-      },
     ],
   },
   {
@@ -133,22 +125,6 @@ function ouBuildSidebar(navGroups) {
   var groups = (navGroups || OU_NAV_GROUPS).map(function (group) {
     var links = group.items
       .map(function (item) {
-        if (item.action) {
-          return (
-            '<a class="ou-navlink js-open-releases" href="#' +
-            item.action +
-            '" data-action="' +
-            item.action +
-            '">' +
-            '<i class="bi ' +
-            item.icon +
-            '" aria-hidden="true"></i>' +
-            "<span>" +
-            item.label +
-            "</span>" +
-            "</a>"
-          );
-        }
         return (
           '<a class="ou-navlink" data-route="' +
           item.route +
@@ -214,6 +190,10 @@ function ouBuildTopbar() {
     "</a>" +
     "</div>" +
     '<div class="ou-topbar__actions">' +
+    '<button type="button" class="ou-icon-btn js-open-releases" id="ouReleasesBtn" aria-label="Novidades" title="Novidades">' +
+    '<i class="bi bi-megaphone" aria-hidden="true"></i>' +
+    '<span class="ou-icon-btn__badge" id="ouReleasesBadge" hidden></span>' +
+    "</button>" +
     '<div class="dropdown">' +
     '<button type="button" class="ou-icon-btn" id="ouQuickTheme" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Alterar tema" title="Alterar tema">' +
     '<i class="bi bi-circle-half" aria-hidden="true"></i>' +
@@ -397,7 +377,7 @@ function ouLoadReleases() {
   document.body.appendChild(script);
 }
 
-/* Abre o modal de atualizações pelo item "Novidades" do menu. */
+/* Abre o modal de atualizações pelo botão "Novidades" da topbar. */
 function ouWireReleases(root) {
   var scope = root || document;
   var buttons = scope.querySelectorAll(".js-open-releases");
@@ -550,6 +530,7 @@ function createHeader() {
 
   ouWireThemeToggle();
   ouWireLogout(header);
+  ouWireReleases(header);
   ouLoadUser();
   ouLoadReleases();
 
