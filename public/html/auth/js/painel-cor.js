@@ -1,9 +1,9 @@
 
-const corModalEl = document.getElementById('corModal');
-const corModal = new bootstrap.Modal(corModalEl);
-const btnCor = document.getElementById('dropdownCor');
-const corForm = document.getElementById('corForm');
-const descricaoCor = document.getElementById('descricaoCor');
+var corModalEl = document.getElementById('corModal');
+var corModal = new bootstrap.Modal(corModalEl);
+var btnCor = document.getElementById('dropdownCor');
+var corForm = document.getElementById('corForm');
+var descricaoCor = document.getElementById('descricaoCor');
 
 // Novo usuário
 btnCor.addEventListener('click', () => {

@@ -1,3 +1,4 @@
+(function () {
 const params = new URLSearchParams(window.location.search);
 
 const id = parseIntegerParam(params.get("id"));
@@ -239,7 +240,7 @@ if (tipoUrl) {
     });
 }
 
-document.addEventListener("DOMContentLoaded", function () {
+ouOnLoad(function () {
   const produtosUrl = buildProdutosUrl(id, marcascod, modelo);
 
   if (!produtosUrl) {
@@ -581,3 +582,5 @@ function adicionarProdutoAoCarrinho(
     window.ouStorefront.mostrarPopupAdicionado();
   }
 }
+
+})();

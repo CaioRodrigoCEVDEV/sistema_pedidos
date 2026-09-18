@@ -288,7 +288,7 @@
   window.removerItemCarrinho = window.removerItemCarrinho || removerItemCarrinho;
   window.ouNotify = window.ouNotify || ouNotify;
 
-  document.addEventListener("DOMContentLoaded", function () {
+  ouOnNavigate("storefront:shared", function () {
     ensureCartModal();
     atualizarIconeCarrinho();
     var btn = document.getElementById("openCartModal");

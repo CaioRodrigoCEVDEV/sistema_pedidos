@@ -1,3 +1,4 @@
+(function () {
 const params = new URLSearchParams(window.location.search);
 
 const id = parseIntegerParam(params.get("id"));
@@ -141,7 +142,7 @@ if (id !== null) {
 }
 
 //popular lista com os dados do modelo
-document.addEventListener("DOMContentLoaded", function () {
+ouOnLoad(function () {
   const corpoTabela = document.getElementById("corpoTabela");
   if (id === null) {
     if (corpoTabela) corpoTabela.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-tools"></i></span><div class="ou-empty__title">Modelo não informado</div><div class="ou-empty__text">Volte e selecione um modelo.</div></div>`;
@@ -170,7 +171,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Filtro local por tipo (mantém a regra: apenas esconde/mostra os cards)
-document.addEventListener("DOMContentLoaded", function () {
+ouOnLoad(function () {
   const input = document.getElementById("pesquisa");
   if (!input) return;
   input.addEventListener("input", function () {
@@ -239,3 +240,5 @@ window.adicionarAoCarrinho = function (procod) {
   // Mostra popup de confirmação
   if (window.ouStorefront) window.ouStorefront.mostrarPopupAdicionado();
 };
+
+})();

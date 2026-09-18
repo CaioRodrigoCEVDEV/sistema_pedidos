@@ -1,20 +1,20 @@
-const params = new URLSearchParams(window.location.search);
-const erroMsg = params.get("erroMSG");
+var params = new URLSearchParams(window.location.search);
+var erroMsg = params.get("erroMSG");
 if (erroMsg === "acesso-negado") {
   alertPersonalizado("Acesso negado. Contate o administrador.", 3000);
 }
 if (erroMsg === "modulo-nao-habilitado") {
   alertPersonalizado("Módulo não habilitado para empresa.", 3000);
 }
-const novaURL = window.location.origin;
+var novaURL = window.location.origin;
 +window.location.pathname;
 window.history.replaceState({}, document.title, novaURL + "/painel");
 
-const id = params.get("id");
-let marcascod = null;
-let marcacodModelo = null;
-let tipo = null;
-let modelo = null;
+var id = params.get("id");
+var marcascod = null;
+var marcacodModelo = null;
+var tipo = null;
+var modelo = null;
 
 function parseIntegerParam(value) {
   if (value === undefined || value === null) {
@@ -42,7 +42,7 @@ function formatarMoeda(valor) {
     currency: "BRL",
   });
 }
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   const holder = document.getElementById("painelMarca");
   if (!holder) return;
 
@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     marcacodModelo = parseIntegerParam(e.target.value);
   });
 });
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   const holder = document.getElementById("selectPainelMarca");
   if (!holder) return;
 
@@ -132,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   function carregarTiposPainel() {
     fetch(`${BASE_URL}/tipos/`)
       .then((res) => res.json())
@@ -163,49 +163,49 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-const inputPesquisa = document.getElementById("pesquisa");
-const tabelaArea = document.getElementById("tabelaArea");
-const corpoTabela = document.getElementById("corpoTabela");
-const tabelaAreaOrigem = tabelaArea ? tabelaArea.parentElement : null;
+var inputPesquisa = document.getElementById("pesquisa");
+var tabelaArea = document.getElementById("tabelaArea");
+var corpoTabela = document.getElementById("corpoTabela");
+var tabelaAreaOrigem = tabelaArea ? tabelaArea.parentElement : null;
 
 // Estado da listagem de peças (tabela do painel)
-let pecasPage = 1;
-let pecasPageSize = 20;
-let pecasTotal = 0;
-let pecasQ = "";
-let pecasMarca = null;
-let pecasModelo = null;
-let pecasTipo = null;
-let pecasMarcacao = "";
-let pecasDebounce = null;
-let pecasLoading = false;
-let pecasRequestController = null;
-let pecasTemMais = false;
-let pecasPopupAberto = false;
+var pecasPage = 1;
+var pecasPageSize = 20;
+var pecasTotal = 0;
+var pecasQ = "";
+var pecasMarca = null;
+var pecasModelo = null;
+var pecasTipo = null;
+var pecasMarcacao = "";
+var pecasDebounce = null;
+var pecasLoading = false;
+var pecasRequestController = null;
+var pecasTemMais = false;
+var pecasPopupAberto = false;
 
 // Estado dos popups de gestão (marcas/modelos/tipos/cores)
-let gestaoPopupAberto = false;
-let gestaoAreaAberta = null;
-const gestaoOrigem = {};
+var gestaoPopupAberto = false;
+var gestaoAreaAberta = null;
+var gestaoOrigem = {};
 ["areaMarcas", "areaModelos", "areaTipos", "areaCores"].forEach((id) => {
   const el = document.getElementById(id);
   if (el) gestaoOrigem[id] = el.parentElement;
 });
 
 // Filtros dos popups de gestão (marcas/modelos/tipos/cores)
-let marcasLista = [];
-let marcasQ = "";
-let marcasDebounce = null;
-let modelosLista = [];
-let modelosQ = "";
-let modelosMarca = null;
-let modelosDebounce = null;
-let tiposLista = [];
-let tiposQ = "";
-let tiposDebounce = null;
-let coresLista = [];
-let coresQ = "";
-let coresDebounce = null;
+var marcasLista = [];
+var marcasQ = "";
+var marcasDebounce = null;
+var modelosLista = [];
+var modelosQ = "";
+var modelosMarca = null;
+var modelosDebounce = null;
+var tiposLista = [];
+var tiposQ = "";
+var tiposDebounce = null;
+var coresLista = [];
+var coresQ = "";
+var coresDebounce = null;
 
 inputPesquisa.addEventListener("input", function () {
   const pesquisa = this.value.trim().toLowerCase();
@@ -800,7 +800,7 @@ document.querySelectorAll(".dropdown-menu").forEach(function (menu) {
 });
 
 // Carrega os totais de marcas, modelos, tipos e peças
-document.addEventListener("DOMContentLoaded", async () => {
+ouOnLoad(async () => {
   try {
     const [marcas, modelos, tipos, pecas] = await Promise.all([
       fetch(`${BASE_URL}/marcas`).then((r) => r.json()),
@@ -818,7 +818,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-const AREAS_GESTAO = [
+var AREAS_GESTAO = [
   "areaMarcas",
   "areaModelos",
   "areaTipos",
@@ -2599,7 +2599,7 @@ function atualizarInfoTotal() {
   infoTotal.textContent = `${pecasTotal} peça(s)`;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   const selMarca = document.getElementById("filtroMarcaPeca");
   const selModelo = document.getElementById("filtroModeloPeca");
   const selTipo = document.getElementById("filtroTipoPeca");
@@ -2617,40 +2617,43 @@ document.addEventListener("DOMContentLoaded", () => {
     areaCores: "coresBusca",
   };
 
-  document.addEventListener("keydown", (e) => {
-    if (!((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f")) return;
+  if (!window.__ouPainelCtrlF) {
+    window.__ouPainelCtrlF = true;
+    document.addEventListener("keydown", (e) => {
+      if (!((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f")) return;
 
-    let areaId = null;
-    let buscaId = null;
-    if (pecasPopupAberto) {
-      areaId = "tabelaArea";
-      buscaId = "pecasBusca";
-    } else if (gestaoPopupAberto) {
-      areaId = gestaoAreaAberta;
-      buscaId = GESTAO_BUSCA[gestaoAreaAberta];
-    }
-    if (!buscaId) return;
-
-    e.preventDefault();
-
-    const filtrosBox = document.querySelector(
-      `#${areaId} .pecas-modal-filters`
-    );
-    if (filtrosBox && !filtrosBox.classList.contains("pecas-filters-open")) {
-      filtrosBox.classList.add("pecas-filters-open");
-      const btn = filtrosBox.querySelector(".pecas-filters-toggle");
-      if (btn) {
-        btn.setAttribute("aria-expanded", "true");
-        btn.setAttribute("aria-label", "Ocultar filtros");
+      let areaId = null;
+      let buscaId = null;
+      if (pecasPopupAberto) {
+        areaId = "tabelaArea";
+        buscaId = "pecasBusca";
+      } else if (gestaoPopupAberto) {
+        areaId = gestaoAreaAberta;
+        buscaId = GESTAO_BUSCA[gestaoAreaAberta];
       }
-    }
+      if (!buscaId) return;
 
-    const buscaCampo = document.getElementById(buscaId);
-    if (buscaCampo) {
-      buscaCampo.focus();
-      buscaCampo.select();
-    }
-  });
+      e.preventDefault();
+
+      const filtrosBox = document.querySelector(
+        `#${areaId} .pecas-modal-filters`
+      );
+      if (filtrosBox && !filtrosBox.classList.contains("pecas-filters-open")) {
+        filtrosBox.classList.add("pecas-filters-open");
+        const btn = filtrosBox.querySelector(".pecas-filters-toggle");
+        if (btn) {
+          btn.setAttribute("aria-expanded", "true");
+          btn.setAttribute("aria-label", "Ocultar filtros");
+        }
+      }
+
+      const buscaCampo = document.getElementById(buscaId);
+      if (buscaCampo) {
+        buscaCampo.focus();
+        buscaCampo.select();
+      }
+    });
+  }
 
   // Scroll infinito: carrega mais peças ao chegar perto do fim da lista
   const corpoPecas = document.querySelector("#tabelaArea .pecas-modal-body");
@@ -2758,7 +2761,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Filtros dos popups de gestão (Marcas/Modelos/Tipos/Cores)
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   // ---- Marcas ----
   const marcasBusca = document.getElementById("marcasBusca");
   const btnAplicarMarcas = document.getElementById("btnAplicarFiltroMarcas");
@@ -3008,7 +3011,7 @@ async function excluirPro(id) {
 }
 
 // (Removido o let duplicado, mantendo apenas a atribuição e uso de marcasCache)
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   fetch(`${BASE_URL}/marcas/`)
     .then((res) => res.json())
     .then((dados) => {
@@ -3095,10 +3098,10 @@ function fecharPopup(btn) {
   if (overlay) overlay.remove();
 }
 
-let marcasCache = [];
-let modelosCache = [];
-let tiposCache = [];
-document.addEventListener("DOMContentLoaded", () => {
+var marcasCache = [];
+var modelosCache = [];
+var tiposCache = [];
+ouOnLoad(() => {
   const holder = document.getElementById("selectPainelMarca");
 
   if (!holder) return;
@@ -3169,7 +3172,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 //tipo peça
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   fetch(`${BASE_URL}/tipos/`)
     .then((res) => res.json())
     .then((dados) => {

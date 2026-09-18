@@ -279,15 +279,18 @@ function ouWireDrawer() {
       if (event.target.closest("a.ou-navlink")) closeDrawer();
     });
   }
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && body.classList.contains("ou-drawer-open")) {
-      closeDrawer();
-    }
-  });
+  if (!window.__ouDrawerKeyBound) {
+    window.__ouDrawerKeyBound = true;
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && body.classList.contains("ou-drawer-open")) {
+        closeDrawer();
+      }
+    });
 
-  window.addEventListener("resize", function () {
-    if (window.innerWidth >= 992) closeDrawer();
-  });
+    window.addEventListener("resize", function () {
+      if (window.innerWidth >= 992) closeDrawer();
+    });
+  }
 }
 
 function ouThemeIcon(pref) {
@@ -603,7 +606,7 @@ function createHeader() {
     });
 }
 
-document.addEventListener("DOMContentLoaded", createHeader);
+ouOnNavigate("auth:header", createHeader);
 
 /* O rodapé institucional é exclusivo da loja (rotas públicas).
    No shell autenticado o footer é removido. */
@@ -611,10 +614,10 @@ function removeFooter() {
   var footer = document.getElementById("footer");
   if (footer && footer.parentNode) footer.parentNode.removeChild(footer);
 }
-document.addEventListener("DOMContentLoaded", removeFooter);
+ouOnNavigate("auth:footer", removeFooter);
 
 // Hide "Estoque do Grupo" card in the part groups details view
-document.addEventListener("DOMContentLoaded", function () {
+ouOnNavigate("auth:groupDetails", function () {
   // Only run on pages with the group details section
   var detalhesGrupo = document.getElementById("detalhesGrupo");
   if (!detalhesGrupo) return;

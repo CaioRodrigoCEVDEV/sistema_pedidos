@@ -1,7 +1,7 @@
 // Configuração de Controle de Estoque da empresa.
 // Ativa/desativa as flags automáticas (empusaest) e define a quantidade
 // mínima usada para marcar um produto como "Últimas unidades".
-document.addEventListener("DOMContentLoaded", function () {
+ouOnNavigate("configEstoque", function () {
   var usaEl = document.getElementById("empusaest");
   var minEl = document.getElementById("empestoqmin");
   var salvarEl = document.getElementById("saveEstoque");

@@ -19,10 +19,13 @@ const PORT = process.env.PORT || 3000;
 
 // Páginas HTML sempre revalidadas (no-cache), para o navegador buscar o HTML
 // novo a cada release e carregar os assets com ?v= atualizados.
+// Usa-se "no-cache" (e não "no-store") para permitir que o navegador guarde o
+// HTML e revalide via ETag/304 — mais rápido e compatível com o prefetch das
+// Speculation Rules (a resposta precisa ser cacheável para ser reaproveitada).
 const sendFileOriginal = express.response.sendFile;
 express.response.sendFile = function (filePath, options, callback) {
   if (typeof filePath === "string" && filePath.endsWith(".html")) {
-    this.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    this.set("Cache-Control", "no-cache, must-revalidate");
   }
   return sendFileOriginal.call(this, filePath, options, callback);
 };
@@ -34,7 +37,7 @@ app.use(
     maxAge: "7d",
     setHeaders: (res, filePath) => {
       if (filePath.endsWith(".html")) {
-        res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.set("Cache-Control", "no-cache, must-revalidate");
       }
     },
   })
@@ -414,7 +417,11 @@ app.get("/backups/download/:folder/:file", requireAdminPages, async (req, res) =
 
 app.get("/config.js", (req, res) => {
   res.type("application/javascript");
-  res.send(`const BASE_URL = '${process.env.BASE_URL}';`);
+  // `var` (e não `const`) para ser reavaliável com segurança durante a
+  // navegação client-side (Turbo reavalia scripts do <body>).
+  res.send(
+    `var BASE_URL = '${process.env.BASE_URL}'; window.BASE_URL = BASE_URL;`
+  );
 });
 
 app.get("/auth/sair", (req, res) => {

@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   const form = document.getElementById("formPerfil");
   const nome = document.getElementById("nome");
   const email = document.getElementById("email");

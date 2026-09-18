@@ -1,17 +1,17 @@
-const params = new URLSearchParams(window.location.search);
+var params = new URLSearchParams(window.location.search);
 
-const id = params.get("id");
-const marcascod = params.get("marcascod");
+var id = params.get("id");
+var marcascod = params.get("marcascod");
 
-const usersData = [
+var usersData = [
   //popular table com os dados do modelo
   { id: 0, nome: " ", email: " ", senha: " ", adm: "S", sta: "A" },
 ];
 
 // Estado
-let users = [...usersData]; // clone para manipulação local
-let filtered = [...users];
-let telasRegistry = []; // catálogo de telas liberáveis
+var users = [...usersData]; // clone para manipulação local
+var filtered = [...users];
+var telasRegistry = []; // catálogo de telas liberáveis
 // Carrega dados reais da API e atualiza users/usersData
 // --- Função central para recarregar usuários da API e atualizar UI ---
 async function refreshUsers({ keepSearch = true } = {}) {
@@ -93,26 +93,26 @@ function getSelectedTelas() {
 }
 
 // Elementos
-const tbody = document.getElementById("usersTbody");
-const usersMobileList = document.getElementById("usersMobileList");
-const searchInput = document.getElementById("searchInput");
-const resultsInfo = document.getElementById("resultsInfo");
-const emptyState = document.getElementById("emptyState");
+var tbody = document.getElementById("usersTbody");
+var usersMobileList = document.getElementById("usersMobileList");
+var searchInput = document.getElementById("searchInput");
+var resultsInfo = document.getElementById("resultsInfo");
+var emptyState = document.getElementById("emptyState");
 
-const userModalEl = document.getElementById("userModal");
-const userModal = new bootstrap.Modal(userModalEl);
-const userForm = document.getElementById("userForm");
-const usuId = document.getElementById("usuId");
-const usuNome = document.getElementById("usuNome");
-const usuEmail = document.getElementById("usuEmail");
-const usuSenha = document.getElementById("usuSenha");
-const usuAdm = document.getElementById("usuAdm");
-const usuSta = document.getElementById("usuSta");
-const usuRca = document.getElementById("usuRca");
-const togglePwd = document.getElementById("togglePwd");
-const btnDelete = document.getElementById("btnDelete");
-const btnNew = document.getElementById("btnNew");
-const btnRefresh = document.getElementById("btnRefresh");
+var userModalEl = document.getElementById("userModal");
+var userModal = new bootstrap.Modal(userModalEl);
+var userForm = document.getElementById("userForm");
+var usuId = document.getElementById("usuId");
+var usuNome = document.getElementById("usuNome");
+var usuEmail = document.getElementById("usuEmail");
+var usuSenha = document.getElementById("usuSenha");
+var usuAdm = document.getElementById("usuAdm");
+var usuSta = document.getElementById("usuSta");
+var usuRca = document.getElementById("usuRca");
+var togglePwd = document.getElementById("togglePwd");
+var btnDelete = document.getElementById("btnDelete");
+var btnNew = document.getElementById("btnNew");
+var btnRefresh = document.getElementById("btnRefresh");
 
 // Badges para a listagem mobile (design system)
 function admBadge(usuadm) {
@@ -371,7 +371,7 @@ function escapeHtml(txt = "") {
 }
 
 // Eventos de busca com debounce simples
-let searchTimer = null;
+var searchTimer = null;
 searchInput.addEventListener("input", (e) => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => doSearch(e.target.value), 180);
