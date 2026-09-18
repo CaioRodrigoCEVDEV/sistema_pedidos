@@ -209,3 +209,114 @@ test("Consulta sem paginação mantém os parâmetros dos outros filtros", async
   await controller.listarProdutos({ query: { marca: "2", q: "tampa", semest: "S" } }, response());
   assert.deepEqual(queries[0].params, [2, "%tampa%"]);
 });
+
+// --- Vitrines: mesma regra de estoque (manual ignora validação de estoque) ---
+
+const showcaseModelsPath = require.resolve("../src/models/showcaseModels");
+const showcaseRows = [];
+const destaqueShowcase = { id: 1, type: "featured", title: "Destaques", max_items: 5 };
+require.cache[showcaseModelsPath] = {
+  id: showcaseModelsPath,
+  filename: showcaseModelsPath,
+  loaded: true,
+  exports: {
+    MAX_MAX_ITEMS: 50,
+    async listarShowcases() {
+      return [destaqueShowcase];
+    },
+    async listarItensShowcase() {
+      return showcaseRows.slice();
+    },
+  },
+};
+
+const showcaseController = require("../src/controllers/showcaseController");
+const showcasesCache = require("../src/utils/showcasesCache");
+
+function itemShowcase(overrides) {
+  return {
+    procod: 1,
+    prodes: "Peça",
+    provl: 10,
+    protipocod: 1,
+    tipodes: "Tipo",
+    promarcascod: 1,
+    marcasdes: "Marca",
+    modcod: null,
+    moddes: "",
+    prosemest: "N",
+    prosemest_auto: "N",
+    proacabando: "N",
+    proqtde: 10,
+    ...overrides,
+  };
+}
+
+async function lerVitrinePublica() {
+  showcasesCache.invalidate();
+  const res = {
+    statusCode: 200,
+    headers: {},
+    body: null,
+    set(chave, valor) {
+      this.headers[String(chave).toLowerCase()] = valor;
+      return this;
+    },
+    type() {
+      return this;
+    },
+    status(codigo) {
+      this.statusCode = codigo;
+      return this;
+    },
+    send(corpo) {
+      this.body = corpo;
+      return this;
+    },
+    json(objeto) {
+      this.body = Buffer.from(JSON.stringify(objeto));
+      return this;
+    },
+    end() {
+      return this;
+    },
+  };
+  await showcaseController.listarPublicas({ headers: {} }, res);
+  return JSON.parse(res.body.toString());
+}
+
+test("Vitrine sem controle de estoque ignora validacao e usa flags manuais", async () => {
+  estoqueConfigMock = { usaEstoque: false, empusaest: "N", estoqueMin: 5 };
+  showcaseRows.length = 0;
+  showcaseRows.push(
+    itemShowcase({
+      prosemest: "S",
+      prosemest_auto: "N",
+      proacabando: "S",
+      proqtde: 10,
+    })
+  );
+
+  const payload = await lerVitrinePublica();
+  const item = payload.showcases[0].items[0];
+  assert.equal(item.prosemest, "S");
+  assert.equal(item.proacabando, "S");
+});
+
+test("Vitrine com controle de estoque usa as flags automaticas", async () => {
+  estoqueConfigMock = { usaEstoque: true, empusaest: "S", estoqueMin: 5 };
+  showcaseRows.length = 0;
+  showcaseRows.push(
+    itemShowcase({
+      prosemest: "S",
+      prosemest_auto: "N",
+      proacabando: "N",
+      proqtde: 3,
+    })
+  );
+
+  const payload = await lerVitrinePublica();
+  const item = payload.showcases[0].items[0];
+  assert.equal(item.prosemest, "N");
+  assert.equal(item.proacabando, "S");
+});
