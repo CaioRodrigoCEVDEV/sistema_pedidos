@@ -393,7 +393,7 @@ async function buscarProdutos() {
   btnBuscarProduto.disabled = true;
   try {
     const response = await fetch(
-      `${BASE_URL}/pros?q=${encodeURIComponent(termo)}&page=1&pageSize=10`,
+      `${BASE_URL}/pros?q=${encodeURIComponent(termo)}&page=1&pageSize=10&semest=N`,
       { credentials: "include" }
     );
     if (!response.ok) {

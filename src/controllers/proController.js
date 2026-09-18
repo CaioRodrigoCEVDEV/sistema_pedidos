@@ -102,6 +102,8 @@ exports.listarProdutos = async (req, res) => {
   }
   if (semest === "S") {
     filters.push(`${flags.disponibilidadeSql} = 'S'`);
+  } else if (semest === "N") {
+    filters.push(`${flags.disponibilidadeSql} = 'N'`);
   }
   if (acabando === "S") {
     filters.push(`${flags.acabandoSql} = 'S'`);

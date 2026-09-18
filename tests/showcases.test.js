@@ -6,6 +6,8 @@
  * - vitrine manual (adicionar/remover/reordenar e ordem na API pública);
  * - vitrines automáticas (mais vendidos com regra de venda consolidada,
  *   cancelamento e devolução; novidades por data de cadastro);
+ * - vitrines ignoram produtos sem disponibilidade e completam a lista com os
+ *   próximos itens (mais vendidos e novidades);
  * - vitrines inativas/ vazias fora da API pública;
  * - produtos inativos ocultos no público;
  * - autorização (admin x não admin) na API;
@@ -148,19 +150,23 @@ async function restaurarEstadoVitrines() {
   showcasesCache.invalidate();
 }
 
-async function criarProdutoTeste({ prosit = "A" } = {}) {
+// `estoque` controla pro.proqtde. O trigger do banco marca prosemest = 'S'
+// quando o saldo é zero, então os testes que esperam ver o produto na vitrine
+// precisam de saldo positivo (as vitrines ignoram itens sem disponibilidade).
+async function criarProdutoTeste({ prosit = "A", estoque = 10 } = {}) {
   const result = await pool.query(
-    `INSERT INTO pro (prodes, promarcascod, protipocod, prosit, provl, prodtcad)
+    `INSERT INTO pro (prodes, promarcascod, protipocod, prosit, provl, proqtde, prodtcad)
      VALUES (
        $1 || ' ' || (SELECT COALESCE(MAX(procod), 0) + 1 FROM pro),
        (SELECT marcascod FROM marcas WHERE COALESCE(marcassit, 'A') = 'A' ORDER BY marcascod LIMIT 1),
        (SELECT tipocod FROM tipo ORDER BY tipocod LIMIT 1),
        $2,
        10,
+       $3,
        CURRENT_TIMESTAMP
      )
      RETURNING procod`,
-    [PREFIXO_TESTE, prosit]
+    [PREFIXO_TESTE, prosit, estoque]
   );
   const procod = result.rows[0].procod;
   procodsTeste.push(procod);
@@ -457,6 +463,24 @@ async function runTests() {
         assert(anterior >= atual, "Deveria estar em ordem decrescente de cadastro");
       }
     }
+  });
+
+  await test("Novidades: ignora produto sem estoque e completa com o próximo", async () => {
+    const disponivel = await criarProdutoTeste({ estoque: 5 });
+    const semEstoque = await criarProdutoTeste({ estoque: 0 });
+
+    const lista = await showcaseModels.listarNovidades(1);
+
+    assertEqual(lista.length, 1, "Deveria preencher a vitrine com 1 item");
+    assertEqual(
+      Number(lista[0].procod),
+      Number(disponivel),
+      "Deveria trazer o produto disponível mais recente, pulando o sem estoque"
+    );
+    assert(
+      !lista.some((row) => Number(row.procod) === Number(semEstoque)),
+      "Produto sem estoque não deveria aparecer"
+    );
   });
 
   // -------------------------------------------------------- API pública
