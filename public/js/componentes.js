@@ -53,7 +53,7 @@ function createHeaderUser() {
     });
   });
 }
-document.addEventListener("DOMContentLoaded", createHeaderUser);
+ouOnNavigate("storefront:header", createHeaderUser);
 
 
 function createFooter() {
@@ -75,4 +75,4 @@ function createFooter() {
   `;
 }
 
-document.addEventListener("DOMContentLoaded", createFooter);
+ouOnNavigate("storefront:footer", createFooter);

@@ -4,7 +4,7 @@
  */
 
 // Configuração: número máximo de toasts exibidos simultaneamente
-const MAX_TOASTS_VISIBLE = 5;
+var MAX_TOASTS_VISIBLE = 5;
 
 /**
  * Exibe uma notificação toast na tela

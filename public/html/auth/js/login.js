@@ -1,4 +1,4 @@
-const SECRET = "jppecas-remember";
+var SECRET = "jppecas-remember";
 
 async function getCryptoKey() {
   const enc = new TextEncoder();
@@ -56,7 +56,7 @@ async function decrypt(cipherText) {
 }
 
 // Preenche os campos caso as credenciais estejam salvas
-window.addEventListener("DOMContentLoaded", async () => {
+ouOnLoad(async () => {
   if (localStorage.getItem("rememberLogin") === "true") {
     const savedEmail = localStorage.getItem("savedEmail");
     const savedPassword = localStorage.getItem("savedPassword");

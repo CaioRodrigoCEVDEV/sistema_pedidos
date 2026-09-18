@@ -6,7 +6,7 @@
  * produtos dos Destaques.
  */
 
-const TIPOS_VITRINE = {
+var TIPOS_VITRINE = {
   featured: {
     label: "Manual",
     classe: "badge-tipo-manual",
@@ -24,25 +24,25 @@ const TIPOS_VITRINE = {
   },
 };
 
-const LIMITE_MAX_ITENS = 50;
+var LIMITE_MAX_ITENS = 50;
 
-let vitrines = [];
-let destaqueSelecionados = [];
-let buscaResultados = [];
-let modalGerenciar = null;
-let modalPreview = null;
+var vitrines = [];
+var destaqueSelecionados = [];
+var buscaResultados = [];
+var modalGerenciar = null;
+var modalPreview = null;
 
-const vitrinesTableBody = document.getElementById("vitrinesTableBody");
-const loadingState = document.getElementById("loadingState");
-const emptyState = document.getElementById("emptyState");
-const buscaProdutoInput = document.getElementById("buscaProduto");
-const btnBuscarProduto = document.getElementById("btnBuscarProduto");
-const resultadoBusca = document.getElementById("resultadoBusca");
-const listaSelecionados = document.getElementById("listaSelecionados");
-const qtdSelecionados = document.getElementById("qtdSelecionados");
-const listaPreview = document.getElementById("listaPreview");
-const previewDescricao = document.getElementById("previewDescricao");
-const modalPreviewLabel = document.getElementById("modalPreviewLabel");
+var vitrinesTableBody = document.getElementById("vitrinesTableBody");
+var loadingState = document.getElementById("loadingState");
+var emptyState = document.getElementById("emptyState");
+var buscaProdutoInput = document.getElementById("buscaProduto");
+var btnBuscarProduto = document.getElementById("btnBuscarProduto");
+var resultadoBusca = document.getElementById("resultadoBusca");
+var listaSelecionados = document.getElementById("listaSelecionados");
+var qtdSelecionados = document.getElementById("qtdSelecionados");
+var listaPreview = document.getElementById("listaPreview");
+var previewDescricao = document.getElementById("previewDescricao");
+var modalPreviewLabel = document.getElementById("modalPreviewLabel");
 
 function escapeHtml(valor) {
   return String(valor == null ? "" : valor).replace(/[&<>"]/g, function (c) {
@@ -595,9 +595,9 @@ function abrirPreview(id) {
 // tour.js (window.OrderUpTour); aqui ficam os passos e a persistência da
 // preferência "já visualizou" (por usuário logado, em usu.usuvitour).
 
-const TOUR_STORAGE_KEY = "vitrinesTourVisto";
+var TOUR_STORAGE_KEY = "vitrinesTourVisto";
 
-const TOUR_STEPS = [
+var TOUR_STEPS = [
   {
     target: "#vitrinesTourCard",
     title: "Conheça as Vitrines",
@@ -762,12 +762,12 @@ listaSelecionados.addEventListener("click", function (event) {
   }
 });
 
-const btnVerTour = document.getElementById("btnVerTour");
+var btnVerTour = document.getElementById("btnVerTour");
 if (btnVerTour) {
   btnVerTour.addEventListener("click", iniciarTour);
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
+ouOnLoad(async () => {
   await carregarVitrines();
   iniciarTourSeNecessario();
 });

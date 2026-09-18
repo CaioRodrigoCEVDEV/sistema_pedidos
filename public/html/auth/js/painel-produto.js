@@ -1,9 +1,9 @@
-const produtoModalEl = document.getElementById("produtoModal");
-const produtoModal = new bootstrap.Modal(produtoModalEl);
-const btnProduto = document.getElementById("dropdownProduto");
+var produtoModalEl = document.getElementById("produtoModal");
+var produtoModal = new bootstrap.Modal(produtoModalEl);
+var btnProduto = document.getElementById("dropdownProduto");
 // const btnExcluir = document.getElementById('btnDelete');
-const produtoForm = document.getElementById("produtoForm");
-const promarcascod = document.getElementById("popupMarcaModalProduto");
+var produtoForm = document.getElementById("produtoForm");
+var promarcascod = document.getElementById("popupMarcaModalProduto");
 
 function parseIntegerParam(value) {
   if (value === undefined || value === null) {

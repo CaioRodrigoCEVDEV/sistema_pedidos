@@ -632,7 +632,7 @@
   }
 
   // ---------- boot ----------
-  document.addEventListener("DOMContentLoaded", function () {
+  ouOnLoad(function () {
     renderCart();
     refreshBadge();
 

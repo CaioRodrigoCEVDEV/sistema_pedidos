@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+ouOnNavigate("configWhatsapp", function() {
     function formatPhoneNumber(number) {
         number = number.replace(/\D/g, '');
         // Adiciona o código do país se não estiver presente

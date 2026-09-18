@@ -1,9 +1,9 @@
-const marcasEstoque = document.getElementById("filtroMarcaSelect");
-const modelosEstoque = document.getElementById("filtroModeloSelect");
-const btnAplicarEstoque = document.getElementById("btnAplicarFiltroEstoque");
-const btnLimparEstoque = document.getElementById("btnLimparFiltroEstoque");
-const estoqueSelect = document.getElementById("filtroEstoqueSelect");
-const inputPesquisa = document.getElementById("pesquisa");
+var marcasEstoque = document.getElementById("filtroMarcaSelect");
+var modelosEstoque = document.getElementById("filtroModeloSelect");
+var btnAplicarEstoque = document.getElementById("btnAplicarFiltroEstoque");
+var btnLimparEstoque = document.getElementById("btnLimparFiltroEstoque");
+var estoqueSelect = document.getElementById("filtroEstoqueSelect");
+var inputPesquisa = document.getElementById("pesquisa");
 
 // Toast helper (leve, sem dependências)
 function showToast(message, type = "success") {

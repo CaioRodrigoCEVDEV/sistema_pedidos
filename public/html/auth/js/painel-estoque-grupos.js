@@ -6,23 +6,23 @@
  * permitir ajuste rápido de estoque e configuração de quantidade ideal.
  */
 
-let currentData = [];
-let currentFilters = {
+var currentData = [];
+var currentFilters = {
   dataInicio: "",
   dataFim: "",
   marca: "",
 };
 
 // Elementos DOM
-const dataInicioInput = document.getElementById("dataInicio");
-const dataFimInput = document.getElementById("dataFim");
-const marcaSelect = document.getElementById("marcaSelect");
-const btnFiltrar = document.getElementById("btnFiltrar");
-const btnLimpar = document.getElementById("btnLimpar");
-const gruposTableBody = document.getElementById("gruposTableBody");
-const emptyState = document.getElementById("emptyState");
-const loadingState = document.getElementById("loadingState");
-const resultsInfo = document.getElementById("resultsInfo");
+var dataInicioInput = document.getElementById("dataInicio");
+var dataFimInput = document.getElementById("dataFim");
+var marcaSelect = document.getElementById("marcaSelect");
+var btnFiltrar = document.getElementById("btnFiltrar");
+var btnLimpar = document.getElementById("btnLimpar");
+var gruposTableBody = document.getElementById("gruposTableBody");
+var emptyState = document.getElementById("emptyState");
+var loadingState = document.getElementById("loadingState");
+var resultsInfo = document.getElementById("resultsInfo");
 
 // Carrega marcas para o select
 async function loadMarcas() {
@@ -389,7 +389,7 @@ btnLimpar.addEventListener("click", () => {
 });
 
 // Inicialização
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   loadMarcas();
   fetchData();
 });

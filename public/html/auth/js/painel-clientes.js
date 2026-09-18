@@ -3,113 +3,113 @@
 // ---------------------------------------------------------------------------
 // Elementos
 // ---------------------------------------------------------------------------
-const qs = (id) => document.getElementById(id);
+var qs = (id) => document.getElementById(id);
 
-const cliModalEl = qs("cliModal");
-const cliModal = new bootstrap.Modal(cliModalEl);
+var cliModalEl = qs("cliModal");
+var cliModal = new bootstrap.Modal(cliModalEl);
 
-const btnNew = qs("btnNew");
-const btnPrev = qs("btnPrev");
-const btnNext = qs("btnNext");
-const searchInput = qs("searchInput");
-const tbody = qs("cliTbody");
-const cliMobileList = qs("cliMobileList");
-const resultsInfo = qs("resultsInfo");
-const pageInfo = qs("pageInfo");
-const emptyState = qs("emptyState");
+var btnNew = qs("btnNew");
+var btnPrev = qs("btnPrev");
+var btnNext = qs("btnNext");
+var searchInput = qs("searchInput");
+var tbody = qs("cliTbody");
+var cliMobileList = qs("cliMobileList");
+var resultsInfo = qs("resultsInfo");
+var pageInfo = qs("pageInfo");
+var emptyState = qs("emptyState");
 
-const cliForm = qs("cliForm");
-const btnInativar = qs("btnInativar");
-const btnExcluir = qs("btnExcluir");
-const btnAddMov = qs("btnAddMov");
-const btnAddCobranca = qs("btnAddCobranca");
-const btnBuscarPedidoDisponivel = qs("btnBuscarPedidoDisponivel");
+var cliForm = qs("cliForm");
+var btnInativar = qs("btnInativar");
+var btnExcluir = qs("btnExcluir");
+var btnAddMov = qs("btnAddMov");
+var btnAddCobranca = qs("btnAddCobranca");
+var btnBuscarPedidoDisponivel = qs("btnBuscarPedidoDisponivel");
 
-const tabDadosBtn = qs("tabDadosBtn");
-const tabPedidosBtn = qs("tabPedidosBtn");
-const tabContaBtn = qs("tabContaBtn");
-const tabCobrancasBtn = qs("tabCobrancasBtn");
+var tabDadosBtn = qs("tabDadosBtn");
+var tabPedidosBtn = qs("tabPedidosBtn");
+var tabContaBtn = qs("tabContaBtn");
+var tabCobrancasBtn = qs("tabCobrancasBtn");
 
 // Abas exclusivas de cliente existente (Pedidos/Conta/Cobranças).
 // A navegação é removida do DOM no cadastro para não ser renderizada, clicada
 // nem disparar carregamentos antes do cliente existir. Os painéis permanecem
 // no DOM (ocultos) para que seus campos continuem acessíveis pelo formulário.
-const cliTabsNav = qs("cliTabs");
-const abasExtras = [
+var cliTabsNav = qs("cliTabs");
+var abasExtras = [
   { link: tabPedidosBtn, li: tabPedidosBtn.closest(".nav-item"), pane: qs("tabPedidos") },
   { link: tabContaBtn, li: tabContaBtn.closest(".nav-item"), pane: qs("tabConta") },
   { link: tabCobrancasBtn, li: tabCobrancasBtn.closest(".nav-item"), pane: qs("tabCobrancas") },
 ];
 
 // Cabeçalho da ficha
-const cliTitulo = qs("cliTitulo");
-const cliSubtitulo = qs("cliSubtitulo");
-const cliAvatar = qs("cliAvatar");
-const cliSituacaoBadge = qs("cliSituacaoBadge");
-const cliResumo = qs("cliResumo");
-const cliResumoSaldo = qs("cliResumoSaldo");
-const cliResumoCredito = qs("cliResumoCredito");
-const cliResumoPedidos = qs("cliResumoPedidos");
-const cliWhatsApp = qs("cliWhatsApp");
+var cliTitulo = qs("cliTitulo");
+var cliSubtitulo = qs("cliSubtitulo");
+var cliAvatar = qs("cliAvatar");
+var cliSituacaoBadge = qs("cliSituacaoBadge");
+var cliResumo = qs("cliResumo");
+var cliResumoSaldo = qs("cliResumoSaldo");
+var cliResumoCredito = qs("cliResumoCredito");
+var cliResumoPedidos = qs("cliResumoPedidos");
+var cliWhatsApp = qs("cliWhatsApp");
 
 // Campos do formulário
-const f_parcod = qs("parcod");
-const f_pardes = qs("pardes");
-const f_parfan = qs("parfan");
-const f_parcnpjcpf = qs("parcnpjcpf");
-const f_parfone = qs("parfone");
-const f_paremail = qs("paremail");
-const f_parsit = qs("parsit");
-const f_parcep = qs("parcep");
-const f_parrua = qs("parrua");
-const f_parbai = qs("parbai");
-const f_parmuncod = qs("parmuncod");
-const cidadeLista = qs("cidadeLista");
-const cidadeSelecionada = qs("cidadeSelecionada");
-const btnLimparCidade = qs("btnLimparCidade");
+var f_parcod = qs("parcod");
+var f_pardes = qs("pardes");
+var f_parfan = qs("parfan");
+var f_parcnpjcpf = qs("parcnpjcpf");
+var f_parfone = qs("parfone");
+var f_paremail = qs("paremail");
+var f_parsit = qs("parsit");
+var f_parcep = qs("parcep");
+var f_parrua = qs("parrua");
+var f_parbai = qs("parbai");
+var f_parmuncod = qs("parmuncod");
+var cidadeLista = qs("cidadeLista");
+var cidadeSelecionada = qs("cidadeSelecionada");
+var btnLimparCidade = qs("btnLimparCidade");
 
 // Listas
-const pedidosLista = qs("pedidosLista");
-const pedidosCount = qs("pedidosCount");
-const pedidosTotal = qs("pedidosTotal");
-const filtroPedidosCliente = qs("filtroPedidosCliente");
-const pedidosDisponiveisLista = qs("pedidosDisponiveisLista");
-const buscaPedidoDisponivel = qs("buscaPedidoDisponivel");
-const movLista = qs("movLista");
-const cobrancasLista = qs("cobrancasLista");
-const cobrancasCount = qs("cobrancasCount");
-const cobPedido = qs("cobPedido");
+var pedidosLista = qs("pedidosLista");
+var pedidosCount = qs("pedidosCount");
+var pedidosTotal = qs("pedidosTotal");
+var filtroPedidosCliente = qs("filtroPedidosCliente");
+var pedidosDisponiveisLista = qs("pedidosDisponiveisLista");
+var buscaPedidoDisponivel = qs("buscaPedidoDisponivel");
+var movLista = qs("movLista");
+var cobrancasLista = qs("cobrancasLista");
+var cobrancasCount = qs("cobrancasCount");
+var cobPedido = qs("cobPedido");
 
 // Painel lateral de detalhes do pedido
-const pedidoDrawer = qs("pedidoDrawer");
-const pedidoDrawerTitulo = qs("pedidoDrawerTitulo");
-const pedidoDrawerSubtitulo = qs("pedidoDrawerSubtitulo");
-const pedidoDrawerStatus = qs("pedidoDrawerStatus");
-const pedidoDrawerConteudo = qs("pedidoDrawerConteudo");
-const pedidoDrawerRodape = qs("pedidoDrawerRodape");
-const vincularDrawer = qs("vincularDrawer");
-const alertaTelefone = qs("alertaTelefone");
+var pedidoDrawer = qs("pedidoDrawer");
+var pedidoDrawerTitulo = qs("pedidoDrawerTitulo");
+var pedidoDrawerSubtitulo = qs("pedidoDrawerSubtitulo");
+var pedidoDrawerStatus = qs("pedidoDrawerStatus");
+var pedidoDrawerConteudo = qs("pedidoDrawerConteudo");
+var pedidoDrawerRodape = qs("pedidoDrawerRodape");
+var vincularDrawer = qs("vincularDrawer");
+var alertaTelefone = qs("alertaTelefone");
 
 // Estado
-let page = 1;
-const pageSize = 20;
-let total = 0;
-let q = "";
-let municipios = [];
-let cidadeSelecionadaCod = null;
-let cidadeAtiva = -1;
-let clienteAtual = null;
-let pedidosCliente = [];
+var page = 1;
+var pageSize = 20;
+var total = 0;
+var q = "";
+var municipios = [];
+var cidadeSelecionadaCod = null;
+var cidadeAtiva = -1;
+var clienteAtual = null;
+var pedidosCliente = [];
 // Incrementado a cada abertura de ficha. Abortar cargas antigas evita que uma
 // edição resolvida tarde reintroduza as abas extras num cadastro em andamento.
-let fichaToken = 0;
+var fichaToken = 0;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-const onlyDigits = (s) => String(s == null ? "" : s).replace(/\D/g, "");
-const toNum = (v) => Number(v || 0);
-const jsonHeaders = { "Content-Type": "application/json" };
+var onlyDigits = (s) => String(s == null ? "" : s).replace(/\D/g, "");
+var toNum = (v) => Number(v || 0);
+var jsonHeaders = { "Content-Type": "application/json" };
 
 function escapeHtml(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
@@ -198,7 +198,7 @@ function situacaoBadge(parsit) {
   }
   return '<span class="ou-badge ou-badge--success"><span class="ou-badge__dot"></span>Ativo</span>';
 }
-const MOV_LABEL = {
+var MOV_LABEL = {
   DEBITO: "Débito", CREDITO: "Crédito", PAGAMENTO: "Pagamento",
   ESTORNO: "Estorno", AJUSTE: "Ajuste", COBRANCA: "Cobrança",
 };
@@ -468,9 +468,12 @@ cidadeLista.addEventListener("mousedown", (e) => {
   selecionarCidade(btn.dataset.cod, btn.dataset.label);
 });
 btnLimparCidade.addEventListener("click", limparCidade);
-document.addEventListener("click", (e) => {
-  if (!qs("cidadeCombobox").contains(e.target)) fecharCidadeLista();
-});
+if (!window.__ouClientesDocClick) {
+  window.__ouClientesDocClick = true;
+  document.addEventListener("click", (e) => {
+    if (!qs("cidadeCombobox").contains(e.target)) fecharCidadeLista();
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Cabeçalho / identidade
@@ -1141,19 +1144,22 @@ qs("btnFecharDrawer").addEventListener("click", fecharDrawerPedido);
 qs("btnFecharDrawer2").addEventListener("click", fecharDrawerPedido);
 
 // Esc fecha o painel lateral em vez do modal do cliente.
-document.addEventListener(
-  "keydown",
-  (e) => {
-    if (e.key !== "Escape") return;
-    const aberto = drawerAberto();
-    if (aberto) {
-      e.preventDefault();
-      e.stopPropagation();
-      fecharDrawer(aberto);
-    }
-  },
-  true
-);
+if (!window.__ouClientesDocEsc) {
+  window.__ouClientesDocEsc = true;
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key !== "Escape") return;
+      const aberto = drawerAberto();
+      if (aberto) {
+        e.preventDefault();
+        e.stopPropagation();
+        fecharDrawer(aberto);
+      }
+    },
+    true
+  );
+}
 
 async function desvincularPedido(id, pvcod) {
   const msg = `Desvincular pedido?\n\nO pedido #${pvcod} deixará de estar vinculado a este cliente. O pedido não será excluído.`;
@@ -1442,7 +1448,7 @@ btnPrev.addEventListener("click", () => {
   if (page > 1) { page--; carregarClientes(); }
 });
 
-let searchTimer = null;
+var searchTimer = null;
 searchInput.addEventListener("input", (e) => {
   q = (e.target.value || "").trim();
   page = 1;
@@ -1461,7 +1467,7 @@ cliModalEl.addEventListener("hidden.bs.modal", () => {
   alertaTelefone.classList.add("d-none");
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   carregarClientes();
   carregarMunicipios();
 });

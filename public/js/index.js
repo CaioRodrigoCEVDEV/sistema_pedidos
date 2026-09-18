@@ -1,3 +1,4 @@
+(function () {
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 
@@ -42,7 +43,7 @@ function carregarMarcas() {
   return marcasPromise;
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
+ouOnLoad(async () => {
   // ======================================================
   //  RENDERIZAÇÃO DAS MARCAS NO FRONT
   // ======================================================
@@ -607,20 +608,27 @@ window.removerItemCarrinho = function (idx) {
   document.getElementById("openCartModal").click();
 };
 
-window.addEventListener("pageshow", function (event) {
-  atualizarIconeCarrinho();
-});
+// Listeners globais da home: registrados uma única vez por sessão (o script é
+// reavaliado a cada navegação do Turbo e não pode acumular listeners no window).
+if (!window.__ouHomeListeners) {
+  window.__ouHomeListeners = true;
+
+  window.addEventListener("pageshow", function (event) {
+    atualizarIconeCarrinho();
+  });
+
+  // Captura o evento antes do Chrome exibir o banner nativo
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); // impede o banner automático
+    window.__ouDeferredPrompt = e;
+    const b = document.getElementById("btnInstall");
+    if (b) b.style.display = "inline-flex"; // mostra botão manual
+  });
+}
 
 // Botão de instalação PWA
-let deferredPrompt;
+let deferredPrompt = window.__ouDeferredPrompt;
 const btnInstall = document.getElementById("btnInstall");
-
-// Captura o evento antes do Chrome exibir o banner nativo
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault(); // impede o banner automático
-  deferredPrompt = e;
-  if (btnInstall) btnInstall.style.display = "inline-flex"; // mostra botão manual
-});
 
 // Quando o usuário clicar no botão
 if (btnInstall) {
@@ -631,12 +639,15 @@ if (btnInstall) {
     deferredPrompt.userChoice.then((choiceResult) => {
       console.log("Usuário escolheu:", choiceResult.outcome);
       deferredPrompt = null;
+      window.__ouDeferredPrompt = null;
     });
   });
 }
 
-// Registro do Service Worker
-if ("serviceWorker" in navigator) {
+// Registro do Service Worker (uma vez por sessão; o script da home é
+// reavaliado a cada navegação do Turbo).
+if ("serviceWorker" in navigator && !window.__ouSWRegistered) {
+  window.__ouSWRegistered = true;
   navigator.serviceWorker.register("/sw.js").then(
     () => {
       console.log("Service Worker registrado");
@@ -646,3 +657,5 @@ if ("serviceWorker" in navigator) {
     }
   );
 }
+
+})();

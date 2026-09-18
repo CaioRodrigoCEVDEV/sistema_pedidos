@@ -332,5 +332,5 @@
     if (event.key === "Enter" || event.key === " ") tratarAdicionar(event);
   });
 
-  document.addEventListener("DOMContentLoaded", carregar);
+  ouOnLoad(carregar);
 })();

@@ -1,5 +1,5 @@
-let currentData = [];
-let currentFilters = {
+var currentData = [];
+var currentFilters = {
   dataInicio: "",
   dataFim: "",
   marca: "",
@@ -7,19 +7,19 @@ let currentFilters = {
 };
 
 // Elementos DOM
-const dataInicioInput = document.getElementById("dataInicio");
-const dataFimInput = document.getElementById("dataFim");
-const marcaSelect = document.getElementById("marcaSelect");
-const groupBySelect = document.getElementById("groupBySelect");
-const btnFiltrar = document.getElementById("btnFiltrar");
-const btnLimpar = document.getElementById("btnLimpar");
-const btnExportPDF = document.getElementById("btnExportPDF");
-const btnExportXLS = document.getElementById("btnExportXLS");
-const tableHeader = document.getElementById("tableHeader");
-const tableBody = document.getElementById("tableBody");
-const emptyState = document.getElementById("emptyState");
-const loadingState = document.getElementById("loadingState");
-const resultsInfo = document.getElementById("resultsInfo");
+var dataInicioInput = document.getElementById("dataInicio");
+var dataFimInput = document.getElementById("dataFim");
+var marcaSelect = document.getElementById("marcaSelect");
+var groupBySelect = document.getElementById("groupBySelect");
+var btnFiltrar = document.getElementById("btnFiltrar");
+var btnLimpar = document.getElementById("btnLimpar");
+var btnExportPDF = document.getElementById("btnExportPDF");
+var btnExportXLS = document.getElementById("btnExportXLS");
+var tableHeader = document.getElementById("tableHeader");
+var tableBody = document.getElementById("tableBody");
+var emptyState = document.getElementById("emptyState");
+var loadingState = document.getElementById("loadingState");
+var resultsInfo = document.getElementById("resultsInfo");
 
 // Carrega marcas para o select
 async function loadMarcas() {
@@ -209,7 +209,7 @@ btnExportXLS.addEventListener("click", () => {
 });
 
 // Inicialização
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   loadMarcas();
   updateTableHeader();
 });
@@ -311,7 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  ouOnLoad(() => {
     carregarMarcasPecaPDF();
     carregarTiposPecaPDF();
   });

@@ -7,22 +7,22 @@
  * IMPORTANTE: O ID dos grupos é INTEGER simples, não criptografado.
  */
 
-let currentGroupId = null;
-let currentGroupData = null; // Store current group data including cost
-let allGroups = [];
-let availableParts = [];
-let currentPage = 1;
-let totalPages = 1;
-let isLoadingMore = false;
-let searchTerm = "";
-let searchDebounceTimer = null;
+var currentGroupId = null;
+var currentGroupData = null; // Store current group data including cost
+var allGroups = [];
+var availableParts = [];
+var currentPage = 1;
+var totalPages = 1;
+var isLoadingMore = false;
+var searchTerm = "";
+var searchDebounceTimer = null;
 
 // Sorting state for groups table
-let sortCol = "created_at";
-let sortDir = "desc"; // 'asc' | 'desc'
+var sortCol = "created_at";
+var sortDir = "desc"; // 'asc' | 'desc'
 
 // Referência do modal de adicionar peça (para controle de backdrop)
-let modalAdicionarPecaInstance = null;
+var modalAdicionarPecaInstance = null;
 
 /**
  * Função auxiliar para exibir notificações toast
@@ -1203,7 +1203,7 @@ async function removerPecaGrupo(procorid) {
  * Filtro de pesquisa para peças disponíveis
  * Adiciona evento de input para filtrar a lista em tempo real
  */
-document.addEventListener("DOMContentLoaded", function () {
+ouOnLoad(function () {
   // Filtro de pesquisa para a lista de grupos
   const searchGrupos = document.getElementById("pesquisaGrupos");
   if (searchGrupos) {

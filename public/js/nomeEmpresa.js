@@ -12,7 +12,7 @@ window.obterDadosEmpresa = window.obterDadosEmpresa || function obterDadosEmpres
     return window.__ouEmpresaPromise;
 };
 
-document.addEventListener('DOMContentLoaded', function() {
+ouOnNavigate("nomeEmpresa", function() {
     function formatCompanyName(name) {
         return name ? name.toUpperCase() : '';
     }

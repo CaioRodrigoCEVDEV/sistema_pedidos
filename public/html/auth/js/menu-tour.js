@@ -137,9 +137,5 @@
     }, INTERVALO_MS);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", tentarIniciar);
-  } else {
-    tentarIniciar();
-  }
+  ouOnLoad(tentarIniciar);
 })();
