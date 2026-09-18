@@ -7,15 +7,18 @@
  * IMPORTANTE: O ID dos grupos é INTEGER simples, não criptografado.
  */
 
-var currentGroupId = null;
-var currentGroupData = null; // Store current group data including cost
-var allGroups = [];
-var availableParts = [];
-var currentPage = 1;
-var totalPages = 1;
-var isLoadingMore = false;
-var searchTerm = "";
-var searchDebounceTimer = null;
+let currentGroupId = null;
+let currentGroupData = null; // Store current group data including cost
+let allGroups = [];
+let availableParts = [];
+let currentPage = 1;
+let totalPages = 1;
+let isLoadingMore = false;
+let searchTerm = "";
+let searchDebounceTimer = null;
+let groupColors = [];
+let detailsRequestId = 0;
+let historyRequestId = 0;
 
 // Sorting state for groups table
 var sortCol = "created_at";
@@ -115,7 +118,6 @@ async function carregarGrupos() {
 
     allGroups = await res.json();
     renderGruposFiltradosOrdenados();
-    carregarCoresNoSelect();
   } catch (err) {
     console.error(err);
     tbody.innerHTML =
@@ -176,10 +178,12 @@ async function carregarCoresNoSelect() {
     const res = await fetch(`${BASE_URL}/cores`, { credentials: "include" });
     if (!res.ok) return;
     const cores = await res.json();
+    groupColors = cores;
 
     ["corGrupo", "editarCorGrupo"].forEach((selectId) => {
       const sel = document.getElementById(selectId);
       if (!sel) return;
+      const selectedValue = sel.value;
       // Mantém a opção vazia
       sel.innerHTML = '<option value="">— Sem cor específica —</option>';
       cores.forEach((cor) => {
@@ -191,6 +195,7 @@ async function carregarCoresNoSelect() {
         }
         sel.appendChild(opt);
       });
+      sel.value = selectedValue;
     });
   } catch (err) {
     console.warn("Não foi possível carregar cores:", err);
@@ -203,7 +208,12 @@ async function carregarCoresNoSelect() {
  */
 function renderGrupos(grupos) {
   const tbody = document.getElementById("tabela-grupos");
-  tbody.innerHTML = "";
+  const container = tbody.closest(".ou-table-sticky");
+  const scrollTop = container?.scrollTop;
+  const rows = new Map(
+    Array.from(tbody.querySelectorAll("tr[data-group-id]"), (row) => [row.dataset.groupId, row]),
+  );
+  tbody.querySelector("td[colspan]")?.closest("tr").remove();
 
   if (!grupos || grupos.length === 0) {
     tbody.innerHTML =
@@ -211,8 +221,18 @@ function renderGrupos(grupos) {
     return;
   }
 
-  grupos.forEach((grupo) => {
+  grupos.forEach((grupo, index) => {
+    const previousRow = rows.get(String(grupo.id));
+    rows.delete(String(grupo.id));
+    if (previousRow?._grupo === grupo) {
+      if (tbody.children[index] !== previousRow) {
+        tbody.insertBefore(previousRow, tbody.children[index] || null);
+      }
+      return;
+    }
     const tr = document.createElement("tr");
+    tr.dataset.groupId = grupo.id;
+    tr._grupo = grupo;
     tr.className = "align-middle";
     tr.style.cursor = "pointer";
     tr.addEventListener("click", (e) => {
@@ -273,8 +293,33 @@ function renderGrupos(grupos) {
       excluirGrupo(grupo.id);
     });
 
-    tbody.appendChild(tr);
+    if (previousRow) previousRow.replaceWith(tr);
+    if (tbody.children[index] !== tr) {
+      tbody.insertBefore(tr, tbody.children[index] || null);
+    }
   });
+  rows.forEach((row) => row.remove());
+  if (container) container.scrollTop = scrollTop;
+}
+
+// Aplica respostas da API ao estado local, preservando o grupo aberto e as outras linhas.
+function atualizarGrupoLocal(dados) {
+  const index = allGroups.findIndex((grupo) => String(grupo.id) === String(dados.id));
+  const grupo = { ...(allGroups[index] || { parts_count: 0 }), ...dados };
+  if (Object.prototype.hasOwnProperty.call(dados, "color_id")) {
+    const cor = groupColors.find((item) => String(item.corcod) === String(dados.color_id));
+    grupo.color_name = dados.color_name ?? cor?.cornome ?? "";
+    grupo.color_hex = dados.color_hex ?? cor?.corhex ?? "";
+  }
+  if (index === -1) allGroups.push(grupo);
+  else allGroups[index] = grupo;
+
+  if (String(currentGroupId) === String(grupo.id)) {
+    currentGroupData = { ...currentGroupData, ...grupo };
+    document.getElementById("nomeGrupoDetalhe").textContent = grupo.name;
+    document.getElementById("estoqueGrupoDetalhe").textContent = grupo.stock_quantity ?? 0;
+  }
+  renderGruposFiltradosOrdenados();
 }
 
 /**
@@ -315,12 +360,13 @@ async function criarGrupo() {
       throw new Error(err.error || "Erro ao criar grupo");
     }
 
+    const grupo = await res.json();
+    atualizarGrupoLocal(grupo);
     showToast("Grupo criado com sucesso!", "success");
     bootstrap.Modal.getInstance(
       document.getElementById("modalCriarGrupo"),
     ).hide();
     document.getElementById("formCriarGrupo").reset();
-    carregarGrupos();
   } catch (err) {
     console.error(err);
     showToast(err.message, "error");
@@ -367,16 +413,11 @@ async function salvarEdicaoGrupo() {
       throw new Error(err.error || "Erro ao atualizar grupo");
     }
 
+    atualizarGrupoLocal(await res.json());
     showToast("Grupo atualizado com sucesso!", "success");
     bootstrap.Modal.getInstance(
       document.getElementById("modalEditarGrupo"),
     ).hide();
-    carregarGrupos();
-
-    // Atualiza a visualização de detalhes se estiver aberta
-    if (currentGroupId === id) {
-      document.getElementById("nomeGrupoDetalhe").textContent = nome;
-    }
   } catch (err) {
     console.error(err);
     showToast(err.message, "error");
@@ -408,9 +449,10 @@ async function excluirGrupo(id) {
     }
 
     showToast("Grupo excluído com sucesso!", "success");
-    carregarGrupos();
+    allGroups = allGroups.filter((grupo) => String(grupo.id) !== String(id));
+    renderGruposFiltradosOrdenados();
 
-    if (currentGroupId === id) {
+    if (String(currentGroupId) === String(id)) {
       fecharDetalhes();
     }
   } catch (err) {
@@ -424,7 +466,9 @@ async function excluirGrupo(id) {
  * @param {number} id - ID do grupo
  */
 async function abrirDetalhes(id) {
+  const requestId = ++detailsRequestId;
   currentGroupId = id;
+  currentGroupData = null;
   document.getElementById("detalhesGrupo").style.display = "block";
 
   try {
@@ -435,6 +479,7 @@ async function abrirDetalhes(id) {
     if (!res.ok) throw new Error("Erro ao buscar detalhes do grupo");
 
     const grupo = await res.json();
+    if (requestId !== detailsRequestId || String(currentGroupId) !== String(id)) return;
     currentGroupData = grupo; // Store group data for later use
 
     document.getElementById("nomeGrupoDetalhe").textContent = grupo.name;
@@ -443,10 +488,12 @@ async function abrirDetalhes(id) {
 
     // Renderiza as peças do grupo
     renderPecasGrupo(grupo.parts || []);
+    atualizarDisponibilidadePecas();
 
     // Carrega o histórico de movimentações
     carregarHistorico(id);
   } catch (err) {
+    if (requestId !== detailsRequestId || String(currentGroupId) !== String(id)) return;
     console.error(err);
     showToast("Erro ao carregar detalhes do grupo", "error");
   }
@@ -468,6 +515,7 @@ function renderPecasGrupo(pecas) {
 
   pecas.forEach((peca) => {
     const tr = document.createElement("tr");
+    tr.dataset.procorid = peca.procorid;
     const safeHex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(peca.corhex || "") ? peca.corhex : null;
     const colorBadge = peca.cornome
       ? `<span class="badge rounded-pill" style="background:${safeHex || "#6c757d"};color:#fff;font-size:0.75em;">${escapeHtml(peca.cornome)}</span>`
@@ -495,9 +543,10 @@ function renderPecasGrupo(pecas) {
  * Carrega o histórico de movimentações (auditoria) de um grupo
  * @param {number} groupId - ID do grupo
  */
-async function carregarHistorico(groupId) {
+async function carregarHistorico(groupId, silencioso = false) {
+  const requestId = ++historyRequestId;
   const tbody = document.getElementById("tabela-historico");
-  tbody.innerHTML =
+  if (!silencioso) tbody.innerHTML =
     '<tr><td colspan="4" class="text-center">Carregando...</td></tr>';
 
   try {
@@ -508,9 +557,18 @@ async function carregarHistorico(groupId) {
     if (!res.ok) throw new Error("Erro ao buscar histórico");
 
     const historico = await res.json();
+    if (requestId !== historyRequestId || String(currentGroupId) !== String(groupId)) return;
+    const container = tbody.closest(".ou-table-sticky");
+    const scrollTop = container?.scrollTop;
     renderHistorico(historico);
+    if (container) container.scrollTop = scrollTop;
   } catch (err) {
+    if (requestId !== historyRequestId || String(currentGroupId) !== String(groupId)) return;
     console.error(err);
+    if (silencioso) {
+      showToast("Estoque salvo, mas não foi possível atualizar o histórico", "error");
+      return;
+    }
     tbody.innerHTML =
       '<tr><td colspan="4" class="text-center text-muted">Erro ao carregar histórico</td></tr>';
   }
@@ -551,6 +609,8 @@ function renderHistorico(historico) {
  * Fecha o painel de detalhes do grupo
  */
 function fecharDetalhes() {
+  detailsRequestId++;
+  historyRequestId++;
   currentGroupId = null;
   currentGroupData = null;
   document.getElementById("detalhesGrupo").style.display = "none";
@@ -581,6 +641,7 @@ function abrirModalEditarEstoque() {
  */
 async function salvarEstoque() {
   if (!currentGroupId) return;
+  const groupId = currentGroupId;
 
   const quantidade = parseInt(document.getElementById("novoEstoque").value, 10);
   const motivo = document.getElementById("motivoEstoque").value;
@@ -608,7 +669,7 @@ async function salvarEstoque() {
   }
 
   try {
-    const res = await fetch(`${BASE_URL}/part-groups/${currentGroupId}/stock`, {
+    const res = await fetch(`${BASE_URL}/part-groups/${groupId}/stock`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -626,9 +687,16 @@ async function salvarEstoque() {
       document.getElementById("modalEditarEstoque"),
     ).hide();
 
-    // Atualiza os detalhes do grupo
-    abrirDetalhes(currentGroupId);
-    carregarGrupos();
+    atualizarGrupoLocal(result);
+    if (String(currentGroupId) === String(groupId)) {
+      (currentGroupData.parts || []).forEach((part) => {
+        part.procorqtde = result.stock_quantity;
+      });
+      document.querySelectorAll("#tabela-pecas-grupo tr[data-procorid]").forEach((row) => {
+        row.cells[3].textContent = result.stock_quantity;
+      });
+      await carregarHistorico(groupId, true);
+    }
   } catch (err) {
     console.error(err);
     showToast(err.message, "error");
@@ -833,6 +901,7 @@ async function abrirModalAdicionarPeca() {
   currentPage = 1;
   availableParts = [];
   searchTerm = "";
+  document.getElementById("pesquisaPeca").value = "";
 
   // Limpa qualquer backdrop residual antes de abrir o modal
   limparBackdropResidual();
@@ -857,6 +926,36 @@ async function abrirModalAdicionarPeca() {
  * @param {Array} pecas - Lista de peças disponíveis
  * @param {boolean} append - Se true, apenas adiciona novas linhas (para infinite scroll)
  */
+function estadoPecaNoGrupo(peca) {
+  const parts = currentGroupData?.parts || [];
+  const colors = (peca.colors || []).filter((cor) =>
+    !parts.some((part) => String(part.procorid) === String(cor.procorid)),
+  );
+  const hasColors = peca.has_colors && (peca.colors || []).length > 0;
+  const added = hasColors ? colors.length === 0 : parts.some((part) =>
+    String(part.procod ?? part.procorprocod) === String(peca.procod),
+  );
+  return { colors, hasColors, added };
+}
+
+function atualizarBotaoPecaNoGrupo(peca, row) {
+  const button = row?.querySelector(".btn-add-part");
+  if (!button) return;
+  const { added } = estadoPecaNoGrupo(peca);
+  button.disabled = added || !currentGroupData;
+  button.innerHTML = added
+    ? '<i class="bi bi-check-lg"></i> Já está no grupo'
+    : '<i class="bi bi-plus"></i> Adicionar';
+  button.classList.remove(added ? "btn-primary" : "btn-success");
+  button.classList.add(added ? "btn-success" : "btn-primary");
+}
+
+function atualizarDisponibilidadePecas() {
+  availableParts.forEach((peca) => {
+    atualizarBotaoPecaNoGrupo(peca, document.querySelector(`tr[data-peca-id="${peca.procod}"]`));
+  });
+}
+
 function renderPecasDisponiveis(pecas, append = false) {
   const tbody = document.getElementById("tabela-pecas-disponiveis");
 
@@ -902,11 +1001,14 @@ function renderPecasDisponiveis(pecas, append = false) {
 
     // Adiciona event listener (evita onclick inline para prevenir XSS)
     const button = tr.querySelector(".btn-add-part");
+    atualizarBotaoPecaNoGrupo(peca, tr);
     button.addEventListener("click", () => {
-      if (hasColors) {
-        if (peca.colors.length === 1) {
+      const estado = estadoPecaNoGrupo(peca);
+      if (!currentGroupData || estado.added) return;
+      if (estado.hasColors) {
+        if (estado.colors.length === 1) {
           // Apenas uma cor: adiciona diretamente pelo procorid
-          adicionarPecaAoGrupo(peca.colors[0].procorid);
+          adicionarPecaAoGrupo(estado.colors[0].procorid);
         } else {
           mostrarModalSelecaoCor(peca);
         }
@@ -924,10 +1026,10 @@ function renderPecasDisponiveis(pecas, append = false) {
  * @param {Object} peca - Objeto da peça com informações de cores (cada cor tem procorid)
  */
 function mostrarModalSelecaoCor(peca) {
-  const colors = peca.colors || [];
+  const colors = estadoPecaNoGrupo(peca).colors;
 
   if (colors.length === 0) {
-    showToast("Produto sem variações de cor cadastradas", "error");
+    showToast("Esta peça já está no grupo", "info");
     return;
   }
 
@@ -1011,10 +1113,16 @@ function mostrarModalSelecaoCor(peca) {
  * @param {number} procorid - ID da variação procor (produto+cor)
  */
 async function adicionarPecaAoGrupo(procorid) {
-  if (!currentGroupId) return;
+  if (!currentGroupId || !currentGroupData) return;
+  if ((currentGroupData.parts || []).some((part) => String(part.procorid) === String(procorid))) {
+    showToast("Esta variação já está no grupo", "info");
+    atualizarDisponibilidadePecas();
+    return;
+  }
+  const groupId = currentGroupId;
 
   try {
-    const res = await fetch(`${BASE_URL}/part-groups/${currentGroupId}/parts`, {
+    const res = await fetch(`${BASE_URL}/part-groups/${groupId}/parts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -1028,16 +1136,12 @@ async function adicionarPecaAoGrupo(procorid) {
 
     const data = await res.json();
 
-    showToast("Peça adicionada ao grupo!", "success");
-
-    // Atualiza apenas a linha da peça adicionada sem recarregar toda a lista.
-    // Isso preserva a posição de scroll do modal.
-    _atualizarLinhaAposAdicionar(procorid);
+    showToast(data.alreadyInGroup ? "Esta variação já está no grupo" : "Peça adicionada ao grupo!",
+      data.alreadyInGroup ? "info" : "success");
 
     // Adiciona a nova peça ao painel de detalhes sem re-fetch (evita pulo de scroll).
-    if (!data.alreadyInGroup) {
-      _appendPartToGroupTable(data);
-    }
+    _appendPartToGroupTable(data, groupId);
+    if (String(currentGroupId) === String(groupId)) atualizarDisponibilidadePecas();
   } catch (err) {
     console.error(err);
     showToast(err.message, "error");
@@ -1051,10 +1155,16 @@ async function adicionarPecaAoGrupo(procorid) {
  * @param {HTMLElement} tr - Linha da tabela de peças disponíveis
  */
 async function adicionarPecaSemCor(procod, tr) {
-  if (!currentGroupId) return;
+  if (!currentGroupId || !currentGroupData) return;
+  if (estadoPecaNoGrupo({ procod }).added) {
+    showToast("Esta peça já está no grupo", "info");
+    atualizarDisponibilidadePecas();
+    return;
+  }
+  const groupId = currentGroupId;
 
   try {
-    const res = await fetch(`${BASE_URL}/part-groups/${currentGroupId}/parts`, {
+    const res = await fetch(`${BASE_URL}/part-groups/${groupId}/parts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -1068,20 +1178,14 @@ async function adicionarPecaSemCor(procod, tr) {
 
     const data = await res.json();
 
-    showToast("Peça adicionada ao grupo!", "success");
-
-    // Desabilita o botão da linha para indicar que a peça foi adicionada
-    const button = tr ? tr.querySelector(".btn-add-part") : null;
-    if (button) {
-      button.disabled = true;
-      button.innerHTML = '<i class="bi bi-check-lg"></i> Adicionado';
-      button.classList.remove("btn-primary");
-      button.classList.add("btn-success");
-    }
+    showToast(data.alreadyInGroup ? "Esta peça já está no grupo" : "Peça adicionada ao grupo!",
+      data.alreadyInGroup ? "info" : "success");
 
     // Adiciona a nova peça ao painel de detalhes sem re-fetch
-    if (!data.alreadyInGroup) {
-      _appendPartToGroupTable(data);
+    _appendPartToGroupTable(data, groupId);
+    if (String(currentGroupId) === String(groupId)) {
+      atualizarDisponibilidadePecas();
+      atualizarBotaoPecaNoGrupo({ procod }, tr);
     }
   } catch (err) {
     console.error(err);
@@ -1094,7 +1198,18 @@ async function adicionarPecaSemCor(procod, tr) {
  * sem recarregar o painel inteiro (preserva a posição de scroll do modal).
  * @param {Object} part - Dados da variação retornados pela API (addProcorToGroup)
  */
-function _appendPartToGroupTable(part) {
+function _appendPartToGroupTable(part, groupId = currentGroupId) {
+  const isCurrentGroup = String(currentGroupId) === String(groupId);
+  const parts = isCurrentGroup ? (currentGroupData?.parts || []) : [];
+  const exists = parts.some((item) => String(item.procorid) === String(part.procorid));
+  const grupo = allGroups.find((item) => String(item.id) === String(groupId));
+  if (grupo && !part.alreadyInGroup && !exists) {
+    atualizarGrupoLocal({ id: groupId, parts_count: Number(grupo.parts_count || 0) + 1 });
+  }
+  if (!isCurrentGroup || exists) return;
+  if (currentGroupData) {
+    currentGroupData.parts = [...parts, { ...part, procod: part.procorprocod }];
+  }
   const tbody = document.getElementById("tabela-pecas-grupo");
   if (!tbody) return;
 
@@ -1108,6 +1223,7 @@ function _appendPartToGroupTable(part) {
     : '<span class="text-muted small">—</span>';
 
   const tr = document.createElement("tr");
+  tr.dataset.procorid = part.procorid;
   tr.innerHTML = `
     <td>${part.procorprocod}</td>
     <td>${escapeHtml(part.prodes || "-")}</td>
@@ -1126,53 +1242,12 @@ function _appendPartToGroupTable(part) {
 }
 
 /**
- * Atualiza apenas a linha da peça recém-adicionada na tabela de peças disponíveis,
- * sem recarregar toda a lista. Preserva a posição de scroll do modal.
- * @param {number} procorid - ID da variação procor recém-adicionada
- */
-function _atualizarLinhaAposAdicionar(procorid) {
-  const procorId = Number(procorid);
-  const partIndex = availableParts.findIndex(
-    (p) => p.colors && p.colors.some((c) => c.procorid === procorId),
-  );
-  if (partIndex === -1) return;
-
-  const part = availableParts[partIndex];
-
-  // Remove a cor adicionada do estado local
-  part.colors = part.colors.filter((c) => c.procorid !== procorId);
-
-  const row = document.querySelector(`tr[data-peca-id="${part.procod}"]`);
-  if (!row) return;
-
-  const button = row.querySelector(".btn-add-part");
-  if (!button) return;
-
-  if (part.colors.length === 0) {
-    // Todas as cores foram adicionadas: desabilita o botão
-    button.disabled = true;
-    button.innerHTML = '<i class="bi bi-check-lg"></i> Adicionado';
-    button.classList.remove("btn-primary");
-    button.classList.add("btn-success");
-  } else {
-    // Ainda há cores disponíveis: rebind do handler com as cores restantes
-    const newBtn = button.cloneNode(true);
-    button.parentNode.replaceChild(newBtn, button);
-    newBtn.addEventListener("click", () => {
-      if (part.colors.length === 1) {
-        adicionarPecaAoGrupo(part.colors[0].procorid);
-      } else {
-        mostrarModalSelecaoCor(part);
-      }
-    });
-  }
-}
-
-/**
  * Remove uma variação (procorid) do grupo atual
  * @param {number} procorid - ID da variação procor a remover
  */
 async function removerPecaGrupo(procorid) {
+  if (!currentGroupId) return;
+  const groupId = currentGroupId;
   if (!confirm("Tem certeza que deseja remover esta variação do grupo?")) {
     return;
   }
@@ -1190,9 +1265,18 @@ async function removerPecaGrupo(procorid) {
 
     showToast("Peça removida do grupo!", "success");
 
-    // Atualiza os detalhes do grupo
-    abrirDetalhes(currentGroupId);
-    carregarGrupos();
+    const grupo = allGroups.find((item) => String(item.id) === String(groupId));
+    if (grupo) {
+      atualizarGrupoLocal({ id: groupId, parts_count: Math.max(0, Number(grupo.parts_count || 0) - 1) });
+    }
+    if (String(currentGroupId) === String(groupId)) {
+      currentGroupData.parts = (currentGroupData.parts || []).filter(
+        (part) => String(part.procorid) !== String(procorid),
+      );
+      document.querySelector(`#tabela-pecas-grupo tr[data-procorid="${procorid}"]`)?.remove();
+      if (currentGroupData.parts.length === 0) renderPecasGrupo([]);
+      atualizarDisponibilidadePecas();
+    }
   } catch (err) {
     console.error(err);
     showToast(err.message, "error");
@@ -1203,7 +1287,28 @@ async function removerPecaGrupo(procorid) {
  * Filtro de pesquisa para peças disponíveis
  * Adiciona evento de input para filtrar a lista em tempo real
  */
-ouOnLoad(function () {
+document.addEventListener("DOMContentLoaded", function () {
+  // Enter e clique usam o mesmo fluxo assíncrono, sem navegação do formulário.
+  [
+    ["formCriarGrupo", criarGrupo],
+    ["formEditarGrupo", salvarEdicaoGrupo],
+    ["formEditarEstoque", salvarEstoque],
+  ].forEach(([formId, salvar]) => {
+    const form = document.getElementById(formId);
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (form.dataset.saving === "true") return;
+      const button = document.querySelector(`button[form="${formId}"]`);
+      form.dataset.saving = "true";
+      if (button) button.disabled = true;
+      try {
+        await salvar();
+      } finally {
+        delete form.dataset.saving;
+        if (button) button.disabled = false;
+      }
+    });
+  });
   // Filtro de pesquisa para a lista de grupos
   const searchGrupos = document.getElementById("pesquisaGrupos");
   if (searchGrupos) {
@@ -1276,4 +1381,5 @@ ouOnLoad(function () {
 // Inicialização: carrega os grupos ao carregar a página
 (function () {
   carregarGrupos();
+  carregarCoresNoSelect();
 })();
