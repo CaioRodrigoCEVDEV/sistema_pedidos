@@ -121,30 +121,76 @@ require.cache[dbPath] = { id: dbPath, filename: dbPath, loaded: true, exports: {
     return { rows: sql.includes("count(*)") ? [{ count: "0" }] : [] };
   },
 } };
+
+// Config de estoque controlavel pelos testes (empresa que controla estoque).
+let estoqueConfigMock = { usaEstoque: true, empusaest: "S", estoqueMin: 5 };
+const estoqueConfigPath = require.resolve("../src/utils/estoqueConfig");
+require.cache[estoqueConfigPath] = {
+  id: estoqueConfigPath,
+  filename: estoqueConfigPath,
+  loaded: true,
+  exports: {
+    async getEstoqueConfig() {
+      return { ...estoqueConfigMock };
+    },
+    invalidateEstoqueConfigCache() {},
+    normalizar: () => ({ ...estoqueConfigMock }),
+    TTL_MS: 0,
+  },
+};
+
 const controller = require("../src/controllers/proController");
+const { buildFlagsEstoqueSql } = require("../src/utils/estoqueFlagsSql");
 const response = () => ({ status() { return this; }, json(data) { this.data = data; } });
 
-test("API usa flags salvas na listagem, edição, filtros e total", async () => {
+test("API aplica flags efetivas de estoque na listagem, filtros e painel", async () => {
+  estoqueConfigMock = { usaEstoque: true, empusaest: "S", estoqueMin: 5 };
+  const flagsSql = buildFlagsEstoqueSql(estoqueConfigMock);
+
   for (const flags of [{}, { semest: "S" }, { acabando: "S" }, { semest: "S", acabando: "S" }]) {
     queries.length = 0;
     await controller.listarProdutos({ query: { page: "1", ...flags } }, response());
     assert.equal(queries.length, 2);
     const [count, list] = queries;
-    assert.doesNotMatch(list.sql, /stock_quantity|pc_disponivel/);
-    for (const [queryFlag, column] of [["semest", "prosemest"], ["acabando", "proacabando"]]) {
-      const expression = `COALESCE(UPPER(TRIM(pro.${column})), 'N')`;
-      assert.ok(list.sql.includes(`${expression} as ${column}`));
-      for (const query of queries) {
-        assert.equal(query.sql.includes(`${expression} = 'S'`), flags[queryFlag] === "S");
-      }
-    }
+
+    // Disponibilidade continua vindo da regra real (cor/grupo) e a flag de
+    // "acabando" e calculada a partir de proqtde x estoque minimo.
+    assert.ok(list.sql.includes(`${flagsSql.disponibilidadeSql} as prosemest`));
+    assert.ok(list.sql.includes(`${flagsSql.acabandoSql} as proacabando`));
+    assert.ok(list.sql.includes("COALESCE(pro.proqtde, 0) <= 5"));
+
+    const temFiltroSemest = list.sql.includes(`${flagsSql.disponibilidadeSql} = 'S'`);
+    const temFiltroAcabando = list.sql.includes(`${flagsSql.acabandoSql} = 'S'`);
+    assert.equal(temFiltroSemest, flags.semest === "S");
+    assert.equal(temFiltroAcabando, flags.acabando === "S");
+
     assert.equal(count.sql.slice(count.sql.indexOf("from pro")),
       list.sql.slice(list.sql.lastIndexOf("from pro"), list.sql.indexOf("\n        order by")));
   }
+
   queries.length = 0;
   await controller.listarProdutosPainelId({ params: { id: "1" } }, response());
-  assert.ok(queries[0].sql.includes("COALESCE(UPPER(TRIM(pro.prosemest)), 'N') as prosemest"));
-  assert.ok(queries[0].sql.includes("COALESCE(UPPER(TRIM(pro.proacabando)), 'N') as proacabando"));
+  assert.ok(queries[0].sql.includes(`${flagsSql.disponibilidadeSql} as prosemest`));
+  assert.ok(queries[0].sql.includes(`${flagsSql.acabandoSql} as proacabando`));
+  assert.ok(queries[0].sql.includes("COALESCE(pro.proqtde, 0) <= 5"));
+});
+
+test("Empresa sem controle de estoque zera as flags nas APIs", async () => {
+  estoqueConfigMock = { usaEstoque: false, empusaest: "N", estoqueMin: 5 };
+
+  queries.length = 0;
+  await controller.listarProdutos({ query: { page: "1" } }, response());
+  const list = queries[1];
+  assert.ok(list.sql.includes("'N' as prosemest"));
+  assert.ok(list.sql.includes("'N' as proacabando"));
+  assert.doesNotMatch(list.sql, /pc_disponivel/);
+
+  queries.length = 0;
+  await controller.totalProdutoAcabando({}, response());
+  assert.deepEqual(queries, []);
+  const res = response();
+  await controller.totalProdutoEmFalta({}, res);
+  assert.deepEqual(res.data, [{ count: "0" }]);
 });
 
 test("Consulta sem paginação mantém os parâmetros dos outros filtros", async () => {

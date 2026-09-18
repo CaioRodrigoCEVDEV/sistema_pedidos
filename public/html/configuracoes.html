@@ -96,6 +96,32 @@
                         </div>
                         <button id="saveWhats" type="submit" class="btn btn-primary my-3">Salvar</button>
                     </form>
+
+                    <hr class="my-4">
+
+                    <section>
+                        <h5 class="my-2">Controle de Estoque</h5>
+                        <p class="text-muted small mb-2">
+                            Quando ativado, o sistema calcula automaticamente as flags
+                            "Produto acabando" e "Produto sem estoque" e controla o estoque.
+                            Quando desativado, as flags são ignoradas e todos os itens
+                            aparecem disponíveis na loja.
+                        </p>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="empusaest">
+                            <label class="form-check-label" for="empusaest">Controla estoque</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="empestoqmin">Quantidade mínima para "Últimas unidades"</label>
+                            <input type="number" min="0" step="1" class="form-control" id="empestoqmin"
+                                placeholder="5">
+                            <div class="form-text">
+                                Produtos com estoque entre 1 e este valor serão marcados como
+                                "Últimas unidades".
+                            </div>
+                        </div>
+                        <button id="saveEstoque" type="button" class="btn btn-primary my-3">Salvar</button>
+                    </section>
                 </div>
             </div>
 
@@ -110,6 +136,7 @@
     <script src="../js/toast.js?v=2026.09.17.204003"></script>
     <script src="../js/configWhatsapp.js?v=2026.09.17.204003"></script>
     <script src="../js/nomeEmpresa.js?v=2026.09.17.204003"></script>
+    <script src="../js/configEstoque.js?v=2026.09.17.204003"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
         crossorigin="anonymous"></script>

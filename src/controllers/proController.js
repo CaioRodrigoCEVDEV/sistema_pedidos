@@ -1,14 +1,9 @@
 const pool = require("../config/db");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
-const {
-  disponibilidadeProdutoSql,
-} = require("../utils/disponibilidadeProdutoSql");
+const { buildFlagsEstoqueSql } = require("../utils/estoqueFlagsSql");
+const { getEstoqueConfig } = require("../utils/estoqueConfig");
 const catalogoCache = require("../utils/catalogoCache");
 const showcasesCache = require("../utils/showcasesCache");
-
-// A gestão mostra as marcações do formulário, sem calcular estoque por cor/grupo.
-const flagSemEstoqueSql = "COALESCE(UPPER(TRIM(pro.prosemest)), 'N')";
-const flagAcabandoSql = "COALESCE(UPPER(TRIM(pro.proacabando)), 'N')";
 
 exports.listarProduto = async (req, res) => {
   const tipoId = parseIntegerParam(req.params.id);
@@ -28,12 +23,15 @@ exports.listarProduto = async (req, res) => {
   }
 
   try {
+    const config = await getEstoqueConfig();
+    const flags = buildFlagsEstoqueSql(config);
+
     // Busca produtos que estão vinculados ao modelo pela nova tabela promod
     // ou pelo campo legado promodcod (para compatibilidade)
     const result = await pool.query(
       `select distinct procod, prodes, provl, procusto, tipodes,
-        ${disponibilidadeProdutoSql} as prosemest,
-        COALESCE(pro.proacabando, 'N') as proacabando, proordem from pro
+        ${flags.disponibilidadeSql} as prosemest,
+        ${flags.acabandoSql} as proacabando, proordem from pro
         join tipo on tipocod = protipocod
         left join promod on promodprocod = procod
         where promarcascod = $1 
@@ -62,6 +60,9 @@ exports.listarProdutos = async (req, res) => {
   const semest = String(req.query.semest || "").trim().toUpperCase();
   const acabando = String(req.query.acabando || "").trim().toUpperCase();
 
+  const config = await getEstoqueConfig();
+  const flags = buildFlagsEstoqueSql(config);
+
   const paginado = req.query.page !== undefined || req.query.pageSize !== undefined;
   const off = (page - 1) * pageSize;
 
@@ -87,10 +88,10 @@ exports.listarProdutos = async (req, res) => {
     filters.push(`prodes ILIKE $${params.length}`);
   }
   if (semest === "S") {
-    filters.push(`${flagSemEstoqueSql} = 'S'`);
+    filters.push(`${flags.disponibilidadeSql} = 'S'`);
   }
   if (acabando === "S") {
-    filters.push(`${flagAcabandoSql} = 'S'`);
+    filters.push(`${flags.acabandoSql} = 'S'`);
   }
   const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
   const from = `from pro
@@ -106,8 +107,8 @@ exports.listarProdutos = async (req, res) => {
       case when prodes is null then '' else prodes end as prodes, 
       case when provl is null then 0 else provl end as provl,
       case when procusto is null then 0 else procusto end as procusto,
-      ${flagSemEstoqueSql} as prosemest,
-      ${flagAcabandoSql} as proacabando,
+      ${flags.disponibilidadeSql} as prosemest,
+      ${flags.acabandoSql} as proacabando,
       (
         SELECT string_agg(m.moddes, ', ' ORDER BY m.moddes)
         FROM promod pm
@@ -152,6 +153,8 @@ exports.listarProdutosPainelId = async (req, res) => {
   }
 
   try {
+    const config = await getEstoqueConfig();
+    const flags = buildFlagsEstoqueSql(config);
     const result = await pool.query(
       `select         
        procod,
@@ -159,8 +162,8 @@ exports.listarProdutosPainelId = async (req, res) => {
        case when prodes is null then '' else prodes end as prodes,
        case when provl is null then 0 else provl end as provl, 
        case when procusto is null then 0 else procusto end as procusto, 
-       ${flagSemEstoqueSql} as prosemest,
-       ${flagAcabandoSql} as proacabando from pro where procod = $1`,
+       ${flags.disponibilidadeSql} as prosemest,
+       ${flags.acabandoSql} as proacabando from pro where procod = $1`,
       [produtoId],
     );
     res.status(200).json(result.rows);
@@ -172,8 +175,13 @@ exports.listarProdutosPainelId = async (req, res) => {
 
 exports.totalProdutoAcabando = async (req, res) => {
   try {
+    const config = await getEstoqueConfig();
+    if (!config.usaEstoque) {
+      return res.status(200).json([{ count: "0" }]);
+    }
+    const flags = buildFlagsEstoqueSql(config);
     const result = await pool.query(
-      `select count(procod)  from pro where proacabando = 'S'`,
+      `select count(procod) from pro where ${flags.acabandoSql} = 'S'`,
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -186,8 +194,13 @@ exports.totalProdutoAcabando = async (req, res) => {
 
 exports.totalProdutoEmFalta = async (req, res) => {
   try {
+    const config = await getEstoqueConfig();
+    if (!config.usaEstoque) {
+      return res.status(200).json([{ count: "0" }]);
+    }
+    const flags = buildFlagsEstoqueSql(config);
     const result = await pool.query(
-      `select count(procod)  from pro where prosemest  = 'S'`,
+      `select count(procod) from pro where ${flags.disponibilidadeSql} = 'S'`,
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -424,10 +437,9 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      `select procod, prodes, provl, tipodes, corcod,
-        case when cornome is null then '' else cornome end as cornome,
-        CASE
+    const config = await getEstoqueConfig();
+    const procorsemestSql = config.usaEstoque
+      ? `CASE
           WHEN procor.procorid IS NULL THEN COALESCE(TRIM(pro.prosemest), 'N')
           WHEN EXISTS (
             SELECT 1 FROM part_group_items pgi_vinculo
@@ -441,7 +453,13 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
                 AND COALESCE(pg_estoque.stock_quantity, 0) > 0
             ) THEN 'N' ELSE 'S' END
           ELSE COALESCE(TRIM(procor.procorsemest), 'N')
-        END AS procorsemest
+        END`
+      : "'N'";
+
+    const result = await pool.query(
+      `select procod, prodes, provl, tipodes, corcod,
+        case when cornome is null then '' else cornome end as cornome,
+        ${procorsemestSql} AS procorsemest
         from pro
         join tipo on tipocod = protipocod
         left join procor on procorprocod = procod

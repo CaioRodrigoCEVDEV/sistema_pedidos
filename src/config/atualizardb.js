@@ -65,6 +65,10 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.emp ADD IF NOT exists empusaest varchar(1) default 'N';`
     );
+    // Quantidade minima para a flag automatica de "ultimas unidades".
+    await pool.query(
+      `ALTER TABLE public.emp ADD IF NOT exists empestoqmin int4 DEFAULT 5 NOT NULL;`
+    );
     await pool.query(
       `alter table public.procor add IF NOT exists procorqtde int null;`
     );
@@ -1100,6 +1104,12 @@ async function atualizarDB() {
         FOR EACH ROW
         EXECUTE PROCEDURE fn_marcar_prosemest();
 
+        DROP TRIGGER IF EXISTS trg_marcar_prosemest_insert ON pro;
+        CREATE TRIGGER trg_marcar_prosemest_insert
+        BEFORE INSERT ON pro
+        FOR EACH ROW
+        EXECUTE PROCEDURE fn_marcar_prosemest();
+
         
 
         DROP TRIGGER IF EXISTS trg_marcar_procorsemest ON procor;
@@ -1143,6 +1153,18 @@ async function atualizarDB() {
       WHERE pc.procorprocod = pr.procod
         AND COALESCE(pc.procorcorescod, 0) = 0
         AND pr.proqtde IS DISTINCT FROM pg.stock_quantity;
+    `);
+
+    // Reconcilia a flag "sem estoque" das pecas simples (sem cor): se o
+    // estoque geral esta zerado, a peca deve estar marcada como sem estoque.
+    await pool.query(`
+      UPDATE pro pr
+      SET prosemest = CASE WHEN COALESCE(pr.proqtde, 0) <= 0 THEN 'S' ELSE 'N' END
+      WHERE NOT EXISTS (
+        SELECT 1 FROM procor pc WHERE pc.procorprocod = pr.procod
+      )
+        AND COALESCE(TRIM(pr.prosemest), 'N') IS DISTINCT FROM
+            CASE WHEN COALESCE(pr.proqtde, 0) <= 0 THEN 'S' ELSE 'N' END;
     `);
 
     // Preserva as marcações salvas no cadastro ao reiniciar o servidor.

@@ -1,12 +1,25 @@
 const showcaseModels = require("../models/showcaseModels");
 const showcasesCache = require("../utils/showcasesCache");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
+const { getEstoqueConfig } = require("../utils/estoqueConfig");
 
 const TIPO_MANUAL = "featured";
 
 // Formato enxuto dos itens das vitrines para a página pública.
 // Não expõe campos internos do cadastro (prosit, posições etc.).
-function mapearItemPublico(row) {
+// As flags respeitam a config da empresa: quando ela não controla estoque,
+// tudo é exibido como disponível e sem "últimas unidades".
+function mapearItemPublico(row, config) {
+  const usaEstoque = Boolean(config && config.usaEstoque);
+  const estoqueMin = config && Number.isInteger(config.estoqueMin)
+    ? config.estoqueMin
+    : 5;
+  const disponivel = String(row.prosemest || "N").trim().toUpperCase() === "S"
+    ? "S"
+    : "N";
+  const qtd = Number(row.proqtde) || 0;
+  const acabando = usaEstoque && qtd > 0 && qtd <= estoqueMin ? "S" : "N";
+
   return {
     procod: row.procod,
     prodes: row.prodes || "",
@@ -17,9 +30,8 @@ function mapearItemPublico(row) {
     marcasdes: row.marcasdes || "",
     modcod: row.modcod || null,
     moddes: row.moddes || "",
-    prosemest: String(row.prosemest || "N").trim().toUpperCase() === "S" ? "S" : "N",
-    proacabando:
-      String(row.proacabando || "N").trim().toUpperCase() === "S" ? "S" : "N",
+    prosemest: usaEstoque ? disponivel : "N",
+    proacabando: acabando,
   };
 }
 
@@ -32,6 +44,8 @@ async function montarVitrinesPublicas() {
   if (showcases.length === 0) {
     return { showcases: [] };
   }
+
+  const config = await getEstoqueConfig();
 
   const destaque = showcases.find((s) => s.type === TIPO_MANUAL);
   let itensDestaque = [];
@@ -60,7 +74,7 @@ async function montarVitrinesPublicas() {
     resultado.push({
       type: showcase.type,
       title: showcase.title,
-      items: itens.map(mapearItemPublico),
+      items: itens.map((item) => mapearItemPublico(item, config)),
     });
   }
 
@@ -101,6 +115,7 @@ exports.listarAdmin = async (req, res) => {
       showcaseModels.listarShowcases({ somenteAtivas: false }),
       showcaseModels.listarItensShowcases({ somenteAtivos: false }),
     ]);
+    const config = await getEstoqueConfig();
 
     const itensPorShowcase = new Map();
     for (const item of itens) {
@@ -125,7 +140,7 @@ exports.listarAdmin = async (req, res) => {
       resposta.push({
         ...showcase,
         items: itensPorShowcase.get(showcase.id) || [],
-        previewItems: previewItems.map(mapearItemPublico),
+        previewItems: previewItems.map((item) => mapearItemPublico(item, config)),
       });
     }
 
