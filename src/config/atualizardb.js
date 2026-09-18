@@ -707,6 +707,16 @@ async function atualizarDB() {
               RAISE EXCEPTION 'Variação de cor inválida em um dos itens do pedido %.', NEW.pvcod;
             END IF;
 
+            -- Empresas que não controlam estoque (empusaest <> 'S') confirmam o
+            -- pedido sem validar nem movimentar saldo.
+            IF NOT EXISTS (
+              SELECT 1
+              FROM emp
+              WHERE COALESCE(TRIM(empusaest), 'N') = 'S'
+            ) THEN
+              RETURN NEW;
+            END IF;
+
             -- Grupos: soma todos os itens que consomem o mesmo estoque compartilhado,
             -- bloqueia o grupo, valida e baixa uma única vez.
             FOR r IN
@@ -861,6 +871,15 @@ async function atualizarDB() {
           v_new_stock INTEGER;
         BEGIN
           IF OLD.pvsta <> 'X' AND NEW.pvsta = 'X' AND NEW.pvconfirmado = 'S' THEN
+            -- Sem controle de estoque, nada foi baixado ao confirmar; não devolve.
+            IF NOT EXISTS (
+              SELECT 1
+              FROM emp
+              WHERE COALESCE(TRIM(empusaest), 'N') = 'S'
+            ) THEN
+              RETURN NEW;
+            END IF;
+
             FOR r IN
               SELECT pgi.group_id, SUM(COALESCE(i.pviqtde, 0)) AS total_qty
               FROM pvi i
