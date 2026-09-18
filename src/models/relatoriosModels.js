@@ -1,4 +1,6 @@
 const pool = require("../config/db");
+const { getEstoqueConfig } = require("../utils/estoqueConfig");
+const { buildFlagsEstoqueSql } = require("../utils/estoqueFlagsSql");
 
 // Constants
 const CONFIRMED_ORDER_STATUS = "S";
@@ -176,6 +178,9 @@ async function getPecasCadastradas(filters = {}) {
 
   const whereClause = whereClauses.join(" AND ");
 
+  const config = await getEstoqueConfig();
+  const flags = buildFlagsEstoqueSql(config);
+
   const query = `
     SELECT 
       pro.procod,
@@ -184,7 +189,7 @@ async function getPecasCadastradas(filters = {}) {
       modelo.moddes as modelo,
       tipo.tipodes as tipo,
       COALESCE(pro.provl, 0) as preco,
-      pro.prosemest
+      ${flags.disponibilidadeSql} as prosemest
     FROM pro
     JOIN marcas ON marcas.marcascod = pro.promarcascod
     LEFT JOIN modelo ON modelo.modcod = pro.promodcod

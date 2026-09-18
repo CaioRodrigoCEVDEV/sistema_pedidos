@@ -22,6 +22,7 @@ const PRODUTO_SELECT = `
   marcas.marcasdes,
   ${disponibilidadeProdutoSql} AS prosemest,
   COALESCE(pro.proacabando, 'N') AS proacabando,
+  COALESCE(pro.proqtde, 0) AS proqtde,
   pro.prodtcad,
   modelo.modcod,
   modelo.moddes

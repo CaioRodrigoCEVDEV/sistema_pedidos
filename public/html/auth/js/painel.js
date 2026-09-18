@@ -234,9 +234,20 @@ function editarProduto(codigo) {
         fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) =>
           r.json(),
         ),
+        fetch(`${BASE_URL}/emp`)
+          .then((r) => (r.ok ? r.json() : {}))
+          .catch(() => ({})),
       ]);
     })
-    .then(([produto, coresDisponiveis, coresProduto]) => {
+    .then(([produto, coresDisponiveis, coresProduto, empresa]) => {
+      // Config da empresa: quando controla estoque, as flags "Sem estoque
+      // geral" e "Produto acabando" sao automaticas e nao devem ser editadas.
+      const usaEstoque =
+        String((empresa || {}).empusaest || "N").trim().toUpperCase() === "S";
+      const estoqueMin = Number.isInteger(Number((empresa || {}).empestoqmin))
+        ? Number(empresa.empestoqmin)
+        : 5;
+
       // ------------------------------
       // POPUP
       // ------------------------------
@@ -271,19 +282,14 @@ function editarProduto(codigo) {
                   value="${Number(produto[0]?.provl).toFixed(2) || ""}">
               </div>
 
-              <div class="mb-3">
-                <label class="form-label">📥 Produto sem estoque</label><br>
-                <input type="checkbox" id="editar_prosemest"
-                  ${produto.some((p) => normalizarFlagPeca(p.prosemest) === "S") ? "checked" : ""}>
-                <label for="editar_prosemest">Sem estoque geral</label>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">📥 Produto acabando</label><br>
-                <input type="checkbox" id="editar_proacabando"
-                  ${produto.some((p) => normalizarFlagPeca(p.proacabando) === "S") ? "checked" : ""}>
-                <label for="editar_proacabando">Produto acabando</label>
-              </div>
+              ${
+                usaEstoque
+                  ? `<div class="mb-3">
+                <label class="form-label">📥 Estoque</label><br>
+                <small class="text-muted">As flags "Sem estoque geral" e "Produto acabando" são automáticas (mínimo de ${estoqueMin} unidades).</small>
+              </div>`
+                  : ""
+              }
 
               <details>
                 <summary class="mb-2">🎨 Vincule as cores do produto</summary>
@@ -385,13 +391,22 @@ function editarProduto(codigo) {
             .getElementById("editarDescricao")
             .value.trim();
           const provl = document.getElementById("editarValor").value;
-          const prosemest = document.getElementById("editar_prosemest").checked
-            ? "S"
-            : "N";
-          const proacabando = document.getElementById("editar_proacabando")
-            .checked
-            ? "S"
-            : "N";
+          const semestEl = document.getElementById("editar_prosemest");
+          const acabandoEl = document.getElementById("editar_proacabando");
+          const prosemest = semestEl
+            ? semestEl.checked
+              ? "S"
+              : "N"
+            : produto.some((p) => normalizarFlagPeca(p.prosemest) === "S")
+              ? "S"
+              : "N";
+          const proacabando = acabandoEl
+            ? acabandoEl.checked
+              ? "S"
+              : "N"
+            : produto.some((p) => normalizarFlagPeca(p.proacabando) === "S")
+              ? "S"
+              : "N";
 
           // Mapa com estado anterior
           const anterioresMap = {};

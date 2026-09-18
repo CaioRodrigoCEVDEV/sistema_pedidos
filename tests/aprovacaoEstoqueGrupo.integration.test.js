@@ -39,6 +39,15 @@ async function run() {
   try {
     await client.query("BEGIN");
 
+    // A empresa precisa controlar estoque (empusaest = 'S') para que o trigger
+    // de confirmação valide e baixe o saldo. O rollback final restaura o valor.
+    const empUpdate = await client.query(
+      "UPDATE emp SET empusaest = 'S'"
+    );
+    if (empUpdate.rowCount === 0) {
+      await client.query("INSERT INTO emp (empusaest) VALUES ('S')");
+    }
+
     const groupResult = await client.query(
       `INSERT INTO part_groups (name, stock_quantity)
        VALUES ('Teste aprovação estoque grupo', 8)
@@ -233,6 +242,26 @@ async function run() {
     assert.strictEqual(Number(coloredState.rows[0].procorqtde), 0);
     assert.strictEqual(coloredState.rows[0].procorsemest, "S");
     assert.strictEqual(coloredState.rows[0].prosemest, "S");
+
+    // Empresa que NÃO controla estoque (empusaest = 'N'): a confirmação não
+    // valida nem movimenta o saldo, mesmo com pedido maior que o estoque.
+    await client.query("UPDATE emp SET empusaest = 'N'");
+    const semControlePart = await createPart(client, "Teste sem controle", 1);
+    const semControleOrder = await createOrder(client, [
+      { procod: semControlePart, quantity: 50 },
+    ]);
+    await client.query(
+      "UPDATE pv SET pvconfirmado = 'S' WHERE pvcod = $1",
+      [semControleOrder],
+    );
+    const semControleState = await client.query(
+      `SELECT TRIM(pv.pvconfirmado) AS status, p.proqtde
+       FROM pv CROSS JOIN pro p
+       WHERE pv.pvcod = $1 AND p.procod = $2`,
+      [semControleOrder, semControlePart],
+    );
+    assert.strictEqual(semControleState.rows[0].status, "S");
+    assert.strictEqual(Number(semControleState.rows[0].proqtde), 1);
 
     await client.query("ROLLBACK");
     console.log("✅ aprovacaoEstoqueGrupo.integration.test.js passou");

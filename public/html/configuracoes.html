@@ -2,121 +2,370 @@
 <html lang="pt-BR">
 
 <head>
-<meta charset="UTF-8" />
-  <script src="/js/theme-manager.js?v=2026.09.17.204003"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title id="title"></title>
+  <meta charset="UTF-8" />
+  <script src="/js/theme-manager.js?v=2026.09.17.215330"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="title"></title>
 
-    <!--Links internos-->
-    <link rel="stylesheet" href="../css/style-flexbox.css?v=2026.09.17.204003">
-    <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.17.204003">
-    <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon">
-    <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png">
+  <!--Links internos-->
+  <link rel="stylesheet" href="../css/style-flexbox.css?v=2026.09.17.215330">
+  <link rel="stylesheet" href="/html/auth/admin/css/style-components.css?v=2026.09.17.215330">
+  <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon">
+  <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png">
 
-    <!--Links externos-->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+  <!--Links externos-->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" />
-    <!--link tema bootstrap-->
-    <link rel="stylesheet" href="../css/tema-bootstrap.css?v=2026.09.17.204003"/>
-    <!--Fim link tema bootstrap-->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-        integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
-    <style>
-        .container-config {
-            max-width: 600px;
-            padding: 20px;
-        }
+  <!--link tema bootstrap-->
+  <link rel="stylesheet" href="../css/tema-bootstrap.css?v=2026.09.17.215330" />
+  <!--Fim link tema bootstrap-->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
+  <link rel="stylesheet" href="/css/theme.css?v=2026.09.17.215330" />
+  <link rel="stylesheet" href="/css/shell.css?v=2026.09.17.215330" />
+  <link rel="stylesheet" href="/css/ui.css?v=2026.09.17.215330" />
 
-        img#logoAtual {
-            max-height: 120px;
-            display: block;
-            margin: 0 auto 15px auto;
-        }
-    </style>
-  <link rel="stylesheet" href="/css/theme.css?v=2026.09.17.204003" />
-  <link rel="stylesheet" href="/css/shell.css?v=2026.09.17.204003" />
-  <link rel="stylesheet" href="/css/ui.css?v=2026.09.17.204003" />
+  <style>
+    .config-section-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .config-section-head .config-section-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 34px;
+      width: 34px;
+      height: 34px;
+      font-size: 0.95rem;
+      color: var(--ou-primary);
+      background: var(--ou-primary-soft);
+      border-radius: var(--ou-radius-sm);
+    }
+
+    .config-section-head h5 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .config-logo {
+      display: block;
+      max-height: 132px;
+      max-width: 100%;
+      padding: 0.5rem;
+      background: var(--ou-surface-2);
+      border: 1px solid var(--ou-border-soft);
+      border-radius: var(--ou-radius);
+      object-fit: contain;
+    }
+
+    .config-switch-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.95rem 1.1rem;
+      background: var(--ou-surface-2);
+      border: 1px solid var(--ou-border-soft);
+      border-radius: var(--ou-radius);
+    }
+
+    .config-switch-row .form-switch {
+      flex: 0 0 auto;
+      margin: 0;
+    }
+
+    .config-switch-row .form-check-input {
+      width: 2.6rem;
+      height: 1.45rem;
+      margin-top: 0.1rem;
+      cursor: pointer;
+    }
+
+    /* Card "Como funciona" — blocos lado a lado */
+    .config-help-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.8rem;
+      height: 100%;
+      padding: 1rem 1.1rem;
+      background: var(--ou-surface-2);
+      border: 1px solid var(--ou-border-soft);
+      border-radius: var(--ou-radius);
+    }
+
+    .config-help-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 38px;
+      width: 38px;
+      height: 38px;
+      font-size: 1.05rem;
+      border-radius: var(--ou-radius-sm);
+      color: var(--ou-primary);
+      background: var(--ou-primary-soft);
+    }
+
+    .config-help-icon--warning {
+      color: var(--ou-warning);
+      background: var(--ou-warning-soft);
+    }
+
+    .config-help-icon--danger {
+      color: var(--ou-danger);
+      background: var(--ou-danger-soft);
+    }
+
+    .config-help-icon--muted {
+      color: var(--ou-text-2);
+      background: var(--ou-surface-3);
+    }
+
+    .config-help-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--ou-text);
+    }
+
+    .config-help-text {
+      margin-top: 0.15rem;
+      font-size: 0.83rem;
+      line-height: 1.45;
+      color: var(--ou-text-muted);
+    }
+  </style>
 </head>
 
 <body class="bg-light">
-    <div class="wrapper">
-        <header id="header-admin">
-            <!--Conteudo do header adicionado via JS-->
-        </header>
-        <main class="p-3">
-            <div class="container">
-                <div class="panel-hero mb-4">
-                    <div class="panel-hero__main">
-                        <span class="panel-hero__icon" aria-hidden="true">
-                            <i class="bi bi-gear"></i>
+  <div class="wrapper">
+    <header id="header-admin">
+      <!--Conteudo do header adicionado via JS-->
+    </header>
+    <main class="p-3">
+      <div class="container">
+        <div class="ou-page-header mb-4">
+          <div class="ou-page-header__main">
+            <span class="ou-page-header__icon" aria-hidden="true">
+              <i class="bi bi-gear"></i>
+            </span>
+            <div>
+              <span class="ou-page-header__eyebrow">Preferências</span>
+              <h1 class="h4 mb-0 ou-page-header__title">Configurações</h1>
+              <p class="ou-page-header__sub mb-0">
+                Personalize a identidade da empresa, os canais de contato e o controle de estoque.
+              </p>
+            </div>
+          </div>
+          <div class="ou-page-header__actions">
+            <a class="btn btn-outline-secondary" href="/index">
+              <i class="bi bi-box-arrow-up-right"></i> Ver loja
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="app-container">
+          <div class="row g-4">
+            <!-- Como funciona -->
+            <div class="col-12">
+              <div class="card panel-card">
+                <div class="card-header config-section-head">
+                  <span class="config-section-icon" aria-hidden="true"><i class="bi bi-info-circle"></i></span>
+                  <h5>Como funciona o controle de estoque</h5>
+                </div>
+                <div class="card-body p-4">
+                  <div class="row g-3">
+                    <div class="col-lg-4">
+                      <div class="config-help-item">
+                        <span class="config-help-icon config-help-icon--warning" aria-hidden="true">
+                          <i class="bi bi-exclamation-triangle"></i>
                         </span>
                         <div>
-                            <span class="panel-hero__eyebrow">Preferências</span>
-                            <h1 class="h4 mb-0 panel-hero__title">Configurações</h1>
-                            <p class="panel-hero__sub mb-0">
-                                Personalize a logo, os dados da empresa e os números de WhatsApp.
-                            </p>
+                          <div class="config-help-title">Produto acabando</div>
+                          <div class="config-help-text">
+                            Estoque maior que zero e menor ou igual à quantidade mínima configurada.
+                          </div>
                         </div>
+                      </div>
                     </div>
+                    <div class="col-lg-4">
+                      <div class="config-help-item">
+                        <span class="config-help-icon config-help-icon--danger" aria-hidden="true">
+                          <i class="bi bi-x-octagon"></i>
+                        </span>
+                        <div>
+                          <div class="config-help-title">Produto sem estoque</div>
+                          <div class="config-help-text">
+                            Estoque zerado. O item fica indisponível na loja.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-lg-4">
+                      <div class="config-help-item">
+                        <span class="config-help-icon config-help-icon--muted" aria-hidden="true">
+                          <i class="bi bi-slash-circle"></i>
+                        </span>
+                        <div>
+                          <div class="config-help-title">Controle desativado</div>
+                          <div class="config-help-text">
+                            A loja ignora as flags e exibe todos os itens como disponíveis.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              </div>
             </div>
 
-            <div class="container-config panel-card m-auto">
-                <div id="formConfiguracoes">
-                    <section>
-                        <h5>Logo da Empresa</h5>
-                        <img src="/uploads/logo.jpg" alt="Logo atual" id="logoAtual">
-                        <div class="form-group">
-                            <form action="/upload-logo" method="POST" enctype="multipart/form-data">
-                                <div class="input-group">
-                                    <input type="file" class="form-control" aria-describedby="inputGroupFileAddon04"
-                                        aria-label="Upload" name="logo" required>
-                                    <button type="submit" class="btn btn-primary">Salvar</button>
-                                </div>
-
-                            </form>
-                        </div>
-                    </section>
-                    <form class="my-2">
-                        <h5 class="my-2">Razão Social</h5>
-                        <div class="form-group">
-                            <label for="razaoSocial">Razão Social</label>
-                            <input type="text" class="form-control" id="razaoSocial"
-                                placeholder="Digite a razão social da empresa">
-                        </div>
-                        <h5 class="my-2">Números de WhatsApp</h5>
-                        <div class="form-group">
-                            <label for="whats1">Balcão</label>
-                            <input type="text" class="form-control" id="whats1" placeholder="(00) 00000-0000">
-                        </div>
-                        <div class="form-group">
-                            <label for="whats2">Entrega</label>
-                            <input type="text" class="form-control" id="whats2" placeholder="(00) 00000-0000">
-                        </div>
-                        <button id="saveWhats" type="submit" class="btn btn-primary my-3">Salvar</button>
-                    </form>
+            <!-- Dados da empresa -->
+            <div class="col-lg-6">
+              <div class="card panel-card h-100">
+                <div class="card-header config-section-head">
+                  <span class="config-section-icon" aria-hidden="true"><i class="bi bi-shop"></i></span>
+                  <h5>Dados da empresa</h5>
                 </div>
+                <div class="card-body p-4">
+                  <form id="formDadosEmpresa" onsubmit="return false;">
+                    <div class="row g-3">
+                      <div class="col-12">
+                        <label class="form-label" for="razaoSocial">Razão social / nome fantasia</label>
+                        <input type="text" class="form-control" id="razaoSocial"
+                          placeholder="Digite a razão social da empresa" autocomplete="organization">
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label" for="whats1">
+                          <i class="bi bi-telephone me-1"></i> WhatsApp — Balcão
+                        </label>
+                        <input type="text" class="form-control" id="whats1" placeholder="(00) 00000-0000"
+                          inputmode="tel" autocomplete="tel">
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label" for="whats2">
+                          <i class="bi bi-truck me-1"></i> WhatsApp — Entrega
+                        </label>
+                        <input type="text" class="form-control" id="whats2" placeholder="(00) 00000-0000"
+                          inputmode="tel" autocomplete="tel">
+                      </div>
+                    </div>
+                  </form>
+                </div>
+                <div class="card-footer bg-transparent d-flex justify-content-end py-3 px-4">
+                  <button id="saveWhats" type="button" class="btn btn-primary">
+                    <i class="bi bi-check2 me-1"></i> Salvar dados
+                  </button>
+                </div>
+              </div>
             </div>
 
-        </main>
-        <footer id="footer">
-            <!--Conteudo do footer adicionado via JS-->
-        </footer>
-    </div>
+            <!-- Controle de estoque -->
+            <div class="col-lg-6">
+              <div class="card panel-card h-100">
+                <div class="card-header config-section-head">
+                  <span class="config-section-icon" aria-hidden="true"><i class="bi bi-boxes"></i></span>
+                  <h5>Controle de estoque</h5>
+                  <span class="ou-badge ou-badge--neutral ms-auto" id="configEstoqueBadge">
+                    <span class="ou-badge__dot"></span>
+                    <span id="configEstoqueBadgeText">Estoque desativado</span>
+                  </span>
+                </div>
+                <div class="card-body p-4">
+                  <div class="config-switch-row mb-3">
+                    <div>
+                      <label class="form-label mb-1" for="empusaest">Controlar estoque e flags automáticas</label>
+                      <div class="form-text">
+                        Ativado, o sistema calcula automaticamente "Produto acabando" e "Produto sem estoque".
+                        Desativado, as flags são ignoradas e todos os itens aparecem disponíveis na loja.
+                      </div>
+                    </div>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" role="switch" id="empusaest"
+                        aria-label="Controlar estoque e flags automáticas">
+                    </div>
+                  </div>
 
-    <script src="/html/auth/js/componentes.js?v=2026.09.17.204003"></script>
-    <script src="/config.js?v=2026.09.17.204003"></script>
-    <script src="../js/toast.js?v=2026.09.17.204003"></script>
-    <script src="../js/configWhatsapp.js?v=2026.09.17.204003"></script>
-    <script src="../js/nomeEmpresa.js?v=2026.09.17.204003"></script>
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-        crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
-        integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+                  <div class="row g-3">
+                    <div class="col-sm-6">
+                      <label class="form-label" for="empestoqmin">Quantidade mínima</label>
+                      <div class="input-group">
+                        <input type="number" min="0" step="1" class="form-control" id="empestoqmin" placeholder="5"
+                          inputmode="numeric">
+                        <span class="input-group-text">un.</span>
+                      </div>
+                      <div class="form-text">
+                        Itens com estoque entre 1 e este valor aparecem como "Últimas unidades".
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-footer bg-transparent d-flex justify-content-end py-3 px-4">
+                  <button id="saveEstoque" type="button" class="btn btn-primary">
+                    <i class="bi bi-check2 me-1"></i> Salvar estoque
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Identidade visual -->
+            <div class="col-12">
+              <div class="card panel-card">
+                <div class="card-header config-section-head">
+                  <span class="config-section-icon" aria-hidden="true"><i class="bi bi-image"></i></span>
+                  <h5>Identidade visual</h5>
+                </div>
+                <div class="card-body p-4">
+                  <div class="row g-4 align-items-center">
+                    <div class="col-md-3 text-center">
+                      <img src="/uploads/logo.jpg" alt="Logo atual" id="logoAtual" class="config-logo mx-auto">
+                      <div class="form-text mt-2">Prévia da logo atual</div>
+                    </div>
+                    <div class="col-md-9">
+                      <form action="/upload-logo" method="POST" enctype="multipart/form-data">
+                        <label class="form-label" for="logo">Nova logo</label>
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*" required>
+                        <div class="form-text mb-3">
+                          Envie um arquivo JPG ou PNG. A logo aparece na loja, no menu e no app.
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                          <i class="bi bi-upload me-1"></i> Enviar logo
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer id="footer">
+      <!--Conteudo do footer adicionado via JS-->
+    </footer>
+  </div>
+
+  <script src="/html/auth/js/componentes.js?v=2026.09.17.215330"></script>
+  <script src="/config.js?v=2026.09.17.215330"></script>
+  <script src="../js/toast.js?v=2026.09.17.215330"></script>
+  <script src="../js/configWhatsapp.js?v=2026.09.17.215330"></script>
+  <script src="../js/nomeEmpresa.js?v=2026.09.17.215330"></script>
+  <script src="../js/configEstoque.js?v=2026.09.17.215330"></script>
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+    integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+    crossorigin="anonymous"></script>
 </body>
 
 </html>
