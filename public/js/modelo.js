@@ -1,3 +1,4 @@
+(function () {
 const params = new URLSearchParams(window.location.search);
 const id = parseIntegerParam(params.get("id"));
 const marcascod = parseIntegerParam(params.get("marcascod"));
@@ -84,7 +85,7 @@ function criarCardModelo(dado) {
 }
 
 //popular lista com os dados do modelo
-document.addEventListener("DOMContentLoaded", function () {
+ouOnLoad(function () {
   const corpoTabela = document.getElementById("corpoTabela");
   if (id === null) {
     if (corpoTabela) corpoTabela.innerHTML = `<div class="ou-empty"><span class="ou-empty__icon"><i class="bi bi-phone"></i></span><div class="ou-empty__title">Marca não informada</div><div class="ou-empty__text">Volte e selecione uma marca.</div></div>`;
@@ -196,3 +197,5 @@ function fromBase64Url(str) {
   while (base64.length % 4) base64 += "=";
   return JSON.parse(atob(base64));
 }
+
+})();

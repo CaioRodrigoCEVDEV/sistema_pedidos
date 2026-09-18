@@ -1,9 +1,9 @@
-const userModalEl = document.getElementById("userModal");
-const userModal = new bootstrap.Modal(userModalEl);
-const btnMarca = document.getElementById("dropdownMarca");
-const btnExcluir = document.getElementById("btnDelete");
-const marcaForm = document.getElementById("marcaForm");
-const descricaoMarca = document.getElementById("descricaoMarca");
+var userModalEl = document.getElementById("userModal");
+var userModal = new bootstrap.Modal(userModalEl);
+var btnMarca = document.getElementById("dropdownMarca");
+var btnExcluir = document.getElementById("btnDelete");
+var marcaForm = document.getElementById("marcaForm");
+var descricaoMarca = document.getElementById("descricaoMarca");
 
 // Novo usuário
 btnMarca.addEventListener("click", () => {
@@ -13,7 +13,7 @@ btnMarca.addEventListener("click", () => {
 });
 
 // Imagem Marca
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   const marcaForm = document.getElementById("marcaForm");
   if (!marcaForm) return console.warn("marcaForm não encontrado");
 

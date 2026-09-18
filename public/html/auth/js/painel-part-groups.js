@@ -21,11 +21,11 @@ let detailsRequestId = 0;
 let historyRequestId = 0;
 
 // Sorting state for groups table
-let sortCol = "created_at";
-let sortDir = "desc"; // 'asc' | 'desc'
+var sortCol = "created_at";
+var sortDir = "desc"; // 'asc' | 'desc'
 
 // Referência do modal de adicionar peça (para controle de backdrop)
-let modalAdicionarPecaInstance = null;
+var modalAdicionarPecaInstance = null;
 
 /**
  * Função auxiliar para exibir notificações toast

@@ -1,14 +1,14 @@
-let soldItems = [];
-let selectedItem = null;
+var soldItems = [];
+var selectedItem = null;
 
-const searchForm = document.getElementById("searchForm");
-const searchButton = document.getElementById("searchButton");
-const salesTableBody = document.getElementById("salesTableBody");
-const salesEmpty = document.getElementById("salesEmpty");
-const historyTableBody = document.getElementById("historyTableBody");
-const resultCount = document.getElementById("resultCount");
-const returnModalElement = document.getElementById("returnModal");
-const returnModal = bootstrap.Modal.getOrCreateInstance(returnModalElement);
+var searchForm = document.getElementById("searchForm");
+var searchButton = document.getElementById("searchButton");
+var salesTableBody = document.getElementById("salesTableBody");
+var salesEmpty = document.getElementById("salesEmpty");
+var historyTableBody = document.getElementById("historyTableBody");
+var resultCount = document.getElementById("resultCount");
+var returnModalElement = document.getElementById("returnModal");
+var returnModal = bootstrap.Modal.getOrCreateInstance(returnModalElement);
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -211,7 +211,7 @@ document.getElementById("returnForm").addEventListener("submit", async (event) =
   }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   loadSoldItems();
   loadHistory();
 });

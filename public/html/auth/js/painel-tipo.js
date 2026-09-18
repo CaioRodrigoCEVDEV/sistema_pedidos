@@ -1,9 +1,9 @@
 
-const tipoModalEl = document.getElementById('tipoModal');
-const tipoModal = new bootstrap.Modal(tipoModalEl);
-const btnTipo = document.getElementById('dropdownTipo');
-const tipoForm = document.getElementById('tipoForm');
-const descricaoTipo = document.getElementById('descricaoTipo');
+var tipoModalEl = document.getElementById('tipoModal');
+var tipoModal = new bootstrap.Modal(tipoModalEl);
+var btnTipo = document.getElementById('dropdownTipo');
+var tipoForm = document.getElementById('tipoForm');
+var descricaoTipo = document.getElementById('descricaoTipo');
 
 // Novo usuário
 btnTipo.addEventListener('click', () => {

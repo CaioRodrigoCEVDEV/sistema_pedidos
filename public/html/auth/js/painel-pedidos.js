@@ -7,17 +7,17 @@ function toInputDate(d) {
   return `${y}-${m}-${dd}`;
 }
 
-const select = document.getElementById("filtroPeriodoSelect");
-const inputInicio = document.getElementById("filtroDataInicio");
-const inputFim = document.getElementById("filtroDataFim");
-const btnAplicar = document.getElementById("btnAplicarFiltroPeriodo");
-const btnLimpar = document.getElementById("btnLimparFiltroPeriodo");
-const tabelaConfirmados = document.getElementById("corpoTabelaConfirmados"); // onde preencher
-const tabelaPendentes = document.getElementById("corpoTabela");
-const tabelaConfirmadosMobile = document.getElementById(
+var select = document.getElementById("filtroPeriodoSelect");
+var inputInicio = document.getElementById("filtroDataInicio");
+var inputFim = document.getElementById("filtroDataFim");
+var btnAplicar = document.getElementById("btnAplicarFiltroPeriodo");
+var btnLimpar = document.getElementById("btnLimparFiltroPeriodo");
+var tabelaConfirmados = document.getElementById("corpoTabelaConfirmados"); // onde preencher
+var tabelaPendentes = document.getElementById("corpoTabela");
+var tabelaConfirmadosMobile = document.getElementById(
   "corpoTabelaConfirmadosMobile"
 );
-const tabelaPendentesMobile = document.getElementById("corpoTabelaMobile");
+var tabelaPendentesMobile = document.getElementById("corpoTabelaMobile");
 
 function setRange(startDate, endDate) {
   inputInicio.value = startDate ? toInputDate(startDate) : "";
@@ -203,7 +203,7 @@ async function atualizarTotaisPedidos() {
 window.atualizarTotaisPedidos = atualizarTotaisPedidos;
 
 // chama uma vez ao carregar a página
-document.addEventListener("DOMContentLoaded", () => {
+ouOnLoad(() => {
   atualizarTotaisPedidos();
   //console.log(localStorage.getItem("usucod"));
 });
@@ -886,10 +886,13 @@ function mostrarPopupMensagem(mensagem, onOk) {
     });
   }
 
-  document.addEventListener("change", (e) => {
-    if (e.target.classList.contains("check-pedido"))
-      atualizarContadorSelecionados();
-  });
+  if (!window.__ouPedidosDocChange) {
+    window.__ouPedidosDocChange = true;
+    document.addEventListener("change", (e) => {
+      if (e.target.classList.contains("check-pedido"))
+        atualizarContadorSelecionados();
+    });
+  }
 
   if (btnCancelarSelecionados) {
     btnCancelarSelecionados.addEventListener("click", () => {
