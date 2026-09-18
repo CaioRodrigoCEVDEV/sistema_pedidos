@@ -7,8 +7,10 @@ const TIPO_MANUAL = "featured";
 
 // Formato enxuto dos itens das vitrines para a página pública.
 // Não expõe campos internos do cadastro (prosit, posições etc.).
-// Com o controle de estoque ativo, as flags são automáticas; sem ele, as
-// flags manuais salvas no cadastro são respeitadas.
+// Com o controle de estoque ativo (empusaest = 'S'), as flags são automáticas;
+// sem ele (empusaest = 'N'), a validação de estoque é ignorada e valem apenas
+// as flags manuais do cadastro: "sem estoque geral" (prosemest) e "acabando"
+// (proacabando).
 function mapearItemPublico(row, config) {
   const usaEstoque = Boolean(config && config.usaEstoque);
   const estoqueMin = config && Number.isInteger(config.estoqueMin)

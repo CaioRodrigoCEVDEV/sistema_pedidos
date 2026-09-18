@@ -1,6 +1,5 @@
 const pool = require("../config/db");
 const {
-  disponibilidadeProdutoSql,
   disponibilidadeProdutoAutoSql,
 } = require("../utils/disponibilidadeProdutoSql");
 
@@ -21,7 +20,7 @@ const PRODUTO_SELECT = `
   pro.prosit,
   tipo.tipodes,
   marcas.marcasdes,
-  ${disponibilidadeProdutoSql} AS prosemest,
+  COALESCE(pro.prosemest, 'N') AS prosemest,
   ${disponibilidadeProdutoAutoSql} AS prosemest_auto,
   COALESCE(pro.proacabando, 'N') AS proacabando,
   COALESCE(pro.proqtde, 0) AS proqtde,
