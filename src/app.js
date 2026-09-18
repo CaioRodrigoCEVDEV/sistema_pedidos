@@ -85,6 +85,7 @@ const corsOptions = {
   origin: [
     "http://jppecashop.com.br",
     "http://www.jppecashop.com.br",
+    "https://loja.jppecashop.com.br",
     "http://utidoscelulares.com.br",
     "http://www.utidoscelulares.com.br",
   ],
