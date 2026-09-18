@@ -7,18 +7,18 @@
  * IMPORTANTE: O ID dos grupos é INTEGER simples, não criptografado.
  */
 
-let currentGroupId = null;
-let currentGroupData = null; // Store current group data including cost
-let allGroups = [];
-let availableParts = [];
-let currentPage = 1;
-let totalPages = 1;
-let isLoadingMore = false;
-let searchTerm = "";
-let searchDebounceTimer = null;
-let groupColors = [];
-let detailsRequestId = 0;
-let historyRequestId = 0;
+var currentGroupId = null;
+var currentGroupData = null; // Store current group data including cost
+var allGroups = [];
+var availableParts = [];
+var currentPage = 1;
+var totalPages = 1;
+var isLoadingMore = false;
+var searchTerm = "";
+var searchDebounceTimer = null;
+var groupColors = [];
+var detailsRequestId = 0;
+var historyRequestId = 0;
 
 // Sorting state for groups table
 var sortCol = "created_at";
@@ -1287,7 +1287,7 @@ async function removerPecaGrupo(procorid) {
  * Filtro de pesquisa para peças disponíveis
  * Adiciona evento de input para filtrar a lista em tempo real
  */
-document.addEventListener("DOMContentLoaded", function () {
+ouOnLoad(function () {
   // Enter e clique usam o mesmo fluxo assíncrono, sem navegação do formulário.
   [
     ["formCriarGrupo", criarGrupo],
