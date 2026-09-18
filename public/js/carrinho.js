@@ -6,6 +6,15 @@
   "use strict";
 
   // ---------- utils ----------
+  function obterEmpresa() {
+    if (typeof window.obterDadosEmpresa === "function") {
+      return window.obterDadosEmpresa();
+    }
+    return fetch((window.BASE_URL || "") + "/emp").then(function (response) {
+      return response.json();
+    });
+  }
+
   function getCart() {
     try {
       var cart = JSON.parse(localStorage.getItem("cart") || "[]");
@@ -356,8 +365,7 @@
   }
 
   async function obterWhatsApp(numero) {
-    var resp = await fetch((window.BASE_URL || "") + "/emp");
-    var data = await resp.json();
+    var data = await obterEmpresa();
     return (data && (numero === 2 ? data.empwhatsapp2 : data.empwhatsapp1)) || "";
   }
 
@@ -649,8 +657,7 @@
     var btnReg = document.getElementById("botao-registrar-pedido");
     if (btnReg) btnReg.addEventListener("click", registrarPedido);
 
-    fetch((window.BASE_URL || "") + "/emp")
-      .then(function (response) { return response.json(); })
+    obterEmpresa()
       .then(function (data) {
         var botaoOrcamento = document.getElementById("botao-orcamento");
         var botaoRegistrar = document.getElementById("botao-registrar-pedido");

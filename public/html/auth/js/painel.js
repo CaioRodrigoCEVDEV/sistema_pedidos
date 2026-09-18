@@ -234,9 +234,10 @@ function editarProduto(codigo) {
         fetch(`${BASE_URL}/proCoresDisponiveis/${codigo}`).then((r) =>
           r.json(),
         ),
-        fetch(`${BASE_URL}/emp`)
-          .then((r) => (r.ok ? r.json() : {}))
-          .catch(() => ({})),
+        (typeof window.obterDadosEmpresa === "function"
+          ? window.obterDadosEmpresa()
+          : fetch(`${BASE_URL}/emp`).then((r) => (r.ok ? r.json() : {}))
+        ).catch(() => ({})),
       ]);
     })
     .then(([produto, coresDisponiveis, coresProduto, empresa]) => {

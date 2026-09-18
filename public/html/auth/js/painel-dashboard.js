@@ -765,13 +765,35 @@
   // ------------------------------------------------------------------------
   async function loadDashboard() {
     try {
-      var pend = await jget("/pedidos/pendentescountNow", []);
-      var conf = await jget("/pedidos/total/confirmadosNow", []);
-      var balcao = await jget("/pedidos/balcaoNow", []);
-      var entrega = await jget("/pedidos/entregaNow", []);
-      var venda = await jget("/pedidos/vendaNow", []);
-      var emfalta = await jget("/total/produto/emfalta", []);
-      var acabando = await jget("/total/produto/acabando", []);
+      // Todas as chamadas são independentes: carrega em paralelo (1 lote em
+      // vez de 12 awaits em série).
+      var [
+        pend,
+        conf,
+        balcao,
+        entrega,
+        venda,
+        emfalta,
+        acabando,
+        clientes,
+        vendedores,
+        marcas,
+        comEstoque,
+        semEstoque,
+      ] = await Promise.all([
+        jget("/pedidos/pendentescountNow", []),
+        jget("/pedidos/total/confirmadosNow", []),
+        jget("/pedidos/balcaoNow", []),
+        jget("/pedidos/entregaNow", []),
+        jget("/pedidos/vendaNow", []),
+        jget("/total/produto/emfalta", []),
+        jget("/total/produto/acabando", []),
+        jget("/cli", { total: 0, data: [] }),
+        jget("/vendedor/listar", []),
+        jget("/marcas", []),
+        jget("/proComEstoque", []),
+        jget("/proSemEstoque", []),
+      ]);
 
       var pendentesCount = toNum(pend && pend[0] && pend[0].count);
       var confirmadosCount = toNum(conf && conf[0] && conf[0].count);
@@ -786,16 +808,9 @@
       setText("kpiPendentes", pendentesCount);
       setText("kpiConfirmados", confirmadosCount);
 
-      var clientes = await jget("/cli", { total: 0, data: [] });
-      var vendedores = await jget("/vendedor/listar", []);
       setText("kpiClientes", toNum(clientes && (clientes.total ?? clientes.length)));
       setText("kpiVendedores", vendedores ? vendedores.length : 0);
-
-      var marcas = await jget("/marcas", []);
       setText("kpiMarcas", marcas ? marcas.length : 0);
-
-      var comEstoque = await jget("/proComEstoque", []);
-      var semEstoque = await jget("/proSemEstoque", []);
 
       chartStates.chartPedidos = { labels: ["Pendentes", "Confirmados"], valores: [pendentesCount, confirmadosCount] };
       chartRenderers.chartPedidos(chartStates.chartPedidos);
@@ -840,9 +855,13 @@
   // ------------------------------------------------------------------------
   async function initUserName() {
     try {
-      var response = await fetch("/me/usuario", { method: "GET", credentials: "include" });
-      if (!response.ok) throw new Error("Falha ao obter usuário");
-      var data = await response.json();
+      // Reutiliza o GET /me/usuario já feito pelo shell quando disponível
+      var data = typeof window.ouObterUsuario === "function"
+        ? await window.ouObterUsuario()
+        : await fetch("/me/usuario", { method: "GET", credentials: "include" }).then(function (response) {
+            if (!response.ok) throw new Error("Falha ao obter usuário");
+            return response.json();
+          });
       var usuario = data.usunome || "Usuário";
       var h1 = document.querySelector("h1.h4.mb-0");
       if (h1) h1.textContent = "Bem-vindo, " + usuario;

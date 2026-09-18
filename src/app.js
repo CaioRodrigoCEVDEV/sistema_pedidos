@@ -12,6 +12,7 @@ const cors = require("cors");
 const sharp = require("sharp");
 const { atualizarDB } = require("./config/atualizardb");
 const { requestTimingMiddleware } = require("./middlewares/performanceMiddleware");
+const { getEmpresa } = require("./utils/empresaCache");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,7 +39,18 @@ app.use(
     },
   })
 );
-app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // <-- pasta onde salva imagens
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    etag: true,
+    lastModified: true,
+    // URLs estaveis (logo.jpg, <slug>.jpg) podem ser sobrescritas pelo painel;
+    // cache curto + revalidacao garante atualizacao rapida sem baixar de novo.
+    setHeaders: (res) => {
+      res.set("Cache-Control", "public, max-age=60, must-revalidate");
+    },
+  })
+); // <-- pasta onde salva imagens
 
 // Middlewares
 const autenticarToken = require("./middlewares/middlewares");
@@ -411,19 +423,11 @@ app.get("/auth/sair", (req, res) => {
 
 // Rota para servir o manifest.json dinamicamente com nome da empresa PARA PWA BANNER INSTALL APP
 app.get("/manifest.json", async (req, res) => {
-  console.log("[manifest] HIT", new Date().toISOString());
-
-  // Pega a empresa (ex: do seu controller ou de /emp)
+  // Le direto da mesma fonte do /emp (com cache curto), sem chamada HTTP interna.
   let empresa = "Sistema Pedidos";
   try {
-    const base = `${req.protocol}://${req.get("host")}`;
-    const r = await fetch(`${base}/emp`);
-    if (r.ok) {
-      const j = await r.json();
-      if (j.emprazao) empresa = j.emprazao;
-    } else {
-      console.error("EMP status:", r.status);
-    }
+    const emp = await getEmpresa();
+    if (emp && emp.emprazao) empresa = emp.emprazao;
   } catch (e) {
     console.error("EMP erro:", e);
   }
@@ -478,8 +482,20 @@ app.post(
       const jpegPath = path.join(uploadsDir, "logo.jpg");
       const pngPath = path.join(uploadsDir, "apple-touch-icon.png");
 
-      // Converte logo.jpg em logo.png
-      await sharp(jpegPath).png().toFile(pngPath);
+      // Redimensiona para o maior uso real (icone do manifest, 512px) e
+      // reencoda o JPEG antes de sobrescrever o arquivo enviado.
+      const logoBuffer = await sharp(jpegPath)
+        .rotate()
+        .resize(512, 512, { fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+      await fs.promises.writeFile(jpegPath, logoBuffer);
+
+      // apple-touch-icon e exibido em 180x180 pelo index.html
+      await sharp(logoBuffer)
+        .resize(180, 180, { fit: "inside", withoutEnlargement: true })
+        .png()
+        .toFile(pngPath);
 
       res.redirect("/configuracoes");
     } catch (err) {
@@ -576,8 +592,14 @@ app.post(
 
       // converte com sharp: gera ambos JPG e PNG (substitui se já existirem)
       // ler do arquivo temporário salvo por multer
-      await sharp(req.file.path).jpeg({ quality: 90 }).toFile(jpegPath);
-      await sharp(req.file.path).png().toFile(pngPath);
+      // Logos de marca sao exibidos em cards pequenos; limita a 256px para
+      // nao armazenar/entregar arquivos muito maiores que o uso real.
+      // O resize e aplicado apenas a novos uploads (arquivos antigos ficam).
+      const marcaPipeline = sharp(req.file.path)
+        .rotate()
+        .resize(256, 256, { fit: "inside", withoutEnlargement: true });
+      await marcaPipeline.clone().jpeg({ quality: 90 }).toFile(jpegPath);
+      await marcaPipeline.clone().png().toFile(pngPath);
 
       // remove arquivo temporário
       try {

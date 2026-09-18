@@ -52,7 +52,8 @@ exports.topProdutosMes = async (req, res) => {
 }
 exports.listarPv = async (req, res) => {
   try {
-    const result = await pedidoModels.listarPv();
+    const usucod = req.token && req.token.usucod;
+    const result = await pedidoModels.listarPv(usucod);
     res.status(200).json(result);
   } catch (error) {
     console.error(error);

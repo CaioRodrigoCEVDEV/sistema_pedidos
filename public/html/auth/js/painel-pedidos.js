@@ -604,8 +604,10 @@ async function cancelarPedido(pvcod) {
           </td>
         `;
         corpoTabela.appendChild(tr);
-        atualizarTotaisPedidos();
       });
+
+      // Totais atualizados uma única vez após renderizar a lista (evita 4 req/pedido)
+      atualizarTotaisPedidos();
 
       // alert("Pedido cancelado com sucesso!");
       // Atualize a interface do usuário conforme necessário

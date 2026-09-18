@@ -448,12 +448,25 @@ function ouWireReleases(root) {
   }
 }
 
+var ouUsuarioPromise = null;
+function ouObterUsuario() {
+  if (!ouUsuarioPromise) {
+    ouUsuarioPromise = fetch("/me/usuario", { credentials: "include" })
+      .then(function (response) {
+        if (!response.ok) throw new Error("not authenticated");
+        return response.json();
+      })
+      .catch(function (error) {
+        ouUsuarioPromise = null;
+        throw error;
+      });
+  }
+  return ouUsuarioPromise;
+}
+window.ouObterUsuario = ouObterUsuario;
+
 function ouLoadUser() {
-  fetch("/me/usuario", { credentials: "include" })
-    .then(function (response) {
-      if (!response.ok) throw new Error("not authenticated");
-      return response.json();
-    })
+  ouObterUsuario()
     .then(function (data) {
       var name = (data && data.usunome) || "";
       if (!name) return;

@@ -107,7 +107,7 @@ async function totalVendasDia(dataInicio, dataFim) {
     params.push(dataFim);
     whereClause = `WHERE pvdtcad <= $1`;
   } else {
-    whereClause = `WHERE pvdtcad::date = CURRENT_DATE`;
+    whereClause = `WHERE pvdtcad = CURRENT_DATE`;
   }
   const result = await pool.query(`select
             count(pvcod) as total_pedido_dia,
@@ -145,7 +145,7 @@ async function totalVendasAnual(dataInicio, dataFim) {
             order by extract(month from pvdtcad ),pv.pvcanal`, params);
   return result.rows;
 }
-async function listarPv() {
+async function listarPv(pvrcacod) {
   const result = await pool.query(
     `select 
             pvcod,
@@ -172,7 +172,8 @@ async function listarPv() {
             pvsta,
             pvipvcod,
             pviqtde 
-            order by pvcod desc`
+            order by pvcod desc`,
+    [pvrcacod]
   );
   return result.rows;
 }

@@ -35,8 +35,12 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
 
-  fetch(`${BASE_URL}/emp`)
-    .then((response) => response.json())
+  var empresaPromise =
+    typeof window.obterDadosEmpresa === "function"
+      ? window.obterDadosEmpresa()
+      : fetch(`${BASE_URL}/emp`).then((response) => response.json());
+
+  empresaPromise
     .then((data) => {
       usaEl.checked =
         String(data.empusaest || "N").trim().toUpperCase() === "S";

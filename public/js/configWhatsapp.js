@@ -26,8 +26,12 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('BASE_URL não está definida.');
         return;
     }
-    fetch(`${BASE_URL}/emp`)
-        .then((response) => response.json())
+    var empresaPromise =
+        typeof window.obterDadosEmpresa === "function"
+            ? window.obterDadosEmpresa()
+            : fetch(`${BASE_URL}/emp`).then((response) => response.json());
+
+    empresaPromise
         .then((data) => {
             const whatsappNumber1 = data.empwhatsapp1 || '';
             const whatsappNumber2 = data.empwhatsapp2 || '';

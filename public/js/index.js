@@ -251,14 +251,7 @@ function renderizarResultadosBusca(modelos) {
   });
 }
 
-inputPesquisa.addEventListener("input", async function () {
-  const pesquisa = this.value.trim().toLowerCase();
-
-  if (!pesquisa) {
-    limparBusca();
-    return;
-  }
-
+async function executarBusca(pesquisa) {
   const token = ++buscaToken;
   renderizarCarregandoBusca();
 
@@ -292,6 +285,20 @@ inputPesquisa.addEventListener("input", async function () {
     console.error("Erro no fetch:", error);
     renderizarVazioBusca();
   }
+}
+
+// Debounce: evita um GET /modelos a cada tecla digitada.
+let buscaDebounceTimer = null;
+inputPesquisa.addEventListener("input", function () {
+  const pesquisa = this.value.trim().toLowerCase();
+  clearTimeout(buscaDebounceTimer);
+
+  if (!pesquisa) {
+    limparBusca();
+    return;
+  }
+
+  buscaDebounceTimer = setTimeout(() => executarBusca(pesquisa), 300);
 });
 
 // Função para atualizar o ícone do carrinho (exibe badge com quantidade de itens)
