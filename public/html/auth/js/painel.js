@@ -2728,6 +2728,32 @@ document.addEventListener("DOMContentLoaded", () => {
       carregarPecas(1);
     });
   }
+
+  // Busca de peça: no desktop fica dentro da sessão de filtros; no mobile
+  // permanece fora do grupo recolhível, sempre visível.
+  const buscaPecaBar = document.getElementById("pecasBuscaBar");
+  const filtrosPeca = document.getElementById("pecasFiltrosPeca");
+  const mqDesktopPecas = window.matchMedia("(min-width: 769px)");
+  function ajustarBuscaPecaLayout() {
+    if (!buscaPecaBar || !filtrosPeca) return;
+    const inner = filtrosPeca.querySelector(".pecas-filters-inner");
+    if (!inner) return;
+    if (mqDesktopPecas.matches) {
+      if (buscaPecaBar.parentElement !== inner) {
+        const acoes = inner.querySelector(".pecas-filter-actions");
+        if (acoes) inner.insertBefore(buscaPecaBar, acoes);
+        else inner.appendChild(buscaPecaBar);
+      }
+    } else if (buscaPecaBar.previousElementSibling !== filtrosPeca) {
+      filtrosPeca.insertAdjacentElement("afterend", buscaPecaBar);
+    }
+  }
+  ajustarBuscaPecaLayout();
+  if (mqDesktopPecas.addEventListener) {
+    mqDesktopPecas.addEventListener("change", ajustarBuscaPecaLayout);
+  } else if (mqDesktopPecas.addListener) {
+    mqDesktopPecas.addListener(ajustarBuscaPecaLayout);
+  }
 });
 
 // Filtros dos popups de gestão (Marcas/Modelos/Tipos/Cores)
