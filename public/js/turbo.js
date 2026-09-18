@@ -449,7 +449,12 @@ Copyright © 2025 37signals LLC
     }
   }
 
-  function waitForLoad(element, timeoutInMilliseconds = 2000) {
+  // [OrderUp] Aumentado de 2000ms para 10000ms. O Turbo remove as folhas de
+  // estilo antigas logo após este timeout; em conexões lentas (VPS com latência)
+  // o CSS novo ainda não havia carregado, gerando FOUC (tabelas sem estilo,
+  // headers brancos etc.). Esperar mais mantém o comportamento de um F5, que
+  // bloqueia a renderização até o CSS carregar.
+  function waitForLoad(element, timeoutInMilliseconds = 10000) {
     return new Promise((resolve) => {
       const onComplete = () => {
         element.removeEventListener("error", onComplete);

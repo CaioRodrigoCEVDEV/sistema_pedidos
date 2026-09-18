@@ -1,4 +1,10 @@
 
+// Encapsulado em IIFE para o Turbo poder reexecutar este script a cada
+// navegação sem o erro "Identifier 'state' has already been declared"
+// (declarações const/let de topo colidem no escopo global).
+(() => {
+  "use strict";
+
     const state = {
       data: [],
       sortKey: 'nome',
@@ -177,3 +183,4 @@
     }
 
     load();
+    })();
