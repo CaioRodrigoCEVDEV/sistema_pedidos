@@ -297,5 +297,10 @@
       btn.addEventListener("click", openCartModal);
     }
   });
-  window.addEventListener("pageshow", atualizarIconeCarrinho);
+  // O script é reavaliado a cada navegação do Turbo; registra o listener global
+  // uma única vez por sessão para não acumular.
+  if (!window.__ouSharedPageshow) {
+    window.__ouSharedPageshow = true;
+    window.addEventListener("pageshow", atualizarIconeCarrinho);
+  }
 })();
