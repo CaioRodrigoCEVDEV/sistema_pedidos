@@ -5,6 +5,19 @@ const { getEstoqueConfig } = require("../utils/estoqueConfig");
 const catalogoCache = require("../utils/catalogoCache");
 const showcasesCache = require("../utils/showcasesCache");
 
+// A gestão (listagem, filtros e KPIs do painel) mostra as marcações manuais do
+// cadastro quando a empresa não controla estoque, sem calcular estoque por
+// cor/grupo. Com o controle de estoque ativo, valem as flags automáticas.
+function buildFlagsGestao(config) {
+  if (config && config.usaEstoque) {
+    return buildFlagsEstoqueSql(config);
+  }
+  return {
+    disponibilidadeSql: "COALESCE(UPPER(TRIM(pro.prosemest)), 'N')",
+    acabandoSql: "COALESCE(UPPER(TRIM(pro.proacabando)), 'N')",
+  };
+}
+
 exports.listarProduto = async (req, res) => {
   const tipoId = parseIntegerParam(req.params.id);
   const marcaId = parseIntegerParam(req.query.marca);
@@ -61,7 +74,7 @@ exports.listarProdutos = async (req, res) => {
   const acabando = String(req.query.acabando || "").trim().toUpperCase();
 
   const config = await getEstoqueConfig();
-  const flags = buildFlagsEstoqueSql(config);
+  const flags = buildFlagsGestao(config);
 
   const paginado = req.query.page !== undefined || req.query.pageSize !== undefined;
   const off = (page - 1) * pageSize;
@@ -154,7 +167,7 @@ exports.listarProdutosPainelId = async (req, res) => {
 
   try {
     const config = await getEstoqueConfig();
-    const flags = buildFlagsEstoqueSql(config);
+    const flags = buildFlagsGestao(config);
     const result = await pool.query(
       `select         
        procod,
@@ -176,7 +189,7 @@ exports.listarProdutosPainelId = async (req, res) => {
 exports.totalProdutoAcabando = async (req, res) => {
   try {
     const config = await getEstoqueConfig();
-    const flags = buildFlagsEstoqueSql(config);
+    const flags = buildFlagsGestao(config);
     const result = await pool.query(
       `select count(procod) from pro where ${flags.acabandoSql} = 'S'`,
     );
@@ -192,7 +205,7 @@ exports.totalProdutoAcabando = async (req, res) => {
 exports.totalProdutoEmFalta = async (req, res) => {
   try {
     const config = await getEstoqueConfig();
-    const flags = buildFlagsEstoqueSql(config);
+    const flags = buildFlagsGestao(config);
     const result = await pool.query(
       `select count(procod) from pro where ${flags.disponibilidadeSql} = 'S'`,
     );

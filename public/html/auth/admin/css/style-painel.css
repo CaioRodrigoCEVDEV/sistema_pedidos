@@ -298,6 +298,26 @@
   max-width: 420px;
 }
 
+/* No desktop a busca de peça é integrada à sessão de filtros (o JS move o
+   campo para dentro de .pecas-filters-inner); no mobile ela continua fora. */
+.pecas-filters-inner .pecas-search-bar {
+  flex: 2 1 220px;
+  min-width: 130px;
+  padding: 0;
+  background: transparent;
+  border-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pecas-filters-inner .pecas-search-bar .pecas-filter-label {
+  margin-bottom: 0;
+}
+.pecas-filters-inner .pecas-search-bar .form-control {
+  height: 38px;
+  max-width: none;
+}
+
 /* Botão de recolher/expandir filtros (visível apenas no mobile) */
 .pecas-filters-toggle {
   display: none;

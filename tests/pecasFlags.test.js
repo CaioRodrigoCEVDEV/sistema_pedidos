@@ -177,14 +177,21 @@ test("API aplica flags efetivas de estoque na listagem, filtros e painel", async
 
 test("Empresa sem controle de estoque respeita as flags manuais", async () => {
   estoqueConfigMock = { usaEstoque: false, empusaest: "N", estoqueMin: 5 };
-  const flagsSql = buildFlagsEstoqueSql(estoqueConfigMock);
 
+  // A gestão mostra as marcações manuais do cadastro, sem calcular estoque por
+  // cor/grupo (senão o valor marcado na edição não aparece de volta).
   queries.length = 0;
   await controller.listarProdutos({ query: { page: "1" } }, response());
   const list = queries[1];
-  assert.ok(list.sql.includes(`${flagsSql.disponibilidadeSql} as prosemest`));
-  assert.ok(list.sql.includes(`${flagsSql.acabandoSql} as proacabando`));
-  assert.match(flagsSql.acabandoSql, /pro\.proacabando/);
+  assert.match(list.sql, /COALESCE\(UPPER\(TRIM\(pro\.prosemest\)\), 'N'\) as prosemest/);
+  assert.match(list.sql, /COALESCE\(UPPER\(TRIM\(pro\.proacabando\)\), 'N'\) as proacabando/);
+  assert.doesNotMatch(list.sql, /part_group_items/);
+
+  queries.length = 0;
+  await controller.listarProdutosPainelId({ params: { id: "1" } }, response());
+  assert.match(queries[0].sql, /COALESCE\(UPPER\(TRIM\(pro\.prosemest\)\), 'N'\) as prosemest/);
+  assert.match(queries[0].sql, /COALESCE\(UPPER\(TRIM\(pro\.proacabando\)\), 'N'\) as proacabando/);
+  assert.doesNotMatch(queries[0].sql, /part_group_items/);
 
   queries.length = 0;
   await controller.totalProdutoAcabando({}, response());
