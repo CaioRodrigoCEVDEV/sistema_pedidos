@@ -1260,6 +1260,19 @@ async function atualizarDB() {
       ON public.par USING gin (parfan gin_trgm_ops);
     `);
 
+    // Busca textual (ILIKE '%termo%') em produtos e modelos — GIN trigram
+    // (pg_trgm habilitado acima). Usado pela busca da loja (?search=) e pela
+    // busca de produtos do painel (?q=). Em bases pequenas o planner pode
+    // preferir seq scan; o índice passa a valer com volume.
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_pro_des_trgm
+      ON public.pro USING gin (prodes gin_trgm_ops);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_modelo_des_trgm
+      ON public.modelo USING gin (moddes gin_trgm_ops);
+    `);
+
     // ==================================================================================================================================
     // FIM ÍNDICES DE PERFORMANCE
     // ==================================================================================================================================

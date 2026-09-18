@@ -214,7 +214,7 @@ exports.listarPvPendentesCount = async (req, res) => {
 exports.listarPvPendentesCountNow = async (req, res) => {
   try {
     const result = await pool.query(
-      "select count(*) from pv where pvconfirmado = 'N' and pvsta = 'A' and pvdtcad = 'now()'"
+      "select count(*) from pv where pvconfirmado = 'N' and pvsta = 'A' and pvdtcad = CURRENT_DATE"
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -238,7 +238,7 @@ exports.listarPvBalcao = async (req, res) => {
 exports.listarPvEntregaNow = async (req, res) => {
   try {
     const result = await pool.query(
-      "select count(*) from pv where pvcanal = 'ENTREGA' and pvsta = 'A' and pvdtcad = 'now()'"
+      "select count(*) from pv where pvcanal = 'ENTREGA' and pvsta = 'A' and pvdtcad = CURRENT_DATE"
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -251,7 +251,7 @@ exports.listarPvEntregaNow = async (req, res) => {
 exports.listarPvVendaNow = async (req, res) => {
   try {
     const result = await pool.query(
-      "select count(*) from pv where pvcanal = 'VENDA' and pvsta = 'A' and pvdtcad::date = CURRENT_DATE"
+      "select count(*) from pv where pvcanal = 'VENDA' and pvsta = 'A' and pvdtcad = CURRENT_DATE"
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -263,7 +263,7 @@ exports.listarPvVendaNow = async (req, res) => {
 exports.listarPvBalcaoNow = async (req, res) => {
   try {
     const result = await pool.query(
-      "select count(*) from pv where pvcanal = 'BALCAO' and pvsta = 'A' and pvdtcad = 'now()'"
+      "select count(*) from pv where pvcanal = 'BALCAO' and pvsta = 'A' and pvdtcad = CURRENT_DATE"
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -299,7 +299,7 @@ exports.listarTotalPvConfirmados = async (req, res) => {
 exports.listarTotalPvConfirmadosNow = async (req, res) => {
   try {
     const result = await pool.query(
-      "select count(*) from pv where pvconfirmado = 'S' and pvsta = 'A' and pvdtcad = 'now()'"
+      "select count(*) from pv where pvconfirmado = 'S' and pvsta = 'A' and pvdtcad = CURRENT_DATE"
     );
     res.status(200).json(result.rows);
   } catch (error) {

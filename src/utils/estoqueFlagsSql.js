@@ -33,4 +33,17 @@ function buildFlagsEstoqueSql({ usaEstoque, estoqueMin } = {}) {
   };
 }
 
-module.exports = { buildFlagsEstoqueSql };
+// A gestão (listagem, filtros e KPIs do painel) mostra as marcações manuais do
+// cadastro quando a empresa não controla estoque, sem calcular estoque por
+// cor/grupo. Com o controle de estoque ativo, valem as flags automáticas.
+function buildFlagsGestao(config) {
+  if (config && config.usaEstoque) {
+    return buildFlagsEstoqueSql(config);
+  }
+  return {
+    disponibilidadeSql: "COALESCE(UPPER(TRIM(pro.prosemest)), 'N')",
+    acabandoSql: "COALESCE(UPPER(TRIM(pro.proacabando)), 'N')",
+  };
+}
+
+module.exports = { buildFlagsEstoqueSql, buildFlagsGestao };

@@ -251,36 +251,29 @@ function renderizarResultadosBusca(modelos) {
   });
 }
 
-inputPesquisa.addEventListener("input", async function () {
-  const pesquisa = this.value.trim().toLowerCase();
-
-  if (!pesquisa) {
-    limparBusca();
-    return;
-  }
-
+async function executarBusca(pesquisa) {
   const token = ++buscaToken;
   renderizarCarregandoBusca();
 
   try {
     const [modelos] = await Promise.all([
-      fetch(`${BASE_URL}/modelos`).then((res) => res.json()),
+      // Busca server-side: o PostgreSQL filtra e limita o resultado.
+      fetch(
+        `${BASE_URL}/modelos?search=${encodeURIComponent(
+          pesquisa
+        )}&limit=50`
+      ).then((res) => res.json()),
       carregarMarcas().catch(() => []), // garante o mapa de logos sem travar a busca
     ]);
 
     if (token !== buscaToken) return; // ignora resposta obsoleta
 
     const lista = Array.isArray(modelos) ? modelos : [];
-    const filtrados = lista
-      .filter(
-        (modelo) =>
-          modelo.moddes && modelo.moddes.toLowerCase().includes(pesquisa)
-      )
-      .sort((a, b) => {
-        const nomeA = a.moddes.replace(/\s/g, "");
-        const nomeB = b.moddes.replace(/\s/g, "");
-        return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
-      });
+    const filtrados = lista.slice().sort((a, b) => {
+      const nomeA = a.moddes.replace(/\s/g, "");
+      const nomeB = b.moddes.replace(/\s/g, "");
+      return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
+    });
 
     if (filtrados.length === 0) {
       renderizarVazioBusca();
@@ -292,6 +285,20 @@ inputPesquisa.addEventListener("input", async function () {
     console.error("Erro no fetch:", error);
     renderizarVazioBusca();
   }
+}
+
+// Debounce: evita um GET /modelos a cada tecla digitada.
+let buscaDebounceTimer = null;
+inputPesquisa.addEventListener("input", function () {
+  const pesquisa = this.value.trim().toLowerCase();
+  clearTimeout(buscaDebounceTimer);
+
+  if (!pesquisa) {
+    limparBusca();
+    return;
+  }
+
+  buscaDebounceTimer = setTimeout(() => executarBusca(pesquisa), 300);
 });
 
 // Função para atualizar o ícone do carrinho (exibe badge com quantidade de itens)

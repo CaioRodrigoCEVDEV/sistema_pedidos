@@ -1,3 +1,17 @@
+// Fonte única dos dados da empresa no frontend: memoiza a promise para que
+// nome, whatsapp, estoque e carrinho não repitam o GET /emp na mesma página.
+window.obterDadosEmpresa = window.obterDadosEmpresa || function obterDadosEmpresa() {
+    if (!window.__ouEmpresaPromise) {
+        window.__ouEmpresaPromise = fetch(`${BASE_URL}/emp`)
+            .then((response) => response.json())
+            .catch((error) => {
+                window.__ouEmpresaPromise = null;
+                throw error;
+            });
+    }
+    return window.__ouEmpresaPromise;
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     function formatCompanyName(name) {
         return name ? name.toUpperCase() : '';
@@ -8,8 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    fetch(`${BASE_URL}/emp`)
-        .then((response) => response.json())
+    window.obterDadosEmpresa()
         .then((data) => {
             const companyName = data.emprazao || '';
             const formattedName = formatCompanyName(companyName);

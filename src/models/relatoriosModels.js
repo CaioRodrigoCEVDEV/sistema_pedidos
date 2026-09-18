@@ -165,7 +165,8 @@ async function getPecasCadastradas(filters = {}) {
   }
 
   if (peca) {
-    whereClauses.push(`LOWER(pro.prodes) LIKE LOWER($${paramIndex})`);
+    // ILIKE permite usar o índice GIN trigram de pro.prodes (idx_pro_des_trgm).
+    whereClauses.push(`pro.prodes ILIKE $${paramIndex}`);
     params.push(`%${peca}%`);
     paramIndex++;
   }

@@ -72,7 +72,7 @@ btnProduto.addEventListener("click", () => {
     }
   };
 
-  promarcascod.addEventListener("change", (e) => {
+  promarcascod.onchange = (e) => {
     const marcaId = parseIntegerParam(e.target.value);
     const modelosHolder = document.getElementById("popupProdutoModalModelo");
     if (marcaId !== null) {
@@ -80,7 +80,7 @@ btnProduto.addEventListener("click", () => {
     } else {
       modelosHolder.innerHTML = '<option value="">Selecione</option>';
     }
-  });
+  };
 
   fetchTipos = async () => {
     try {
@@ -124,10 +124,7 @@ btnProduto.addEventListener("click", () => {
       .catch(console.error);
   }
 
-  // Carrega novamente ao abrir o popup
-  if (btnProduto) {
-    btnProduto.addEventListener("click", carregarCoresPainel);
-  }
+  // Carrega uma única vez por abertura do modal (sem acumular listeners)
   carregarCoresPainel();
   fetchMarcas();
   fetchTipos();
@@ -222,16 +219,18 @@ produtoForm.addEventListener("submit", async (ev) => {
     }
     // Grava as cores disponíveis se houver cores marcadas e procod válido
     if (procod && corIds.length > 0) {
-      // Para cada cor marcada, faz um POST individual
-      for (const corcod of corIds) {
-        await fetch(
-          `${BASE_URL}/proCoresDisponiveis/${procod}?corescod=${corcod}&procorsemest=N`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-      }
+      // Dispara os POSTs em paralelo (sem await sequencial por cor)
+      await Promise.all(
+        corIds.map((corcod) =>
+          fetch(
+            `${BASE_URL}/proCoresDisponiveis/${procod}?corescod=${corcod}&procorsemest=N`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            },
+          ),
+        ),
+      );
     }
     produtoModal.hide();
   } catch (error) {

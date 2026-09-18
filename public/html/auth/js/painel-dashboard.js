@@ -765,37 +765,30 @@
   // ------------------------------------------------------------------------
   async function loadDashboard() {
     try {
-      var pend = await jget("/pedidos/pendentescountNow", []);
-      var conf = await jget("/pedidos/total/confirmadosNow", []);
-      var balcao = await jget("/pedidos/balcaoNow", []);
-      var entrega = await jget("/pedidos/entregaNow", []);
-      var venda = await jget("/pedidos/vendaNow", []);
-      var emfalta = await jget("/total/produto/emfalta", []);
-      var acabando = await jget("/total/produto/acabando", []);
+      // Uma única chamada agrega os 12 KPIs/contagens (antes: 12 endpoints).
+      var resumo = await jget("/dashboard/resumo", null);
+      if (!resumo) throw new Error("resumo do dashboard indisponível");
 
-      var pendentesCount = toNum(pend && pend[0] && pend[0].count);
-      var confirmadosCount = toNum(conf && conf[0] && conf[0].count);
-      var balcaoCount = toNum(balcao && balcao[0] && balcao[0].count);
-      var entregaCount = toNum(entrega && entrega[0] && entrega[0].count);
-      var vendaCount = toNum(venda && venda[0] && venda[0].count);
-      var emfaltaCount = toNum(emfalta && emfalta[0] && emfalta[0].count);
-      var acabandoCount = toNum(acabando && acabando[0] && acabando[0].count);
+      var kpis = resumo.pedidos || {};
+      var prod = resumo.produtos || {};
+      var est = resumo.estoque || {};
+      var listas = resumo.listas || {};
+
+      var pendentesCount = toNum(kpis.pendentes);
+      var confirmadosCount = toNum(kpis.confirmados);
+      var balcaoCount = toNum(kpis.balcao);
+      var entregaCount = toNum(kpis.entrega);
+      var vendaCount = toNum(kpis.venda);
+      var emfaltaCount = toNum(prod.emFalta);
+      var acabandoCount = toNum(prod.acabando);
 
       setText("kpiEmFalta", emfaltaCount);
       setText("kpiAcabando", acabandoCount);
       setText("kpiPendentes", pendentesCount);
       setText("kpiConfirmados", confirmadosCount);
-
-      var clientes = await jget("/cli", { total: 0, data: [] });
-      var vendedores = await jget("/vendedor/listar", []);
-      setText("kpiClientes", toNum(clientes && (clientes.total ?? clientes.length)));
-      setText("kpiVendedores", vendedores ? vendedores.length : 0);
-
-      var marcas = await jget("/marcas", []);
-      setText("kpiMarcas", marcas ? marcas.length : 0);
-
-      var comEstoque = await jget("/proComEstoque", []);
-      var semEstoque = await jget("/proSemEstoque", []);
+      setText("kpiClientes", toNum(listas.clientes));
+      setText("kpiVendedores", toNum(listas.vendedores));
+      setText("kpiMarcas", toNum(listas.marcas));
 
       chartStates.chartPedidos = { labels: ["Pendentes", "Confirmados"], valores: [pendentesCount, confirmadosCount] };
       chartRenderers.chartPedidos(chartStates.chartPedidos);
@@ -803,15 +796,12 @@
       chartStates.chartCanais = { labels: ["Balcão", "Entrega", "Venda"], valores: [balcaoCount, entregaCount, vendaCount] };
       chartRenderers.chartCanais(chartStates.chartCanais);
 
-      chartStates.chartEstoque = { labels: ["Com estoque", "Sem estoque"], valores: [(comEstoque || []).length, (semEstoque || []).length] };
+      chartStates.chartEstoque = { labels: ["Com estoque", "Sem estoque"], valores: [toNum(est.comEstoque), toNum(est.semEstoque)] };
       chartRenderers.chartEstoque(chartStates.chartEstoque);
 
-      var porMarca = {};
-      (comEstoque || []).forEach(function (p) {
-        var m = p.marcasdes || "—";
-        porMarca[m] = (porMarca[m] || 0) + 1;
+      var top = (est.topMarcas || []).map(function (m) {
+        return [m.marcasdes || "—", toNum(m.total)];
       });
-      var top = Object.entries(porMarca).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5);
       chartStates.chartTopMarcas = { labels: top.map(function (x) { return x[0]; }), valores: top.map(function (x) { return x[1]; }) };
       chartRenderers.chartTopMarcas(chartStates.chartTopMarcas);
     } catch (e) {
@@ -840,9 +830,13 @@
   // ------------------------------------------------------------------------
   async function initUserName() {
     try {
-      var response = await fetch("/me/usuario", { method: "GET", credentials: "include" });
-      if (!response.ok) throw new Error("Falha ao obter usuário");
-      var data = await response.json();
+      // Reutiliza o GET /me/usuario já feito pelo shell quando disponível
+      var data = typeof window.ouObterUsuario === "function"
+        ? await window.ouObterUsuario()
+        : await fetch("/me/usuario", { method: "GET", credentials: "include" }).then(function (response) {
+            if (!response.ok) throw new Error("Falha ao obter usuário");
+            return response.json();
+          });
       var usuario = data.usunome || "Usuário";
       var h1 = document.querySelector("h1.h4.mb-0");
       if (h1) h1.textContent = "Bem-vindo, " + usuario;

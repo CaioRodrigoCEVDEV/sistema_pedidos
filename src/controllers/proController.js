@@ -1,22 +1,12 @@
 const pool = require("../config/db");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
-const { buildFlagsEstoqueSql } = require("../utils/estoqueFlagsSql");
+const {
+  buildFlagsEstoqueSql,
+  buildFlagsGestao,
+} = require("../utils/estoqueFlagsSql");
 const { getEstoqueConfig } = require("../utils/estoqueConfig");
 const catalogoCache = require("../utils/catalogoCache");
 const showcasesCache = require("../utils/showcasesCache");
-
-// A gestão (listagem, filtros e KPIs do painel) mostra as marcações manuais do
-// cadastro quando a empresa não controla estoque, sem calcular estoque por
-// cor/grupo. Com o controle de estoque ativo, valem as flags automáticas.
-function buildFlagsGestao(config) {
-  if (config && config.usaEstoque) {
-    return buildFlagsEstoqueSql(config);
-  }
-  return {
-    disponibilidadeSql: "COALESCE(UPPER(TRIM(pro.prosemest)), 'N')",
-    acabandoSql: "COALESCE(UPPER(TRIM(pro.proacabando)), 'N')",
-  };
-}
 
 exports.listarProduto = async (req, res) => {
   const tipoId = parseIntegerParam(req.params.id);

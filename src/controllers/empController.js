@@ -5,11 +5,15 @@ const showcasesCache = require("../utils/showcasesCache");
 const {
   invalidateEstoqueConfigCache,
 } = require("../utils/estoqueConfig");
+const {
+  getEmpresa,
+  invalidateEmpresaCache,
+} = require("../utils/empresaCache");
 
 exports.listarEmpresa = async (req, res) => {
   try {
-    const result = await pool.query("select * from emp");
-    res.status(200).json(result.rows[0]);
+    const empresa = await getEmpresa();
+    res.status(200).json(empresa || {});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao carregar dados da empresa" });
@@ -23,6 +27,7 @@ exports.editarNumeroEmpresa = async (req, res) => {
       "update emp set empwhatsapp1 = $1, empwhatsapp2 = $2, emprazao=$3 RETURNING *",
       [empwhatsapp1, empwhatsapp2, emprazao]
     );
+    invalidateEmpresaCache();
     res.status(200).json(result.rows[0]);
   } catch (error) {
     console.error(error);
@@ -55,6 +60,7 @@ exports.editarConfigEstoque = async (req, res) => {
     );
 
     invalidateEstoqueConfigCache();
+    invalidateEmpresaCache();
     catalogoCache.invalidate();
     showcasesCache.invalidate();
 
