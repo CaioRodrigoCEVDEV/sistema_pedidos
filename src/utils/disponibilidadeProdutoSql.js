@@ -2,13 +2,7 @@
 // Para produtos com variacoes, o produto fica disponivel se ao menos uma
 // variacao estiver disponivel. Variacoes fora de grupo preservam o controle
 // manual existente por procorsemest.
-const disponibilidadeProdutoSql = `
-  CASE
-    WHEN EXISTS (
-      SELECT 1 FROM procor pc_existente
-      WHERE pc_existente.procorprocod = pro.procod
-    ) THEN
-      CASE WHEN EXISTS (
+const disponibilidadePorCorSql = `CASE WHEN EXISTS (
         SELECT 1
         FROM procor pc_disponivel
         WHERE pc_disponivel.procorprocod = pro.procod
@@ -29,9 +23,31 @@ const disponibilidadeProdutoSql = `
               AND COALESCE(TRIM(pc_disponivel.procorsemest), 'N') <> 'S'
             )
           )
-      ) THEN 'N' ELSE 'S' END
+      ) THEN 'N' ELSE 'S' END`;
+
+// Modo manual: pecas simples usam a flag salva no cadastro (pro.prosemest).
+const disponibilidadeProdutoSql = `
+  CASE
+    WHEN EXISTS (
+      SELECT 1 FROM procor pc_existente
+      WHERE pc_existente.procorprocod = pro.procod
+    ) THEN
+      ${disponibilidadePorCorSql}
     ELSE COALESCE(TRIM(pro.prosemest), 'N')
   END
 `;
 
-module.exports = { disponibilidadeProdutoSql };
+// Modo automatico: pecas simples sao calculadas a partir do estoque geral.
+const disponibilidadeProdutoAutoSql = `
+  CASE
+    WHEN EXISTS (
+      SELECT 1 FROM procor pc_existente
+      WHERE pc_existente.procorprocod = pro.procod
+    ) THEN
+      ${disponibilidadePorCorSql}
+    ELSE
+      CASE WHEN COALESCE(pro.proqtde, 0) <= 0 THEN 'S' ELSE 'N' END
+  END
+`;
+
+module.exports = { disponibilidadeProdutoSql, disponibilidadeProdutoAutoSql };

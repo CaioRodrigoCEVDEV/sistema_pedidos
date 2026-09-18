@@ -4,6 +4,7 @@ const {
   disponibilidadeProdutoSql,
 } = require("../utils/disponibilidadeProdutoSql");
 const { getEstoqueConfig } = require("../utils/estoqueConfig");
+const { buildFlagsEstoqueSql } = require("../utils/estoqueFlagsSql");
 
 function parseOptionalInventoryFilter(value) {
   if (typeof value === "string") {
@@ -194,9 +195,11 @@ async function listarProdutosSemEstoqueItem(marca, modelo) {
 
 async function listarProdutosComEstoqueAcabando() {
   const config = await getEstoqueConfig();
-  if (!config.usaEstoque) {
-    return [];
-  }
+  const condicao = config.usaEstoque
+    ? `case when procorcorescod is null then proqtde else procorqtde end
+              between 1 and $1`
+    : "proacabando = 'S'";
+  const params = config.usaEstoque ? [config.estoqueMin] : [];
 
   const result = await pool.query(
     `
@@ -219,19 +222,15 @@ async function listarProdutosComEstoqueAcabando() {
         join tipo on tipocod = protipocod
         left join procor on procod = procorprocod
         left join cores on corcod = procorcorescod
-        where case when procorcorescod is null then proqtde else procorqtde end
-              between 1 and $1
+        where ${condicao}
           and prosit = 'A'`,
-    [config.estoqueMin]
+    params
   );
   return result.rows;
 }
 
 async function listarProdutosComEstoqueAcabandoItem(marca, modelo) {
   const config = await getEstoqueConfig();
-  if (!config.usaEstoque) {
-    return [];
-  }
 
   const params = [];
   const filtros = [];
@@ -250,8 +249,14 @@ async function listarProdutosComEstoqueAcabandoItem(marca, modelo) {
     );
   }
 
-  params.push(config.estoqueMin);
-  const minParam = params.length;
+  let condicao;
+  if (config.usaEstoque) {
+    params.push(config.estoqueMin);
+    condicao = `case when procorcorescod is null then proqtde else procorqtde end
+                        between 1 and $${params.length}`;
+  } else {
+    condicao = "proacabando = 'S'";
+  }
 
   const filtrosExtras = filtros.length ? ` and ${filtros.join(" and ")}` : "";
 
@@ -275,8 +280,7 @@ async function listarProdutosComEstoqueAcabandoItem(marca, modelo) {
                 join tipo on tipocod = protipocod
                 left join procor on procod = procorprocod
                 left join cores on corcod = procorcorescod
-                where case when procorcorescod is null then proqtde else procorqtde end
-                        between 1 and $${minParam}
+                where ${condicao}
                         and prosit = 'A'
                         ${filtrosExtras}
         `;
@@ -286,9 +290,7 @@ async function listarProdutosComEstoqueAcabandoItem(marca, modelo) {
 
 async function listarProdutosEmFalta() {
   const config = await getEstoqueConfig();
-  if (!config.usaEstoque) {
-    return [];
-  }
+  const flags = buildFlagsEstoqueSql(config);
 
   const result = await pool.query(`
         select distinct
@@ -310,15 +312,13 @@ async function listarProdutosEmFalta() {
         join tipo on tipocod = protipocod
         left join procor on procod = procorprocod
         left join cores on corcod = procorcorescod
-        where prosit = 'A' and prosemest = 'S'`);
+        where prosit = 'A' and ${flags.disponibilidadeSql} = 'S'`);
   return result.rows;
 }
 
 async function listarProdutosEmFaltaItem(marca, modelo) {
   const config = await getEstoqueConfig();
-  if (!config.usaEstoque) {
-    return [];
-  }
+  const flags = buildFlagsEstoqueSql(config);
 
   const params = [];
   const filtros = [];
@@ -359,7 +359,7 @@ async function listarProdutosEmFaltaItem(marca, modelo) {
                 join tipo on tipocod = protipocod
                 left join procor on procod = procorprocod
                 left join cores on corcod = procorcorescod
-                where prosit = 'A' and prosemest = 'S'
+                where prosit = 'A' and ${flags.disponibilidadeSql} = 'S'
                         ${filtrosExtras}
         `;
   const result = await pool.query(query, params);

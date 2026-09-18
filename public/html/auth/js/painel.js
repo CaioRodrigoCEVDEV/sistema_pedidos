@@ -288,7 +288,19 @@ function editarProduto(codigo) {
                 <label class="form-label">📥 Estoque</label><br>
                 <small class="text-muted">As flags "Sem estoque geral" e "Produto acabando" são automáticas (mínimo de ${estoqueMin} unidades).</small>
               </div>`
-                  : ""
+                  : `<div class="mb-3">
+                <label class="form-label">📥 Produto sem estoque</label><br>
+                <input type="checkbox" id="editar_prosemest"
+                  ${produto.some((p) => normalizarFlagPeca(p.prosemest) === "S") ? "checked" : ""}>
+                <label for="editar_prosemest">Sem estoque geral</label>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">📥 Produto acabando</label><br>
+                <input type="checkbox" id="editar_proacabando"
+                  ${produto.some((p) => normalizarFlagPeca(p.proacabando) === "S") ? "checked" : ""}>
+                <label for="editar_proacabando">Produto acabando</label>
+              </div>`
               }
 
               <details>
