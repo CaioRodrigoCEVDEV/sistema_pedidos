@@ -65,6 +65,63 @@
     return null;
   }
 
+  function obterCarrinho() {
+    if (window.ouStorefront && typeof window.ouStorefront.getCart === "function") {
+      var viaStorefront = window.ouStorefront.getCart();
+      if (Array.isArray(viaStorefront)) return viaStorefront;
+    }
+    try {
+      var cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      return Array.isArray(cart) ? cart : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function adicionarAoCarrinho(card) {
+    if (!card) return;
+    var procod = card.dataset.procod;
+    if (procod == null || procod === "") return;
+
+    var cart = obterCarrinho();
+    var idx = -1;
+    for (var i = 0; i < cart.length; i++) {
+      if (String(cart[i] && cart[i].id) === String(procod)) {
+        idx = i;
+        break;
+      }
+    }
+
+    if (idx > -1) {
+      cart[idx].qt = (Number(cart[idx].qt) || 0) + 1;
+    } else {
+      cart.push({
+        id: procod,
+        nome: card.dataset.nome || "Produto",
+        tipo: card.dataset.tipo || "",
+        marca: card.dataset.marca || "",
+        modelo: card.dataset.modelo || "",
+        preco: Number(card.dataset.preco) || 0,
+        qt: 1,
+      });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    if (window.ouStorefront) {
+      window.ouStorefront.atualizarIconeCarrinho();
+      window.ouStorefront.mostrarPopupAdicionado();
+    }
+  }
+
+  function tratarAdicionar(event) {
+    var alvo = event.target;
+    var add = alvo && alvo.closest ? alvo.closest(".ou-product-card__add") : null;
+    if (!add) return;
+    event.preventDefault();
+    event.stopPropagation();
+    adicionarAoCarrinho(add.closest(".ou-product-card"));
+  }
+
   function criarCard(item) {
     var status = obterStatusPeca(item);
     var icone =
@@ -82,6 +139,12 @@
     var card = document.createElement(href ? "a" : "div");
     card.className = "ou-product-card ou-product-card--shelf";
     if (href) card.href = href;
+    card.dataset.procod = item.procod;
+    card.dataset.nome = item.prodes || "Produto";
+    card.dataset.tipo = item.tipodes || "";
+    card.dataset.marca = item.marcasdes || "";
+    card.dataset.modelo = item.moddes || "";
+    card.dataset.preco = Number(item.provl) || 0;
     card.setAttribute(
       "aria-label",
       (item.prodes || "Produto") + (href ? " — ver produto" : "")
@@ -123,9 +186,9 @@
       '<div class="ou-product-card__price">' +
       formatarMoeda(item.provl) +
       "</div>" +
-      (href
-        ? '<span class="btn btn-primary btn-sm ou-product-card__add">Ver produto</span>'
-        : "") +
+      '<span class="btn btn-primary btn-sm ou-product-card__add" role="button" tabindex="0" aria-label="Adicionar ' +
+      escapeHtml(item.prodes || "Produto") +
+      ' ao carrinho">Adicionar ao carrinho</span>' +
       "</div>";
 
     var logoImg = card.querySelector(".ou-product-card__brand-img");
@@ -220,7 +283,13 @@
 
     var track = section.querySelector(".ou-showcase__track");
 
-    (showcase.items || []).forEach(function (item) {
+    var itens = (showcase.items || []).filter(function (item) {
+      return String(item.prosemest || "").trim().toUpperCase() !== "S";
+    });
+
+    if (!itens.length) return null;
+
+    itens.forEach(function (item) {
       var wrapper = document.createElement("div");
       wrapper.className = "ou-showcase__item";
       wrapper.appendChild(criarCard(item));
@@ -234,9 +303,10 @@
   function renderizar(showcases) {
     container.innerHTML = "";
     showcases.forEach(function (showcase) {
-      container.appendChild(criarVitrine(showcase));
+      var section = criarVitrine(showcase);
+      if (section) container.appendChild(section);
     });
-    container.hidden = showcases.length === 0;
+    container.hidden = container.children.length === 0;
   }
 
   async function carregar() {
@@ -256,6 +326,11 @@
       container.hidden = true;
     }
   }
+
+  container.addEventListener("click", tratarAdicionar);
+  container.addEventListener("keydown", function (event) {
+    if (event.key === "Enter" || event.key === " ") tratarAdicionar(event);
+  });
 
   document.addEventListener("DOMContentLoaded", carregar);
 })();
