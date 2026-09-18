@@ -89,6 +89,8 @@ const corsOptions = {
     "http://loja.jppecashop.com.br",
     "http://utidoscelulares.com.br",
     "http://www.utidoscelulares.com.br",
+    "https://loja.utidoscelulares.com.br",
+    "http://loja.utidoscelulares.com.br",
   ],
   credentials: true,
 };
