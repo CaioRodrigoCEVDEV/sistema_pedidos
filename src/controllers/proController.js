@@ -176,9 +176,6 @@ exports.listarProdutosPainelId = async (req, res) => {
 exports.totalProdutoAcabando = async (req, res) => {
   try {
     const config = await getEstoqueConfig();
-    if (!config.usaEstoque) {
-      return res.status(200).json([{ count: "0" }]);
-    }
     const flags = buildFlagsEstoqueSql(config);
     const result = await pool.query(
       `select count(procod) from pro where ${flags.acabandoSql} = 'S'`,
@@ -195,9 +192,6 @@ exports.totalProdutoAcabando = async (req, res) => {
 exports.totalProdutoEmFalta = async (req, res) => {
   try {
     const config = await getEstoqueConfig();
-    if (!config.usaEstoque) {
-      return res.status(200).json([{ count: "0" }]);
-    }
     const flags = buildFlagsEstoqueSql(config);
     const result = await pool.query(
       `select count(procod) from pro where ${flags.disponibilidadeSql} = 'S'`,
@@ -437,9 +431,10 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
   }
 
   try {
-    const config = await getEstoqueConfig();
-    const procorsemestSql = config.usaEstoque
-      ? `CASE
+    const result = await pool.query(
+      `select procod, prodes, provl, tipodes, corcod,
+        case when cornome is null then '' else cornome end as cornome,
+        CASE
           WHEN procor.procorid IS NULL THEN COALESCE(TRIM(pro.prosemest), 'N')
           WHEN EXISTS (
             SELECT 1 FROM part_group_items pgi_vinculo
@@ -453,13 +448,7 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
                 AND COALESCE(pg_estoque.stock_quantity, 0) > 0
             ) THEN 'N' ELSE 'S' END
           ELSE COALESCE(TRIM(procor.procorsemest), 'N')
-        END`
-      : "'N'";
-
-    const result = await pool.query(
-      `select procod, prodes, provl, tipodes, corcod,
-        case when cornome is null then '' else cornome end as cornome,
-        ${procorsemestSql} AS procorsemest
+        END AS procorsemest
         from pro
         join tipo on tipocod = protipocod
         left join procor on procorprocod = procod

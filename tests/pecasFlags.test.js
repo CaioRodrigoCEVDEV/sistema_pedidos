@@ -175,22 +175,26 @@ test("API aplica flags efetivas de estoque na listagem, filtros e painel", async
   assert.ok(queries[0].sql.includes("COALESCE(pro.proqtde, 0) <= 5"));
 });
 
-test("Empresa sem controle de estoque zera as flags nas APIs", async () => {
+test("Empresa sem controle de estoque respeita as flags manuais", async () => {
   estoqueConfigMock = { usaEstoque: false, empusaest: "N", estoqueMin: 5 };
+  const flagsSql = buildFlagsEstoqueSql(estoqueConfigMock);
 
   queries.length = 0;
   await controller.listarProdutos({ query: { page: "1" } }, response());
   const list = queries[1];
-  assert.ok(list.sql.includes("'N' as prosemest"));
-  assert.ok(list.sql.includes("'N' as proacabando"));
-  assert.doesNotMatch(list.sql, /pc_disponivel/);
+  assert.ok(list.sql.includes(`${flagsSql.disponibilidadeSql} as prosemest`));
+  assert.ok(list.sql.includes(`${flagsSql.acabandoSql} as proacabando`));
+  assert.match(flagsSql.acabandoSql, /pro\.proacabando/);
 
   queries.length = 0;
   await controller.totalProdutoAcabando({}, response());
-  assert.deepEqual(queries, []);
-  const res = response();
-  await controller.totalProdutoEmFalta({}, res);
-  assert.deepEqual(res.data, [{ count: "0" }]);
+  assert.equal(queries.length, 1);
+  assert.match(queries[0].sql, /pro\.proacabando/);
+
+  queries.length = 0;
+  await controller.totalProdutoEmFalta({}, response());
+  assert.equal(queries.length, 1);
+  assert.match(queries[0].sql, /pro\.prosemest/);
 });
 
 test("Consulta sem paginação mantém os parâmetros dos outros filtros", async () => {

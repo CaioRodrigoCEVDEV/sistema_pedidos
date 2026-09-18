@@ -7,18 +7,17 @@ const TIPO_MANUAL = "featured";
 
 // Formato enxuto dos itens das vitrines para a página pública.
 // Não expõe campos internos do cadastro (prosit, posições etc.).
-// As flags respeitam a config da empresa: quando ela não controla estoque,
-// tudo é exibido como disponível e sem "últimas unidades".
+// Com o controle de estoque ativo, as flags são automáticas; sem ele, as
+// flags manuais salvas no cadastro são respeitadas.
 function mapearItemPublico(row, config) {
   const usaEstoque = Boolean(config && config.usaEstoque);
   const estoqueMin = config && Number.isInteger(config.estoqueMin)
     ? config.estoqueMin
     : 5;
-  const disponivel = String(row.prosemest || "N").trim().toUpperCase() === "S"
-    ? "S"
-    : "N";
+  const normalizar = (valor) =>
+    String(valor || "N").trim().toUpperCase() === "S" ? "S" : "N";
   const qtd = Number(row.proqtde) || 0;
-  const acabando = usaEstoque && qtd > 0 && qtd <= estoqueMin ? "S" : "N";
+  const acabandoAuto = qtd > 0 && qtd <= estoqueMin ? "S" : "N";
 
   return {
     procod: row.procod,
@@ -30,8 +29,8 @@ function mapearItemPublico(row, config) {
     marcasdes: row.marcasdes || "",
     modcod: row.modcod || null,
     moddes: row.moddes || "",
-    prosemest: usaEstoque ? disponivel : "N",
-    proacabando: acabando,
+    prosemest: normalizar(usaEstoque ? row.prosemest_auto : row.prosemest),
+    proacabando: usaEstoque ? acabandoAuto : normalizar(row.proacabando),
   };
 }
 

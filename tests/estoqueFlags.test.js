@@ -3,17 +3,19 @@ const { test } = require("node:test");
 const { buildFlagsEstoqueSql } = require("../src/utils/estoqueFlagsSql");
 const { normalizar } = require("../src/utils/estoqueConfig");
 
-test("Empresa sem controle de estoque zera as flags", () => {
+test("Empresa sem controle de estoque usa as flags manuais salvas", () => {
   const flags = buildFlagsEstoqueSql({ usaEstoque: false, estoqueMin: 5 });
-  assert.equal(flags.disponibilidadeSql, "'N'");
-  assert.equal(flags.acabandoSql, "'N'");
+  assert.match(flags.disponibilidadeSql, /pro\.prosemest/);
+  assert.match(flags.acabandoSql, /pro\.proacabando/);
+  assert.doesNotMatch(flags.acabandoSql, /pro\.proqtde/);
 });
 
-test("Empresa com controle calcula acabando pelo minimo configurado", () => {
+test("Empresa com controle calcula as flags pelo estoque", () => {
   const flags = buildFlagsEstoqueSql({ usaEstoque: true, estoqueMin: 3 });
-  assert.match(flags.disponibilidadeSql, /pro\.prosemest/);
+  assert.match(flags.disponibilidadeSql, /pro\.proqtde/);
   assert.match(flags.acabandoSql, /pro\.proqtde/);
   assert.match(flags.acabandoSql, /<= 3/);
+  assert.doesNotMatch(flags.acabandoSql, /pro\.proacabando/);
 });
 
 test("A quantidade minima invalida cai para o padrao 5", () => {

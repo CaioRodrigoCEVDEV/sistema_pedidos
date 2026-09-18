@@ -1,6 +1,7 @@
 const pool = require("../config/db");
 const {
   disponibilidadeProdutoSql,
+  disponibilidadeProdutoAutoSql,
 } = require("../utils/disponibilidadeProdutoSql");
 
 // As vitrines são fixas por enquanto: Destaques é manual e Mais vendidos /
@@ -21,6 +22,7 @@ const PRODUTO_SELECT = `
   tipo.tipodes,
   marcas.marcasdes,
   ${disponibilidadeProdutoSql} AS prosemest,
+  ${disponibilidadeProdutoAutoSql} AS prosemest_auto,
   COALESCE(pro.proacabando, 'N') AS proacabando,
   COALESCE(pro.proqtde, 0) AS proqtde,
   pro.prodtcad,

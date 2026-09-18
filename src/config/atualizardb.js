@@ -1174,14 +1174,19 @@ async function atualizarDB() {
         AND pr.proqtde IS DISTINCT FROM pg.stock_quantity;
     `);
 
-    // Reconcilia a flag "sem estoque" das pecas simples (sem cor): se o
-    // estoque geral esta zerado, a peca deve estar marcada como sem estoque.
+    // Reconcilia a flag "sem estoque" das pecas simples (sem cor) apenas para
+    // empresas que controlam estoque (empusaest = 'S'): se o estoque geral esta
+    // zerado, a peca deve estar marcada como sem estoque. Empresas que nao
+    // controlam estoque usam as flags manuais do cadastro e nao sao alteradas.
     await pool.query(`
       UPDATE pro pr
       SET prosemest = CASE WHEN COALESCE(pr.proqtde, 0) <= 0 THEN 'S' ELSE 'N' END
-      WHERE NOT EXISTS (
-        SELECT 1 FROM procor pc WHERE pc.procorprocod = pr.procod
+      WHERE EXISTS (
+        SELECT 1 FROM emp WHERE COALESCE(TRIM(empusaest), 'N') = 'S'
       )
+        AND NOT EXISTS (
+          SELECT 1 FROM procor pc WHERE pc.procorprocod = pr.procod
+        )
         AND COALESCE(TRIM(pr.prosemest), 'N') IS DISTINCT FROM
             CASE WHEN COALESCE(pr.proqtde, 0) <= 0 THEN 'S' ELSE 'N' END;
     `);
