@@ -5,11 +5,26 @@ document.addEventListener("DOMContentLoaded", function () {
   var usaEl = document.getElementById("empusaest");
   var minEl = document.getElementById("empestoqmin");
   var salvarEl = document.getElementById("saveEstoque");
+  var badgeEl = document.getElementById("configEstoqueBadge");
+  var badgeTextEl = document.getElementById("configEstoqueBadgeText");
 
   if (!usaEl || !minEl || !salvarEl) return;
 
+  function atualizarBadge() {
+    if (!badgeEl) return;
+    var ativo = usaEl.checked;
+    badgeEl.classList.toggle("ou-badge--success", ativo);
+    badgeEl.classList.toggle("ou-badge--neutral", !ativo);
+    if (badgeTextEl) {
+      badgeTextEl.textContent = ativo
+        ? "Estoque controlado"
+        : "Estoque desativado";
+    }
+  }
+
   function aplicarEstado() {
     minEl.disabled = !usaEl.checked;
+    atualizarBadge();
   }
 
   usaEl.addEventListener("change", aplicarEstado);
@@ -42,6 +57,11 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    var conteudoOriginal = salvarEl.innerHTML;
+    salvarEl.disabled = true;
+    salvarEl.innerHTML =
+      '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Salvando...';
+
     fetch(`${BASE_URL}/emp/estoque`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -57,6 +77,10 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch((error) => {
         console.error(error);
         showToast("Erro ao salvar a configuração de estoque.", "error");
+      })
+      .finally(() => {
+        salvarEl.disabled = false;
+        salvarEl.innerHTML = conteudoOriginal;
       });
   });
 });
