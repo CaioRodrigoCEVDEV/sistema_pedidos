@@ -130,8 +130,8 @@ async function listarMaisVendidos(limite, config) {
               SUM(COALESCE(i.pviqtde, 0)) AS quantidade
        FROM pvi i
        JOIN pv ON pv.pvcod = i.pvipvcod
-       WHERE TRIM(pv.pvconfirmado) = 'S'
-         AND TRIM(pv.pvsta) = 'A'
+       WHERE pv.pvconfirmado = 'S'
+         AND pv.pvsta = 'A'
        GROUP BY i.pviprocod
      ),
      devolvidas AS (
@@ -141,8 +141,8 @@ async function listarMaisVendidos(limite, config) {
        JOIN devolucao_itens di ON di.devidevcod = d.devcod
        JOIN pv ON pv.pvcod = d.devpvcod
        WHERE d.devsta = 'A'
-         AND TRIM(pv.pvconfirmado) = 'S'
-         AND TRIM(pv.pvsta) = 'A'
+         AND pv.pvconfirmado = 'S'
+         AND pv.pvsta = 'A'
        GROUP BY di.deviprocod
      )
      SELECT ${PRODUTO_SELECT},

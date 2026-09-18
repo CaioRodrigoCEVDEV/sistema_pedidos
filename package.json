@@ -7,6 +7,7 @@
     "dev": "nodemon app.js",
     "test": "node tests/partGroups.test.js",
     "test:pr1": "node tests/performancePR1.test.js",
+    "test:pr2": "node tests/performancePR2.test.js",
     "bump-version": "node scripts/sync-releases.js && node scripts/bump-asset-version.js",
     "releases:sync": "node scripts/sync-releases.js"
   },

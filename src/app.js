@@ -164,6 +164,9 @@ app.use(telaRoutes);
 const showcaseRoutes = require("./routes/showcaseRoutes");
 app.use(showcaseRoutes);
 
+const dashboardRoutes = require("./routes/dashboardRoutes");
+app.use(dashboardRoutes);
+
 // Rotas de páginas
 
 app.get("/", (req, res) => {

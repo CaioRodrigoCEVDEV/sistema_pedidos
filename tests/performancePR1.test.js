@@ -185,16 +185,17 @@ async function runTests() {
     );
   });
 
-  await test("painel-dashboard carrega KPIs em Promise.all", () => {
+  await test("painel-dashboard carrega KPIs pelo endpoint agregado", () => {
     const src = read("public/html/auth/js/painel-dashboard.js");
+    // PR2: 12 chamadas viraram 1 endpoint agregado.
     assert(
-      src.includes("] = await Promise.all(["),
-      "loadDashboard deveria usar Promise.all"
+      src.includes('jget("/dashboard/resumo"'),
+      "loadDashboard deveria chamar /dashboard/resumo"
     );
     const sequenciais = src.match(/await jget\(/g) || [];
     assert(
-      sequenciais.length === 0,
-      `ainda existem ${sequenciais.length} awaits sequenciais de jget`
+      sequenciais.length === 1,
+      `esperado exatamente 1 await jget (resumo agregado), encontrado ${sequenciais.length}`
     );
   });
 

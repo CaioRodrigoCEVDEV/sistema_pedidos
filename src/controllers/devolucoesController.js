@@ -86,8 +86,8 @@ exports.buscarItensVendidos = async (req, res) => {
          ON d.devpvcod = v.pvipvcod
         AND d.deviprocod = v.pviprocod
         AND d.deviprocorid IS NOT DISTINCT FROM v.pviprocorid
-       WHERE TRIM(pv.pvconfirmado) = 'S'
-         AND TRIM(pv.pvsta) = 'A'
+       WHERE pv.pvconfirmado = 'S'
+         AND pv.pvsta = 'A'
          AND v.quantidade_vendida > COALESCE(d.quantidade_devolvida, 0)
          ${where}
        ORDER BY pv.pvdtcad DESC, v.pvipvcod DESC, p.prodes

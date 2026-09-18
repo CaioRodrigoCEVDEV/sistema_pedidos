@@ -126,8 +126,41 @@ exports.deletarModelo = async (req, res) => {
 };
 
 exports.listarTodosModelos = async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const limitParam = parseInt(req.query.limit, 10);
+  const limit = Number.isFinite(limitParam) && limitParam > 0
+    ? Math.min(limitParam, 200)
+    : (search ? 50 : 0);
+
   try {
-    const result = await pool.query(`select * from vw_modelos `);
+    // Sem termo e sem limite: mantém o catálogo completo (telas do painel).
+    if (!search && limit === 0) {
+      const result = await pool.query(`select * from vw_modelos `);
+      return res.status(200).json(result.rows);
+    }
+
+    const params = [];
+    let where = "";
+    if (search) {
+      params.push(`%${search}%`);
+      where = `WHERE moddes ILIKE $${params.length}`;
+    }
+
+    let limitSql = "";
+    if (limit > 0) {
+      params.push(limit);
+      limitSql = `LIMIT $${params.length}`;
+    }
+
+    // Mesma ordenação da vw_modelos, agora com filtro no banco e LIMIT.
+    const result = await pool.query(
+      `SELECT modcod, moddes, modsit, modmarcascod, ordem
+         FROM modelo
+         ${where}
+         ORDER BY substring(moddes::text, '^\\D*'), substring(moddes::text, '\\d+')::integer
+         ${limitSql}`,
+      params
+    );
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);

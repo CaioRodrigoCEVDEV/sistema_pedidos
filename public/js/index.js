@@ -257,23 +257,23 @@ async function executarBusca(pesquisa) {
 
   try {
     const [modelos] = await Promise.all([
-      fetch(`${BASE_URL}/modelos`).then((res) => res.json()),
+      // Busca server-side: o PostgreSQL filtra e limita o resultado.
+      fetch(
+        `${BASE_URL}/modelos?search=${encodeURIComponent(
+          pesquisa
+        )}&limit=50`
+      ).then((res) => res.json()),
       carregarMarcas().catch(() => []), // garante o mapa de logos sem travar a busca
     ]);
 
     if (token !== buscaToken) return; // ignora resposta obsoleta
 
     const lista = Array.isArray(modelos) ? modelos : [];
-    const filtrados = lista
-      .filter(
-        (modelo) =>
-          modelo.moddes && modelo.moddes.toLowerCase().includes(pesquisa)
-      )
-      .sort((a, b) => {
-        const nomeA = a.moddes.replace(/\s/g, "");
-        const nomeB = b.moddes.replace(/\s/g, "");
-        return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
-      });
+    const filtrados = lista.slice().sort((a, b) => {
+      const nomeA = a.moddes.replace(/\s/g, "");
+      const nomeB = b.moddes.replace(/\s/g, "");
+      return nomeA.localeCompare(nomeB, "pt-BR", { numeric: true });
+    });
 
     if (filtrados.length === 0) {
       renderizarVazioBusca();

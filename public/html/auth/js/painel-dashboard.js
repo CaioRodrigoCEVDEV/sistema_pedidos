@@ -765,52 +765,30 @@
   // ------------------------------------------------------------------------
   async function loadDashboard() {
     try {
-      // Todas as chamadas são independentes: carrega em paralelo (1 lote em
-      // vez de 12 awaits em série).
-      var [
-        pend,
-        conf,
-        balcao,
-        entrega,
-        venda,
-        emfalta,
-        acabando,
-        clientes,
-        vendedores,
-        marcas,
-        comEstoque,
-        semEstoque,
-      ] = await Promise.all([
-        jget("/pedidos/pendentescountNow", []),
-        jget("/pedidos/total/confirmadosNow", []),
-        jget("/pedidos/balcaoNow", []),
-        jget("/pedidos/entregaNow", []),
-        jget("/pedidos/vendaNow", []),
-        jget("/total/produto/emfalta", []),
-        jget("/total/produto/acabando", []),
-        jget("/cli", { total: 0, data: [] }),
-        jget("/vendedor/listar", []),
-        jget("/marcas", []),
-        jget("/proComEstoque", []),
-        jget("/proSemEstoque", []),
-      ]);
+      // Uma única chamada agrega os 12 KPIs/contagens (antes: 12 endpoints).
+      var resumo = await jget("/dashboard/resumo", null);
+      if (!resumo) throw new Error("resumo do dashboard indisponível");
 
-      var pendentesCount = toNum(pend && pend[0] && pend[0].count);
-      var confirmadosCount = toNum(conf && conf[0] && conf[0].count);
-      var balcaoCount = toNum(balcao && balcao[0] && balcao[0].count);
-      var entregaCount = toNum(entrega && entrega[0] && entrega[0].count);
-      var vendaCount = toNum(venda && venda[0] && venda[0].count);
-      var emfaltaCount = toNum(emfalta && emfalta[0] && emfalta[0].count);
-      var acabandoCount = toNum(acabando && acabando[0] && acabando[0].count);
+      var kpis = resumo.pedidos || {};
+      var prod = resumo.produtos || {};
+      var est = resumo.estoque || {};
+      var listas = resumo.listas || {};
+
+      var pendentesCount = toNum(kpis.pendentes);
+      var confirmadosCount = toNum(kpis.confirmados);
+      var balcaoCount = toNum(kpis.balcao);
+      var entregaCount = toNum(kpis.entrega);
+      var vendaCount = toNum(kpis.venda);
+      var emfaltaCount = toNum(prod.emFalta);
+      var acabandoCount = toNum(prod.acabando);
 
       setText("kpiEmFalta", emfaltaCount);
       setText("kpiAcabando", acabandoCount);
       setText("kpiPendentes", pendentesCount);
       setText("kpiConfirmados", confirmadosCount);
-
-      setText("kpiClientes", toNum(clientes && (clientes.total ?? clientes.length)));
-      setText("kpiVendedores", vendedores ? vendedores.length : 0);
-      setText("kpiMarcas", marcas ? marcas.length : 0);
+      setText("kpiClientes", toNum(listas.clientes));
+      setText("kpiVendedores", toNum(listas.vendedores));
+      setText("kpiMarcas", toNum(listas.marcas));
 
       chartStates.chartPedidos = { labels: ["Pendentes", "Confirmados"], valores: [pendentesCount, confirmadosCount] };
       chartRenderers.chartPedidos(chartStates.chartPedidos);
@@ -818,15 +796,12 @@
       chartStates.chartCanais = { labels: ["Balcão", "Entrega", "Venda"], valores: [balcaoCount, entregaCount, vendaCount] };
       chartRenderers.chartCanais(chartStates.chartCanais);
 
-      chartStates.chartEstoque = { labels: ["Com estoque", "Sem estoque"], valores: [(comEstoque || []).length, (semEstoque || []).length] };
+      chartStates.chartEstoque = { labels: ["Com estoque", "Sem estoque"], valores: [toNum(est.comEstoque), toNum(est.semEstoque)] };
       chartRenderers.chartEstoque(chartStates.chartEstoque);
 
-      var porMarca = {};
-      (comEstoque || []).forEach(function (p) {
-        var m = p.marcasdes || "—";
-        porMarca[m] = (porMarca[m] || 0) + 1;
+      var top = (est.topMarcas || []).map(function (m) {
+        return [m.marcasdes || "—", toNum(m.total)];
       });
-      var top = Object.entries(porMarca).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5);
       chartStates.chartTopMarcas = { labels: top.map(function (x) { return x[0]; }), valores: top.map(function (x) { return x[1]; }) };
       chartRenderers.chartTopMarcas(chartStates.chartTopMarcas);
     } catch (e) {
