@@ -53,6 +53,7 @@ async function montarVitrinesPublicas() {
   if (destaque) {
     itensDestaque = await showcaseModels.listarItensShowcase(destaque.id, {
       somenteAtivos: true,
+      config,
     });
   }
 
@@ -63,9 +64,9 @@ async function montarVitrinesPublicas() {
     if (showcase.type === TIPO_MANUAL) {
       itens = itensDestaque;
     } else if (showcase.type === "best_sellers") {
-      itens = await showcaseModels.listarMaisVendidos(showcase.max_items);
+      itens = await showcaseModels.listarMaisVendidos(showcase.max_items, config);
     } else if (showcase.type === "new_arrivals") {
-      itens = await showcaseModels.listarNovidades(showcase.max_items);
+      itens = await showcaseModels.listarNovidades(showcase.max_items, config);
     } else {
       itens = [];
     }
@@ -132,10 +133,14 @@ exports.listarAdmin = async (req, res) => {
 
       if (showcase.type === "best_sellers") {
         previewItems = await showcaseModels.listarMaisVendidos(
-          showcase.max_items
+          showcase.max_items,
+          config
         );
       } else if (showcase.type === "new_arrivals") {
-        previewItems = await showcaseModels.listarNovidades(showcase.max_items);
+        previewItems = await showcaseModels.listarNovidades(
+          showcase.max_items,
+          config
+        );
       }
 
       resposta.push({

@@ -41,6 +41,18 @@ const PRODUTO_JOIN_TABLES = `
 
 const PRODUTO_JOINS = `FROM pro ${PRODUTO_JOIN_TABLES}`;
 
+// Disponibilidade efetiva usada pelas vitrines automáticas, espelhando o que
+// mapearItemPublico() expõe: com controle de estoque ativo (empusaest = 'S')
+// valem as flags automáticas; sem ele, a flag manual do cadastro. Produtos sem
+// disponibilidade ('S') são descartados na própria consulta, de modo que o
+// LIMIT preencha a vitrine com os próximos itens disponíveis.
+function disponibilidadeVitrineSql(config) {
+  if (config && config.usaEstoque) {
+    return disponibilidadeProdutoAutoSql;
+  }
+  return "COALESCE(UPPER(TRIM(pro.prosemest)), 'N')";
+}
+
 async function listarShowcases({ somenteAtivas = true } = {}) {
   const where = somenteAtivas ? "WHERE active = TRUE" : "";
   const result = await pool.query(
@@ -90,7 +102,8 @@ async function listarItensShowcases({ somenteAtivos = true } = {}) {
   return result.rows;
 }
 
-async function listarItensShowcase(showcaseId, { somenteAtivos = true } = {}) {
+async function listarItensShowcase(showcaseId, { somenteAtivos = true, config } = {}) {
+  const disponibilidade = disponibilidadeVitrineSql(config);
   const result = await pool.query(
     `SELECT i.id AS item_id,
             i.position,
@@ -99,7 +112,7 @@ async function listarItensShowcase(showcaseId, { somenteAtivos = true } = {}) {
      JOIN pro ON pro.procod = i.procod
      ${PRODUTO_JOIN_TABLES}
      WHERE i.showcase_id = $1
-       AND ($2::boolean IS FALSE OR pro.prosit = 'A')
+       AND ($2::boolean IS FALSE OR (pro.prosit = 'A' AND (${disponibilidade}) <> 'S'))
      ORDER BY i.position, i.id`,
     [showcaseId, somenteAtivos]
   );
@@ -109,7 +122,8 @@ async function listarItensShowcase(showcaseId, { somenteAtivos = true } = {}) {
 // Mais vendidos: regra consolidada de venda do sistema (mesma usada em
 // devolucoesController.buscarItensVendidos e nos relatórios) —
 // pedido confirmado ('S') e ativo ('A'), descontando devoluções ativas.
-async function listarMaisVendidos(limite) {
+async function listarMaisVendidos(limite, config) {
+  const disponibilidade = disponibilidadeVitrineSql(config);
   const result = await pool.query(
     `WITH vendas AS (
        SELECT i.pviprocod AS procod,
@@ -139,6 +153,7 @@ async function listarMaisVendidos(limite) {
      LEFT JOIN devolvidas ON devolvidas.procod = vendas.procod
      WHERE pro.prosit = 'A'
        AND (vendas.quantidade - COALESCE(devolvidas.quantidade, 0)) > 0
+       AND (${disponibilidade}) <> 'S'
      ORDER BY quantidade_vendida DESC, pro.prodes
      LIMIT $1`,
     [limite]
@@ -147,11 +162,15 @@ async function listarMaisVendidos(limite) {
 }
 
 // Novidades: cadastro mais recente primeiro (prodtcad), nunca alfabética.
-async function listarNovidades(limite) {
+// Produtos sem disponibilidade são ignorados e a consulta "volta no tempo"
+// automaticamente (LIMIT após o filtro), preenchendo a vitrine.
+async function listarNovidades(limite, config) {
+  const disponibilidade = disponibilidadeVitrineSql(config);
   const result = await pool.query(
     `SELECT ${PRODUTO_SELECT}
      ${PRODUTO_JOINS}
      WHERE pro.prosit = 'A'
+       AND (${disponibilidade}) <> 'S'
      ORDER BY pro.prodtcad DESC NULLS LAST, pro.procod DESC
      LIMIT $1`,
     [limite]
