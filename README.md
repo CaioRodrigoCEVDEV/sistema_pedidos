@@ -71,7 +71,28 @@ CATALOGO_CACHE_TTL_MS=30000
 REQUEST_LOGGING=false
 # Loga queries que demoram mais que X ms (0 = desabilitado)
 LOG_SLOW_QUERIES_MS=0
+
+# ─── Aviso de manutenção ───────────────────────────────────────────────────────
+# API externa (opcional) que informa o aviso de manutenção exibido aos usuários
+# logados. O backend consome essa URL e expõe GET /api/manutencao. Se a API
+# falhar ou estiver vazia, nenhum aviso é exibido.
+MAINTENANCE_API_URL=
+# Token opcional enviado como Authorization: Bearer <token>
+MAINTENANCE_API_TOKEN=
+# Timeout (ms) da chamada externa (padrão 3000)
+MAINTENANCE_API_TIMEOUT_MS=3000
 ```
+
+> **Contrato do JSON da API de manutenção** (`MAINTENANCE_API_URL`):
+> ```json
+> {
+>   "ativo": true,
+>   "titulo": "Manutenção programada",
+>   "mensagem": "O sistema ficará indisponível durante este período."
+> }
+> ```
+> Com `ativo: true`, o aviso aparece **uma vez por sessão de login** no painel
+> autenticado.
 
 ### Como habilitar logs de performance
 

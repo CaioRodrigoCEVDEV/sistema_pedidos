@@ -98,6 +98,13 @@ document.getElementById("formLogin").addEventListener("submit", async (e) => {
         localStorage.removeItem("savedEmail");
         localStorage.removeItem("savedPassword");
       }
+      // Reinicia o controle do aviso de manutenção: ele volta a ser exibido
+      // uma única vez nesta nova sessão de login.
+      try {
+        sessionStorage.removeItem("ouManutencaoSessao");
+      } catch (_) {
+        /* noop */
+      }
       window.location.href = `${BASE_URL}${data.redirect || "/pedidos"}`;
     } else {
       if (response.status === 403) {

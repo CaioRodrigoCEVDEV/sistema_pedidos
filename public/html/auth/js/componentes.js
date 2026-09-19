@@ -350,6 +350,7 @@ function ouWireLogout(root) {
     buttons[i].addEventListener("click", function (event) {
       event.preventDefault();
       try { localStorage.removeItem("usuarioLogado"); } catch (err) { /* noop */ }
+      try { sessionStorage.removeItem("ouManutencaoSessao"); } catch (err) { /* noop */ }
 
       fetch("/auth/sair", {
         method: "GET",
@@ -383,6 +384,30 @@ function ouLoadReleases() {
   script.id = "ouReleasesLoader";
   script.src =
     "/html/auth/js/releases-global.js" + (version ? "?v=" + version : "");
+  script.defer = true;
+  document.body.appendChild(script);
+}
+
+/* Carrega o módulo global de aviso de manutenção (modal de manutenção) uma
+   única vez por página do shell. O próprio módulo decide se deve abrir, com
+   base na janela retornada pela API e na flag de "visto nesta sessão". */
+function ouLoadManutencao() {
+  if (document.getElementById("ouManutencaoLoader")) return;
+
+  var version = "";
+  var scripts = document.getElementsByTagName("script");
+  for (var i = 0; i < scripts.length; i++) {
+    var src = scripts[i].getAttribute("src") || "";
+    if (src.indexOf("componentes.js") === -1) continue;
+    var match = src.match(/[?&]v=([^&]+)/);
+    if (match) version = match[1];
+    break;
+  }
+
+  var script = document.createElement("script");
+  script.id = "ouManutencaoLoader";
+  script.src =
+    "/html/auth/js/manutencao-global.js" + (version ? "?v=" + version : "");
   script.defer = true;
   document.body.appendChild(script);
 }
@@ -592,6 +617,7 @@ function createHeader() {
   ouWireReleases(header);
   ouLoadUser();
   ouLoadReleases();
+  ouLoadManutencao();
   ouLoadTour();
 
   fetch("/me/permissoes", { credentials: "include" })

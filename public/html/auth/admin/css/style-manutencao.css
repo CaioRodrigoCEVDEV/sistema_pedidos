@@ -1,0 +1,73 @@
+/* Aviso de manutenção — modal global do shell autenticado.
+   Usa as variáveis de tema (--ou-*) para funcionar nos modos claro e escuro. */
+
+.maintenance-modal .modal-header {
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--ou-border-soft);
+}
+
+.maintenance-modal__header {
+  background: var(--ou-warning-soft);
+}
+
+.maintenance-modal__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  font-size: 1.1rem;
+  border-radius: var(--ou-radius-sm);
+  color: var(--ou-warning);
+  background: var(--ou-surface);
+}
+
+.maintenance-modal .modal-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ou-text);
+}
+
+.maintenance-modal__text {
+  margin: 0 0 1rem;
+  color: var(--ou-text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  /* Preserva quebras de linha e indentação vindas da API. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.maintenance-modal__text:focus {
+  outline: none;
+}
+
+.maintenance-modal__footer {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* Flag sutil de "soneca": discreta e desmarcada por padrão. */
+.maintenance-modal__snooze {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.maintenance-modal__snooze .form-check-input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.maintenance-modal__snooze .form-check-label {
+  margin: 0;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--ou-text-muted);
+  font-weight: 400;
+}
