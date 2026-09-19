@@ -150,6 +150,9 @@ app.use(partGroupRoutes);
 const releaseRoutes = require("./routes/releaseRoutes");
 app.use(releaseRoutes);
 
+const manutencaoRoutes = require("./routes/manutencaoRoutes");
+app.use(manutencaoRoutes);
+
 app.get("/me/usuario", autenticarToken, (req, res) => {
   // o middleware colocou o payload em req.token
   return res.json({ usunome: req.token.usunome });
