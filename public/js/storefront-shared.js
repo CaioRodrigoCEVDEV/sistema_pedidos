@@ -303,4 +303,56 @@
     window.__ouSharedPageshow = true;
     window.addEventListener("pageshow", atualizarIconeCarrinho);
   }
+
+  // -------------------------------------------------------------------------
+  // Atualização do PWA (Service Worker)
+  // O conteúdo é servido em network-first, então um build novo já é buscado no
+  // próximo carregamento. Aqui garantimos que o app instalado *procure* esse
+  // build ao abrir/navegar e se recarregue uma única vez quando um Service
+  // Worker novo assume o controle.
+  // Registrado em todas as páginas da loja (não só na home).
+  // -------------------------------------------------------------------------
+  if ("serviceWorker" in navigator && !window.__ouSWSetup) {
+    window.__ouSWSetup = true;
+    var swHadController = !!navigator.serviceWorker.controller;
+    var swReloading = false;
+
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      // Ignora a ativação inicial (instalação sem controller prévio): não há
+      // build antigo para substituir e um reload aqui seria desnecessário.
+      if (!swHadController || swReloading) return;
+      swReloading = true;
+      window.location.reload();
+    });
+
+    navigator.serviceWorker
+      .register("/sw.js", { updateViaCache: "none" })
+      .then(function (reg) {
+        window.__ouSWCheckUpdate = function () {
+          // Compara os bytes do sw.js; se mudou, instala e ativa o novo.
+          reg.update().catch(function () {});
+        };
+        window.__ouSWCheckUpdate();
+      })
+      .catch(function (err) {
+        console.log("Service Worker indisponível:", err);
+      });
+
+    // Ao voltar para o app (aba/app em segundo plano), procura atualização.
+    document.addEventListener("visibilitychange", function () {
+      if (
+        document.visibilityState === "visible" &&
+        typeof window.__ouSWCheckUpdate === "function"
+      ) {
+        window.__ouSWCheckUpdate();
+      }
+    });
+  }
+
+  // A cada navegação do Turbo, checa se há um build novo.
+  ouOnNavigate("storefront:sw-update", function () {
+    if (typeof window.__ouSWCheckUpdate === "function") {
+      window.__ouSWCheckUpdate();
+    }
+  });
 })();

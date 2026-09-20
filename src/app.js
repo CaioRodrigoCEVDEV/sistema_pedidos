@@ -38,6 +38,9 @@ app.use(
     setHeaders: (res, filePath) => {
       if (filePath.endsWith(".html")) {
         res.set("Cache-Control", "no-cache, must-revalidate");
+      } else if (path.basename(filePath) === "sw.js") {
+        // O Service Worker precisa ser revalidado a cada checagem de update.
+        res.set("Cache-Control", "no-cache, must-revalidate");
       }
     },
   })
@@ -455,9 +458,10 @@ app.get("/manifest.json", async (req, res) => {
     short_name: empresa.slice(0, 12) || "Pedidos",
     start_url: "/index",
     scope: "/",
-    display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#008000",
+    display: "fullscreen",
+    display_override: ["fullscreen", "standalone", "minimal-ui"],
+    background_color: "#f1f4f9",
+    theme_color: "#2563eb",
     icons: [
       {
         src: "/uploads/logo.jpg",
