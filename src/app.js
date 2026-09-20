@@ -457,7 +457,7 @@ app.get("/manifest.json", async (req, res) => {
     scope: "/",
     display: "standalone",
     background_color: "#ffffff",
-    theme_color: "#008000",
+    theme_color: "#ffffff",
     icons: [
       {
         src: "/uploads/logo.jpg",

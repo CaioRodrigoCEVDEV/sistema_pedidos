@@ -45,6 +45,27 @@
     return pref === "dark" ? "dark" : "light";
   }
 
+  // Cor da barra do sistema/navegador (meta theme-color) por tema, espelhando
+  // a superfície do app (--ou-surface) em theme.css.
+  var THEME_COLORS = {
+    light: "#ffffff",
+    dark: "#162033",
+  };
+
+  function applyThemeColor(effective) {
+    try {
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.setAttribute("name", "theme-color");
+        (document.head || document.documentElement).appendChild(meta);
+      }
+      meta.setAttribute("content", THEME_COLORS[effective] || THEME_COLORS.light);
+    } catch (err) {
+      /* noop */
+    }
+  }
+
   function apply(pref) {
     var effective = resolve(pref);
     var root = document.documentElement;
@@ -53,6 +74,7 @@
     // Bootstrap 5.3 color mode (tematiza todos os componentes nativos).
     root.setAttribute("data-bs-theme", effective);
     root.style.colorScheme = effective;
+    applyThemeColor(effective);
   }
 
   function setPreference(pref) {
