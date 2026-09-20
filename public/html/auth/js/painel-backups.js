@@ -1,186 +1,300 @@
-
 // Encapsulado em IIFE para o Turbo poder reexecutar este script a cada
 // navegação sem o erro "Identifier 'state' has already been declared"
 // (declarações const/let de topo colidem no escopo global).
 (() => {
   "use strict";
 
-    const state = {
-      data: [],
-      sortKey: 'nome',
-      sortDir: 1,
-      path: '' // caminho relativo dentro de /backups
-    };
+  const state = {
+    data: [],
+    sortKey: "nome",
+    sortDir: 1,
+    path: "", // caminho relativo dentro de /backups
+    loading: false,
+  };
 
-    const fmtKB = v => {
-      const n = Number(v);
-      return Number.isFinite(n) ? n.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : v;
-    };
+  const els = {
+    q: document.getElementById("q"),
+    ext: document.getElementById("ext"),
+    tbody: document.querySelector("#tbl tbody"),
+    crumbs: document.getElementById("crumbs"),
+    empty: document.getElementById("emptyState"),
+    emptyTitle: document.getElementById("emptyTitle"),
+    emptyText: document.getElementById("emptyText"),
+    loading: document.getElementById("loadingState"),
+    results: document.getElementById("resultsInfo"),
+    refresh: document.getElementById("btnRefresh"),
+  };
 
-    // ---------- helpers de path/breadcrumb ----------
-    function getParentPath(p) {
-      if (!p) return '';
-      const parts = p.split('/').filter(Boolean);
-      parts.pop();
-      return parts.join('/');
+  // ---------- helpers ----------
+  function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[c]));
+  }
+
+  const fmtKB = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n)
+      ? n.toLocaleString("pt-BR", { maximumFractionDigits: 2 })
+      : v;
+  };
+
+  function fileIcon(name) {
+    const n = String(name || "").toLowerCase();
+    if (n.endsWith(".tgz") || n.endsWith(".tar.gz") || n.endsWith(".zip")) {
+      return "bi-file-earmark-zip";
     }
+    if (n.endsWith(".log") || n.endsWith(".txt")) {
+      return "bi-file-earmark-text";
+    }
+    if (n.endsWith(".sql") || n.endsWith(".dump")) {
+      return "bi-filetype-sql";
+    }
+    if (n.endsWith(".pdf")) {
+      return "bi-file-earmark-pdf";
+    }
+    return "bi-file-earmark";
+  }
 
-    function renderBreadcrumb() {
-      const host = 'Backups';
-      const wrap = document.querySelector('.wrap');
-      const crumbs = document.getElementById('crumbs') || document.createElement('div');
-      crumbs.id = 'crumbs';
-      crumbs.className = 'muted';
-      const parts = state.path.split('/').filter(Boolean);
+  function showEmpty(show, title, text) {
+    if (title) els.emptyTitle.textContent = title;
+    if (text) els.emptyText.textContent = text;
+    els.empty.style.display = show ? "flex" : "none";
+  }
 
-       //let html = `<strong>${host}</strong>`;
-       let acc = [];
-       parts.forEach((seg, i) => {
-         acc.push(seg);
-         const p = acc.join('/');
-       });
+  function setLoading(isLoading) {
+    els.loading.style.display = isLoading ? "flex" : "none";
+    if (isLoading) els.empty.style.display = "none";
+  }
 
-      
-      if (!wrap.nextElementSibling || wrap.nextElementSibling.id !== 'crumbs') {
-        wrap.insertAdjacentElement('afterend', crumbs);
+  // ---------- carregamento ----------
+  async function load() {
+    if (state.loading) return;
+    state.loading = true;
+    setLoading(true);
+
+    const endpoint = state.path
+      ? `/backups/folder/${encodeURIComponent(state.path)}`
+      : "/backups";
+
+    try {
+      const r = await fetch(endpoint, { credentials: "same-origin" });
+      if (!r.ok) throw new Error("Falha ao carregar lista");
+      const json = await r.json();
+      state.data = Array.isArray(json.backups) ? json.backups : [];
+      renderBreadcrumb();
+      render();
+    } catch (err) {
+      console.error(err);
+      state.data = [];
+      renderBreadcrumb();
+      render();
+      showEmpty(
+        true,
+        "Erro ao carregar",
+        "Não foi possível carregar os backups. Tente novamente."
+      );
+      if (window.ouToast) window.ouToast("Falha ao carregar os backups.", "error");
+    } finally {
+      state.loading = false;
+      setLoading(false);
+    }
+  }
+
+  // ---------- breadcrumb ----------
+  function renderBreadcrumb() {
+    const parts = state.path.split("/").filter(Boolean);
+    const items = [
+      '<li class="breadcrumb-item"><a href="#" data-path=""><i class="bi bi-hdd-stack me-1"></i>Backups</a></li>',
+    ];
+
+    const acc = [];
+    parts.forEach((seg, i) => {
+      acc.push(seg);
+      const p = acc.join("/");
+      const isLast = i === parts.length - 1;
+      items.push(
+        isLast
+          ? `<li class="breadcrumb-item active" aria-current="page">${escapeHtml(seg)}</li>`
+          : `<li class="breadcrumb-item"><a href="#" data-path="${escapeHtml(p)}">${escapeHtml(seg)}</a></li>`
+      );
+    });
+
+    els.crumbs.innerHTML = items.join("");
+    els.crumbs.querySelectorAll("a[data-path]").forEach((a) => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        state.path = a.dataset.path;
+        load();
+      });
+    });
+  }
+
+  // ---------- render ----------
+  function render() {
+    const q = els.q.value.trim().toLowerCase();
+    const ext = els.ext.value.toLowerCase();
+
+    const rows = state.data.filter((it) => {
+      const nome = String(it.nome || "");
+      if (q && !nome.toLowerCase().includes(q)) return false;
+      if (ext) {
+        if (it.tipo !== "arquivo") return false;
+        if (!nome.toLowerCase().endsWith(ext)) return false;
+      }
+      return true;
+    });
+
+    const key = state.sortKey;
+    const dir = state.sortDir;
+    rows.sort((a, b) => {
+      // pastas sempre antes de arquivos
+      const fa = a.tipo === "pasta" ? 0 : 1;
+      const fb = b.tipo === "pasta" ? 0 : 1;
+      if (fa !== fb) return fa - fb;
+
+      let va;
+      let vb;
+      if (key === "tamanhoKB") {
+        va = a.tipo === "pasta" ? -1 : Number(a[key]) || 0;
+        vb = b.tipo === "pasta" ? -1 : Number(b[key]) || 0;
+      } else {
+        va = String(a[key] || "").toLowerCase();
+        vb = String(b[key] || "").toLowerCase();
+      }
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
+
+    renderRows(rows);
+    updateSortIndicators();
+    updateFooter(rows.length);
+
+    if (rows.length === 0) {
+      if (q || ext) {
+        showEmpty(
+          true,
+          "Nenhum resultado",
+          "Ajuste a busca ou o filtro de tipo e tente novamente."
+        );
+      } else {
+        showEmpty(
+          true,
+          "Nenhum backup encontrado",
+          state.path ? "Esta pasta está vazia." : "Não há backups disponíveis no momento."
+        );
+      }
+    } else {
+      showEmpty(false);
+    }
+  }
+
+  function renderRows(rows) {
+    els.tbody.innerHTML = "";
+    const frag = document.createDocumentFragment();
+
+    rows.forEach((it) => {
+      const isFolder = it.tipo === "pasta";
+      const tr = document.createElement("tr");
+
+      if (isFolder) {
+        tr.className = "ou-backup-row";
       }
 
-      // eventos do breadcrumb
-      crumbs.querySelectorAll('a.crumb').forEach(a => {
-        a.addEventListener('click', (e) => {
-          e.preventDefault();
-          state.path = a.dataset.path;
-          load();
-        });
-      });
-    }
+      const icon = isFolder ? "bi-folder-fill" : fileIcon(it.nome);
+      const size = isFolder ? "—" : `${fmtKB(it.tamanhoKB)} KB`;
 
-    // ---------- carregamento ----------
-    async function load() {
-      const status = document.getElementById('status');
-      status.textContent = 'Carregando...';
+      const actionHTML = isFolder
+        ? `<button type="button" class="btn btn-sm btn-outline-primary btn-open">
+             <i class="bi bi-box-arrow-in-right"></i> Abrir
+           </button>`
+        : `<a class="btn btn-sm btn-outline-primary" href="${escapeHtml(it.url)}" download>
+             <i class="bi bi-download"></i> Baixar
+           </a>`;
 
-      // endpoint muda conforme o path atual
-      const endpoint = state.path
-        ? `/backups/folder/${encodeURIComponent(state.path)}`
-        : '/backups';
-
-      try {
-        const r = await fetch(endpoint, { credentials: 'same-origin' });
-        if (!r.ok) throw new Error('Falha ao carregar lista');
-        const json = await r.json();
-        state.data = Array.isArray(json.backups) ? json.backups : [];
-
-        const qntArq = state.data.filter(i => i.tipo !== 'pasta').length;
-        const qntPastas = state.data.filter(i => i.tipo === 'pasta').length;
-        status.textContent = `${qntPastas} pasta(s), ${qntArq} arquivo(s)`;
-
-        renderBreadcrumb();
-        render();
-      } catch (e) {
-        status.textContent = 'Erro ao carregar.';
-        console.error(e);
-      }
-    }
-
-    // ---------- render tabela ----------
-    function render() {
-      const q = document.getElementById('q').value.trim().toLowerCase();
-      const ext = document.getElementById('ext').value;
-      let rows = state.data.slice();
-
-      // filtro
-      rows = rows.filter(it => {
-        const nomeOK = !q || it.nome.toLowerCase().includes(q);
-        if (!nomeOK) return false;
-
-        // filtro de extensão só faz sentido para arquivos
-        if (ext && it.tipo !== 'arquivo') return false;
-        if (ext && !it.nome.toLowerCase().endsWith(ext.toLowerCase())) return false;
-
-        return true;
-      });
-
-      // ordenação
-      const key = state.sortKey;
-      const dir = state.sortDir;
-      rows.sort((a, b) => {
-        const va = key === 'tamanhoKB'
-          ? (a.tipo === 'pasta' ? -1 : Number(a[key]))
-          : String(a[key]).toLowerCase();
-
-        const vb = key === 'tamanhoKB'
-          ? (b.tipo === 'pasta' ? -1 : Number(b[key]))
-          : String(b[key]).toLowerCase();
-
-        if (va < vb) return -1 * dir;
-        if (va > vb) return 1 * dir;
-        return 0;
-      });
-
-      // monta tabela
-      const tb = document.querySelector('#tbl tbody');
-      tb.innerHTML = '';
-
-      // linha de "voltar" quando dentro de subpasta
-      if (state.path) {
-        const trUp = document.createElement('tr');
-        trUp.innerHTML = `
-        <td colspan="3">
-          <a href="#" id="btnUp" class="btn">⬅ Voltar</a>
-          <span class="muted ms-2">${state.path}</span>
-        </td>`;
-        tb.appendChild(trUp);
-        trUp.querySelector('#btnUp').addEventListener('click', (e) => {
-          e.preventDefault();
-          state.path = getParentPath(state.path);
-          load();
-        });
-      }
-
-      for (const it of rows) {
-        const isFolder = it.tipo === 'pasta';
-        const tr = document.createElement('tr');
-
-        // nome clicável para pastas
-        const nomeHTML = isFolder
-          ? `<a href="#" class="lnk-folder" data-name="${it.nome}">📁 ${it.nome}</a>`
-          : it.nome;
-
-        // ações: Abrir (pasta) ou Download (arquivo)
-        const acaoHTML = isFolder
-          ? `<a href="#" class="btn btn-open" data-name="${it.nome}">Abrir</a>`
-          : `<a class="btn" href="${it.url}" download>Download</a>`;
-
-        tr.innerHTML = `
-        <td>${nomeHTML}</td>
-        <td class="right">${isFolder ? '-' : fmtKB(it.tamanhoKB)}</td>
-        <td>${acaoHTML}</td>
+      tr.innerHTML = `
+        <td>
+          <div class="ou-backup-name">
+            <i class="bi ${icon} ou-backup-name__icon ${isFolder ? "is-folder" : ""}" aria-hidden="true"></i>
+            <span class="ou-backup-name__text" title="${escapeHtml(it.nome)}">${escapeHtml(it.nome)}</span>
+          </div>
+        </td>
+        <td class="text-end ou-backup-size">${size}</td>
+        <td class="text-end">${actionHTML}</td>
       `;
-        tb.appendChild(tr);
+
+      if (isFolder) {
+        const open = () => enterFolder(it.nome);
+        tr.addEventListener("click", open);
+        tr.querySelector(".btn-open").addEventListener("click", (e) => {
+          e.stopPropagation();
+          open();
+        });
       }
 
-      // bind de cliques para entrar em pasta
-      document.querySelectorAll('.btn-open, .lnk-folder').forEach(el => {
-        el.addEventListener('click', (e) => {
-          e.preventDefault();
-          const folder = e.currentTarget.dataset.name;
-          state.path = state.path ? `${state.path}/${folder}` : folder;
-          load();
-        });
-      });
-    }
+      frag.appendChild(tr);
+    });
 
-    // eventos
-    document.getElementById('q').addEventListener('input', render);
-    document.getElementById('ext').addEventListener('change', render);
-    for (const th of document.querySelectorAll('th[data-k]')) {
-      th.addEventListener('click', () => {
-        const k = th.dataset.k;
-        state.sortKey === k ? state.sortDir *= -1 : (state.sortKey = k, state.sortDir = 1);
-        render();
-      });
-    }
+    els.tbody.appendChild(frag);
+  }
 
+  function enterFolder(name) {
+    state.path = state.path ? `${state.path}/${name}` : name;
     load();
-    })();
+  }
+
+  function updateSortIndicators() {
+    document.querySelectorAll("#tbl th[data-k]").forEach((th) => {
+      if (th.dataset.k === state.sortKey) {
+        th.setAttribute(
+          "aria-sort",
+          state.sortDir === 1 ? "ascending" : "descending"
+        );
+      } else {
+        th.removeAttribute("aria-sort");
+      }
+    });
+  }
+
+  function updateFooter(count) {
+    const pastas = state.data.filter((i) => i.tipo === "pasta").length;
+    const arquivos = state.data.filter((i) => i.tipo === "arquivo").length;
+
+    if (count === state.data.length) {
+      els.results.textContent = `${pastas} pasta(s) • ${arquivos} arquivo(s)`;
+    } else {
+      els.results.textContent = `${count} de ${state.data.length} item(ns)`;
+    }
+  }
+
+  // ---------- eventos ----------
+  let searchTimer;
+  els.q.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(render, 150);
+  });
+
+  els.ext.addEventListener("change", render);
+
+  if (els.refresh) els.refresh.addEventListener("click", () => load());
+
+  document.querySelectorAll("#tbl th[data-k]").forEach((th) => {
+    th.addEventListener("click", () => {
+      const k = th.dataset.k;
+      if (state.sortKey === k) {
+        state.sortDir *= -1;
+      } else {
+        state.sortKey = k;
+        state.sortDir = 1;
+      }
+      render();
+    });
+  });
+
+  load();
+})();
