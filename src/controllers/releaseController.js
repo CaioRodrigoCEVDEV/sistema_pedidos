@@ -18,3 +18,16 @@ exports.listReleases = async (req, res) => {
     res.status(500).json({ error: "Erro ao listar atualizações" });
   }
 };
+
+// Retorna apenas a versão da release mais recente (tag git normalizada).
+// Endpoint leve usado para exibir a versão no menu do shell autenticado.
+exports.getVersion = async (req, res) => {
+  try {
+    const version = await releaseModels.latestVersion();
+    res.set("Cache-Control", "no-store");
+    res.status(200).json({ version: version || null });
+  } catch (error) {
+    console.error("Erro ao obter versão do sistema:", error);
+    res.status(500).json({ version: null });
+  }
+};

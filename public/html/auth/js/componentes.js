@@ -167,6 +167,7 @@ function ouBuildSidebar(navGroups) {
     "<span>" +
     '<span class="ou-sidebar__title company-name">OrderUp</span>' +
     '<span class="ou-sidebar__tagline">Sistema de Pedidos</span>' +
+    '<span class="ou-sidebar__version" id="ouSidebarVersion" hidden></span>' +
     "</span>" +
     "</a>" +
     '<button type="button" class="ou-sidebar__close" id="ouDrawerClose" aria-label="Fechar menu">' +
@@ -493,6 +494,35 @@ function ouObterUsuario() {
 }
 window.ouObterUsuario = ouObterUsuario;
 
+/* Exibe a versão da release mais recente (definida pela tag git) de forma
+   discreta no menu lateral. Falha de rede/DB mantém o elemento oculto. */
+function ouLoadAppVersion() {
+  var el = document.getElementById("ouSidebarVersion");
+  if (!el || el.dataset.ouVersionBound === "1") return;
+  el.dataset.ouVersionBound = "1";
+
+  fetch("/api/version", {
+    method: "GET",
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  })
+    .then(function (response) {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return response.json();
+    })
+    .then(function (data) {
+      var version = data && data.version;
+      if (!version) return;
+      el.textContent =
+        version.charAt(0).toLowerCase() === "v" ? version : "v" + version;
+      el.hidden = false;
+    })
+    .catch(function () {
+      /* degradação silenciosa: sem versão, sem erro visual */
+    });
+}
+
 function ouLoadUser() {
   ouObterUsuario()
     .then(function (data) {
@@ -595,6 +625,7 @@ function ouMountSidebar(navGroups) {
   ouWireDrawer();
   ouWireLogout();
   ouWireReleases();
+  ouLoadAppVersion();
 }
 
 function createHeader() {
