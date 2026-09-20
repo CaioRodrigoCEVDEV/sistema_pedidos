@@ -621,25 +621,41 @@ if (!window.__ouHomeListeners) {
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault(); // impede o banner automático
     window.__ouDeferredPrompt = e;
+    // Mostra o botão manual com uma leve animação de entrada
     const b = document.getElementById("btnInstall");
-    if (b) b.style.display = "inline-flex"; // mostra botão manual
+    if (b) {
+      b.style.display = "inline-flex";
+      requestAnimationFrame(() => b.classList.add("is-visible"));
+    }
+  });
+
+  // Após instalar, o botão manual deixa de fazer sentido
+  window.addEventListener("appinstalled", () => {
+    window.__ouDeferredPrompt = null;
+    const b = document.getElementById("btnInstall");
+    if (b) {
+      b.classList.remove("is-visible");
+      b.style.display = "none";
+    }
   });
 }
 
 // Botão de instalação PWA
-let deferredPrompt = window.__ouDeferredPrompt;
 const btnInstall = document.getElementById("btnInstall");
 
 // Quando o usuário clicar no botão
 if (btnInstall) {
   btnInstall.addEventListener("click", () => {
-    btnInstall.style.display = "none"; // esconde o botão
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt(); // dispara o banner nativo
-    deferredPrompt.userChoice.then((choiceResult) => {
+    // Lê o evento no momento do clique: ele só existe após o
+    // beforeinstallprompt disparar (pode ocorrer depois deste script).
+    const promptEvent = window.__ouDeferredPrompt;
+    if (!promptEvent) return;
+    promptEvent.prompt(); // dispara o banner nativo
+    promptEvent.userChoice.then((choiceResult) => {
       console.log("Usuário escolheu:", choiceResult.outcome);
-      deferredPrompt = null;
       window.__ouDeferredPrompt = null;
+      btnInstall.classList.remove("is-visible");
+      btnInstall.style.display = "none";
     });
   });
 }
