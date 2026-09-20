@@ -33,6 +33,22 @@ async function listReleases() {
 }
 
 /**
+ * Retorna a versão da release mais recente (a tag git normalizada), ou null
+ * quando ainda não há nenhuma release sincronizada.
+ * @returns {Promise<string|null>}
+ */
+async function latestVersion() {
+  const result = await pool.query(`
+    SELECT version
+    FROM public.system_releases
+    WHERE is_draft = FALSE
+    ORDER BY published_at DESC NULLS LAST, id DESC
+    LIMIT 1
+  `);
+  return result.rows[0] ? result.rows[0].version : null;
+}
+
+/**
  * Insere ou atualiza uma release, usando `version` como chave de conflito.
  * Preserva a data original de publicação vinda do GitHub.
  *
@@ -86,4 +102,4 @@ async function upsertRelease(release) {
   return result.rows[0] ? result.rows[0].inserted : false;
 }
 
-module.exports = { listReleases, upsertRelease };
+module.exports = { listReleases, latestVersion, upsertRelease };
