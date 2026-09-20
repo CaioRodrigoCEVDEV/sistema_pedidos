@@ -68,19 +68,3 @@ console.log(`\nVersão aplicada: ?v=${ASSET_VERSION}`);
 console.log(
   `${totalArquivos} arquivo(s) atualizado(s), ${totalRefs} referência(s) versionada(s).`
 );
-
-// Service Worker: atualiza a constante de versão para o navegador perceber que
-// o sw.js mudou e instalar o novo (dispara o fluxo de atualização do app
-// instalado em public/js/storefront-shared.js).
-const swPath = path.join(PUBLIC_DIR, "sw.js");
-if (fs.existsSync(swPath)) {
-  const sw = fs.readFileSync(swPath, "utf8");
-  const swNovo = sw.replace(
-    /const OU_SW_VERSION = "[^"]*";/,
-    `const OU_SW_VERSION = "ou-storefront-${ASSET_VERSION}";`
-  );
-  if (swNovo !== sw) {
-    fs.writeFileSync(swPath, swNovo);
-    console.log(`  sw.js: OU_SW_VERSION = ou-storefront-${ASSET_VERSION}`);
-  }
-}

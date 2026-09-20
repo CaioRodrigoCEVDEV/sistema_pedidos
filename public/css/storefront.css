@@ -125,33 +125,6 @@
 .ou-store-theme-btn::after {
   margin-left: 0.1rem;
 }
-/* Botão "Sair" do app instalado (mesmo padrão do seletor de tema) */
-.ou-store-exit-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 40px;
-  padding: 0.4rem 0.95rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--ou-text-2);
-  background: var(--ou-surface);
-  border: 1px solid var(--ou-border);
-  border-radius: 999px;
-  box-shadow: var(--ou-shadow-sm);
-  transition: background-color 0.15s ease, border-color 0.15s ease,
-    color 0.15s ease, transform 0.15s ease;
-}
-.ou-store-exit-btn[hidden] {
-  display: none;
-}
-.ou-store-exit-btn:hover,
-.ou-store-exit-btn:focus-visible {
-  color: var(--ou-danger);
-  background: var(--ou-danger-soft);
-  border-color: color-mix(in srgb, var(--ou-danger) 40%, var(--ou-border));
-  transform: translateY(-1px);
-}
 .ou-store-toggler {
   margin-left: auto;
   padding: 0.35rem 0.5rem;

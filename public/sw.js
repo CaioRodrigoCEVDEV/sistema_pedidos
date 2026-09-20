@@ -1,7 +1,7 @@
 /* OrderUp Storefront — Service Worker.
    Estratégia: network-first (sem cache agressivo). Ao ativar uma versão
    nova, limpa caches antigos para o usuário receber o DS atualizado. */
-const OU_SW_VERSION = "ou-storefront-2026.09.20.111743";
+const OU_SW_VERSION = "ou-storefront-v1";
 
 self.addEventListener("install", (event) => {
   console.log("Service Worker instalado", OU_SW_VERSION);

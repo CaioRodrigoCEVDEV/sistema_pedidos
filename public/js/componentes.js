@@ -24,9 +24,6 @@ function createHeaderUser() {
               </li>
           </ul>
           <div class="ou-store-actions">
-              <button class="btn ou-store-exit-btn" type="button" id="ouExitApp" title="Sair do aplicativo" aria-label="Sair do aplicativo" hidden>
-                <i class="bi bi-box-arrow-right" aria-hidden="true"></i><span class="d-none d-sm-inline">Sair</span>
-              </button>
               <div class="dropdown">
                 <button class="btn ou-store-theme-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="themeToggleBtn" title="Aparência" aria-label="Aparência">
                   <i class="bi bi-circle-half" aria-hidden="true"></i><span class="ou-store-theme-btn__label d-none d-sm-inline">Tema</span>
@@ -55,31 +52,6 @@ function createHeaderUser() {
       }
     });
   });
-
-  // Botão "Sair": só é exibido quando o app roda instalado (janela própria),
-  // onde não há barra do navegador para fechar a janela.
-  const isInstalled =
-    window.matchMedia("(display-mode: fullscreen)").matches ||
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.navigator.standalone === true;
-  const exitBtn = header.querySelector("#ouExitApp");
-  if (exitBtn && isInstalled) {
-    exitBtn.hidden = false;
-    exitBtn.addEventListener("click", sairDoApp);
-  }
-}
-
-function sairDoApp() {
-  try {
-    window.close();
-  } catch (e) {}
-  // Fallback: alguns navegadores bloqueiam o close na primeira tentativa.
-  setTimeout(function () {
-    if (window.closed) return;
-    try {
-      window.close();
-    } catch (e) {}
-  }, 150);
 }
 ouOnNavigate("storefront:header", createHeaderUser);
 

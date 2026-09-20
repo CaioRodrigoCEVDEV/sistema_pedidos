@@ -660,7 +660,18 @@ if (btnInstall) {
   });
 }
 
-// O registro/atualização do Service Worker fica em storefront-shared.js,
-// carregado por todas as páginas da loja.
+// Registro do Service Worker (uma vez por sessão; o script da home é
+// reavaliado a cada navegação do Turbo).
+if ("serviceWorker" in navigator && !window.__ouSWRegistered) {
+  window.__ouSWRegistered = true;
+  navigator.serviceWorker.register("/sw.js").then(
+    () => {
+      console.log("Service Worker registrado");
+    },
+    (err) => {
+      console.log("Service Worker indisponível:", err);
+    }
+  );
+}
 
 })();
