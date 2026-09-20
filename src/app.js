@@ -302,8 +302,9 @@ app.get("/estoque-grupos", requireTela("estoque-grupos"), (req, res) => {
   );
 });
 
-// Caminho onde ficam os backups
-const dirPathBackups = "/home/backup";
+// Caminho onde ficam os backups. Cada instância (ex.: jp, uti) define o seu
+// próprio diretório via BACKUP_DIR. Sem a variável, mantém o padrão legado.
+const dirPathBackups = process.env.BACKUP_DIR || "/home/backup";
 
 // 🔹 LISTAR ARQUIVOS E PASTAS
 // 🔹 LISTAR APENAS AS PASTAS DE DIAS DA SEMANA
@@ -650,5 +651,6 @@ app.post(
   await atualizarDB();
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${process.env.BASE_URL}/index`);
+    console.log(`Diretório de backups: ${dirPathBackups}`);
   });
 })();

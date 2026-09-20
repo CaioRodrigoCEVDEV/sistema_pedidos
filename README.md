@@ -81,6 +81,13 @@ MAINTENANCE_API_URL=
 MAINTENANCE_API_TOKEN=
 # Timeout (ms) da chamada externa (padrão 3000)
 MAINTENANCE_API_TIMEOUT_MS=3000
+
+# ─── Backups ───────────────────────────────────────────────────────────────────
+# Diretório lido pelas rotas de backup (/backups, /backups/folder/:folder e
+# /backups/download/:folder/:file). Cada instância/cliente deve apontar para o
+# seu próprio diretório (ex.: /home/jp/backup e /home/uti/backup).
+# Se não definido, usa o padrão legado /home/backup.
+BACKUP_DIR=/home/backup
 ```
 
 > **Contrato do JSON da API de manutenção** (`MAINTENANCE_API_URL`):

@@ -1,66 +1,95 @@
+/* --------------------------------------------------------------------------
+   Painel de Backups — estilos específicos (complementam ui.css / Bootstrap).
+   -------------------------------------------------------------------------- */
 
-    .wrap {
-      max-width: 980px;
-      margin: auto
-    }
+/* Breadcrumb de navegação de pastas */
+.ou-backup-crumbs {
+  min-width: 0;
+}
 
-    h1 {
-      margin: 0 0 12px
-    }
+.ou-backup-crumbs .breadcrumb {
+  --bs-breadcrumb-divider-color: var(--ou-text-muted);
+  --bs-breadcrumb-item-padding-x: 0.45rem;
+  margin-bottom: 0;
+  font-size: 0.85rem;
+}
 
-    .toolbar {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 12px
-    }
+.ou-backup-crumbs .breadcrumb-item a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ou-text-2);
+  text-decoration: none;
+}
 
-    input[type="search"] {
-      flex: 1;
-      min-width: 220px;
-      padding: 8px;
-      border: 1px solid var(--ou-border);
-      border-radius: 8px
-    }
+.ou-backup-crumbs .breadcrumb-item a:hover {
+  color: var(--ou-primary);
+  text-decoration: underline;
+}
 
-    select {
-      padding: 8px;
-      border: 1px solid var(--ou-border);
-      border-radius: 8px
-    }
+.ou-backup-crumbs .breadcrumb-item.active {
+  color: var(--ou-text);
+  font-weight: 600;
+}
 
-    table {
-      width: 100%;
-      border-collapse: collapse
-    }
+/* Célula de nome (ícone + texto) */
+.ou-backup-name {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
 
-    th,
-    td {
-      padding: 10px;
-      border-bottom: 1px solid var(--ou-border);
-      text-align: left
-    }
+.ou-backup-name__icon {
+  flex: 0 0 auto;
+  font-size: 1.05rem;
+  color: var(--ou-text-muted);
+}
 
-    th {
-      cursor: pointer;
-      user-select: none
-    }
+.ou-backup-name__icon.is-folder {
+  color: var(--ou-primary);
+}
 
-    .btn {
-      padding: 8px 12px;
-      border: 1px solid var(--ou-border);
-      border-radius: 8px;
-      background: var(--ou-surface-2);
-      text-decoration: none
-    }
+.ou-backup-name__text {
+  overflow: hidden;
+  font-weight: 500;
+  color: var(--ou-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-    .muted {
-      color: var(--ou-text-muted);
-      font-size: 12px;
-      margin-top: 4px
-    }
+.ou-backup-size {
+  font-variant-numeric: tabular-nums;
+  color: var(--ou-text-2);
+  white-space: nowrap;
+}
 
-    .right {
-      text-align: right
-    }
+/* Linha de pasta clicável */
+.ou-backup-row {
+  cursor: pointer;
+}
+
+/* Indicador de ordenação */
+#tbl th[data-k] {
+  cursor: pointer;
+  user-select: none;
+}
+
+#tbl th[data-k][aria-sort="ascending"]::after {
+  content: " \2191";
+  color: var(--ou-primary);
+}
+
+#tbl th[data-k][aria-sort="descending"]::after {
+  content: " \2193";
+  color: var(--ou-primary);
+}
+
+@media (max-width: 767.98px) {
+  .ou-backup-crumbs {
+    width: 100%;
+  }
+
+  .ou-backup-name__text {
+    max-width: 42vw;
+  }
+}
