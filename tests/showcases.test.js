@@ -142,6 +142,7 @@ async function definirVitrineAtiva(type, active) {
 async function restaurarEstadoVitrines() {
   for (const showcase of showcaseSnapshot) {
     await showcaseModels.atualizarShowcase(showcase.id, {
+      title: showcase.title,
       active: showcase.active,
       position: showcase.position,
       max_items: showcase.max_items,
@@ -251,9 +252,15 @@ async function cleanup() {
     for (const showcase of showcaseSnapshot) {
       await pool.query(
         `UPDATE home_showcases
-         SET active = $2, position = $3, max_items = $4, updated_at = NOW()
+         SET title = $2, active = $3, position = $4, max_items = $5, updated_at = NOW()
          WHERE id = $1`,
-        [showcase.id, showcase.active, showcase.position, showcase.max_items]
+        [
+          showcase.id,
+          showcase.title,
+          showcase.active,
+          showcase.position,
+          showcase.max_items,
+        ]
       );
     }
 
@@ -711,6 +718,99 @@ async function runTests() {
       res
     );
     assertEqual(res.statusCode, 400, "Status não booleano deveria falhar");
+  });
+
+  await test("Título da vitrine manual é editável e reflete no público", async () => {
+    const destaque = await showcaseModels.buscarShowcasePorTipo("featured");
+    const maisVendidos = await showcaseModels.buscarShowcasePorTipo("best_sellers");
+
+    let res = criarRespostaFake();
+    await showcaseController.atualizarShowcase(
+      {
+        params: { id: String(destaque.id) },
+        body: { title: "   " },
+        headers: {},
+      },
+      res
+    );
+    assertEqual(res.statusCode, 400, "Título vazio deveria falhar");
+
+    res = criarRespostaFake();
+    await showcaseController.atualizarShowcase(
+      {
+        params: { id: String(destaque.id) },
+        body: { title: "x".repeat(101) },
+        headers: {},
+      },
+      res
+    );
+    assertEqual(
+      res.statusCode,
+      400,
+      "Título acima de 100 caracteres deveria falhar"
+    );
+
+    res = criarRespostaFake();
+    await showcaseController.atualizarShowcase(
+      {
+        params: { id: String(maisVendidos.id) },
+        body: { title: "Promoções" },
+        headers: {},
+      },
+      res
+    );
+    assertEqual(
+      res.statusCode,
+      400,
+      "Vitrine automática não deveria aceitar título personalizado"
+    );
+
+    res = criarRespostaFake();
+    await showcaseController.atualizarShowcase(
+      {
+        params: { id: String(destaque.id) },
+        body: { title: "Ofertas do dia" },
+        headers: {},
+      },
+      res
+    );
+    assertEqual(res.statusCode, 200, "Título da vitrine manual deveria ser aceito");
+    assertEqual(
+      res.body.title,
+      "Ofertas do dia",
+      "Deveria retornar o novo título"
+    );
+
+    await definirVitrineAtiva("featured", true);
+    const produto = await criarProdutoTeste();
+    itensAdicionados.push(produto);
+    const resAdd = criarRespostaFake();
+    await showcaseController.adicionarItem(
+      {
+        params: { id: String(destaque.id) },
+        body: { procod: produto },
+        headers: {},
+      },
+      resAdd
+    );
+
+    const payload = await lerPayloadPublico();
+    const featured = payload.showcases.find((item) => item.type === "featured");
+    assertNotNull(featured, "Destaques deveria aparecer com itens");
+    assertEqual(
+      featured.title,
+      "Ofertas do dia",
+      "Público deveria exibir o título personalizado"
+    );
+
+    const resRemover = criarRespostaFake();
+    await showcaseController.removerItem(
+      { params: { id: String(destaque.id), procod: String(produto) }, headers: {} },
+      resRemover
+    );
+    assertEqual(resRemover.statusCode, 200, "Limpeza do produto deveria funcionar");
+
+    await restaurarEstadoVitrines();
   });
 
   // ------------------------------------------------------ performance

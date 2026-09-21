@@ -31,6 +31,8 @@ var destaqueSelecionados = [];
 var buscaResultados = [];
 var modalGerenciar = null;
 var modalPreview = null;
+var modalTitulo = null;
+var tituloVitrineId = null;
 
 var vitrinesTableBody = document.getElementById("vitrinesTableBody");
 var loadingState = document.getElementById("loadingState");
@@ -43,6 +45,8 @@ var qtdSelecionados = document.getElementById("qtdSelecionados");
 var listaPreview = document.getElementById("listaPreview");
 var previewDescricao = document.getElementById("previewDescricao");
 var modalPreviewLabel = document.getElementById("modalPreviewLabel");
+var tituloVitrineInput = document.getElementById("tituloVitrine");
+var btnSalvarTitulo = document.getElementById("btnSalvarTitulo");
 
 function escapeHtml(valor) {
   return String(valor == null ? "" : valor).replace(/[&<>"]/g, function (c) {
@@ -158,6 +162,19 @@ function renderizarVitrines() {
     tr.innerHTML = `
       <td data-label="Vitrine">
         <strong>${escapeHtml(vitrine.title)}</strong>
+        ${
+          manual
+            ? `<button
+                 type="button"
+                 class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                 data-editar-titulo="${vitrine.id}"
+                 title="Alterar o título desta vitrine"
+                 aria-label="Alterar o título da vitrine ${escapeHtml(vitrine.title)}"
+               >
+                 <i class="bi bi-pencil"></i>
+               </button>`
+            : ""
+        }
         <div class="vitrine-desc">${escapeHtml(tipo.descricao)}</div>
       </td>
       <td class="text-center" data-label="Tipo">
@@ -590,6 +607,61 @@ function abrirPreview(id) {
   modalPreview.show();
 }
 
+// -------------------------------------------------- modal título
+
+function abrirEditarTitulo(id) {
+  const vitrine = vitrines.find((item) => item.id === id);
+  if (!vitrine) return;
+
+  tituloVitrineId = id;
+  tituloVitrineInput.value = vitrine.title || "";
+  if (btnSalvarTitulo) btnSalvarTitulo.disabled = false;
+
+  const modalElement = document.getElementById("modalTitulo");
+  modalTitulo = modalTitulo || new bootstrap.Modal(modalElement);
+  modalTitulo.show();
+
+  modalElement.addEventListener("shown.bs.modal", function aoAbrir() {
+    tituloVitrineInput.focus();
+    tituloVitrineInput.select();
+    modalElement.removeEventListener("shown.bs.modal", aoAbrir);
+  });
+}
+
+async function salvarTitulo() {
+  if (tituloVitrineId === null) return;
+
+  const title = tituloVitrineInput.value.trim();
+  if (!title) {
+    notificar("Informe um título para a vitrine.", "error");
+    return;
+  }
+
+  btnSalvarTitulo.disabled = true;
+  try {
+    const response = await fetch(
+      `${BASE_URL}/showcases/admin/${tituloVitrineId}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title }),
+      }
+    );
+    if (!response.ok) {
+      throw new Error(await lerErro(response, "Erro ao alterar o título"));
+    }
+
+    if (modalTitulo) modalTitulo.hide();
+    notificar("Título da vitrine atualizado.");
+    await carregarVitrines();
+  } catch (error) {
+    console.error("Erro ao alterar o título da vitrine:", error);
+    notificar(error.message || "Erro ao alterar o título", "error");
+    btnSalvarTitulo.disabled = false;
+  }
+}
+
 // ------------------------------------------------------- tour guiado
 // Orienta o administrador no primeiro acesso. O motor genérico fica em
 // tour.js (window.OrderUpTour); aqui ficam os passos e a persistência da
@@ -726,6 +798,14 @@ vitrinesTableBody.addEventListener("click", function (event) {
     return;
   }
 
+  const btnEditarTitulo = event.target.closest("[data-editar-titulo]");
+  if (btnEditarTitulo) {
+    abrirEditarTitulo(
+      parseInt(btnEditarTitulo.getAttribute("data-editar-titulo"), 10)
+    );
+    return;
+  }
+
   const btnPreview = event.target.closest("[data-preview]");
   if (btnPreview) {
     abrirPreview(parseInt(btnPreview.getAttribute("data-preview"), 10));
@@ -761,6 +841,19 @@ listaSelecionados.addEventListener("click", function (event) {
     removerProduto(parseInt(btnRemover.getAttribute("data-item-remover"), 10));
   }
 });
+
+if (btnSalvarTitulo) {
+  btnSalvarTitulo.addEventListener("click", salvarTitulo);
+}
+
+if (tituloVitrineInput) {
+  tituloVitrineInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      salvarTitulo();
+    }
+  });
+}
 
 var btnVerTour = document.getElementById("btnVerTour");
 if (btnVerTour) {

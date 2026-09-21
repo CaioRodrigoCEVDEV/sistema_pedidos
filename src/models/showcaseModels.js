@@ -180,12 +180,13 @@ async function listarNovidades(limite, config) {
   return result.rows;
 }
 
-async function atualizarShowcase(id, { active, position, max_items } = {}) {
+async function atualizarShowcase(id, { active, position, max_items, title } = {}) {
   const result = await pool.query(
     `UPDATE home_showcases
      SET active = COALESCE($2::boolean, active),
          position = COALESCE($3::int, position),
          max_items = COALESCE($4::int, max_items),
+         title = COALESCE($5::text, title),
          updated_at = NOW()
      WHERE id = $1
      RETURNING id, type, title, active, position, max_items`,
@@ -194,6 +195,7 @@ async function atualizarShowcase(id, { active, position, max_items } = {}) {
       typeof active === "boolean" ? active : null,
       Number.isInteger(position) ? position : null,
       Number.isInteger(max_items) ? max_items : null,
+      typeof title === "string" && title.length > 0 ? title : null,
     ]
   );
   return result.rows[0] || null;
