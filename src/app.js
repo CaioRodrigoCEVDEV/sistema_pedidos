@@ -304,11 +304,15 @@ app.get("/relatorios", requireTela("relatorios"), (req, res) => {
   );
 });
 
-app.get("/estoque-grupos", requireTela("estoque-grupos"), (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "../public/html/auth/admin/html/painel-estoque-grupos.html")
-  );
-});
+app.get(
+  "/estoque-grupos",
+  requireTela("estoque-grupos", { modulo: "est" }),
+  (req, res) => {
+    res.sendFile(
+      path.join(__dirname, "../public/html/auth/admin/html/painel-estoque-grupos.html")
+    );
+  }
+);
 
 // Caminho onde ficam os backups. Cada instância (ex.: jp, uti) define o seu
 // próprio diretório via BACKUP_DIR. Sem a variável, mantém o padrão legado.
