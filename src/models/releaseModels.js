@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const { createListCache, TTL_MS } = require("../utils/catalogListCaches");
 
 /**
  * Modelo de releases/atualizações do sistema.
@@ -7,6 +8,10 @@ const pool = require("../config/db");
  * sincronização (scripts/sync-releases.js). O modal do dashboard lê os dados
  * por aqui, sempre do PostgreSQL — nunca da API do GitHub.
  */
+
+// Cache da versão mais recente. Dado público que só muda na sincronização de
+// releases; invalidado em upsertRelease.
+const versionCache = createListCache("release-version", TTL_MS);
 
 /**
  * Lista todas as releases armazenadas, da mais recente para a mais antiga.
@@ -99,7 +104,8 @@ async function upsertRelease(release) {
     ]
   );
 
+  versionCache.invalidate();
   return result.rows[0] ? result.rows[0].inserted : false;
 }
 
-module.exports = { listReleases, latestVersion, upsertRelease };
+module.exports = { listReleases, latestVersion, upsertRelease, versionCache };
