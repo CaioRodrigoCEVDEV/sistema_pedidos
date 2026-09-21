@@ -8,6 +8,7 @@
     "test": "node tests/partGroups.test.js",
     "test:reconciliacao": "node tests/reconciliacaoEstoqueGrupo.test.js",
     "test:estoque-grupos": "node --test tests/estoqueGruposPanel.test.js",
+    "test:tela": "node --test tests/telaMiddleware.test.js",
     "test:promocoes": "node tests/promocoes.test.js",
     "test:pr1": "node tests/performancePR1.test.js",
     "test:pr2": "node tests/performancePR2.test.js",
