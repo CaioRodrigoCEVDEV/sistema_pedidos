@@ -13,7 +13,22 @@ var currentFilters = {
   marca: "",
 };
 
+// Ordenação atual da listagem (client-side, não altera a ordem no banco).
+// A coluna "Grupo" inicia selecionada em ordem alfabética crescente.
+var sortCol = "grupo";
+var sortDir = "asc"; // 'asc' | 'desc'
+
+// Peso de cada status para permitir ordenação estável sem alterar a regra.
+var STATUS_RANK = {
+  "Abaixo do ideal": 0,
+  Adequado: 1,
+  "Sem ideal": 2,
+};
+
+var buscaDebounceTimer = null;
+
 // Elementos DOM
+var buscaGrupoInput = document.getElementById("buscaGrupo");
 var dataInicioInput = document.getElementById("dataInicio");
 var dataFimInput = document.getElementById("dataFim");
 var marcaSelect = document.getElementById("marcaSelect");
@@ -57,6 +72,154 @@ function calcularStatus(estoqueAtual, qtdeIdeal) {
     return { label: "Adequado", badgeClass: "badge-adequado" };
   }
   return { label: "Abaixo do ideal", badgeClass: "badge-abaixo" };
+}
+
+/**
+ * Normaliza texto para comparação: sem acentos, minúsculo.
+ * @param {*} valor
+ * @returns {string}
+ */
+function normalizarTexto(valor) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+/**
+ * Chave de ordenação do nome do grupo. Nomes iniciados por número ficam
+ * depois dos iniciados por letra (ex.: ... G8, 11 ASUGAR), mantendo a
+ * ordenação alfabética A→Z percebida na listagem.
+ * @param {string} nome
+ * @returns {{ bucket: number, texto: string }}
+ */
+function chaveGrupo(nome) {
+  const texto = normalizarTexto(nome);
+  const bucket = /^[0-9]/.test(texto) ? 1 : 0;
+  return { bucket, texto };
+}
+
+/**
+ * Valor usado para ordenar uma linha em determinada coluna.
+ * Retorna null quando o valor não existe, para que seja posicionado por último.
+ * @param {object} row
+ * @param {string} col
+ * @returns {string|number|null}
+ */
+function valorOrdenacao(row, col) {
+  switch (col) {
+    case "grupo":
+      return row.grupo ?? null;
+    case "qtde_vendida":
+      return row.qtde_vendida === null || row.qtde_vendida === undefined
+        ? null
+        : Number(row.qtde_vendida);
+    case "estoque_atual":
+      return row.estoque_atual === null || row.estoque_atual === undefined
+        ? null
+        : Number(row.estoque_atual);
+    case "qtde_ideal":
+      return row.qtde_ideal === null || row.qtde_ideal === undefined
+        ? null
+        : Number(row.qtde_ideal);
+    case "status":
+      return STATUS_RANK[calcularStatus(row.estoque_atual, row.qtde_ideal).label] ?? null;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Compara dois valores de ordenação. Nulos vão sempre para o fim,
+ * independente da direção. Números são comparados numericamente.
+ * @param {string|number|null} a
+ * @param {string|number|null} b
+ * @param {'asc'|'desc'} dir
+ * @param {string} col
+ * @returns {number}
+ */
+function compararValores(a, b, dir, col) {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+
+  let cmp;
+  if (col === "grupo") {
+    const ka = chaveGrupo(a);
+    const kb = chaveGrupo(b);
+    cmp =
+      ka.bucket !== kb.bucket
+        ? ka.bucket - kb.bucket
+        : ka.texto.localeCompare(kb.texto, "pt-BR", { numeric: true });
+  } else if (typeof a === "number" && typeof b === "number") {
+    cmp = a - b;
+  } else {
+    cmp = String(a).localeCompare(String(b), "pt-BR");
+  }
+
+  return dir === "asc" ? cmp : -cmp;
+}
+
+/**
+ * Filtra os grupos pelo termo de busca (parcial, case-insensitive).
+ * @param {object[]} data
+ * @param {string} termo
+ * @returns {object[]}
+ */
+function filtrarGrupos(data, termo) {
+  const query = normalizarTexto(termo);
+  if (!query) return [...data];
+  return data.filter((row) => normalizarTexto(row.grupo).includes(query));
+}
+
+/**
+ * Ordena os grupos pela coluna/direção informadas, sem alterar o array original.
+ * @param {object[]} data
+ * @param {string} col
+ * @param {'asc'|'desc'} dir
+ * @returns {object[]}
+ */
+function ordenarGrupos(data, col, dir) {
+  const ordenado = [...data];
+  ordenado.sort((a, b) => {
+    const cmp = compararValores(valorOrdenacao(a, col), valorOrdenacao(b, col), dir, col);
+    if (cmp !== 0) return cmp;
+    // Desempate determinístico pelo nome do grupo.
+    return compararValores(valorOrdenacao(a, "grupo"), valorOrdenacao(b, "grupo"), "asc", "grupo");
+  });
+  return ordenado;
+}
+
+/**
+ * Atualiza os indicadores visuais e de acessibilidade dos cabeçalhos.
+ */
+function atualizarIndicadoresOrdenacao() {
+  document.querySelectorAll(".th-sortable").forEach((th) => {
+    const col = th.dataset.col;
+    const ativo = col === sortCol;
+    th.setAttribute("aria-sort", ativo ? (sortDir === "asc" ? "ascending" : "descending") : "none");
+
+    const icon = th.querySelector(".sort-icon");
+    if (icon) {
+      icon.className = ativo
+        ? sortDir === "asc"
+          ? "bi bi-arrow-up sort-icon"
+          : "bi bi-arrow-down sort-icon"
+        : "bi bi-arrow-down-up sort-icon";
+    }
+  });
+}
+
+/**
+ * Aplica busca + ordenação sobre os dados atuais e renderiza a tabela.
+ */
+function renderLista() {
+  const termo = buscaGrupoInput ? buscaGrupoInput.value : "";
+  const filtrados = filtrarGrupos(currentData, termo);
+  const ordenados = ordenarGrupos(filtrados, sortCol, sortDir);
+  renderTable(ordenados);
+  atualizarIndicadoresOrdenacao();
 }
 
 // Renderiza os grupos na tabela
@@ -315,7 +478,7 @@ async function fetchData() {
     currentData = data;
 
     loadingState.style.display = "none";
-    renderTable(data);
+    renderLista();
   } catch (error) {
     console.error("Erro ao buscar dados:", error);
     loadingState.style.display = "none";
@@ -368,6 +531,17 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// Atualiza a coluna/direção de ordenação e re-renderiza a listagem
+function selecionarOrdenacao(col) {
+  if (sortCol === col) {
+    sortDir = sortDir === "asc" ? "desc" : "asc";
+  } else {
+    sortCol = col;
+    sortDir = "asc";
+  }
+  renderLista();
+}
+
 // Event Listeners
 btnFiltrar.addEventListener("click", () => {
   currentFilters = {
@@ -382,10 +556,32 @@ btnLimpar.addEventListener("click", () => {
   dataInicioInput.value = "";
   dataFimInput.value = "";
   marcaSelect.value = "";
+  if (buscaGrupoInput) buscaGrupoInput.value = "";
   currentFilters = { dataInicio: "", dataFim: "", marca: "" };
+  currentData = [];
   gruposTableBody.innerHTML = "";
   emptyState.style.display = "none";
   resultsInfo.textContent = "0 grupos";
+  atualizarIndicadoresOrdenacao();
+});
+
+// Busca parcial pelo nome do grupo (client-side, sobre os dados já carregados)
+if (buscaGrupoInput) {
+  buscaGrupoInput.addEventListener("input", () => {
+    clearTimeout(buscaDebounceTimer);
+    buscaDebounceTimer = setTimeout(renderLista, 150);
+  });
+}
+
+// Ordenação pelos cabeçalhos (clique, Enter e Espaço)
+document.querySelectorAll(".th-sortable").forEach((th) => {
+  th.addEventListener("click", () => selecionarOrdenacao(th.dataset.col));
+  th.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      selecionarOrdenacao(th.dataset.col);
+    }
+  });
 });
 
 // Inicialização
