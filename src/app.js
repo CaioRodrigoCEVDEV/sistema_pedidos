@@ -234,17 +234,17 @@ app.get("/painel", requireTela("produtos"), (req, res) => {
   );
 });
 
-app.get("/pedidos", requireTela("pedidos", { modulo: "pv" }), (req, res) => {
+app.get("/pedidos", requireTela("pedidos"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-pedidos.html")
   );
 });
-app.get("/devolucoes", requireTela("devolucoes", { modulo: "pv" }), (req, res) => {
+app.get("/devolucoes", requireTela("devolucoes"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-devolucoes.html")
   );
 });
-app.get("/estoque", requireTela("estoque", { modulo: "est" }), (req, res) => {
+app.get("/estoque", requireTela("estoque"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-estoque.html")
   );
@@ -304,15 +304,11 @@ app.get("/relatorios", requireTela("relatorios"), (req, res) => {
   );
 });
 
-app.get(
-  "/estoque-grupos",
-  requireTela("estoque-grupos", { modulo: "est" }),
-  (req, res) => {
-    res.sendFile(
-      path.join(__dirname, "../public/html/auth/admin/html/painel-estoque-grupos.html")
-    );
-  }
-);
+app.get("/estoque-grupos", requireTela("estoque-grupos"), (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-estoque-grupos.html")
+  );
+});
 
 // Caminho onde ficam os backups. Cada instância (ex.: jp, uti) define o seu
 // próprio diretório via BACKUP_DIR. Sem a variável, mantém o padrão legado.

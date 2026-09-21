@@ -7,13 +7,9 @@ const pool = require("../config/db");
  *
  * Uso: app.get('/clientes', requireTela('clientes'), handler)
  *
- * @param {string} chave   chave da tela registrada em src/config/telas.js
- * @param {object} [opts]
- * @param {'pv'|'est'} [opts.modulo] módulo da empresa que também deve estar ativo
+ * @param {string} chave chave da tela registrada em src/config/telas.js
  */
-function requireTela(chave, opts) {
-  const modulo = opts && opts.modulo;
-
+function requireTela(chave) {
   return async function (req, res, next) {
     const token = req.cookies.token;
 
@@ -29,14 +25,6 @@ function requireTela(chave, opts) {
     }
 
     req.token = decoded;
-
-    // O módulo da empresa vale para todos, inclusive administradores.
-    if (modulo === "pv" && decoded.empusapv !== "S") {
-      return res.status(403).redirect("/painel?erroMSG=modulo-nao-habilitado");
-    }
-    if (modulo === "est" && decoded.empusaest !== "S") {
-      return res.status(403).redirect("/painel?erroMSG=modulo-nao-habilitado");
-    }
 
     // Administrador ignora qualquer restrição por tela.
     if (decoded && decoded.usuadm === "S") {

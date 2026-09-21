@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const relatoriosController = require("../controllers/relatoriosController");
 const autenticarToken = require("../middlewares/middlewares");
-const requireModuloEst = require("../middlewares/moduloEstMiddleware");
 
 /**
  * Rotas de Relatórios
@@ -46,7 +45,6 @@ router.get(
 router.get(
   "/v2/relatorios/estoque-grupos",
   autenticarToken,
-  requireModuloEst,
   relatoriosController.getEstoqueGruposJSON
 );
 
