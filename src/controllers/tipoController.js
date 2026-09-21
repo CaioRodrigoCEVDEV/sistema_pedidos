@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
+const { tiposCache, sendCached } = require("../utils/catalogListCaches");
 
 exports.listarTipo = async (req, res) => {
   const modeloId = parseIntegerParam(req.params.id);
@@ -72,8 +73,14 @@ exports.buscarTipo = async (req, res) => {
 
 exports.listarTodosTipos = async (req, res) => {
   try {
-    const result = await pool.query("select  tipocod,tipodes from tipo");
-    res.status(200).json(result.rows);
+    let entry = tiposCache.get();
+
+    if (!entry) {
+      const result = await pool.query("select  tipocod,tipodes from tipo");
+      entry = tiposCache.set(result.rows);
+    }
+
+    return sendCached(req, res, entry);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao buscar tipo" });
@@ -88,6 +95,7 @@ exports.inserirTipo = async (req, res) => {
       "insert into tipo (tipodes) values ($1) returning *",
       [tipodes]
     );
+    tiposCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -108,6 +116,7 @@ exports.atualizarTipo = async (req, res) => {
       "update tipo set tipodes = $1 where tipocod = $2 returning *",
       [tipodes, tipoId]
     );
+    tiposCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -127,6 +136,7 @@ exports.deleteTipo = async (req, res) => {
       "delete from tipo where tipocod = $1 returning *",
       [tipoId]
     );
+    tiposCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -160,6 +170,7 @@ exports.atualizarOrdemTipos = async (req, res) => {
       [ids, ordens]
     );
 
+    tiposCache.invalidate();
     return res.status(200).json({ message: "Ordem atualizada com sucesso!" });
   } catch (error) {
     console.error("Erro ao atualizar ordem:", error);

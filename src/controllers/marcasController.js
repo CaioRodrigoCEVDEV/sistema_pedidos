@@ -1,12 +1,19 @@
 const pool = require("../config/db");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
+const { marcasCache, sendCached } = require("../utils/catalogListCaches");
 
 exports.listarMarcas = async (req, res) => {
   try {
-    const result = await pool.query(
-      "select * from marcas where marcassit = 'A' order by marcasordem"
-    );
-    res.status(200).json(result.rows);
+    let entry = marcasCache.get();
+
+    if (!entry) {
+      const result = await pool.query(
+        "select * from marcas where marcassit = 'A' order by marcasordem"
+      );
+      entry = marcasCache.set(result.rows);
+    }
+
+    return sendCached(req, res, entry);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao buscar marca" });
@@ -39,6 +46,7 @@ exports.inserirMarcas = async (req, res) => {
       `insert into marcas (marcasdes) values ($1) RETURNING *`,
       [marcasdes]
     );
+    marcasCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -59,6 +67,7 @@ exports.atualizarMarcas = async (req, res) => {
       `update marcas set marcasdes = $1 where marcascod = $2 RETURNING *`,
       [marcasdes, marcaId]
     );
+    marcasCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -78,6 +87,7 @@ exports.atualizarMarcasStatus = async (req, res) => {
       `update marcas set marcassit = $1 where marcascod = $2 RETURNING *`,
       ["I", marcaId]
     );
+    marcasCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -97,6 +107,7 @@ exports.deletarMarcas = async (req, res) => {
       `delete from marcas where marcascod = $1 RETURNING *`,
       [marcaId]
     );
+    marcasCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -122,6 +133,7 @@ exports.atualizarOrdemMarcas = async (req, res) => {
       [ids, ordens]
     );
 
+    marcasCache.invalidate();
     return res.status(200).json({ message: "Ordem atualizada com sucesso!" });
   } catch (error) {
     console.error("Erro ao atualizar ordem:", error);

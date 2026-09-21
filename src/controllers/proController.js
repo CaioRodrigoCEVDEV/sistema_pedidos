@@ -5,6 +5,7 @@ const {
   buildFlagsGestao,
 } = require("../utils/estoqueFlagsSql");
 const { getEstoqueConfig } = require("../utils/estoqueConfig");
+const { precoPromocionalSql } = require("../utils/promocaoSql");
 const catalogoCache = require("../utils/catalogoCache");
 const showcasesCache = require("../utils/showcasesCache");
 
@@ -33,6 +34,7 @@ exports.listarProduto = async (req, res) => {
     // ou pelo campo legado promodcod (para compatibilidade)
     const result = await pool.query(
       `select distinct procod, prodes, provl, procusto, tipodes,
+        ${precoPromocionalSql("pro")} as provlpromo,
         ${flags.disponibilidadeSql} as prosemest,
         ${flags.acabandoSql} as proacabando, proordem from pro
         join tipo on tipocod = protipocod
@@ -62,6 +64,9 @@ exports.listarProdutos = async (req, res) => {
   const tipo = parseIntegerParam(req.query.tipo);
   const semest = String(req.query.semest || "").trim().toUpperCase();
   const acabando = String(req.query.acabando || "").trim().toUpperCase();
+  const semPromocao = ["1", "TRUE", "S", "SIM"].includes(
+    String(req.query.semPromocao || "").trim().toUpperCase()
+  );
 
   const config = await getEstoqueConfig();
   const flags = buildFlagsGestao(config);
@@ -98,6 +103,17 @@ exports.listarProdutos = async (req, res) => {
   if (acabando === "S") {
     filters.push(`${flags.acabandoSql} = 'S'`);
   }
+  // Produtos que já estão em uma promoção ativa e dentro da validade não devem
+  // aparecer para criação de outra promoção.
+  if (semPromocao) {
+    filters.push(`NOT EXISTS (
+      SELECT 1 FROM public.promocoes pr
+      WHERE pr.procod = pro.procod
+        AND pr.promocaoativo = TRUE
+        AND (pr.promocaodtinicio IS NULL OR pr.promocaodtinicio <= CURRENT_DATE)
+        AND (pr.promocaodtfim IS NULL OR pr.promocaodtfim >= CURRENT_DATE)
+    )`);
+  }
   const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
   const from = `from pro
       join tipo on tipocod = protipocod
@@ -112,6 +128,7 @@ exports.listarProdutos = async (req, res) => {
       case when prodes is null then '' else prodes end as prodes, 
       case when provl is null then 0 else provl end as provl,
       case when procusto is null then 0 else procusto end as procusto,
+      ${precoPromocionalSql("pro")} as provlpromo,
       ${flags.disponibilidadeSql} as prosemest,
       ${flags.acabandoSql} as proacabando,
       (
@@ -124,18 +141,18 @@ exports.listarProdutos = async (req, res) => {
 
   try {
     if (paginado) {
-      const countResult = await pool.query(
-        `select count(*) ${from}`,
-        params
-      );
-      const total = parseInt(countResult.rows[0].count, 10);
-
-      const result = await pool.query(
-        `${select}
+      // COUNT e dados são independentes entre si: executa em paralelo para
+      // não somar dois round-trips sequenciais ao PostgreSQL.
+      const [countResult, result] = await Promise.all([
+        pool.query(`select count(*) ${from}`, params),
+        pool.query(
+          `${select}
         order by procod desc
         limit $${params.length + 1} offset $${params.length + 2}`,
-        [...params, pageSize, off]
-      );
+          [...params, pageSize, off]
+        ),
+      ]);
+      const total = parseInt(countResult.rows[0].count, 10);
 
       return res
         .status(200)
@@ -167,6 +184,7 @@ exports.listarProdutosPainelId = async (req, res) => {
        case when prodes is null then '' else prodes end as prodes,
        case when provl is null then 0 else provl end as provl, 
        case when procusto is null then 0 else procusto end as procusto, 
+       ${precoPromocionalSql("pro")} as provlpromo,
        ${flags.disponibilidadeSql} as prosemest,
        ${flags.acabandoSql} as proacabando from pro where procod = $1`,
       [produtoId],

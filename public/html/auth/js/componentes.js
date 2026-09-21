@@ -32,6 +32,7 @@ var OU_NAV_GROUPS = [
     title: "Catálogo",
     items: [
       { href: "/painel", route: "/painel", label: "Produtos", icon: "bi-box-seam", perm: "tela:produtos" },
+      { href: "/promocoes", route: "/promocoes", label: "Promoções", icon: "bi-tag", perm: "tela:promocoes" },
       { href: "/part", route: "/part", label: "Grupos", icon: "bi-diagram-3", perm: "tela:grupos" },
       {
         href: "/vitrines",

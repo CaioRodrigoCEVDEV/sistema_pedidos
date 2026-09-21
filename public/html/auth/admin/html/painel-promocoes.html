@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <script src="/js/theme-manager.js?v=2026.09.20.223747"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vitrines da Página Inicial</title>
+    <title>Promoções</title>
     <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
     <link
       rel="apple-touch-icon"
@@ -34,70 +34,34 @@
     />
 
     <style data-turbo-track="dynamic">
-      .badge-tipo-manual {
-        color: var(--ou-primary);
-        background-color: var(--ou-primary-soft);
-        border: 1px solid color-mix(in srgb, var(--ou-primary) 30%, transparent);
-      }
-      .badge-tipo-automatica {
-        color: var(--ou-text-2);
-        background-color: var(--ou-surface-2);
-        border: 1px solid var(--ou-border);
-      }
-      .badge-vitrine-inativo {
-        color: var(--ou-danger);
-        background-color: var(--ou-danger-soft);
-        border: 1px solid color-mix(in srgb, var(--ou-danger) 30%, transparent);
-      }
-      .vitrine-desc {
-        font-size: 0.78rem;
-        color: var(--ou-text-muted);
-      }
-      .vitrine-ordem {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-      }
-      .vitrine-max {
-        width: 84px;
-      }
-      .vitrine-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.6rem 0.75rem;
-        background: var(--ou-surface);
-        border: 1px solid var(--ou-border-soft);
-        border-radius: var(--ou-radius);
-      }
-      .vitrine-item + .vitrine-item {
-        margin-top: 0.5rem;
-      }
-      .vitrine-item__main {
-        flex: 1 1 auto;
-        min-width: 0;
-      }
-      .vitrine-item__name {
+      .promo-produto {
         font-size: 0.92rem;
         font-weight: 700;
-        line-height: 1.25;
         color: var(--ou-text);
         overflow-wrap: anywhere;
       }
-      .vitrine-item__meta {
+      .promo-produto__meta {
         display: flex;
         flex-wrap: wrap;
         gap: 0.25rem 0.6rem;
         font-size: 0.78rem;
         color: var(--ou-text-muted);
       }
-      .vitrine-item__pos {
-        flex: 0 0 auto;
-        min-width: 1.4rem;
-        font-size: 0.8rem;
-        font-weight: 700;
-        text-align: center;
+      .promo-desconto {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-weight: 800;
+        color: var(--ou-danger);
+      }
+      .promo-preco-original {
         color: var(--ou-text-muted);
+        text-decoration: line-through;
+        font-size: 0.82rem;
+      }
+      .promo-preco {
+        font-weight: 800;
+        color: var(--ou-success);
       }
       .busca-resultado {
         display: flex;
@@ -112,9 +76,6 @@
       .busca-resultado + .busca-resultado {
         margin-top: 0.4rem;
       }
-      .busca-resultado__main {
-        min-width: 0;
-      }
       .busca-resultado__name {
         font-size: 0.88rem;
         font-weight: 600;
@@ -125,33 +86,41 @@
         font-size: 0.76rem;
         color: var(--ou-text-muted);
       }
+      .produto-selecionado {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.7rem 0.85rem;
+        border: 1px solid var(--ou-border-soft);
+        border-radius: var(--ou-radius);
+        background: var(--ou-surface-2);
+      }
 
-      /* Mobile: a tabela vira uma lista de cards empilhados, sem rolagem
-         horizontal (cada célula mostra o rótulo via data-label). */
       @media (max-width: 767.98px) {
-        #vitrinesTable,
-        #vitrinesTable tbody,
-        #vitrinesTable tr,
-        #vitrinesTable td {
+        #promocoesTable,
+        #promocoesTable tbody,
+        #promocoesTable tr,
+        #promocoesTable td {
           display: block;
           width: 100%;
         }
-        #vitrinesTable thead {
+        #promocoesTable thead {
           display: none;
         }
-        #vitrinesTable tbody tr {
+        #promocoesTable tbody tr {
           padding: 0.85rem 0.95rem;
           border-bottom: 1px solid var(--ou-border-soft);
         }
-        #vitrinesTable tbody tr:last-child {
+        #promocoesTable tbody tr:last-child {
           border-bottom: 0;
         }
-        #vitrinesTable td {
+        #promocoesTable td {
           padding: 0.3rem 0;
           text-align: left !important;
           white-space: normal;
         }
-        #vitrinesTable td::before {
+        #promocoesTable td::before {
           content: attr(data-label);
           display: block;
           margin-bottom: 0.15rem;
@@ -161,13 +130,10 @@
           text-transform: uppercase;
           color: var(--ou-text-muted);
         }
-        #vitrinesTable td[data-label="Vitrine"] {
-          padding-bottom: 0.45rem;
-        }
-        #vitrinesTable td[data-label="Vitrine"]::before {
+        #promocoesTable td[data-label="Produto"]::before {
           display: none;
         }
-        #vitrinesTable td[data-label="Ações"] .btn {
+        #promocoesTable td[data-label="Ações"] .btn {
           width: 100%;
         }
       }
@@ -190,13 +156,13 @@
           <div class="ou-page-header mb-4">
             <div class="ou-page-header__main">
               <span class="ou-page-header__icon" aria-hidden="true">
-                <i class="fa-solid fa-shop"></i>
+                <i class="bi bi-tag"></i>
               </span>
               <div>
                 <span class="ou-page-header__eyebrow">Catálogo</span>
-                <h1 class="h4 mb-0 ou-page-header__title">Vitrines da Página Inicial</h1>
+                <h1 class="h4 mb-0 ou-page-header__title">Promoções</h1>
                 <p class="ou-page-header__sub mb-0">
-                  Defina quais vitrines aparecem no catálogo público, a ordem delas e o que cada uma exibe.
+                  Defina descontos por produto (percentual ou valor fixo). O preço é calculado no servidor e aplicado na loja.
                 </p>
               </div>
             </div>
@@ -205,62 +171,52 @@
 
         <div class="container">
           <div class="app-container">
-            <div class="card shadow-sm" id="vitrinesTourCard">
+            <div class="card shadow-sm">
               <div class="card-header d-flex justify-content-between align-items-center gap-2">
-                <h5 class="mb-0"><i class="bi bi-shop-window"></i> Vitrines</h5>
-                <div class="d-flex align-items-center gap-2">
-                  <span class="text-muted small d-none d-md-inline">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Vitrines inativas não aparecem na loja
-                  </span>
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary btn-sm text-nowrap"
-                    id="btnVerTour"
-                    title="Rever o tour guiado desta tela"
-                  >
-                    <i class="bi bi-question-circle"></i> Ver tour
-                  </button>
-                </div>
+                <h5 class="mb-0"><i class="bi bi-tag"></i> Produtos em promoção</h5>
+                <button type="button" class="btn btn-primary btn-sm text-nowrap" id="btnNovaPromocao">
+                  <i class="bi bi-plus-lg"></i> Nova promoção
+                </button>
               </div>
 
               <div class="card-body p-0">
                 <div class="table-responsive">
-                  <table class="table table-hover mb-0" id="vitrinesTable">
+                  <table class="table table-hover mb-0" id="promocoesTable">
                     <thead class="table-light">
                       <tr>
-                        <th>Vitrine</th>
-                        <th class="text-center">Tipo</th>
+                        <th>Produto</th>
+                        <th class="text-center">Desconto</th>
+                        <th class="text-end">Preço original</th>
+                        <th class="text-end">Preço promocional</th>
+                        <th class="text-center">Validade</th>
                         <th class="text-center">Status</th>
-                        <th class="text-center">Ordem</th>
-                        <th class="text-center">Exibição</th>
                         <th class="text-end">Ações</th>
                       </tr>
                     </thead>
-                    <tbody id="vitrinesTableBody">
+                    <tbody id="promocoesTableBody">
                       <!-- Dados dinâmicos -->
                     </tbody>
                   </table>
                 </div>
 
                 <div id="emptyState" class="ou-empty" style="display: none">
-                  <span class="ou-empty__icon" aria-hidden="true"><i class="bi bi-inbox"></i></span>
-                  <span class="ou-empty__title">Nenhuma vitrine encontrada</span>
-                  <span class="ou-empty__text">As vitrines padrão são criadas na instalação do sistema.</span>
+                  <span class="ou-empty__icon" aria-hidden="true"><i class="bi bi-tag"></i></span>
+                  <span class="ou-empty__title">Nenhuma promoção cadastrada</span>
+                  <span class="ou-empty__text">Clique em "Nova promoção" para criar a primeira.</span>
                 </div>
 
                 <div id="loadingState" class="ou-loading" style="display: none">
                   <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Carregando...</span>
                   </div>
-                  <span>Carregando vitrines...</span>
+                  <span>Carregando promoções...</span>
                 </div>
               </div>
 
               <div class="card-footer text-muted">
                 <small>
                   <i class="bi bi-info-circle me-1"></i>
-                  Destaques é manual (você escolhe e ordena os produtos); Mais vendidos e Novidades são automáticas.
+                  Cada produto aceita uma promoção. O desconto é aplicado no preço da loja e no valor do pedido.
                 </small>
               </div>
             </div>
@@ -271,19 +227,19 @@
       <footer id="footer"></footer>
     </div>
 
-    <!-- Modal: gerenciar produtos dos Destaques -->
+    <!-- Modal: criar/editar promoção -->
     <div
       class="modal fade"
-      id="modalGerenciar"
+      id="modalPromocao"
       tabindex="-1"
-      aria-labelledby="modalGerenciarLabel"
+      aria-labelledby="modalPromocaoLabel"
       aria-hidden="true"
     >
-      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalGerenciarLabel">
-              <i class="bi bi-star me-1"></i> Gerenciar Destaques
+            <h5 class="modal-title" id="modalPromocaoLabel">
+              <i class="bi bi-tag me-1"></i> Nova promoção
             </h5>
             <button
               type="button"
@@ -293,67 +249,82 @@
             ></button>
           </div>
           <div class="modal-body">
-            <label class="form-label" for="buscaProduto">Adicionar produto</label>
-            <div class="input-group mb-2">
-              <input
-                type="search"
-                class="form-control"
-                id="buscaProduto"
-                placeholder="Pesquisar peça pelo nome..."
-                aria-label="Pesquisar peça"
-              />
-              <button class="btn btn-primary" type="button" id="btnBuscarProduto">
-                <i class="bi bi-search"></i> Buscar
-              </button>
+            <div id="blocoBusca">
+              <label class="form-label" for="buscaProduto">Produto</label>
+              <div class="input-group mb-2">
+                <input
+                  type="search"
+                  class="form-control"
+                  id="buscaProduto"
+                  placeholder="Pesquisar peça pelo nome..."
+                  aria-label="Pesquisar peça"
+                />
+                <button class="btn btn-primary" type="button" id="btnBuscarProduto">
+                  <i class="bi bi-search"></i> Buscar
+                </button>
+              </div>
+              <div id="resultadoBusca" class="mb-3"></div>
             </div>
-            <div id="resultadoBusca" class="mb-3"></div>
 
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="mb-0">
-                Produtos na vitrine
-                <span class="badge text-bg-secondary" id="qtdSelecionados">0</span>
-              </h6>
-              <small class="text-muted">A ordem abaixo é a mesma exibida na loja</small>
+            <div id="blocoSelecionado" style="display: none">
+              <label class="form-label">Produto selecionado</label>
+              <div class="produto-selecionado mb-3">
+                <span class="promo-produto" id="produtoSelecionadoNome">—</span>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  id="btnTrocarProduto"
+                >
+                  Trocar
+                </button>
+              </div>
             </div>
-            <div id="listaSelecionados">
-              <!-- Itens da vitrine -->
+
+            <div class="row g-3">
+              <div class="col-12 col-sm-6">
+                <label class="form-label" for="tipoDesconto">Tipo de desconto</label>
+                <select class="form-select" id="tipoDesconto">
+                  <option value="P">Percentual (%)</option>
+                  <option value="V">Valor fixo (R$)</option>
+                </select>
+              </div>
+              <div class="col-12 col-sm-6">
+                <label class="form-label" for="valorDesconto">
+                  Valor do desconto <span id="valorUnidade" class="text-muted">(%)</span>
+                </label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="valorDesconto"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                />
+              </div>
+              <div class="col-12 col-sm-6">
+                <label class="form-label" for="dataInicio">Início (opcional)</label>
+                <input type="date" class="form-control" id="dataInicio" />
+              </div>
+              <div class="col-12 col-sm-6">
+                <label class="form-label" for="dataFim">Fim (opcional)</label>
+                <input type="date" class="form-control" id="dataFim" />
+              </div>
+              <div class="col-12">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="promocaoAtiva" checked />
+                  <label class="form-check-label" for="promocaoAtiva">
+                    Promoção ativa
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              Fechar
+              Cancelar
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal: prévia das vitrines automáticas -->
-    <div
-      class="modal fade"
-      id="modalPreview"
-      tabindex="-1"
-      aria-labelledby="modalPreviewLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalPreviewLabel">Vitrine</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Fechar"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <p class="text-muted small" id="previewDescricao"></p>
-            <div id="listaPreview"></div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              Fechar
+            <button type="button" class="btn btn-primary" id="btnSalvarPromocao">
+              Salvar
             </button>
           </div>
         </div>
@@ -372,8 +343,6 @@
     <script src="/config.js?v=2026.09.20.223747"></script>
     <script src="../js/nomeEmpresa.js?v=2026.09.20.223747"></script>
 
-    <!-- Tour guiado (motor genérico) + script da página -->
-    <script src="/html/auth/js/tour.js?v=2026.09.20.223747"></script>
-    <script src="/html/auth/js/painel-vitrines.js?v=2026.09.20.223747"></script>
+    <script src="/html/auth/js/painel-promocoes.js?v=2026.09.20.223747"></script>
   </body>
 </html>

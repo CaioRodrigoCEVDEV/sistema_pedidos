@@ -1,4 +1,5 @@
 const releaseModels = require("../models/releaseModels");
+const { sendCached } = require("../utils/catalogListCaches");
 
 /**
  * Controlador das releases do sistema.
@@ -23,9 +24,14 @@ exports.listReleases = async (req, res) => {
 // Endpoint leve usado para exibir a versão no menu do shell autenticado.
 exports.getVersion = async (req, res) => {
   try {
-    const version = await releaseModels.latestVersion();
-    res.set("Cache-Control", "no-store");
-    res.status(200).json({ version: version || null });
+    let entry = releaseModels.versionCache.get();
+
+    if (!entry) {
+      const version = await releaseModels.latestVersion();
+      entry = releaseModels.versionCache.set({ version: version || null });
+    }
+
+    return sendCached(req, res, entry);
   } catch (error) {
     console.error("Erro ao obter versão do sistema:", error);
     res.status(500).json({ version: null });

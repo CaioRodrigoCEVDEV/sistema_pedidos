@@ -102,6 +102,7 @@
         marca: card.dataset.marca || "",
         modelo: card.dataset.modelo || "",
         preco: Number(card.dataset.preco) || 0,
+        precoOriginal: Number(card.dataset.precoOriginal) || null,
         qt: 1,
       });
     }
@@ -136,6 +137,29 @@
         ? window.OrderUpBrandLogo.get(marca)
         : { primary: (window.OrderUpBrandLogo && window.OrderUpBrandLogo.fallback) || "https://cdn.simpleicons.org/cog/000" };
 
+    // Preço efetivo sempre definido pelo servidor (provlpromo = promocional).
+    var precoOriginal = Number(item.provl) || 0;
+    var temPromocao =
+      item.provlpromo !== null && item.provlpromo !== undefined;
+    var preco = temPromocao ? Number(item.provlpromo) || 0 : precoOriginal;
+    var desconto =
+      temPromocao && precoOriginal > 0
+        ? Math.round((1 - preco / precoOriginal) * 100)
+        : 0;
+    var badgePromo = temPromocao
+      ? '<span class="ou-product-card__promo" title="Produto em promoção"><i class="bi bi-tag-fill" aria-hidden="true"></i>' +
+        (desconto > 0 ? "-" + desconto + "%" : "PROMO") +
+        "</span>"
+      : "";
+    var precoHtml = temPromocao
+      ? '<div class="ou-product-card__price ou-product-card__price--promo">' +
+        '<span class="ou-product-card__price-old">' +
+        formatarMoeda(precoOriginal) +
+        '</span><span class="ou-product-card__price-value">' +
+        formatarMoeda(preco) +
+        "</span></div>"
+      : '<div class="ou-product-card__price">' + formatarMoeda(preco) + "</div>";
+
     var card = document.createElement(href ? "a" : "div");
     card.className = "ou-product-card ou-product-card--shelf";
     if (href) card.href = href;
@@ -144,7 +168,8 @@
     card.dataset.tipo = item.tipodes || "";
     card.dataset.marca = item.marcasdes || "";
     card.dataset.modelo = item.moddes || "";
-    card.dataset.preco = Number(item.provl) || 0;
+    card.dataset.preco = preco;
+    card.dataset.precoOriginal = temPromocao ? precoOriginal : "";
     card.setAttribute(
       "aria-label",
       (item.prodes || "Produto") + (href ? " — ver produto" : "")
@@ -163,6 +188,7 @@
       escapeHtml(item.prodes || "Produto") +
       "</h3>" +
       '<div class="ou-product-card__meta">' +
+      badgePromo +
       (item.tipodes
         ? '<span class="ou-product-card__type"><i class="bi ' +
           icone +
@@ -183,9 +209,7 @@
         : "") +
       "</div>" +
       '<div class="ou-product-card__aside">' +
-      '<div class="ou-product-card__price">' +
-      formatarMoeda(item.provl) +
-      "</div>" +
+      precoHtml +
       '<span class="btn btn-primary btn-sm ou-product-card__add" role="button" tabindex="0" aria-label="Adicionar ' +
       escapeHtml(item.prodes || "Produto") +
       ' ao carrinho">Adicionar ao carrinho</span>' +

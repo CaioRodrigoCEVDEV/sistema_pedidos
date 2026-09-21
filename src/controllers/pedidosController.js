@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const partGroupModels = require("../models/partGroupModels");
+const promocaoModels = require("../models/promocaoModels");
 const catalogoCache = require("../utils/catalogoCache");
 const showcasesCache = require("../utils/showcasesCache");
 
@@ -88,18 +89,26 @@ exports.validarEDecrementarEstoque = async (req, res, next) => {
 };
 
 exports.inserirPv = async (req, res, next) => {
-  const { pvcod, total, obs, canal, status, confirmado, codigoVendedor } =
-    req.body;
+  const { pvcod, obs, canal, status, confirmado, codigoVendedor } = req.body;
 
   try {
+    // O preço/total nunca vêm do cliente: são recalculados no servidor a partir
+    // de pro.provl e das promoções ativas.
+    const precosItens = await promocaoModels.calcularPrecosItens(req.body.cart);
+    const total = precosItens.reduce(
+      (soma, item) => soma + item.qt * item.preco,
+      0
+    );
+
     const result = await pool.query(
       "INSERT INTO pv (pvcod, pvvl, pvobs, pvcanal, pvsta, pvconfirmado, pvrcacod) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
       [pvcod, total, obs, canal, status, confirmado, codigoVendedor]
     );
 
-    // guarda o pvcod e o total para o próximo passo
+    // guarda o pvcod, o carrinho e os preços calculados para o próximo passo
     req.pvcod = pvcod;
     req.cart = req.body.cart;
+    req.precosCalculados = precosItens;
 
     next(); // 👈 vai para inserirPvi
   } catch (error) {
@@ -116,6 +125,16 @@ exports.inserirPvi = async (req, res) => {
   }
 
   try {
+    // Preços sempre calculados no servidor (fallback caso o middleware anterior
+    // não tenha rodado, mantendo a rota utilizável isoladamente).
+    const precosItens =
+      req.precosCalculados ||
+      (await promocaoModels.calcularPrecosItens(cart));
+    const precoPorProcod = new Map(
+      precosItens.map((item) => [item.procod, item.preco])
+    );
+    const precosCalculados = new Set(precosItens.map((item) => item.procod));
+
     // Prepara arrays para INSERT em lote via unnest (elimina N+1)
     const pvcods      = [];
     const procods     = [];
@@ -124,15 +143,18 @@ exports.inserirPvi = async (req, res) => {
     const procorids   = [];
 
     for (const item of cart) {
-      const { id: procod, qt, preco, idCorSelecionada } = item;
+      const { id: procod, qt, idCorSelecionada } = item;
       const codigoInteiro = parseInt(String(procod).split("-")[0], 10);
       if (isNaN(codigoInteiro) || codigoInteiro <= 0) {
         return res.status(400).json({ error: `Código de produto inválido: ${procod}` });
       }
+      if (!precosCalculados.has(codigoInteiro)) {
+        return res.status(400).json({ error: `Produto não encontrado: ${procod}` });
+      }
       pvcods.push(pvcod);
       procods.push(codigoInteiro);
       qtdes.push(qt);
-      precos.push(preco);
+      precos.push(precoPorProcod.get(codigoInteiro));
       const raw = idCorSelecionada;
       const normalized = (raw === null || raw === undefined || raw === "") ? null : Number(raw);
       procorids.push(Number.isFinite(normalized) ? normalized : null);

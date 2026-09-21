@@ -1,12 +1,16 @@
 const pool = require("../config/db");
+const { coresCache, sendCached } = require("../utils/catalogListCaches");
 
 exports.listarCores = async (req, res) => {
-
   try {
-    const result = await pool.query(
-      "select  * from cores  "
-    );
-    res.status(200).json(result.rows);
+    let entry = coresCache.get();
+
+    if (!entry) {
+      const result = await pool.query("select  * from cores  ");
+      entry = coresCache.set(result.rows);
+    }
+
+    return sendCached(req, res, entry);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao buscar cores" });
@@ -22,6 +26,7 @@ exports.inserirCores = async (req, res) => {
       "INSERT INTO public.cores (cornome) VALUES($1) returning *",
       [cornome]
     );
+    coresCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -38,6 +43,7 @@ exports.atualizarCores = async (req, res) => {
       "update cores set cornome = $1 where corcod = $2 returning *",
       [cornome, id]
     );
+    coresCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -53,6 +59,7 @@ exports.deleteCores = async (req, res) => {
       "delete from cores where corcod = $1 returning *",
       [id]
     );
+    coresCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);

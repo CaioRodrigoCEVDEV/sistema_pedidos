@@ -131,6 +131,57 @@
     syncCartParam([]);
   }
 
+  // Revalida no servidor os preços dos itens do carrinho. O cliente nunca define
+  // preço: o valor exibido (e usado no pedido) vem sempre de /carrinho/precos.
+  async function revalidarPrecos() {
+    var cart = getCart();
+    if (cart.length === 0) return cart;
+
+    try {
+      var resp = await fetch((window.BASE_URL || "") + "/carrinho/precos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itens: cart.map(function (it) {
+            return { id: it.id, qt: it.qt };
+          }),
+        }),
+      });
+      if (!resp.ok) return cart;
+
+      var data = await resp.json();
+      var precos = Array.isArray(data.itens) ? data.itens : [];
+      var porProcod = {};
+      precos.forEach(function (p) {
+        var cod = parseInt(String(p.procod), 10);
+        if (!isNaN(cod)) porProcod[cod] = p;
+      });
+
+      var mudou = false;
+      cart.forEach(function (it) {
+        var cod = parseInt(String(it.id).split("-")[0], 10);
+        var p = porProcod[cod];
+        if (!p) return;
+        var preco = Number(p.preco) || 0;
+        var temPromo = p.provlpromo !== null && p.provlpromo !== undefined;
+        if (Number(it.preco) !== preco) mudou = true;
+        it.preco = preco;
+        it.precoOriginal = temPromo ? Number(p.provl) || 0 : null;
+      });
+      if (mudou) saveCart(cart);
+    } catch (e) {
+      console.error("Erro ao revalidar preços do carrinho:", e);
+    }
+
+    return cart;
+  }
+
+  async function carregarCarrinho() {
+    await revalidarPrecos();
+    renderCart();
+    refreshBadge();
+  }
+
   // ---------- render ----------
   function mostrarCarrinhoVazio(vazio) {
     var layout = document.getElementById("cartConteudo");
@@ -158,6 +209,10 @@
     var valor = parseFloat(item.preco) || 0;
     var qtde = Number(item.qt) || 0;
     var subtotal = valor * qtde;
+    var precoOriginal =
+      item.precoOriginal != null ? parseFloat(item.precoOriginal) : null;
+    var temPromocao =
+      precoOriginal != null && precoOriginal > valor;
 
     var row = document.createElement("article");
     row.className = "ou-cart-item";
@@ -174,7 +229,19 @@
 
     var price = document.createElement("div");
     price.className = "ou-cart-item__price";
-    price.textContent = formatarMoeda(subtotal);
+    if (temPromocao) {
+      price.classList.add("ou-cart-item__price--promo");
+      var old = document.createElement("span");
+      old.className = "ou-price-old";
+      old.textContent = formatarMoeda(precoOriginal * qtde);
+      var promo = document.createElement("span");
+      promo.className = "ou-price-promo";
+      promo.textContent = formatarMoeda(subtotal);
+      price.appendChild(old);
+      price.appendChild(promo);
+    } else {
+      price.textContent = formatarMoeda(subtotal);
+    }
 
     var controls = document.createElement("div");
     controls.className = "ou-cart-item__controls";
@@ -633,8 +700,7 @@
 
   // ---------- boot ----------
   ouOnLoad(function () {
-    renderCart();
-    refreshBadge();
+    carregarCarrinho();
 
     var btnLimpar = document.getElementById("btnLimparCarrinho");
     if (btnLimpar) btnLimpar.addEventListener("click", limparCarrinho);
@@ -677,8 +743,7 @@
   });
 
   window.addEventListener("pageshow", function () {
-    renderCart();
-    refreshBadge();
+    carregarCarrinho();
   });
 
   // Compat: HTML antigo em cache ainda chama via inline onclick
