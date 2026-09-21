@@ -1,6 +1,10 @@
 const pool = require("../config/db");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
-const { modelosCache, sendCached } = require("../utils/catalogListCaches");
+const {
+  modelosCache,
+  catalogoNavCache,
+  sendCached,
+} = require("../utils/catalogListCaches");
 
 exports.listarModelo = async (req, res) => {
   const marcaId = parseIntegerParam(req.params.id);
@@ -29,8 +33,15 @@ exports.listarModelo = async (req, res) => {
           ORDER BY m.ordem`
       : `select * from vw_modelos where modmarcascod = $1 order by ordem`;
 
-    const result = await pool.query(query, [marcaId]);
-    res.status(200).json(result.rows);
+    const cacheKey = `modelo:${marcaId}:${comTotal ? 1 : 0}`;
+    let entry = catalogoNavCache.get(cacheKey);
+
+    if (!entry) {
+      const result = await pool.query(query, [marcaId]);
+      entry = catalogoNavCache.set(cacheKey, result.rows);
+    }
+
+    return sendCached(req, res, entry);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao buscar modelos" });
@@ -45,11 +56,18 @@ exports.buscarModelo = async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      `select * from vw_modelos WHERE modcod = $1;`,
-      [modeloId]
-    );
-    res.status(200).json(result.rows);
+    const cacheKey = `mod:${modeloId}`;
+    let entry = catalogoNavCache.get(cacheKey);
+
+    if (!entry) {
+      const result = await pool.query(
+        `select * from vw_modelos WHERE modcod = $1;`,
+        [modeloId]
+      );
+      entry = catalogoNavCache.set(cacheKey, result.rows);
+    }
+
+    return sendCached(req, res, entry);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao buscar modelo" });
@@ -70,6 +88,7 @@ exports.inserirModelo = async (req, res) => {
       [moddes, marcaId]
     );
     modelosCache.invalidate();
+    catalogoNavCache.invalidateAll();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -96,6 +115,7 @@ exports.atualizarModelo = async (req, res) => {
       [moddes, marcaId, modeloId]
     );
     modelosCache.invalidate();
+    catalogoNavCache.invalidateAll();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -116,6 +136,7 @@ exports.deletarModelo = async (req, res) => {
       [modeloId]
     );
     modelosCache.invalidate();
+    catalogoNavCache.invalidateAll();
     res.status(200).json(result.rows);
   } catch (error){
     console.error(error);
@@ -196,6 +217,7 @@ exports.atualizarOrdemModelos = async (req, res) => {
     );
 
     modelosCache.invalidate();
+    catalogoNavCache.invalidateAll();
     return res.status(200).json({ message: "Ordem atualizada com sucesso!" });
   } catch (error) {
     console.error("Erro ao atualizar ordem:", error);

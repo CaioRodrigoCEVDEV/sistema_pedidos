@@ -52,12 +52,57 @@ function sendCached(req, res, entry) {
   return res.type("application/json").status(200).send(entry.body);
 }
 
+// Cache por chave (ex.: id de marca/modelo). Evita ir ao banco nas APIs de
+// navegação do catálogo; invalidado por inteiro nos writes (catálogo pequeno).
+function createKeyedCache(name, ttlMs, maxEntries = 500) {
+  const entries = new Map();
+
+  return {
+    name,
+    getTtlMs: () => ttlMs,
+    get(key) {
+      const entry = entries.get(key);
+      if (!entry) return null;
+      if (Date.now() >= entry.expiresAt) {
+        entries.delete(key);
+        return null;
+      }
+      return entry;
+    },
+    set(key, value) {
+      const body = Buffer.from(JSON.stringify(value));
+      const etag = `"${crypto.createHash("sha1").update(body).digest("hex")}"`;
+      const entry = { body, etag, expiresAt: Date.now() + ttlMs };
+      entries.set(key, entry);
+
+      if (entries.size > maxEntries) {
+        // Evita crescimento ilimitado: remove a chave mais antiga (ordem de inserção).
+        const oldest = entries.keys().next().value;
+        entries.delete(oldest);
+      }
+      return entry;
+    },
+    invalidate(key) {
+      entries.delete(key);
+    },
+    invalidateAll() {
+      entries.clear();
+    },
+    size() {
+      return entries.size;
+    },
+  };
+}
+
 module.exports = {
   TTL_MS,
   createListCache,
+  createKeyedCache,
   sendCached,
   marcasCache: createListCache("marcas", TTL_MS),
   tiposCache: createListCache("tipos", TTL_MS),
   coresCache: createListCache("cores", TTL_MS),
   modelosCache: createListCache("modelos", TTL_MS),
+  // APIs de navegação do catálogo (/marcas/:id, /modelo/:id, /mod/:id, /tipo/:id, /modtipo/:id)
+  catalogoNavCache: createKeyedCache("catalogo-nav", TTL_MS),
 };

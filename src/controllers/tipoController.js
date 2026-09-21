@@ -1,6 +1,10 @@
 const pool = require("../config/db");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
-const { tiposCache, sendCached } = require("../utils/catalogListCaches");
+const {
+  tiposCache,
+  catalogoNavCache,
+  sendCached,
+} = require("../utils/catalogListCaches");
 
 exports.listarTipo = async (req, res) => {
   const modeloId = parseIntegerParam(req.params.id);
@@ -39,8 +43,15 @@ exports.listarTipo = async (req, res) => {
           ORDER BY v.tipoordem`
       : "select tipocod,tipodes, promarcascod,promodcod from vw_tipo_pecas where promodcod = $1 order by tipoordem";
 
-    const result = await pool.query(query, [modeloId]);
-    res.status(200).json(result.rows);
+    const cacheKey = `tipo:${modeloId}:${comTotal ? 1 : 0}`;
+    let entry = catalogoNavCache.get(cacheKey);
+
+    if (!entry) {
+      const result = await pool.query(query, [modeloId]);
+      entry = catalogoNavCache.set(cacheKey, result.rows);
+    }
+
+    return sendCached(req, res, entry);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao buscar tipo" });
@@ -60,11 +71,18 @@ exports.buscarTipo = async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      "select  tipocod,tipodes, promarcascod,promodcod from vw_tipo_pecas  where promodcod = $1 AND tipocod = $2",
-      [modeloId, tipoId]
-    );
-    res.status(200).json(result.rows);
+    const cacheKey = `modtipo:${tipoId}:${modeloId}`;
+    let entry = catalogoNavCache.get(cacheKey);
+
+    if (!entry) {
+      const result = await pool.query(
+        "select  tipocod,tipodes, promarcascod,promodcod from vw_tipo_pecas  where promodcod = $1 AND tipocod = $2",
+        [modeloId, tipoId]
+      );
+      entry = catalogoNavCache.set(cacheKey, result.rows);
+    }
+
+    return sendCached(req, res, entry);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao buscar tipo" });
@@ -96,6 +114,7 @@ exports.inserirTipo = async (req, res) => {
       [tipodes]
     );
     tiposCache.invalidate();
+    catalogoNavCache.invalidateAll();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -117,6 +136,7 @@ exports.atualizarTipo = async (req, res) => {
       [tipodes, tipoId]
     );
     tiposCache.invalidate();
+    catalogoNavCache.invalidateAll();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -137,6 +157,7 @@ exports.deleteTipo = async (req, res) => {
       [tipoId]
     );
     tiposCache.invalidate();
+    catalogoNavCache.invalidateAll();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -171,6 +192,7 @@ exports.atualizarOrdemTipos = async (req, res) => {
     );
 
     tiposCache.invalidate();
+    catalogoNavCache.invalidateAll();
     return res.status(200).json({ message: "Ordem atualizada com sucesso!" });
   } catch (error) {
     console.error("Erro ao atualizar ordem:", error);

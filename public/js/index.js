@@ -55,8 +55,6 @@ ouOnLoad(async () => {
     return;
   }
 
-  holder.innerHTML = "";
-
   try {
     const dados = await carregarMarcas();
 
@@ -133,6 +131,7 @@ ouOnLoad(async () => {
       row.appendChild(col);
     }
 
+    holder.innerHTML = "";
     holder.appendChild(row);
   } catch (err) {
     console.error("Erro ao carregar marcas:", err);
@@ -170,11 +169,14 @@ function renderizarCarregandoBusca() {
   corpoTabela.classList.remove("ou-model-grid");
   if (resultadoQuantidade) resultadoQuantidade.textContent = "";
   corpoTabela.innerHTML = `
-    <div class="ou-loading py-4">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Carregando...</span>
-      </div>
-      <span>Buscando modelos...</span>
+    <div class="ou-skeleton-grid" role="status" aria-busy="true" aria-label="Buscando modelos...">
+      <span class="visually-hidden">Buscando modelos...</span>
+      <div class="ou-skeleton-card"><span class="ou-skeleton ou-skeleton-card__icon"></span><span class="ou-skeleton-card__body"><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--title"></span><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--meta"></span></span></div>
+      <div class="ou-skeleton-card"><span class="ou-skeleton ou-skeleton-card__icon"></span><span class="ou-skeleton-card__body"><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--title"></span><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--meta"></span></span></div>
+      <div class="ou-skeleton-card"><span class="ou-skeleton ou-skeleton-card__icon"></span><span class="ou-skeleton-card__body"><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--title"></span><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--meta"></span></span></div>
+      <div class="ou-skeleton-card"><span class="ou-skeleton ou-skeleton-card__icon"></span><span class="ou-skeleton-card__body"><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--title"></span><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--meta"></span></span></div>
+      <div class="ou-skeleton-card"><span class="ou-skeleton ou-skeleton-card__icon"></span><span class="ou-skeleton-card__body"><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--title"></span><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--meta"></span></span></div>
+      <div class="ou-skeleton-card"><span class="ou-skeleton ou-skeleton-card__icon"></span><span class="ou-skeleton-card__body"><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--title"></span><span class="ou-skeleton ou-skeleton-line ou-skeleton-line--meta"></span></span></div>
     </div>`;
 }
 

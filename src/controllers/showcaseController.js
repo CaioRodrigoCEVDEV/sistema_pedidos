@@ -4,6 +4,7 @@ const { parseIntegerParam } = require("../utils/parseIntegerParam");
 const { getEstoqueConfig } = require("../utils/estoqueConfig");
 
 const TIPO_MANUAL = "featured";
+const TITULO_MAX_LENGTH = 100;
 
 // Formato enxuto dos itens das vitrines para a página pública.
 // Não expõe campos internos do cadastro (prosit, posições etc.).
@@ -200,11 +201,41 @@ exports.atualizarShowcase = async (req, res) => {
     campos.max_items = maxItems;
   }
 
+  if (body.title !== undefined) {
+    if (typeof body.title !== "string") {
+      return res.status(400).json({ error: "Título da vitrine inválido" });
+    }
+    const title = body.title.trim();
+    if (!title) {
+      return res.status(400).json({ error: "Informe um título para a vitrine" });
+    }
+    if (title.length > TITULO_MAX_LENGTH) {
+      return res.status(400).json({
+        error: `O título deve ter no máximo ${TITULO_MAX_LENGTH} caracteres`,
+      });
+    }
+    campos.title = title;
+  }
+
   if (Object.keys(campos).length === 0) {
     return res.status(400).json({ error: "Nenhuma alteração informada" });
   }
 
   try {
+    // O título é editável somente na vitrine manual (Destaques); as
+    // automáticas mantêm o rótulo fixo que descreve o critério de seleção.
+    if (campos.title !== undefined) {
+      const showcase = await showcaseModels.buscarShowcasePorId(id);
+      if (!showcase) {
+        return res.status(404).json({ error: "Vitrine não encontrada" });
+      }
+      if (showcase.type !== TIPO_MANUAL) {
+        return res.status(400).json({
+          error: "Somente a vitrine Destaques permite alterar o título",
+        });
+      }
+    }
+
     const atualizado = await showcaseModels.atualizarShowcase(id, campos);
     if (!atualizado) {
       return res.status(404).json({ error: "Vitrine não encontrada" });

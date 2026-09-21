@@ -766,6 +766,171 @@ thead.thead-dark th {
   color: var(--ou-text-muted);
 }
 
+/* Skeleton de carregamento da loja (substitui o spinner preservando o layout).
+   Os blocos usam a mesma forma dos cards reais para evitar salto de layout. */
+.ou-skeleton {
+  --ou-skel-hi: rgba(255, 255, 255, 0.65);
+  position: relative;
+  overflow: hidden;
+  background: var(--ou-surface-2);
+  border-radius: var(--ou-radius-sm);
+}
+
+[data-theme="dark"] .ou-skeleton {
+  --ou-skel-hi: rgba(255, 255, 255, 0.06);
+}
+
+.ou-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--ou-skel-hi), transparent);
+  animation: ou-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes ou-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.ou-skeleton-line {
+  height: 0.75rem;
+  border-radius: 999px;
+}
+
+.ou-skeleton-line--title {
+  width: 55%;
+}
+
+.ou-skeleton-line--meta {
+  width: 35%;
+  height: 0.6rem;
+}
+
+/* Grade no formato .ou-catalog-grid (modelos/tipos) */
+.ou-skeleton-grid {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .ou-skeleton-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .ou-skeleton-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Lista no formato .ou-product-list (peças) */
+.ou-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Card no formato .ou-catalog-card */
+.ou-skeleton-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 64px;
+  padding: 0.85rem 1rem;
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: var(--ou-radius-lg);
+  box-shadow: var(--ou-shadow-sm);
+}
+
+.ou-skeleton-card__icon {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--ou-radius);
+}
+
+.ou-skeleton-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Card no formato .ou-brand-card */
+.ou-skeleton-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 76px;
+  padding: 1rem 1.1rem;
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: var(--ou-radius-lg);
+  box-shadow: var(--ou-shadow-sm);
+}
+
+.ou-skeleton-brand__logo {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--ou-radius);
+}
+
+.ou-skeleton-brand__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Card no formato .ou-product-card */
+.ou-skeleton-product {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.1rem;
+  background: var(--ou-surface);
+  border: 1px solid var(--ou-border-soft);
+  border-radius: var(--ou-radius-lg);
+  box-shadow: var(--ou-shadow-sm);
+}
+
+.ou-skeleton-product__icon {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--ou-radius);
+}
+
+.ou-skeleton-product__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ou-skeleton-product__aside {
+  flex: 0 0 88px;
+  width: 88px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ou-skeleton::after {
+    animation: none;
+  }
+}
+
 /* --------------------------------------------------------------------------
    10. Paginação
    -------------------------------------------------------------------------- */

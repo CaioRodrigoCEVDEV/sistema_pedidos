@@ -7,6 +7,7 @@ const {
 const { getEstoqueConfig } = require("../utils/estoqueConfig");
 const { precoPromocionalSql } = require("../utils/promocaoSql");
 const catalogoCache = require("../utils/catalogoCache");
+const { catalogoNavCache } = require("../utils/catalogListCaches");
 const showcasesCache = require("../utils/showcasesCache");
 
 exports.listarProduto = async (req, res) => {
@@ -294,6 +295,7 @@ exports.inserirProduto = async (req, res) => {
     await client.query("COMMIT");
 
     catalogoCache.invalidate();
+    catalogoNavCache.invalidateAll();
     showcasesCache.invalidate();
     res.status(200).json(result.rows[0]);
   } catch (error) {
@@ -317,6 +319,7 @@ exports.excluirProduto = async (req, res) => {
     const result = await pool.query("delete from pro where procod = $1", [produtoId]);
     if (result.rowCount > 0) {
       catalogoCache.invalidate();
+      catalogoNavCache.invalidateAll();
       showcasesCache.invalidate();
       res.status(200).json({ message: "Produto excluído com sucesso" });
     } else {
@@ -398,6 +401,7 @@ exports.editarProduto = async (req, res) => {
 
     await client.query("COMMIT");
     catalogoCache.invalidate();
+    catalogoNavCache.invalidateAll();
     showcasesCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
@@ -522,6 +526,7 @@ exports.inserirProdutoCoresDisponiveis = async (req, res) => {
       [id, req.query.corescod, procorsemest],
     );
     catalogoCache.invalidate();
+    catalogoNavCache.invalidateAll();
     showcasesCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
@@ -592,6 +597,7 @@ exports.deletarProdutoCoresDisponiveis = async (req, res) => {
       [id, corescod],
     );
     catalogoCache.invalidate();
+    catalogoNavCache.invalidateAll();
     showcasesCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
@@ -615,6 +621,7 @@ exports.alterarProdutoCoresDisponiveis = async (req, res) => {
       ],
     );
     catalogoCache.invalidate();
+    catalogoNavCache.invalidateAll();
     showcasesCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
@@ -642,6 +649,7 @@ exports.atualizarOrdemProdutos = async (req, res) => {
     );
 
     catalogoCache.invalidate();
+    catalogoNavCache.invalidateAll();
     showcasesCache.invalidate();
     return res.status(200).json({ message: "Ordem atualizada com sucesso!" });
   } catch (error) {
@@ -742,6 +750,7 @@ exports.gravarEstoqueProduto = async (req, res) => {
     }
 
     catalogoCache.invalidate();
+    catalogoNavCache.invalidateAll();
     showcasesCache.invalidate();
     res.json({ sucesso: true });
   } catch (err) {
