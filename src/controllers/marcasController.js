@@ -1,6 +1,10 @@
 const pool = require("../config/db");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
-const { marcasCache, sendCached } = require("../utils/catalogListCaches");
+const {
+  marcasCache,
+  catalogoNavCache,
+  sendCached,
+} = require("../utils/catalogListCaches");
 
 exports.listarMarcas = async (req, res) => {
   try {
@@ -28,11 +32,18 @@ exports.listarMarcasId = async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      "select * from vw_marcas where marcascod = $1",
-      [marcaId]
-    );
-    res.status(200).json(result.rows);
+    const cacheKey = `marca:${marcaId}`;
+    let entry = catalogoNavCache.get(cacheKey);
+
+    if (!entry) {
+      const result = await pool.query(
+        "select * from vw_marcas where marcascod = $1",
+        [marcaId]
+      );
+      entry = catalogoNavCache.set(cacheKey, result.rows);
+    }
+
+    return sendCached(req, res, entry);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao buscar marca" });
@@ -47,6 +58,7 @@ exports.inserirMarcas = async (req, res) => {
       [marcasdes]
     );
     marcasCache.invalidate();
+    catalogoNavCache.invalidateAll();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -68,6 +80,7 @@ exports.atualizarMarcas = async (req, res) => {
       [marcasdes, marcaId]
     );
     marcasCache.invalidate();
+    catalogoNavCache.invalidateAll();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -88,6 +101,7 @@ exports.atualizarMarcasStatus = async (req, res) => {
       ["I", marcaId]
     );
     marcasCache.invalidate();
+    catalogoNavCache.invalidateAll();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -108,6 +122,7 @@ exports.deletarMarcas = async (req, res) => {
       [marcaId]
     );
     marcasCache.invalidate();
+    catalogoNavCache.invalidateAll();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -134,6 +149,7 @@ exports.atualizarOrdemMarcas = async (req, res) => {
     );
 
     marcasCache.invalidate();
+    catalogoNavCache.invalidateAll();
     return res.status(200).json({ message: "Ordem atualizada com sucesso!" });
   } catch (error) {
     console.error("Erro ao atualizar ordem:", error);
