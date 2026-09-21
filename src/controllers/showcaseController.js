@@ -25,6 +25,10 @@ function mapearItemPublico(row, config) {
     procod: row.procod,
     prodes: row.prodes || "",
     provl: Number(row.provl) || 0,
+    provlpromo:
+      row.provlpromo === null || row.provlpromo === undefined
+        ? null
+        : Number(row.provlpromo),
     tipocod: row.protipocod,
     tipodes: row.tipodes || "",
     marcascod: row.promarcascod,

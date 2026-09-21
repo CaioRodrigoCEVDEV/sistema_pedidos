@@ -34,6 +34,19 @@
     var modelo = String(item.modelo || "").trim();
     var tipo = String(item.tipo || "").trim();
     var valor = Number(item.preco) || 0;
+    var original =
+      item.precoOriginal != null ? Number(item.precoOriginal) : null;
+    var unidadeHtml =
+      original != null && original > valor
+        ? '<div class="ou-cart-id__unit ou-cart-id__unit--promo">Unitário: ' +
+          '<span class="ou-price-old">' +
+          formatBRL(original) +
+          '</span> <span class="ou-price-promo">' +
+          formatBRL(valor) +
+          "</span></div>"
+        : '<div class="ou-cart-id__unit">Unitário: ' +
+          formatBRL(valor) +
+          "</div>";
 
     var logo = { primary: LOGO_FALLBACK };
     if (marca && window.OrderUpBrandLogo && window.OrderUpBrandLogo.get) {
@@ -75,9 +88,7 @@
       '<h3 class="ou-cart-id__name">' +
       nome +
       "</h3>" +
-      '<div class="ou-cart-id__unit">Unitário: ' +
-      formatBRL(valor) +
-      "</div>" +
+      unidadeHtml +
       "</div>";
 
     var img = wrap.querySelector("img");

@@ -36,12 +36,20 @@ const TELAS = [
     ordem: 4,
   },
   {
+    chave: "promocoes",
+    nome: "Promoções",
+    rota: "/promocoes",
+    icone: "bi-tag",
+    grupo: "Catálogo",
+    ordem: 5,
+  },
+  {
     chave: "grupos",
     nome: "Grupos (peças)",
     rota: "/part",
     icone: "bi-diagram-3",
     grupo: "Catálogo",
-    ordem: 5,
+    ordem: 6,
   },
   {
     chave: "devolucoes",
@@ -49,7 +57,7 @@ const TELAS = [
     rota: "/devolucoes",
     icone: "bi-arrow-counterclockwise",
     grupo: "Operações",
-    ordem: 6,
+    ordem: 7,
   },
   {
     chave: "estoque",
@@ -57,7 +65,7 @@ const TELAS = [
     rota: "/estoque",
     icone: "bi-boxes",
     grupo: "Operações",
-    ordem: 7,
+    ordem: 8,
   },
   {
     chave: "estoque-grupos",
@@ -65,7 +73,7 @@ const TELAS = [
     rota: "/estoque-grupos",
     icone: "bi-collection",
     grupo: "Operações",
-    ordem: 8,
+    ordem: 9,
   },
   {
     chave: "relatorios",
@@ -73,7 +81,7 @@ const TELAS = [
     rota: "/relatorios",
     icone: "bi-bar-chart",
     grupo: "Ferramentas",
-    ordem: 9,
+    ordem: 10,
   },
   {
     chave: "backups",
@@ -81,7 +89,7 @@ const TELAS = [
     rota: "/backup",
     icone: "bi-database",
     grupo: "Ferramentas",
-    ordem: 10,
+    ordem: 11,
   },
 ];
 

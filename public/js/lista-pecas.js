@@ -118,24 +118,48 @@ function criarCardPeca(dado) {
   const tipo = String(dado.tipodes || "").replace(/</g, "&lt;");
   const icone = window.OrderUpTipoIcon(dado.tipodes);
 
+  // Preço sempre vindo do servidor: provlpromo é o preço promocional efetivo
+  // (null quando não há promoção ativa).
+  const precoOriginal = Number(dado.provl) || 0;
+  const temPromocao =
+    dado.provlpromo !== null && dado.provlpromo !== undefined;
+  const preco = temPromocao ? Number(dado.provlpromo) || 0 : precoOriginal;
+  const desconto =
+    temPromocao && precoOriginal > 0
+      ? Math.round((1 - preco / precoOriginal) * 100)
+      : 0;
+
   const botao = status.disponivel
     ? `<button type="button" class="btn btn-success btn-sm ou-product-card__add" data-add-procod="${dado.procod}" onclick="adicionarAoCarrinho('${dado.procod}')">Adicionar</button>`
     : '<button type="button" class="btn btn-secondary btn-sm ou-product-card__add" disabled title="Indisponível">Indisponível</button>';
 
+  const badgePromo = temPromocao
+    ? `<span class="ou-product-card__promo" title="Produto em promoção"><i class="bi bi-tag-fill" aria-hidden="true"></i>${desconto > 0 ? "-" + desconto + "%" : "PROMO"}</span>`
+    : "";
+
+  const precoHtml = temPromocao
+    ? `<div class="ou-product-card__price ou-product-card__price--promo">
+         <span class="ou-product-card__price-old">${formatarMoeda(precoOriginal)}</span>
+         <span class="ou-product-card__price-value">${formatarMoeda(preco)}</span>
+       </div>`
+    : `<div class="ou-product-card__price">${formatarMoeda(preco)}</div>`;
+
   const card = document.createElement("article");
   card.className = "ou-product-card";
-  card.dataset.preco = dado.provl;
+  card.dataset.preco = preco;
+  card.dataset.precoOriginal = temPromocao ? precoOriginal : "";
   card.innerHTML = `
     <span class="ou-product-card__icon"><i class="bi ${icone}" aria-hidden="true"></i></span>
     <div class="ou-product-card__main">
       <h3 class="ou-product-card__name">${nome}</h3>
       <div class="ou-product-card__meta">
+        ${badgePromo}
         ${tipo ? `<span class="ou-product-card__type">${tipo}</span>` : ""}
         <span class="ou-product-card__status ${status.classe}">${status.texto}</span>
       </div>
     </div>
     <div class="ou-product-card__aside">
-      <div class="ou-product-card__price">${formatarMoeda(dado.provl)}</div>
+      ${precoHtml}
       ${botao}
     </div>
   `;
@@ -323,6 +347,7 @@ window.adicionarAoCarrinho = async function (procod) {
 
   const nome = itemDiv.querySelector(".ou-product-card__name, .item-name")?.textContent || "Produto";
   const preco = parseFloat(itemDiv.dataset.preco || "0");
+  const precoOriginal = parseFloat(itemDiv.dataset.precoOriginal || "0") || null;
   const tipo = itemDiv.querySelector(".ou-product-card__type, .item-tipo")?.textContent || "";
   const marca = document.getElementById("marcaTitulo")?.textContent || "";
 
@@ -331,9 +356,9 @@ window.adicionarAoCarrinho = async function (procod) {
     const cores = await response.json();
 
     if (cores && cores.length > 0 && cores[0].cornome !== "") {
-      exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde);
+      exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde, precoOriginal);
     } else {
-      adicionarProdutoAoCarrinho(procod, nome, tipo, marca, preco, qtde);
+      adicionarProdutoAoCarrinho(procod, nome, tipo, marca, preco, qtde, null, null, precoOriginal);
       mostrarFeedbackAdicionado(procod);
     }
   } catch (error) {
@@ -350,10 +375,11 @@ window.adicionarAoCarrinho = async function (procod) {
  * @param {string} nome - Nome do produto
  * @param {string} tipo - Tipo do produto
  * @param {string} marca - Marca do produto
- * @param {number} preco - Preço do produto
+ * @param {number} preco - Preço do produto (promocional quando aplicável)
  * @param {number} qtde - Quantidade a adicionar
+ * @param {number|null} precoOriginal - Preço original (para exibir desconto)
  */
-function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
+function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde, precoOriginal) {
   // Cria o backdrop (overlay cinza de fundo)
   const backdrop = document.createElement("div");
   backdrop.id = "modal-cor-backdrop";
@@ -521,7 +547,8 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
       preco,
       qtde,
       corSelecionada,
-      idCorSelecionada
+      idCorSelecionada,
+      precoOriginal
     );
 
     mostrarFeedbackAdicionado(procod);
@@ -545,6 +572,7 @@ function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde) {
  * @param {number} qtde - Quantidade a adicionar
  * @param {string} corSelecionada - Cor selecionada (opcional)
  * @param {string} idCorSelecionada - ID da cor selecionada (opcional)
+ * @param {number|null} precoOriginal - Preço original (opcional)
  */
 
 function adicionarProdutoAoCarrinho(
@@ -555,13 +583,16 @@ function adicionarProdutoAoCarrinho(
   preco,
   qtde,
   corSelecionada,
-  idCorSelecionada
+  idCorSelecionada,
+  precoOriginal
 ) {
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
 
   const idx = cart.findIndex((item) => item.id === id);
   if (idx > -1) {
     cart[idx].qt += qtde;
+    if (precoOriginal) cart[idx].precoOriginal = precoOriginal;
+    cart[idx].preco = preco;
   } else {
     cart.push({
       id,
@@ -570,6 +601,7 @@ function adicionarProdutoAoCarrinho(
       marca,
       modelo: modeloAtual,
       preco,
+      precoOriginal: precoOriginal || null,
       qt: qtde,
       corSelecionada,
       idCorSelecionada,

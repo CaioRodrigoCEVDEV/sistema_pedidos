@@ -174,6 +174,9 @@ app.use(telaRoutes);
 const showcaseRoutes = require("./routes/showcaseRoutes");
 app.use(showcaseRoutes);
 
+const promocaoRoutes = require("./routes/promocaoRoutes");
+app.use(promocaoRoutes);
+
 const dashboardRoutes = require("./routes/dashboardRoutes");
 app.use(dashboardRoutes);
 
@@ -218,6 +221,11 @@ app.get("/configuracoes", requireAdminPages, (req, res) => {
 app.get("/vitrines", requireAdminPages, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-vitrines.html")
+  );
+});
+app.get("/promocoes", requireTela("promocoes"), (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/html/auth/admin/html/painel-promocoes.html")
   );
 });
 app.get("/painel", requireTela("produtos"), (req, res) => {

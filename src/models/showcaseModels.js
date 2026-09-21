@@ -2,6 +2,7 @@ const pool = require("../config/db");
 const {
   disponibilidadeProdutoAutoSql,
 } = require("../utils/disponibilidadeProdutoSql");
+const { precoPromocionalSql } = require("../utils/promocaoSql");
 
 // As vitrines são fixas por enquanto: Destaques é manual e Mais vendidos /
 // Novidades são montadas automaticamente. O limite de itens das automáticas
@@ -15,6 +16,7 @@ const PRODUTO_SELECT = `
   pro.procod,
   COALESCE(pro.prodes, '') AS prodes,
   COALESCE(pro.provl, 0) AS provl,
+  ${precoPromocionalSql("pro")} AS provlpromo,
   pro.protipocod,
   pro.promarcascod,
   pro.prosit,
