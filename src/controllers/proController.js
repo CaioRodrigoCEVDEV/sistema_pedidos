@@ -141,18 +141,18 @@ exports.listarProdutos = async (req, res) => {
 
   try {
     if (paginado) {
-      const countResult = await pool.query(
-        `select count(*) ${from}`,
-        params
-      );
-      const total = parseInt(countResult.rows[0].count, 10);
-
-      const result = await pool.query(
-        `${select}
+      // COUNT e dados são independentes entre si: executa em paralelo para
+      // não somar dois round-trips sequenciais ao PostgreSQL.
+      const [countResult, result] = await Promise.all([
+        pool.query(`select count(*) ${from}`, params),
+        pool.query(
+          `${select}
         order by procod desc
         limit $${params.length + 1} offset $${params.length + 2}`,
-        [...params, pageSize, off]
-      );
+          [...params, pageSize, off]
+        ),
+      ]);
+      const total = parseInt(countResult.rows[0].count, 10);
 
       return res
         .status(200)

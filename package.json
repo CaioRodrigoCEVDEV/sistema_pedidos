@@ -10,7 +10,12 @@
     "test:pr1": "node tests/performancePR1.test.js",
     "test:pr2": "node tests/performancePR2.test.js",
     "bump-version": "node scripts/sync-releases.js && node scripts/bump-asset-version.js",
-    "releases:sync": "node scripts/sync-releases.js"
+    "releases:sync": "node scripts/sync-releases.js",
+    "lint": "eslint src scripts tests",
+    "lint:fix": "eslint src scripts tests --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "bench": "node scripts/bench-endpoints.js"
   },
   "author": "Caio - Heitor - Alan",
   "license": "ISC",
@@ -32,5 +37,12 @@
     "pdfkit": "^0.17.2",
     "pg": "^8.16.3",
     "sharp": "^0.34.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^9.1.2",
+    "globals": "^15.15.0",
+    "prettier": "^3.9.8"
   }
 }

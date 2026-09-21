@@ -1,0 +1,5 @@
+node_modules
+frontend
+public
+src/uploads
+package-lock.json

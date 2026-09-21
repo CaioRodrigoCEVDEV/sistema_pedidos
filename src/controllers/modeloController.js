@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
+const { modelosCache, sendCached } = require("../utils/catalogListCaches");
 
 exports.listarModelo = async (req, res) => {
   const marcaId = parseIntegerParam(req.params.id);
@@ -68,6 +69,7 @@ exports.inserirModelo = async (req, res) => {
       `insert into modelo (moddes,modmarcascod) values ($1,$2) returning *`,
       [moddes, marcaId]
     );
+    modelosCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -93,6 +95,7 @@ exports.atualizarModelo = async (req, res) => {
       `update modelo set moddes = $1, modmarcascod = $2 where modcod = $3 returning *`,
       [moddes, marcaId, modeloId]
     );
+    modelosCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -112,6 +115,7 @@ exports.deletarModelo = async (req, res) => {
       `delete from modelo where modcod = $1 returning *`,
       [modeloId]
     );
+    modelosCache.invalidate();
     res.status(200).json(result.rows);
   } catch (error){
     console.error(error);
@@ -133,10 +137,15 @@ exports.listarTodosModelos = async (req, res) => {
     : (search ? 50 : 0);
 
   try {
-    // Sem termo e sem limite: mantém o catálogo completo (telas do painel).
+    // Sem termo e sem limite: mantém o catálogo completo (telas do painel),
+    // agora com cache em memória + ETag (invalidado nos writes de modelo).
     if (!search && limit === 0) {
-      const result = await pool.query(`select * from vw_modelos `);
-      return res.status(200).json(result.rows);
+      let entry = modelosCache.get();
+      if (!entry) {
+        const result = await pool.query(`select * from vw_modelos `);
+        entry = modelosCache.set(result.rows);
+      }
+      return sendCached(req, res, entry);
     }
 
     const params = [];
@@ -186,6 +195,7 @@ exports.atualizarOrdemModelos = async (req, res) => {
       [ids, ordens]
     );
 
+    modelosCache.invalidate();
     return res.status(200).json({ message: "Ordem atualizada com sucesso!" });
   } catch (error) {
     console.error("Erro ao atualizar ordem:", error);
