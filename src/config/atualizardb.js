@@ -995,10 +995,21 @@ async function atualizarDB() {
               FROM procor
               WHERE procorprocod = NEW.procod
           ) THEN
-              IF NEW.proqtde = 0 THEN
-                  NEW.prosemest := 'S';
-              ELSE
-                  NEW.prosemest := 'N';
+              -- A flag so e automatica para empresas que controlam estoque
+              -- (empusaest = 'S'). Empresas que nao controlam estoque usam as
+              -- marcacoes manuais do cadastro e nao devem ter o valor
+              -- sobrescrito (ex.: item novo deve nascer disponivel).
+              IF (
+                  SELECT COALESCE(TRIM(empusaest), 'N')
+                  FROM emp
+                  ORDER BY empcod
+                  LIMIT 1
+              ) = 'S' THEN
+                  IF NEW.proqtde = 0 THEN
+                      NEW.prosemest := 'S';
+                  ELSE
+                      NEW.prosemest := 'N';
+                  END IF;
               END IF;
           END IF;
 
