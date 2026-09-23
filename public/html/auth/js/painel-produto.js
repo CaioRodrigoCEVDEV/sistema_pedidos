@@ -233,6 +233,12 @@ produtoForm.addEventListener("submit", async (ev) => {
       );
     }
     produtoModal.hide();
+
+    // Cadastro disparado de dentro do "Gerenciar Peças": atualiza a
+    // listagem aberta em tempo real, sem precisar reabrir o gerenciador.
+    if (typeof pecasPopupAberto !== "undefined" && pecasPopupAberto) {
+      carregarPecas(1);
+    }
   } catch (error) {
     if (error.message === "403") {
       produtoModal.hide();
