@@ -845,6 +845,34 @@ function mostrarArea(id, loadFn) {
   }
 }
 
+// ------- FAB "Cadastrar" nas telas de gerenciamento ---------
+// Cada rotina de gestão reutiliza o botão "Cadastrar" já existente em
+// painel.html (um por tipo de registro). O FAB apenas dispara o mesmo
+// clique, sem criar uma segunda lógica de cadastro.
+var FAB_CADASTRO_POR_AREA = {
+  areaMarcas: "dropdownMarca",
+  areaModelos: "dropdownModelo",
+  areaTipos: "dropdownTipo",
+  areaCores: "dropdownCor",
+  pecas: "dropdownProduto",
+};
+
+function adicionarFabCadastro(popup, botaoId) {
+  const alvo = botaoId ? document.getElementById(botaoId) : null;
+  if (!popup || !alvo) return;
+
+  const fab = document.createElement("button");
+  fab.type = "button";
+  fab.className = "ou-fab-cadastrar";
+  fab.setAttribute("aria-label", "Cadastrar");
+  fab.innerHTML =
+    '<i class="fa-solid fa-plus" aria-hidden="true"></i><span>Cadastrar</span>';
+  fab.addEventListener("click", () => alvo.click());
+
+  popup.appendChild(fab);
+  popup.classList.add("ou-fab-host");
+}
+
 // ------- POPUP DE GESTÃO FULLSCREEN (Gerenciar Marcas/Modelos/Tipos/Cores) ---------
 function abrirPopupGestao(areaId, titulo, totalId) {
   if (gestaoPopupAberto) return;
@@ -877,6 +905,8 @@ function abrirPopupGestao(areaId, titulo, totalId) {
 
   area.style.display = "flex";
   popup.appendChild(area);
+
+  adicionarFabCadastro(popup, FAB_CADASTRO_POR_AREA[areaId]);
 
   overlay.appendChild(popup);
   document.body.appendChild(overlay);
@@ -2304,6 +2334,8 @@ function abrirPopupPecas() {
     tabelaArea.style.display = "flex";
     popup.appendChild(tabelaArea);
   }
+
+  adicionarFabCadastro(popup, FAB_CADASTRO_POR_AREA.pecas);
 
   overlay.appendChild(popup);
   document.body.appendChild(overlay);
