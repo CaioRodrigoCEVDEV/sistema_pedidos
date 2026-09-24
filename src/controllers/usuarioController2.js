@@ -12,6 +12,11 @@ exports.listarUsuarios = async (req, res) => {
 
 
 exports.excluirCadastro = async (req, res) => {
+    // Excluir usuário é exclusivo de administradores.
+    if (!req.token || req.token.usuadm !== "S") {
+        return res.status(403).json({ error: "Acesso restrito ao administrador." });
+    }
+
     const { id } = req.params;
 
     try {

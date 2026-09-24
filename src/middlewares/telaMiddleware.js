@@ -2,16 +2,16 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
 
 /**
- * Protege uma página/tela exigindo que o usuário tenha a permissão da tela
- * liberada. Administradores (usuadm='S') têm acesso total e ignoram a checagem.
+ * Única camada de autorização do sistema: exige que o usuário autenticado tenha
+ * a tela liberada em usu_telas. Não há mais bypass de administrador nem gating
+ * por módulo (empusapv/empusaest/usupv/usuest) — o acesso é definido
+ * exclusivamente pelas "telas liberadas" do usuário (tela de Usuários).
  *
  * Uso: app.get('/clientes', requireTela('clientes'), handler)
  *
  * @param {string} chave chave da tela registrada em src/config/telas.js
  */
 function requireTela(chave, opts) {
-  const modulo = opts && opts.modulo;
-
   return async function (req, res, next) {
     const json = opts?.api || (req.get("accept") || "").includes("application/json");
     const token = req.cookies.token;
@@ -30,29 +30,6 @@ function requireTela(chave, opts) {
     }
 
     req.token = decoded;
-
-    // O módulo da empresa vale para todos, inclusive administradores.
-    if (modulo === "pv" && decoded.empusapv !== "S") {
-      return res.status(403).redirect("/painel?erroMSG=modulo-nao-habilitado");
-    }
-    if (modulo === "est" && decoded.empusaest !== "S") {
-      return res.status(403).redirect("/painel?erroMSG=modulo-nao-habilitado");
-    }
-
-    // Administrador ignora qualquer restrição por tela.
-    if (decoded && decoded.usuadm === "S") {
-      req.user = decoded;
-      return next();
-    }
-
-    if (modulo === "pv" && decoded.usupv !== "S") {
-      if (json) return res.status(403).json({ error: "Seu usuário não tem acesso ao módulo de pedidos." });
-      return res.status(403).redirect("/perfil");
-    }
-    if (modulo === "est" && decoded.usuest !== "S") {
-      if (json) return res.status(403).json({ error: "Seu usuário não tem acesso ao módulo de estoque." });
-      return res.status(403).redirect("/perfil");
-    }
 
     try {
       const result = await pool.query(

@@ -25,11 +25,6 @@ function get(path, auth) { return fetch(origin + path, { headers: { Accept: "app
 test("APIs de estoque exigem sessão", async () => {
   for (const path of ["/api/estoque/itens", "/api/estoque-grupos"]) assert.equal((await get(path)).status, 401);
 });
-test("módulo de estoque da empresa e do usuário são obrigatórios", async () => {
-  allow = true;
-  assert.equal((await get("/api/estoque/itens", token({ empusaest: "N", usuadm: "S" }))).status, 403);
-  assert.equal((await get("/api/estoque-grupos", token({ usuest: "N" }))).status, 403);
-});
 test("permissão de tela protege as APIs da fase 5", async () => {
   allow = false;
   assert.equal((await get("/api/estoque/itens", token())).status, 403);

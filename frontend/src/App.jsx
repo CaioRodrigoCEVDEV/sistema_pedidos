@@ -20,9 +20,9 @@ const BackupsPage = lazy(() => import("./pages/BackupsPage.jsx"));
 const UsersPage = lazy(() => import("./pages/UsersPage.jsx"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage.jsx"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage.jsx"));
-function Allowed({ permission, module, children }) {
+function Allowed({ permission, children }) {
   const { permissions } = useSession();
-  return canAccess(permissions, permission, module) ? (
+  return canAccess(permissions, permission) ? (
     children
   ) : (
     <section className="panel">
@@ -78,7 +78,7 @@ function AuthenticatedApp() {
           ["produtos", "produtos", <ProductsPage />],
           ["promocoes", "promocoes", <PromotionsPage />],
           ["grupos", "grupos", <GroupsPage />],
-          ["vitrines", "admin", <ShowcasesPage />],
+          ["vitrines", "vitrines", <ShowcasesPage />],
         ].map(([path, permission, page]) => (
           <Route
             key={path}
@@ -93,7 +93,7 @@ function AuthenticatedApp() {
         <Route
           path="pedidos"
           element={
-            <Allowed permission="pedidos" module="pv">
+            <Allowed permission="pedidos">
               <Suspense fallback={<Loading />}><OrdersPage /></Suspense>
             </Allowed>
           }
@@ -101,7 +101,7 @@ function AuthenticatedApp() {
         <Route
           path="devolucoes"
           element={
-            <Allowed permission="devolucoes" module="pv">
+            <Allowed permission="devolucoes">
               <Suspense fallback={<Loading />}><ReturnsPage /></Suspense>
             </Allowed>
           }
@@ -109,7 +109,7 @@ function AuthenticatedApp() {
         <Route
           path="estoque"
           element={
-            <Allowed permission="estoque" module="est">
+            <Allowed permission="estoque">
               <Suspense fallback={<Loading />}><StockPage /></Suspense>
             </Allowed>
           }
@@ -117,7 +117,7 @@ function AuthenticatedApp() {
         <Route
           path="estoque-grupos"
           element={
-            <Allowed permission="estoque-grupos" module="est">
+            <Allowed permission="estoque-grupos">
               <Suspense fallback={<Loading />}><GroupStockPage /></Suspense>
             </Allowed>
           }
@@ -125,8 +125,8 @@ function AuthenticatedApp() {
         {[
           ["relatorios", "relatorios", <ReportsPage />],
           ["backup", "backups", <BackupsPage />],
-          ["users", "admin", <UsersPage />],
-          ["configuracoes", "admin", <SettingsPage />],
+          ["users", "usuarios", <UsersPage />],
+          ["configuracoes", "configuracoes", <SettingsPage />],
           ["perfil", "always", <ProfilePage />],
         ].map(([path, permission, page]) => (
           <Route key={path} path={path} element={<Allowed permission={permission}><Suspense fallback={<Loading />}>{page}</Suspense></Allowed>} />

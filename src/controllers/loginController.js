@@ -14,18 +14,9 @@ function getClientIp(req) {
 }
 
 // Define a rota inicial após o login. A tela de Pedidos é o destino padrão,
-// mas só é usada quando o usuário realmente pode acessá-la (módulo da empresa
-// ativo e tela liberada). Caso contrário, envia para o perfil, que é acessível
-// a qualquer usuário autenticado.
-async function resolverRotaInicial(usuario, empresa) {
-    if (!empresa || empresa.empusapv !== 'S') {
-        return '/perfil';
-    }
-
-    if (usuario.usuadm === 'S') {
-        return '/pedidos';
-    }
-
+// mas só é usada quando o usuário tem a tela liberada. Caso contrário, envia
+// para o perfil, que é acessível a qualquer usuário autenticado.
+async function resolverRotaInicial(usuario) {
     const permitido = await pool.query(
         `SELECT 1
            FROM usu_telas ut
@@ -88,7 +79,7 @@ exports.validarLogin = async (req, res) => {
 
         resetLoginAttempts(chaveTentativas);
 
-        const redirect = await resolverRotaInicial(usuario, empresa);
+        const redirect = await resolverRotaInicial(usuario);
 
         const token = jwt.sign({ 
             usuemail: usuario.usuemail,

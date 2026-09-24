@@ -33,7 +33,7 @@ router.use(
     "/pedidos/itens/confirmar/:pvcod",
     "/pedidos/confirmados/:pvcod/itens",
   ],
-  requireTela("pedidos", { api: true, modulo: "pv" }),
+  requireTela("pedidos", { api: true }),
 );
 router.get("/pedidos/listar", autenticarToken, pedidosController.listarPv);
 router.get(

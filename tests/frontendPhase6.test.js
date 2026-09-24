@@ -41,11 +41,17 @@ test("relatórios exigem a permissão da tela", async () => {
   assert.equal((await request("/v2/relatorios/top-pecas", token())).status, 200);
 });
 
-test("usuários, catálogo de telas e configurações exigem administrador", async () => {
-  const regular = token(), admin = token({ usuadm: "S" });
-  for (const [path, options] of [["/usuario/listar/", {}], ["/telas", {}], ["/emp", { method: "PUT", body: "{}" }], ["/emp/estoque", { method: "PUT", body: "{}" }]]) {
-    assert.equal((await request(path, regular, options)).status, 403, path);
-    assert.equal((await request(path, admin, options)).status, 200, path);
+test("usuários, catálogo de telas e configurações exigem a tela liberada", async () => {
+  const paths = [["/usuario/listar/", {}], ["/telas", {}], ["/emp", { method: "PUT", body: "{}" }], ["/emp/estoque", { method: "PUT", body: "{}" }]];
+  allowScreen = false;
+  for (const [path, options] of paths) {
+    assert.equal((await request(path, token(), options)).status, 403, path);
+  }
+  // Administrador sem a tela liberada também é negado (não há bypass).
+  assert.equal((await request("/usuario/listar/", token({ usuadm: "S" }))).status, 403);
+  allowScreen = true;
+  for (const [path, options] of paths) {
+    assert.equal((await request(path, token(), options)).status, 200, path);
   }
 });
 

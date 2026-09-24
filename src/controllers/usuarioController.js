@@ -3,18 +3,29 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const releaseModels = require("../models/releaseModels");
 
-// Substitui as permissões de tela de um usuário. A presença da linha com
-// permitido='S' libera a tela; a ausência mantém o acesso negado.
-async function salvarTelasUsuario(usucod, telas) {
+// Substitui as permissões de tela de um usuário dentro de uma transação.
+// A presença da linha com permitido='S' libera a tela; a ausência mantém o
+// acesso negado.
+//
+// Deve receber um client já em transação. O advisory lock serializa alterações
+// do mesmo usuário (cliques repetidos em Salvar não geram chave duplicada) e o
+// ON CONFLICT torna o INSERT idempotente.
+async function salvarTelasUsuario(client, usucod, telas) {
   if (!usucod || !Array.isArray(telas)) return;
 
-  await pool.query("DELETE FROM usu_telas WHERE usutelausucod = $1", [usucod]);
+  await client.query(
+    "SELECT pg_advisory_xact_lock(hashtext('usu_telas'), $1::int)",
+    [usucod]
+  );
+  await client.query("DELETE FROM usu_telas WHERE usutelausucod = $1", [usucod]);
 
   if (telas.length === 0) return;
 
-  await pool.query(
+  await client.query(
     `INSERT INTO usu_telas (usutelausucod, usutelatelacod, usutelapermitido)
-     SELECT $1, telacod, 'S' FROM telas WHERE telachave = ANY($2::text[])`,
+     SELECT $1, telacod, 'S' FROM telas WHERE telachave = ANY($2::text[])
+     ON CONFLICT (usutelausucod, usutelatelacod)
+     DO UPDATE SET usutelapermitido = 'S'`,
     [usucod, telas]
   );
 }
@@ -35,6 +46,12 @@ function derivarFlagsTela(telas, fallback = {}) {
     usupv: fallback.usupv || null,
     usuest: fallback.usuest || null,
   };
+}
+
+// Apenas administradores podem alterar as telas liberadas (e a flag de
+// administrador) de um usuário.
+function requisicaoDeAdmin(req) {
+  return Boolean(req.token && req.token.usuadm === "S");
 }
 
 exports.validarLogin = async (req, res) => {
@@ -90,71 +107,96 @@ exports.validarLogin = async (req, res) => {
 };
 
 exports.atualizarCadastro = async (req, res) => {
+  // Editar usuário (inclusive telas e flag de administrador) é exclusivo de
+  // administradores. Ter a tela "usuarios" apenas permite visualizar a lista.
+  if (!requisicaoDeAdmin(req)) {
+    return res.status(403).json({ error: "Acesso restrito ao administrador." });
+  }
+
   const { id } = req.params;
   const { usunome, ususenha, usuadm, ususta, usurca, telas } = req.body;
   const { usupv, usuest } = derivarFlagsTela(telas, req.body);
 
+  const trocarSenha = !(ususenha === undefined || ususenha.trim() === "");
+  const client = await pool.connect();
   try {
-    let usucod;
+    // A atualização do usuário e a substituição das telas acontecem na mesma
+    // transação: ou tudo é aplicado, ou nada é.
+    await client.query("BEGIN");
 
-    if (ususenha === undefined || ususenha.trim() === "") {
-      // Atualiza sem alterar a senha
-      const result = await pool.query(
+    let result;
+    if (!trocarSenha) {
+      result = await client.query(
         "UPDATE usu SET usunome = $1, usuadm = $2, ususta = $3,usupv = COALESCE($4, usupv) ,usuest = COALESCE($5, usuest), usurca = $6 WHERE usuemail = $7 RETURNING usucod",
         [usunome, usuadm, ususta, usupv, usuest, usurca, id]
       );
-      usucod = result.rows[0] && result.rows[0].usucod;
-      await salvarTelasUsuario(usucod, telas);
-      return res
-        .status(200)
-        .json({ mensagem: "Usuario atualizado com sucesso" });
+    } else {
+      // Gera o hash MD5 da nova senha
+      const newSenhaHash = crypto
+        .createHash("md5")
+        .update(ususenha)
+        .digest("hex");
+
+      result = await client.query(
+        "UPDATE usu SET  usunome = $1, ususenha = $2,usuadm = $3, ususta = $4 ,usupv = COALESCE($5, usupv) ,usuest = COALESCE($6, usuest), usurca = $7 WHERE usuemail = $8 RETURNING usucod",
+        [usunome, newSenhaHash, usuadm, ususta, usupv, usuest, usurca, id]
+      );
     }
 
-    // Gera o hash MD5 da nova senha
-    const newSenhaHash = crypto
-      .createHash("md5")
-      .update(ususenha)
-      .digest("hex");
+    const usucod = result.rows[0] && result.rows[0].usucod;
+    await salvarTelasUsuario(client, usucod, telas);
 
-    const result = await pool.query(
-      "UPDATE usu SET  usunome = $1, ususenha = $2,usuadm = $3, ususta = $4 ,usupv = COALESCE($5, usupv) ,usuest = COALESCE($6, usuest), usurca = $7 WHERE usuemail = $8 RETURNING usucod",
-      [usunome, newSenhaHash, usuadm, ususta, usupv, usuest, usurca, id]
-    );
-    usucod = result.rows[0] && result.rows[0].usucod;
-    await salvarTelasUsuario(usucod, telas);
-
+    await client.query("COMMIT");
     res.status(200).json({ mensagem: "Usuario atualizado com sucesso" });
   } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
     console.error(error);
     res.status(500).json({ error: "Erro ao atualizar usuario" });
+  } finally {
+    client.release();
   }
 };
 
 exports.cadastrarlogin = async (req, res) => {
+  // Criar usuário é exclusivo de administradores. A tela "usuarios" apenas
+  // permite visualizar a lista.
+  if (!requisicaoDeAdmin(req)) {
+    return res.status(403).json({ error: "Acesso restrito ao administrador." });
+  }
+
   const { usunome, usuemail, ususenha, usuadm, ususta, usurca, telas } =
     req.body;
   const { usupv, usuest } = derivarFlagsTela(telas, req.body);
   const senhaHash = crypto.createHash("md5").update(ususenha).digest("hex");
 
+  const client = await pool.connect();
   try {
-    const { rowCount } = await pool.query(
+    await client.query("BEGIN");
+
+    const { rowCount } = await client.query(
       "SELECT 1 FROM usu WHERE usuemail = $1",
       [usuemail]
     );
     if (rowCount > 0) {
+      await client.query("ROLLBACK");
       return res
         .status(409)
         .json({ error: "Email já existe na base de dados, Faça o Login!" });
     }
-    const result = await pool.query(
+    const result = await client.query(
       "INSERT INTO usu (usunome, usuemail, ususenha,usuadm,ususta,usupv,usuest,usurca) VALUES ($1, $2, $3,$4,$5,$6,$7,$8) RETURNING usucod",
       [usunome, usuemail, senhaHash, usuadm, ususta, usupv || "N", usuest || "N", usurca]
     );
-    await salvarTelasUsuario(result.rows[0].usucod, telas);
+    await salvarTelasUsuario(client, result.rows[0].usucod, telas);
+
+    await client.query("COMMIT");
     return res.status(201).json({ message: "Usuário cadastrado com sucesso" });
   } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
     console.error("Erro ao cadastrar usuário:", error);
     return res.status(500).json({ error: "Erro ao cadastrar usuário" });
+  } finally {
+    client.release();
   }
 };
 
@@ -173,6 +215,7 @@ exports.listarlogin = async (req, res) => {
 };
 // Trás todos os usuarios, utilizado apenos pelo adm
 exports.listarUsuarios = async (req, res) => {
+
   try {
     const result = await pool.query(
       `SELECT u.*,
@@ -196,6 +239,12 @@ exports.listarUsuarios = async (req, res) => {
 };
 
 exports.excluirCadastro = async (req, res) => {
+  // Excluir usuário é exclusivo de administradores. A tela "usuarios" apenas
+  // permite visualizar a lista.
+  if (!requisicaoDeAdmin(req)) {
+    return res.status(403).json({ error: "Acesso restrito ao administrador." });
+  }
+
   const { id } = req.params;
   //const  ususta  = "X";
 

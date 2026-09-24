@@ -2,16 +2,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { canAccess } from "../src/lib/navigation.js";
 import { periodDates, whatsapp } from "../src/lib/format.js";
-test("menu falha fechado e respeita tela, admin e módulos", () => {
+test("menu respeita apenas as telas liberadas", () => {
   assert.equal(canAccess(null, "clientes"), false);
-  assert.equal(canAccess({ usuadm: "N", telas: [] }, "clientes"), false);
-  assert.equal(canAccess({ usuadm: "N", telas: ["clientes"] }, "clientes"), true);
-  assert.equal(canAccess({ usuadm: "S" }, "clientes"), true);
-  assert.equal(canAccess({ usuadm: "S", empusapv: "N" }, "pedidos", "pv"), false);
-  assert.equal(
-    canAccess({ usuadm: "N", telas: ["pedidos"], empusapv: "S", usupv: "N" }, "pedidos", "pv"),
-    false
-  );
+  assert.equal(canAccess({ telas: [] }, "clientes"), false);
+  assert.equal(canAccess({ telas: ["clientes"] }, "clientes"), true);
+  assert.equal(canAccess({ usuadm: "S", telas: [] }, "clientes"), false);
+  assert.equal(canAccess({ telas: ["pedidos"] }, "pedidos"), true);
+  assert.equal(canAccess({ telas: [] }, "always"), true);
 });
 test("períodos atravessam mês e ano usando datas locais", () => {
   assert.deepEqual(periodDates("ult7", new Date(2026, 0, 3)), {

@@ -12,6 +12,7 @@ var usersData = [
 var users = [...usersData]; // clone para manipulação local
 var filtered = [...users];
 var telasRegistry = []; // catálogo de telas liberáveis
+var isAdminUser = false; // apenas admins alteram telas liberadas / flag admin
 // Carrega dados reais da API e atualiza users/usersData
 // --- Função central para recarregar usuários da API e atualizar UI ---
 async function refreshUsers({ keepSearch = true } = {}) {
@@ -38,7 +39,21 @@ async function refreshUsers({ keepSearch = true } = {}) {
 // Substitui seu IIFE loadUsers original — usa refreshUsers para inicializar
 (async function init() {
   try {
-    const res = await fetch(`${BASE_URL}/telas`);
+    const res = await fetch(`${BASE_URL}/me/permissoes`, {
+      headers: { Accept: "application/json" },
+    });
+    if (res.ok) {
+      const perms = await res.json();
+      isAdminUser = perms.usuadm === "S";
+    }
+  } catch (err) {
+    console.error("Falha ao carregar permissões do usuário:", err);
+  }
+
+  try {
+    const res = await fetch(`${BASE_URL}/telas`, {
+      headers: { Accept: "application/json" },
+    });
     if (res.ok) {
       telasRegistry = await res.json();
     }
@@ -47,6 +62,17 @@ async function refreshUsers({ keepSearch = true } = {}) {
   }
   renderTelasChecks([]);
   await refreshUsers();
+
+  // Não-administradores podem visualizar a lista, mas não cadastrar, editar
+  // nem excluir usuários.
+  if (!isAdminUser) {
+    if (btnNew) {
+      btnNew.disabled = true;
+      btnNew.title =
+        "Somente administradores podem cadastrar, editar ou excluir usuários.";
+    }
+    if (btnDelete) btnDelete.disabled = true;
+  }
 })();
 
 // Renderiza as checkboxes de telas liberáveis, agrupadas por grupo.
@@ -70,7 +96,9 @@ function renderTelasChecks(selected) {
           <input class="form-check-input tela-check" type="checkbox"
             value="${escapeHtml(tela.telachave)}" id="tela_${escapeHtml(
               tela.telachave
-            )}" ${sel.has(tela.telachave) ? "checked" : ""}>
+            )}" ${sel.has(tela.telachave) ? "checked" : ""} ${
+              isAdminUser ? "" : "disabled"
+            }>
           <label class="form-check-label" for="tela_${escapeHtml(
             tela.telachave
           )}"><i class="bi ${escapeHtml(
@@ -172,7 +200,11 @@ function renderTable(list) {
                 : '<span class="badge bg-danger">Excluído</span>'
             }</td>
           `;
-      tr.addEventListener("click", () => openUserModal(u.usucod));
+      if (isAdminUser) {
+        tr.addEventListener("click", () => openUserModal(u.usucod));
+      } else {
+        tr.style.cursor = "default";
+      }
       tbody.appendChild(tr);
 
       const card = document.createElement("div");
@@ -207,14 +239,22 @@ function renderTable(list) {
           <i class="fa-solid fa-chevron-right ou-mobile-card__chevron" aria-hidden="true"></i>
         </div>
       `;
-      const abrir = () => openUserModal(u.usucod);
-      card.addEventListener("click", abrir);
-      card.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          abrir();
-        }
-      });
+      if (isAdminUser) {
+        const abrir = () => openUserModal(u.usucod);
+        card.addEventListener("click", abrir);
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            abrir();
+          }
+        });
+      } else {
+        card.removeAttribute("role");
+        card.removeAttribute("tabindex");
+        card.style.cursor = "default";
+        const chevron = card.querySelector(".ou-mobile-card__chevron");
+        if (chevron) chevron.remove();
+      }
       usersMobileList.appendChild(card);
     }
   }
@@ -239,6 +279,8 @@ function doSearch(term) {
 
 // Abrir modal preenchido
 function openUserModal(usucod) {
+  // Somente administradores podem editar usuários.
+  if (!isAdminUser) return;
   const u = users.find((x) => x.usucod == usucod);
   if (!u) return;
   //console.log(u.usuemail.length);
@@ -250,6 +292,7 @@ function openUserModal(usucod) {
     usuSenha.value = "";
     usuSenha.type = "password";
     usuAdm.checked = u.usuadm === "S";
+    usuAdm.disabled = !isAdminUser;
     usuSta.checked = u.ususta === "A" ? true : u.ususta === "I" ? false : false;
     usuRca.checked = u.usurca === "S";
     renderTelasChecks(u.telas || []);
@@ -271,6 +314,12 @@ userForm.addEventListener("submit", async (ev) => {
     usurca: usuRca.checked ? "S" : "N",
     telas: getSelectedTelas(),
   };
+
+  // Evita duplo envio (cliques repetidos em Salvar) enquanto a requisição
+  // está em andamento.
+  const submitBtn = userForm.querySelector('button[type="submit"]');
+  if (submitBtn && submitBtn.disabled) return;
+  if (submitBtn) submitBtn.disabled = true;
 
   try {
     // Define URL based on whether we're creating or updating
@@ -303,6 +352,8 @@ userForm.addEventListener("submit", async (ev) => {
   } catch (error) {
     console.error("Failed to save user to API:", error);
     alert(error.message || "Erro ao salvar usuário. Veja console.");
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
   }
 });
 
@@ -345,6 +396,7 @@ btnNew.addEventListener("click", () => {
   usuSenha.value = "";
   usuSenha.type = "password";
   usuAdm.checked = false;
+  usuAdm.disabled = !isAdminUser;
   usuSta.checked = true;
   usuRca.checked = false;
   renderTelasChecks([]);

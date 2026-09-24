@@ -2,32 +2,35 @@ const express = require("express");
 const router = express.Router();
 const usuarioController = require("../controllers/usuarioController");
 const autenticarToken = require("../middlewares/middlewares");
-const requireAdmin = require("../middlewares/adminMiddleware");
+const requireTela = require("../middlewares/telaMiddleware");
+
+const requireUsuarios = requireTela("usuarios", { api: true });
 
 router.post(
   "/usuario/atualizar/:id",
-  requireAdmin,
+  requireUsuarios,
   usuarioController.atualizarCadastro
 );
 router.get("/usuario/login/", autenticarToken, usuarioController.listarlogin);
 router.get(
   "/usuario/listar/",
-  requireAdmin,
+  requireUsuarios,
   usuarioController.listarUsuarios
 );
 router.post(
   "/usuario/novo/",
-  requireAdmin,
+  requireUsuarios,
   usuarioController.cadastrarlogin
 );
 router.post(
   "/usuario/excluir/:id",
-  requireAdmin,
+  requireUsuarios,
   usuarioController.excluirCadastro
 );
 
 router.get(
   "/vendedor/listar/",
+  autenticarToken,
   usuarioController.listarVendedores
 );
 

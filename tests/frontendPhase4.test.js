@@ -38,17 +38,6 @@ test("APIs da fase 4 respondem 401 sem sessão", async () => {
   for (const path of ["/pedidos/pendentes", "/devolucoes/itens"]) assert.equal((await get(path)).status, 401);
 });
 
-test("módulo de vendas desabilitado bloqueia pedidos e devoluções", async () => {
-  const auth = token({ empusapv: "N", usuadm: "S" });
-  for (const path of ["/pedidos/pendentes", "/devolucoes/itens"]) assert.equal((await get(path, auth)).status, 403);
-});
-
-test("usuário sem módulo de vendas é bloqueado antes da permissão de tela", async () => {
-  allow = true;
-  const auth = token({ usupv: "N" });
-  for (const path of ["/pedidos/pendentes", "/devolucoes/itens"]) assert.equal((await get(path, auth)).status, 403);
-});
-
 test("usuário comum precisa da permissão de cada tela", async () => {
   allow = false;
   assert.equal((await get("/pedidos/pendentes", token())).status, 403);

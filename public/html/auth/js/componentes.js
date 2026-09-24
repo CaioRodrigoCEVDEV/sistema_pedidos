@@ -48,7 +48,7 @@ var OU_NAV_GROUPS = [
         route: "/vitrines",
         label: "Vitrines",
         icon: "bi-shop-window",
-        perm: "admin",
+        perm: "tela:vitrines",
       },
     ],
   },
@@ -88,7 +88,7 @@ var OU_NAV_GROUPS = [
         route: "/users",
         label: "Usuários",
         icon: "bi-person-badge",
-        perm: "admin",
+        perm: "tela:usuarios",
       },
     ],
   },
@@ -100,7 +100,7 @@ var OU_NAV_GROUPS = [
         route: "/configuracoes",
         label: "Configurações",
         icon: "bi-gear",
-        perm: "admin",
+        perm: "tela:configuracoes",
       },
       {
         href: "/perfil",
@@ -598,22 +598,21 @@ function ouToast(message, type) {
 }
 window.ouToast = ouToast;
 
-// Filtra os grupos do menu conforme as permissões do usuário.
+// Filtra os grupos do menu conforme as telas liberadas do usuário.
+// A tela de Usuários ("telas liberadas") é a única fonte de autorização.
+// Fail-closed: sem permissões carregadas exibe apenas itens "always", nunca
+// o menu completo.
 function ouFilterNavGroups(perms) {
-  if (!perms) return OU_NAV_GROUPS;
-
-  var isAdmin = perms.usuadm === "S";
-  var telas = perms.telas || [];
+  var safe = perms || { telas: [] };
+  var telas = safe.telas || [];
 
   function isAllowed(item) {
     var perm = item.perm || "always";
-    if (isAdmin) return true;
     if (perm === "always") return true;
-    if (perm === "admin") return false;
     if (perm.indexOf("tela:") === 0) {
       return telas.indexOf(perm.slice(5)) !== -1;
     }
-    return true;
+    return false;
   }
 
   return OU_NAV_GROUPS.map(function (group) {
@@ -661,15 +660,20 @@ function createHeader() {
   ouLoadManutencao();
   ouLoadTour();
 
-  fetch("/me/permissoes", { credentials: "include" })
+  fetch("/me/permissoes", {
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  })
     .then(function (response) {
-      return response.ok ? response.json() : null;
+      if (!response.ok) throw new Error("Permissões indisponíveis");
+      return response.json();
     })
     .then(function (perms) {
       ouMountSidebar(ouFilterNavGroups(perms));
     })
     .catch(function () {
-      ouMountSidebar(OU_NAV_GROUPS);
+      // Fail-closed: em caso de falha não mostra telas restritas.
+      ouMountSidebar(ouFilterNavGroups(null));
     });
 }
 

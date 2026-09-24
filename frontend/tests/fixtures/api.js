@@ -2,7 +2,22 @@
 export function createTestApi({
   permissions = {
     usuadm: "S",
-    telas: ["dashboard", "clientes"],
+    telas: [
+      "dashboard",
+      "pedidos",
+      "clientes",
+      "produtos",
+      "promocoes",
+      "grupos",
+      "vitrines",
+      "devolucoes",
+      "estoque",
+      "estoque-grupos",
+      "relatorios",
+      "backups",
+      "usuarios",
+      "configuracoes",
+    ],
     empusapv: "S",
     empusaest: "S",
     usupv: "S",

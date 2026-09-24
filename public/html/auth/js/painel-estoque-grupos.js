@@ -42,7 +42,9 @@ var resultsInfo = document.getElementById("resultsInfo");
 // Carrega marcas para o select
 async function loadMarcas() {
   try {
-    const response = await fetch("/marcas");
+    const response = await fetch("/marcas", {
+      headers: { Accept: "application/json" },
+    });
     if (!response.ok) throw new Error("Erro ao carregar marcas");
     const marcas = await response.json();
 
@@ -471,8 +473,13 @@ async function fetchData() {
     if (currentFilters.dataFim) params.append("dataFim", currentFilters.dataFim);
     if (currentFilters.marca) params.append("marca", currentFilters.marca);
 
-    const response = await fetch(`/v2/relatorios/estoque-grupos?${params.toString()}`);
-    if (!response.ok) throw new Error("Erro ao buscar dados");
+    const response = await fetch(`/v2/relatorios/estoque-grupos?${params.toString()}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || "Erro ao buscar dados");
+    }
 
     const data = await response.json();
     currentData = data;
@@ -483,7 +490,7 @@ async function fetchData() {
     console.error("Erro ao buscar dados:", error);
     loadingState.style.display = "none";
     emptyState.style.display = "block";
-    alert("Erro ao carregar dados de estoque dos grupos");
+    alert(error.message || "Erro ao carregar dados de estoque dos grupos");
   }
 }
 

@@ -73,14 +73,12 @@ test("APIs migradas negam usuário sem permissão antes de consultar dados", asy
   }
   assert.deepEqual(invoked, []);
 });
-test("permissão liberada e administrador acessam as APIs", async () => {
+test("acesso depende apenas da tela liberada (sem bypass de administrador)", async () => {
   allow = true;
   assert.equal((await request("/cli")).status, 200);
   assert.equal((await request("/dashboard/resumo")).status, 200);
   allow = false;
-  queries = [];
-  assert.equal((await request("/cli", "S")).status, 200);
-  assert.deepEqual(queries, []);
+  assert.equal((await request("/cli", "S")).status, 403);
 });
 test("sem sessão recebe 401 JSON mesmo sem header Accept", async () => {
   for (const path of ["/cli", "/dashboard/resumo", "/v2/top/produtos/mes"]) {

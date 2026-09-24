@@ -8,7 +8,6 @@ const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const createFrontendRouter = require("../src/routes/frontendRoutes");
 const autenticarToken = require("../src/middlewares/middlewares");
-const requireAdmin = require("../src/middlewares/adminMiddleware");
 
 let tempDir;
 let server;
@@ -28,7 +27,6 @@ before(async () => {
   app.get("/clientes", (_req, res) => res.send("Página antiga"));
   app.get("/cli", (_req, res) => res.json({ items: [] }));
   app.get("/session", autenticarToken, (req, res) => res.json({ name: req.token.usunome }));
-  app.get("/admin-json", requireAdmin, (_req, res) => res.json({ ok: true }));
   server = app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
   origin = `http://127.0.0.1:${server.address().port}`;
@@ -121,17 +119,3 @@ test("cookie renovado exige HTTPS somente quando HTTPS=true", async () => {
   }
 });
 
-test("middleware administrativo responde JSON para APIs React", async () => {
-  const common = { headers: { Accept: "application/json" }, redirect: "manual" };
-  let response = await fetch(origin + "/admin-json", common);
-  assert.equal(response.status, 401);
-  assert.match((await response.json()).error, /login/i);
-
-  const token = jwt.sign({ usunome: "Comum", usuadm: "N" }, "chave-secreta", { expiresIn: "5m" });
-  response = await fetch(origin + "/admin-json", {
-    ...common,
-    headers: { ...common.headers, Cookie: `token=${token}` },
-  });
-  assert.equal(response.status, 403);
-  assert.match((await response.json()).error, /administrador/i);
-});

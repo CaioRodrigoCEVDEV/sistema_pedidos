@@ -3,7 +3,7 @@ const router = express.Router();
 const relatoriosController = require("../controllers/relatoriosController");
 const autenticarToken = require("../middlewares/middlewares");
 const requireTela = require("../middlewares/telaMiddleware");
-const requireEstoqueGrupos = requireTela("estoque-grupos", { api: true, modulo: "est" });
+const requireEstoqueGrupos = requireTela("estoque-grupos", { api: true });
 const requireRelatorios = requireTela("relatorios", { api: true });
 
 /**

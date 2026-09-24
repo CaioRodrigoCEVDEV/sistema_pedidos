@@ -6,8 +6,8 @@ const requireTela = require("../middlewares/telaMiddleware");
 const relatoriosController = require("../controllers/relatoriosController");
 const partGroupController = require("../controllers/partGroupController");
 
-const requireEstoque = requireTela("estoque", { api: true, modulo: "est" });
-const requireEstoqueGrupos = requireTela("estoque-grupos", { api: true, modulo: "est" });
+const requireEstoque = requireTela("estoque", { api: true });
+const requireEstoqueGrupos = requireTela("estoque-grupos", { api: true });
 
 router.get("/api/estoque/itens", requireEstoque, estoqueController.listarEstoque);
 router.post("/api/estoque/itens/:id/ajustar", requireEstoque, estoqueController.ajustarEstoque);

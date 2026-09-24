@@ -78,7 +78,7 @@ export default function Shell() {
         <nav aria-label="Menu principal">
           {navigation.map((group) => {
             const items = group.items.filter((item) =>
-              canAccess(session.permissions, item.key, item.module)
+              canAccess(session.permissions, item.key)
             );
             return (
               items.length > 0 && (

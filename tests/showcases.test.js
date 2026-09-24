@@ -326,11 +326,11 @@ function iniciarServidor() {
   });
 }
 
-function tokenPara(usuadm) {
+function tokenPara(usuadm, usucod = 1) {
   return jwt.sign(
     {
       usuemail: "teste@showcase.local",
-      usucod: 1,
+      usucod,
       usunome: "Teste Showcase",
       usuadm,
       usupv: "S",
@@ -976,7 +976,7 @@ async function runTests() {
     });
     assertEqual(comAdmin.status, 200, "Admin autenticado deveria listar");
 
-    const tokenComum = tokenPara("N");
+    const tokenComum = tokenPara("N", 999999);
     const updateComum = await fetch(`${servidorBaseUrl}/showcases/admin/1`, {
       method: "PUT",
       headers: {
@@ -989,7 +989,7 @@ async function runTests() {
     assertEqual(
       updateComum.status,
       403,
-      "Usuário sem permissão deveria receber 403"
+      "Usuário sem a tela liberada deveria receber 403"
     );
   });
 

@@ -4,6 +4,7 @@ import { useResource } from "../hooks/useResource.js";
 import { useWorkspace, useSession } from "../state/Session.jsx";
 import { Field, Modal, Resource, Status, useAction } from "../components/UI.jsx";
 import { money } from "../lib/format.js";
+import { canAccess } from "../lib/navigation.js";
 import CatalogReferences from "./catalog/CatalogReferences.jsx";
 
 const empty = { prodes: "", promarcascod: "", promodcod: "", protipocod: "", provl: "", procusto: "" };
@@ -53,7 +54,7 @@ function ProductEditor({ product, brands, models, types, onClose, onSaved }) {
 
 export default function ProductsPage() {
   const { permissions } = useSession();
-  const admin = permissions.usuadm === "S";
+  const admin = canAccess(permissions, "produtos");
   const [filter, setFilter] = useWorkspace("products", { search: "", q: "", page: 1 });
   const [revision, setRevision] = useState(0), [editing, setEditing] = useState(null);
   const action = useAction();

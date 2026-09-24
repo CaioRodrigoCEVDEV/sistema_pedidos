@@ -47,7 +47,7 @@ async function runMiddleware(req, res, chave = "estoque") {
   return res;
 }
 
-test("acesso por tela liberada não é bloqueado por empusaest/empusapv desligados", async () => {
+test("acesso é liberado pela tela, independente de admin e módulos", async () => {
   const original = db.query;
   db.query = async () => ({ rowCount: 1 });
   try {
@@ -55,7 +55,7 @@ test("acesso por tela liberada não é bloqueado por empusaest/empusapv desligad
       token({
         usucod: 1,
         usuadm: "N",
-        usuest: "S",
+        usuest: "N",
         empusaest: "N",
         empusapv: "N",
       })
@@ -69,7 +69,7 @@ test("acesso por tela liberada não é bloqueado por empusaest/empusapv desligad
   }
 });
 
-test("sem permissão de tela o acesso é negado", async () => {
+test("sem a tela liberada o acesso é negado", async () => {
   const original = db.query;
   db.query = async () => ({ rowCount: 0 });
   try {
@@ -82,15 +82,19 @@ test("sem permissão de tela o acesso é negado", async () => {
   }
 });
 
-test("administrador acessa sem consultar telas", async () => {
+test("administrador sem a tela liberada também é negado", async () => {
   const original = db.query;
+  let consultou = false;
   db.query = async () => {
-    throw new Error("não deveria consultar telas para admin");
+    consultou = true;
+    return { rowCount: 0 };
   };
   try {
-    const req = fakeReq(token({ usucod: 3, usuadm: "S", empusaest: "N" }));
+    const req = fakeReq(token({ usucod: 3, usuadm: "S", empusaest: "S" }));
     const res = await runMiddleware(req, fakeRes());
-    assert.equal(res.next, true);
+    assert.equal(consultou, true, "não deve haver bypass de administrador");
+    assert.equal(res.next, undefined);
+    assert.equal(res.statusCode, 403);
   } finally {
     db.query = original;
   }
