@@ -9,7 +9,9 @@ const pool = require("../config/db");
  *
  * @param {string} chave chave da tela registrada em src/config/telas.js
  */
-function requireTela(chave) {
+function requireTela(chave, opts) {
+  const modulo = opts && opts.modulo;
+
   return async function (req, res, next) {
     const json = opts?.api || (req.get("accept") || "").includes("application/json");
     const token = req.cookies.token;

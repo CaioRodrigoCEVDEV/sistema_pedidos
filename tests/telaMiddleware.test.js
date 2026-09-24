@@ -34,6 +34,9 @@ function fakeReq(tokenValue) {
     cookies: { token: tokenValue },
     token: null,
     user: null,
+    get() {
+      return "";
+    },
   };
 }
 
