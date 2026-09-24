@@ -16,7 +16,11 @@ const path = require("path");
 const { logoVersion } = require("../src/utils/logoVersion");
 
 const ASSET_VERSION = process.argv[2] || hoje();
-const PUBLIC_DIR = path.join(__dirname, "..", "public");
+const ROOT_DIR = path.join(__dirname, "..");
+const PUBLIC_DIR = path.join(ROOT_DIR, "public");
+// Entrada do painel React (Vite). Também recebe o cache-busting de css/js,
+// favicon, apple-touch-icon e manifest.
+const FRONTEND_INDEX = path.join(ROOT_DIR, "frontend", "index.html");
 
 // Versão da logo/apple-touch-icon/manifest derivada do arquivo da logo. Muda
 // quando a logo é substituída, para o ícone da PWA e o favicon atualizarem.
@@ -57,7 +61,10 @@ function walk(dir, out = []) {
 let totalArquivos = 0;
 let totalRefs = 0;
 
-for (const file of walk(PUBLIC_DIR)) {
+const targets = walk(PUBLIC_DIR);
+if (fs.existsSync(FRONTEND_INDEX)) targets.push(FRONTEND_INDEX);
+
+for (const file of targets) {
   const html = fs.readFileSync(file, "utf8");
   let n = 0;
   let novo = html.replace(RE_REF, (m, attr, url) => {
@@ -75,7 +82,7 @@ for (const file of walk(PUBLIC_DIR)) {
     fs.writeFileSync(file, novo);
     totalArquivos++;
     totalRefs += n;
-    console.log(`  ${path.relative(PUBLIC_DIR, file)}: ${n} referência(s)`);
+    console.log(`  ${path.relative(ROOT_DIR, file)}: ${n} referência(s)`);
   }
 }
 

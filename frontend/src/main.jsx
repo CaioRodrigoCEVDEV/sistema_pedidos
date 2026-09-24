@@ -14,3 +14,12 @@ createRoot(document.getElementById("root")).render(
     </BrowserRouter>
   </StrictMode>
 );
+
+// Registra o Service Worker para o app ser instalável (PWA). O SW é
+// network-only e é o mesmo servido em /sw.js para o restante do sistema.
+if ("serviceWorker" in navigator && !window.__ouSWRegistered) {
+  window.__ouSWRegistered = true;
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
