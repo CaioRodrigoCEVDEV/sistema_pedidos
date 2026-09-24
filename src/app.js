@@ -187,7 +187,7 @@ app.use(dashboardRoutes);
 // Rotas de páginas
 
 app.get("/", (req, res) => {
-  res.redirect("/loja/");
+  res.sendFile(path.join(__dirname, "../public/html/index.html"));
 });
 
 app.get("/login", (req, res) => {
@@ -202,7 +202,7 @@ app.get("/users", requireAdminPages, (req, res) => {
 
 app.get("/index", (req, res) => {
   //res.sendFile(path.join(__dirname, "../public/html/index.html"));
-  res.redirect("/loja/");
+  res.redirect("/");
 });
 app.get("/modelo", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/modelo.html"));

@@ -16,7 +16,6 @@ var OU_NAV_GROUPS = [
   {
     title: "Principal",
     items: [
-      { href: "/index", route: "/index", label: "Ir para a loja", icon: "bi-shop", perm: "always" },
       {
         href: "/dash",
         route: "/dash",
