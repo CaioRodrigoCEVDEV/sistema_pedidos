@@ -17,6 +17,16 @@ var OU_NAV_GROUPS = [
     title: "Principal",
     items: [
       {
+        href:
+          window.location.port === "5173" || window.location.port === "4173"
+            ? "/loja/"
+            : "/",
+        route: "/",
+        label: "Voltar para a loja",
+        icon: "bi-shop",
+        perm: "always",
+      },
+      {
         href: "/dash",
         route: "/dash",
         label: "Dashboard",
@@ -136,7 +146,7 @@ function ouBuildSidebar(navGroups) {
           '<a class="ou-navlink" data-route="' +
           item.route +
           '" href="' +
-          item.route +
+          (item.href || item.route) +
           '">' +
           '<i class="bi ' +
           item.icon +
