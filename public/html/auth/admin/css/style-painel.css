@@ -691,3 +691,72 @@
     padding-right: 0;
   }
 }
+
+/* =========================================================
+   FAB "Cadastrar" das telas de gerenciamento
+   Fica fixo na viewport (acompanha o scroll) e dispara o
+   botão de cadastro já existente da rotina aberta.
+   ========================================================= */
+.ou-fab-cadastrar {
+  position: fixed;
+  right: calc(1.25rem + env(safe-area-inset-right, 0px));
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  z-index: 5; /* dentro do overlay; abaixo do modal de cadastro */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 50px;
+  padding: 0.75rem 1.2rem;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  border: 0;
+  border-radius: 999px;
+  background-color: #2563eb;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.32), var(--ou-shadow-lg);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+.ou-fab-cadastrar:hover {
+  color: #ffffff;
+  background-color: #1d4ed8;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.4), var(--ou-shadow-lg);
+  transform: translateY(-2px);
+}
+.ou-fab-cadastrar:active {
+  transform: translateY(0);
+}
+.ou-fab-cadastrar:focus-visible {
+  outline: 3px solid var(--ou-primary-ring);
+  outline-offset: 2px;
+}
+.ou-fab-cadastrar i {
+  font-size: 1rem;
+}
+
+/* Garante que o FAB não cubra o fim da listagem/filtros do popup */
+.ou-fab-host .pecas-modal-body {
+  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 575.98px) {
+  .ou-fab-cadastrar {
+    right: calc(0.75rem + env(safe-area-inset-right, 0px));
+    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    min-height: 48px;
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* O modal de cadastro precisa ficar acima dos popups de gestão
+   (o overlay usa z-index 9999), preservando o restante do sistema. */
+body:has(.overlay) .modal {
+  z-index: 10050;
+}
+body:has(.overlay) .modal-backdrop {
+  z-index: 10040;
+}

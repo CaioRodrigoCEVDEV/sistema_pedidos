@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title id="title"></title>
-    <script src="/js/theme-manager.js?v=2026.09.21.003818"></script>
+    <script src="/js/theme-manager.js?v=2026.09.23.190257"></script>
     <!--Link proprios projeto-->
-    <link rel="stylesheet" href="../css/style.css?v=2026.09.21.003818" data-turbo-track="dynamic" />
-    <link rel="stylesheet" href="../css/style-flexbox.css?v=2026.09.21.003818" data-turbo-track="dynamic" />
+    <link rel="stylesheet" href="../css/style.css?v=2026.09.23.190257" data-turbo-track="dynamic" />
+    <link rel="stylesheet" href="../css/style-flexbox.css?v=2026.09.23.190257" data-turbo-track="dynamic" />
     <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
     <link
       rel="apple-touch-icon"
@@ -23,11 +23,11 @@
       crossorigin="anonymous"
     />
     <!--link tema bootstrap-->
-    <link rel="stylesheet" href="/css/tema-bootstrap.css?v=2026.09.21.003818" data-turbo-track="dynamic" />
+    <link rel="stylesheet" href="/css/tema-bootstrap.css?v=2026.09.23.190257" data-turbo-track="dynamic" />
     <!--Fim link tema bootstrap-->
-    <link rel="stylesheet" href="/css/theme.css?v=2026.09.21.003818" data-turbo-track="dynamic" />
-    <link rel="stylesheet" href="/css/ui.css?v=2026.09.21.003818" data-turbo-track="dynamic" />
-    <link rel="stylesheet" href="../css/storefront.css?v=2026.09.21.003818" data-turbo-track="dynamic" />
+    <link rel="stylesheet" href="/css/theme.css?v=2026.09.23.190257" data-turbo-track="dynamic" />
+    <link rel="stylesheet" href="/css/ui.css?v=2026.09.23.190257" data-turbo-track="dynamic" />
+    <link rel="stylesheet" href="../css/storefront.css?v=2026.09.23.190257" data-turbo-track="dynamic" />
     <link
       rel="stylesheet"
       href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"
@@ -39,8 +39,8 @@
     />
   <meta name="turbo-cache-control" content="no-cache" />
   <meta name="view-transition" content="same-origin" />
-  <script src="/js/ou-turbo.js?v=2026.09.21.003818"></script>
-  <script src="/js/turbo.js?v=2026.09.21.003818" defer></script>
+  <script src="/js/ou-turbo.js?v=2026.09.23.190257"></script>
+  <script src="/js/turbo.js?v=2026.09.23.190257" defer></script>
 </head>
 
   <body>
@@ -128,30 +128,41 @@
                 <span>Valor total</span>
                 <strong id="totalCarrinho">R$ 0,00</strong>
               </div>
-              <div class="ou-cart-summary__actions" id="cartResumoAcoes">
-                <button
-                  id="botao-orcamento"
-                  class="btn btn-warning w-100"
-                  style="display: none"
-                  type="button"
-                >
-                  <i class="bi bi-clipboard me-1"></i> Copiar
-                </button>
-                <button
-                  id="botao-registrar-pedido"
-                  class="btn btn-primary w-100"
-                  style="display: none"
-                  type="button"
-                >
-                  <i class="bi bi-check-lg me-1"></i> Registrar Pedido
-                </button>
+              <div class="ou-cart-summary__section">
+                <h3 class="ou-cart-summary__subtitle">Orçamento de Peças</h3>
+                <div class="ou-cart-summary__actions" id="cartResumoAcoes">
+                  <button
+                    id="botao-orcamento"
+                    class="btn btn-warning w-100"
+                    style="display: none"
+                    type="button"
+                  >
+                    <i class="bi bi-clipboard me-1"></i> Copiar
+                  </button>
+                  <button
+                    id="botao-compartilhar-orcamento"
+                    class="btn btn-outline-primary w-100"
+                    style="display: none"
+                    type="button"
+                  >
+                    <i class="bi bi-share me-1"></i> Compartilhar
+                  </button>
+                  <button
+                    id="botao-registrar-pedido"
+                    class="btn btn-primary w-100"
+                    style="display: none"
+                    type="button"
+                  >
+                    <i class="bi bi-check-lg me-1"></i> Registrar Pedido
+                  </button>
+                </div>
               </div>
             </div>
           </aside>
 
           <section class="ou-cart-panel ou-cart-fulfillment">
             <div class="ou-cart-panel__head">
-              <h2 class="ou-cart-panel__title">Como deseja receber?</h2>
+              <h2 class="ou-cart-panel__title">Pedido de Peças</h2>
             </div>
             <div class="ou-fulfillment" id="divFinalizar">
               <button
@@ -252,13 +263,13 @@
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
       crossorigin="anonymous" data-turbo-eval="false"></script>
-    <script src="../js/componentes.js?v=2026.09.21.003818"></script>
-    <script src="/config.js?v=2026.09.21.003818"></script>
-    <script src="../js/toast.js?v=2026.09.21.003818"></script>
-    <script src="../js/storefront-shared.js?v=2026.09.21.003818"></script>
-    <script src="../js/brand-logo.js?v=2026.09.21.003818"></script>
-    <script src="../js/tipo-icon.js?v=2026.09.21.003818"></script>
-    <script src="../js/carrinho.js?v=2026.09.21.003818"></script>
-    <script src="../js/nomeEmpresa.js?v=2026.09.21.003818"></script>
+    <script src="../js/componentes.js?v=2026.09.23.190257"></script>
+    <script src="/config.js?v=2026.09.23.190257"></script>
+    <script src="../js/toast.js?v=2026.09.23.190257"></script>
+    <script src="../js/storefront-shared.js?v=2026.09.23.190257"></script>
+    <script src="../js/brand-logo.js?v=2026.09.23.190257"></script>
+    <script src="../js/tipo-icon.js?v=2026.09.23.190257"></script>
+    <script src="../js/carrinho.js?v=2026.09.23.190257"></script>
+    <script src="../js/nomeEmpresa.js?v=2026.09.23.190257"></script>
   </body>
 </html>
