@@ -4,8 +4,10 @@ var selectedItem = null;
 var searchForm = document.getElementById("searchForm");
 var searchButton = document.getElementById("searchButton");
 var salesTableBody = document.getElementById("salesTableBody");
+var salesMobileList = document.getElementById("salesMobileList");
 var salesEmpty = document.getElementById("salesEmpty");
 var historyTableBody = document.getElementById("historyTableBody");
+var historyMobileList = document.getElementById("historyMobileList");
 var resultCount = document.getElementById("resultCount");
 var returnModalElement = document.getElementById("returnModal");
 var returnModal = bootstrap.Modal.getOrCreateInstance(returnModalElement);
@@ -85,6 +87,39 @@ function renderSoldItems() {
       </tr>`)
     .join("");
 
+  if (salesMobileList) {
+    salesMobileList.innerHTML = soldItems
+      .map(
+        (item, index) => `
+      <div class="ou-mobile-card">
+        <div class="ou-mobile-card__head">
+          <span class="ou-mobile-card__identity">
+            <span class="ou-mobile-card__name">Pedido #${escapeHtml(item.pvcod)}</span>
+            <span class="ou-mobile-card__fantasia">${escapeHtml(item.pvcanal || "-")} · ${formatDate(item.pvdtcad)}</span>
+          </span>
+        </div>
+        <div class="ou-mobile-card__info">
+          <div class="ou-mobile-card__block ou-mobile-card__block--full">
+            <span class="ou-mobile-card__label">Peça</span>
+            <span class="ou-mobile-card__value ou-mobile-card__value--wrap">${escapeHtml(item.prodes)} · Cód. ${escapeHtml(item.procod)}</span>
+          </div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Cor</span><span class="ou-mobile-card__value">${escapeHtml(item.cornome || "Sem cor")}</span></div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Vendedor</span><span class="ou-mobile-card__value">${escapeHtml(item.vendedor)}</span></div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Vendida</span><span class="ou-mobile-card__value">${escapeHtml(item.quantidade_vendida)}</span></div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Já devolvida</span><span class="ou-mobile-card__value">${escapeHtml(item.quantidade_devolvida)}</span></div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Disponível</span><span class="ou-mobile-card__value"><span class="quantity-pill bg-success-subtle text-success-emphasis">${escapeHtml(item.quantidade_disponivel)}</span></span></div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Valor</span><span class="ou-mobile-card__value">${formatCurrency(item.valor_unitario)}</span></div>
+        </div>
+        <div class="ou-mobile-card__foot">
+          <button type="button" class="btn btn-sm btn-primary return-action w-100" data-index="${index}">
+            <i class="bi bi-arrow-return-left me-1"></i>Devolver
+          </button>
+        </div>
+      </div>`
+      )
+      .join("");
+  }
+
   document.querySelectorAll(".return-action").forEach((button) => {
     button.addEventListener("click", () => openReturnModal(Number(button.dataset.index)));
   });
@@ -93,6 +128,7 @@ function renderSoldItems() {
 function renderHistory(items) {
   if (!items.length) {
     historyTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted p-4">Nenhuma devolução registrada.</td></tr>';
+    if (historyMobileList) historyMobileList.innerHTML = "";
     return;
   }
   historyTableBody.innerHTML = items.map((item) => `
@@ -114,6 +150,34 @@ function renderHistory(items) {
       </td>
       <td>${escapeHtml(item.usuario)}</td>
     </tr>`).join("");
+
+  if (historyMobileList) {
+    historyMobileList.innerHTML = items
+      .map(
+        (item) => `
+      <div class="ou-mobile-card">
+        <div class="ou-mobile-card__head">
+          <span class="ou-mobile-card__identity">
+            <span class="ou-mobile-card__name">Devolução #${escapeHtml(item.devcod)}</span>
+            <span class="ou-mobile-card__fantasia">${formatDate(item.devdtcad, true)}</span>
+          </span>
+        </div>
+        <div class="ou-mobile-card__info">
+          <div class="ou-mobile-card__block ou-mobile-card__block--full">
+            <span class="ou-mobile-card__label">Peça</span>
+            <span class="ou-mobile-card__value ou-mobile-card__value--wrap">${escapeHtml(item.prodes)} · Cód. ${escapeHtml(item.procod)}</span>
+          </div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Pedido</span><span class="ou-mobile-card__value">#${escapeHtml(item.pvcod)}</span></div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Cor</span><span class="ou-mobile-card__value">${escapeHtml(item.cornome || "Sem cor")}</span></div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Qtd.</span><span class="ou-mobile-card__value">${escapeHtml(item.quantidade)}</span></div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Motivo</span><span class="ou-mobile-card__value ou-mobile-card__value--wrap">${escapeHtml(item.devmotivo)}</span></div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Estoque</span><span class="ou-mobile-card__value"><span class="badge ${item.repor_estoque ? "text-bg-success" : "text-bg-secondary"}">${item.repor_estoque ? "Reposto" : "Não reposto"}</span></span></div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Usuário</span><span class="ou-mobile-card__value">${escapeHtml(item.usuario)}</span></div>
+        </div>
+      </div>`
+      )
+      .join("");
+  }
 }
 
 async function loadSoldItems() {

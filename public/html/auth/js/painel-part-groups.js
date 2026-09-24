@@ -202,18 +202,91 @@ async function carregarCoresNoSelect() {
   }
 }
 
+// Monta o card mobile de um grupo (clicável abre os detalhes; ações no foot).
+function criarCardGrupoMobile(grupo) {
+  const stockClass =
+    grupo.stock_quantity === 0
+      ? "badge rounded-pill bg-danger-subtle text-danger"
+      : grupo.stock_quantity < 10
+        ? "badge rounded-pill bg-warning-subtle text-warning"
+        : "badge rounded-pill bg-success-subtle text-success";
+
+  const safeHex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(
+    grupo.color_hex || "",
+  )
+    ? grupo.color_hex
+    : "#6c757d";
+  const colorBadge = grupo.color_name
+    ? `<span class="badge rounded-pill" style="background:${safeHex};color:#fff;font-size:0.75em;">${escapeHtml(grupo.color_name)}</span>`
+    : '<span class="text-muted small">—</span>';
+
+  const card = document.createElement("div");
+  card.className = "ou-mobile-card";
+  card.dataset.groupId = grupo.id;
+  card.setAttribute("role", "button");
+  card.setAttribute("tabindex", "0");
+  card.setAttribute(
+    "aria-label",
+    `Abrir detalhes do grupo ${grupo.name || ""}`,
+  );
+  card.innerHTML = `
+    <div class="ou-mobile-card__head">
+      <span class="ou-mobile-card__avatar" aria-hidden="true"><i class="bi bi-diagram-3"></i></span>
+      <span class="ou-mobile-card__identity">
+        <span class="ou-mobile-card__name">${escapeHtml(grupo.name)}</span>
+        <span class="ou-mobile-card__fantasia">${colorBadge}</span>
+      </span>
+    </div>
+    <div class="ou-mobile-card__info">
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Estoque</span><span class="ou-mobile-card__value"><span class="${stockClass}">${grupo.stock_quantity ?? 0}</span></span></div>
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Qtd. Peças</span><span class="ou-mobile-card__value">${grupo.parts_count || 0}</span></div>
+      <div class="ou-mobile-card__block ou-mobile-card__block--full"><span class="ou-mobile-card__label">Criado</span><span class="ou-mobile-card__value">${formatDate(grupo.created_at)}</span></div>
+    </div>
+    <div class="ou-mobile-card__foot">
+      <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-primary btn-edit-group" title="Editar"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-outline-danger btn-delete-group" title="Excluir"><i class="bi bi-trash"></i></button>
+      </div>
+      <i class="fa-solid fa-chevron-right ou-mobile-card__chevron" aria-hidden="true"></i>
+    </div>
+  `;
+
+  card.addEventListener("click", (e) => {
+    if (e.target.closest("button")) return;
+    abrirDetalhes(grupo.id);
+  });
+  card.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    if (e.target.closest("button")) return;
+    e.preventDefault();
+    abrirDetalhes(grupo.id);
+  });
+  card.querySelector(".btn-edit-group").addEventListener("click", (e) => {
+    e.stopPropagation();
+    abrirModalEditar(grupo.id, grupo.name, grupo.color_id);
+  });
+  card.querySelector(".btn-delete-group").addEventListener("click", (e) => {
+    e.stopPropagation();
+    excluirGrupo(grupo.id);
+  });
+
+  return card;
+}
+
 /**
  * Renderiza a tabela de grupos
  * @param {Array} grupos - Lista de grupos a serem exibidos
  */
 function renderGrupos(grupos) {
   const tbody = document.getElementById("tabela-grupos");
+  const mobile = document.getElementById("gruposMobileList");
   const container = tbody.closest(".ou-table-sticky");
   const scrollTop = container?.scrollTop;
   const rows = new Map(
     Array.from(tbody.querySelectorAll("tr[data-group-id]"), (row) => [row.dataset.groupId, row]),
   );
   tbody.querySelector("td[colspan]")?.closest("tr").remove();
+  if (mobile) mobile.innerHTML = "";
 
   if (!grupos || grupos.length === 0) {
     tbody.innerHTML =
@@ -228,6 +301,7 @@ function renderGrupos(grupos) {
       if (tbody.children[index] !== previousRow) {
         tbody.insertBefore(previousRow, tbody.children[index] || null);
       }
+      if (mobile) mobile.appendChild(criarCardGrupoMobile(grupo));
       return;
     }
     const tr = document.createElement("tr");
@@ -297,6 +371,7 @@ function renderGrupos(grupos) {
     if (tbody.children[index] !== tr) {
       tbody.insertBefore(tr, tbody.children[index] || null);
     }
+    if (mobile) mobile.appendChild(criarCardGrupoMobile(grupo));
   });
   rows.forEach((row) => row.remove());
   if (container) container.scrollTop = scrollTop;
@@ -503,9 +578,43 @@ async function abrirDetalhes(id) {
  * Renderiza a tabela de peças do grupo
  * @param {Array} pecas - Lista de peças do grupo (com procorid, cornome, procorqtde)
  */
+function criarCardPecaGrupoMobile(peca) {
+  const safeHex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(peca.corhex || "")
+    ? peca.corhex
+    : null;
+  const colorBadge = peca.cornome
+    ? `<span class="badge rounded-pill" style="background:${safeHex || "#6c757d"};color:#fff;font-size:0.75em;">${escapeHtml(peca.cornome)}</span>`
+    : '<span class="text-muted small">—</span>';
+
+  const card = document.createElement("div");
+  card.className = "ou-mobile-card";
+  card.dataset.procorid = peca.procorid;
+  card.innerHTML = `
+    <div class="ou-mobile-card__head">
+      <span class="ou-mobile-card__identity">
+        <span class="ou-mobile-card__name">${escapeHtml(peca.prodes || "-")}</span>
+        <span class="ou-mobile-card__fantasia">Cód. ${escapeHtml(peca.procod)}</span>
+      </span>
+    </div>
+    <div class="ou-mobile-card__info">
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Cor</span><span class="ou-mobile-card__value">${colorBadge}</span></div>
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Estoque</span><span class="ou-mobile-card__value">${peca.procorqtde ?? 0}</span></div>
+    </div>
+    <div class="ou-mobile-card__foot">
+      <button class="btn btn-sm btn-outline-danger btn-remove-part" title="Remover do grupo"><i class="bi bi-x-lg"></i> Remover</button>
+    </div>
+  `;
+  card.querySelector(".btn-remove-part").addEventListener("click", () => {
+    removerPecaGrupo(peca.procorid);
+  });
+  return card;
+}
+
 function renderPecasGrupo(pecas) {
   const tbody = document.getElementById("tabela-pecas-grupo");
+  const mobile = document.getElementById("pecasGrupoMobileList");
   tbody.innerHTML = "";
+  if (mobile) mobile.innerHTML = "";
 
   if (!pecas || pecas.length === 0) {
     tbody.innerHTML =
@@ -536,6 +645,7 @@ function renderPecasGrupo(pecas) {
       removerPecaGrupo(peca.procorid);
     });
     tbody.appendChild(tr);
+    if (mobile) mobile.appendChild(criarCardPecaGrupoMobile(peca));
   });
 }
 
@@ -580,7 +690,9 @@ async function carregarHistorico(groupId, silencioso = false) {
  */
 function renderHistorico(historico) {
   const tbody = document.getElementById("tabela-historico");
+  const mobile = document.getElementById("historicoMobileList");
   tbody.innerHTML = "";
+  if (mobile) mobile.innerHTML = "";
 
   if (!historico || historico.length === 0) {
     tbody.innerHTML =
@@ -602,6 +714,24 @@ function renderHistorico(historico) {
       <td>${escapeHtml(item.part_name || item.reference_id || "-")}</td>
     `;
     tbody.appendChild(tr);
+
+    if (mobile) {
+      const card = document.createElement("div");
+      card.className = "ou-mobile-card";
+      card.innerHTML = `
+        <div class="ou-mobile-card__head">
+          <span class="ou-mobile-card__identity">
+            <span class="ou-mobile-card__name"><span class="${changeClass}">${changePrefix}${item.change}</span></span>
+            <span class="ou-mobile-card__fantasia">${formatDate(item.created_at)}</span>
+          </span>
+        </div>
+        <div class="ou-mobile-card__info">
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Motivo</span><span class="ou-mobile-card__value ou-mobile-card__value--wrap">${escapeHtml(item.reason || "-")}</span></div>
+          <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Peça</span><span class="ou-mobile-card__value ou-mobile-card__value--wrap">${escapeHtml(item.part_name || item.reference_id || "-")}</span></div>
+        </div>
+      `;
+      mobile.appendChild(card);
+    }
   });
 }
 
@@ -953,14 +1083,66 @@ function atualizarBotaoPecaNoGrupo(peca, row) {
 function atualizarDisponibilidadePecas() {
   availableParts.forEach((peca) => {
     atualizarBotaoPecaNoGrupo(peca, document.querySelector(`tr[data-peca-id="${peca.procod}"]`));
+    atualizarBotaoPecaNoGrupo(
+      peca,
+      document.querySelector(`.ou-mobile-card[data-peca-id="${peca.procod}"]`),
+    );
   });
+}
+
+// Configura o botão "Adicionar" (estado + clique) em qualquer "root" que
+// contenha `.btn-add-part` (linha da tabela ou card mobile).
+function configurarBotaoAdicionarPeca(peca, root) {
+  const button = root.querySelector(".btn-add-part");
+  if (!button) return;
+  atualizarBotaoPecaNoGrupo(peca, root);
+  button.addEventListener("click", () => {
+    const estado = estadoPecaNoGrupo(peca);
+    if (!currentGroupData || estado.added) return;
+    if (estado.hasColors) {
+      if (estado.colors.length === 1) {
+        adicionarPecaAoGrupo(estado.colors[0].procorid);
+      } else {
+        mostrarModalSelecaoCor(peca);
+      }
+    } else {
+      adicionarPecaSemCor(peca.procod, root);
+    }
+  });
+}
+
+function criarCardPecaDisponivelMobile(peca) {
+  const hasColors = peca.has_colors && peca.colors && peca.colors.length > 0;
+  const card = document.createElement("div");
+  card.className = "ou-mobile-card";
+  card.dataset.pecaId = peca.procod;
+  card.innerHTML = `
+    <div class="ou-mobile-card__head">
+      <span class="ou-mobile-card__identity">
+        <span class="ou-mobile-card__name">${escapeHtml(peca.prodes || "-")}</span>
+        <span class="ou-mobile-card__fantasia">Cód. ${escapeHtml(peca.procod)}</span>
+      </span>
+    </div>
+    <div class="ou-mobile-card__info">
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Marca</span><span class="ou-mobile-card__value">${escapeHtml(peca.marcasdes || "-")}</span></div>
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Tipo</span><span class="ou-mobile-card__value">${escapeHtml(peca.tipodes || "-")}</span></div>
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Cor</span><span class="ou-mobile-card__value">${hasColors ? `<i class="bi bi-palette-fill text-info" title="${peca.colors.length} cor(es) disponível(is)"></i>` : "—"}</span></div>
+    </div>
+    <div class="ou-mobile-card__foot">
+      <button class="btn btn-sm btn-primary btn-add-part w-100" data-part-id="${peca.procod}"><i class="bi bi-plus"></i> Adicionar</button>
+    </div>
+  `;
+  configurarBotaoAdicionarPeca(peca, card);
+  return card;
 }
 
 function renderPecasDisponiveis(pecas, append = false) {
   const tbody = document.getElementById("tabela-pecas-disponiveis");
+  const mobile = document.getElementById("pecasDisponiveisMobileList");
 
   if (!append) {
     tbody.innerHTML = "";
+    if (mobile) mobile.innerHTML = "";
   } else {
     // Remove loading indicator se existir
     removeLoadingIndicator();
@@ -1000,24 +1182,9 @@ function renderPecasDisponiveis(pecas, append = false) {
     `;
 
     // Adiciona event listener (evita onclick inline para prevenir XSS)
-    const button = tr.querySelector(".btn-add-part");
-    atualizarBotaoPecaNoGrupo(peca, tr);
-    button.addEventListener("click", () => {
-      const estado = estadoPecaNoGrupo(peca);
-      if (!currentGroupData || estado.added) return;
-      if (estado.hasColors) {
-        if (estado.colors.length === 1) {
-          // Apenas uma cor: adiciona diretamente pelo procorid
-          adicionarPecaAoGrupo(estado.colors[0].procorid);
-        } else {
-          mostrarModalSelecaoCor(peca);
-        }
-      } else {
-        // Peça sem cor: adiciona pelo procod
-        adicionarPecaSemCor(peca.procod, tr);
-      }
-    });
+    configurarBotaoAdicionarPeca(peca, tr);
     tbody.appendChild(tr);
+    if (mobile) mobile.appendChild(criarCardPecaDisponivelMobile(peca));
   });
 }
 
@@ -1239,6 +1406,13 @@ function _appendPartToGroupTable(part, groupId = currentGroupId) {
     removerPecaGrupo(part.procorid);
   });
   tbody.appendChild(tr);
+
+  const mobile = document.getElementById("pecasGrupoMobileList");
+  if (mobile) {
+    mobile.appendChild(
+      criarCardPecaGrupoMobile({ ...part, procod: part.procorprocod }),
+    );
+  }
 }
 
 /**
@@ -1274,6 +1448,11 @@ async function removerPecaGrupo(procorid) {
         (part) => String(part.procorid) !== String(procorid),
       );
       document.querySelector(`#tabela-pecas-grupo tr[data-procorid="${procorid}"]`)?.remove();
+      document
+        .querySelector(
+          `#pecasGrupoMobileList .ou-mobile-card[data-procorid="${procorid}"]`,
+        )
+        ?.remove();
       if (currentGroupData.parts.length === 0) renderPecasGrupo([]);
       atualizarDisponibilidadePecas();
     }
