@@ -452,7 +452,8 @@
   // bloco; o atendimento e o número do pedido são anexados por quem chama.
   function buildMensagem(cart, total, observacoes, canal) {
     var msg = buildMensagemOrcamento(cart, observacoes, "PEDIDO DE PEÇAS:", false);
-    msg += EMOJI.dinheiro + " Total: R$ " + total.toFixed(2) + "\n";
+    // Linha em branco entre o último item (ou observações) e o total.
+    msg += "\n" + EMOJI.dinheiro + " Total: R$ " + total.toFixed(2) + "\n";
     return msg;
   }
 
