@@ -102,6 +102,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Rotas
+const createFrontendRouter = require("./routes/frontendRoutes");
+app.use("/app", createFrontendRouter());
+app.use("/loja", createFrontendRouter());
+
 const mainRoutes = require("./routes");
 app.use("/", mainRoutes);
 
@@ -316,7 +320,7 @@ const dirPathBackups = process.env.BACKUP_DIR || "/home/backup";
 
 // 🔹 LISTAR ARQUIVOS E PASTAS
 // 🔹 LISTAR APENAS AS PASTAS DE DIAS DA SEMANA
-app.get("/backups", requireAdminPages, async (req, res) => {
+app.get("/backups", requireTela("backups", { api: true }), async (req, res) => {
   try {
     const entries = await fs.promises.readdir(dirPathBackups, {
       withFileTypes: true,
@@ -356,7 +360,7 @@ app.get("/backups", requireAdminPages, async (req, res) => {
 });
 
 // 🔹 LISTAR CONTEÚDO DE UMA PASTA ESPECÍFICA
-app.get("/backups/folder/:folder", requireAdminPages, async (req, res) => {
+app.get("/backups/folder/:folder", requireTela("backups", { api: true }), async (req, res) => {
   try {
     const folderName = path.basename(decodeURIComponent(req.params.folder));
     const folderPath = path.join(dirPathBackups, folderName);
@@ -396,7 +400,7 @@ app.get("/backups/folder/:folder", requireAdminPages, async (req, res) => {
 
 
 // 🔹 DOWNLOAD DE ARQUIVO ESPECÍFICO
-app.get("/backups/download/:folder/:file", requireAdminPages, async (req, res) => {
+app.get("/backups/download/:folder/:file", requireTela("backups", { api: true }), async (req, res) => {
   try {
     const folder = path.basename(decodeURIComponent(req.params.folder));
     const file = path.basename(decodeURIComponent(req.params.file));
@@ -523,6 +527,9 @@ app.post(
         .png()
         .toFile(pngPath);
 
+      if ((req.get("accept") || "").includes("application/json")) {
+        return res.json({ message: "Logo atualizada com sucesso." });
+      }
       res.redirect("/configuracoes");
     } catch (err) {
       console.error("Erro ao salvar logo:", err);

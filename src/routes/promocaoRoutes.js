@@ -16,7 +16,7 @@ const requireTela = require("../middlewares/telaMiddleware");
  *   DELETE /promocoes/:procod             - Remove a promoção
  */
 
-const requirePromocoes = requireTela("promocoes");
+const requirePromocoes = requireTela("promocoes", { api: true });
 
 router.post("/carrinho/precos", promocaoController.precosCarrinho);
 

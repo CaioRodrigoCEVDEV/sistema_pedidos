@@ -2,26 +2,27 @@ const express = require("express");
 const router = express.Router();
 const usuarioController = require("../controllers/usuarioController");
 const autenticarToken = require("../middlewares/middlewares");
+const requireAdmin = require("../middlewares/adminMiddleware");
 
 router.post(
   "/usuario/atualizar/:id",
-  autenticarToken,
+  requireAdmin,
   usuarioController.atualizarCadastro
 );
 router.get("/usuario/login/", autenticarToken, usuarioController.listarlogin);
 router.get(
   "/usuario/listar/",
-  autenticarToken,
+  requireAdmin,
   usuarioController.listarUsuarios
 );
 router.post(
   "/usuario/novo/",
-  autenticarToken,
+  requireAdmin,
   usuarioController.cadastrarlogin
 );
 router.post(
   "/usuario/excluir/:id",
-  autenticarToken,
+  requireAdmin,
   usuarioController.excluirCadastro
 );
 

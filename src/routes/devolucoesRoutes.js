@@ -3,7 +3,7 @@ const requireTela = require("../middlewares/telaMiddleware");
 const devolucoesController = require("../controllers/devolucoesController");
 
 const router = express.Router();
-const requireDevolucoes = requireTela("devolucoes");
+const requireDevolucoes = requireTela("devolucoes", { api: true, modulo: "pv" });
 
 router.get(
   "/devolucoes/itens",

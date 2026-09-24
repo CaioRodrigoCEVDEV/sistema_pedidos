@@ -1,5 +1,8 @@
 # 💰 Sistema de pedidos simples
 
+Frontend React: painel administrativo em `/app/` e loja pública em `/loja/`, com navegação sem recarregar a página.
+Veja [execução local e andamento da migração](docs/react-migration.md). As telas antigas continuam disponíveis para homologação.
+
 Sistema web para pedidos simples com login e senha para administrador, onde o usuário comum pode selecionar os produtos, inserir no carrinho e finalizar enviando o pedido ao whatsapp e o administrador pode acessar o painal registrar os produtos e visualizar o dashboard.
 
 ---

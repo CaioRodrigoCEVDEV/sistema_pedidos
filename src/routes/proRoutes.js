@@ -4,6 +4,21 @@ const proController = require("../controllers/proController");
 const proControllerV2 = require("../controllers/proControllerV2");
 const autenticarToken = require("../middlewares/middlewares");
 const requireAdmin = require("../middlewares/adminMiddleware");
+const requireTela = require("../middlewares/telaMiddleware");
+const requireEstoque = requireTela("estoque", { api: true, modulo: "est" });
+
+router.use(
+  [
+    "/proComEstoque",
+    "/proSemEstoque",
+    "/v2/proComEstoque",
+    "/v2/proSemEstoque",
+    "/v2/proEstoqueAcabando",
+    "/v2/proEstoqueEmFalta",
+    "/pro/estoque/:id",
+  ],
+  requireEstoque,
+);
 
 // ==================  GET
 
@@ -104,7 +119,6 @@ router.delete(
 );
 router.put(
   "/pro/estoque/:id",
-  autenticarToken,
   proController.gravarEstoqueProduto
 );
 

@@ -18,7 +18,7 @@ exports.listarTelas = async (req, res) => {
 
 // Permissões do usuário logado (usado pelo shell para montar o menu).
 exports.minhasPermissoes = async (req, res) => {
-  const { usucod, usuadm, usupv, usuest } = req.token;
+  const { usucod, usuadm, usupv, usuest, empusapv, empusaest } = req.token;
 
   try {
     if (usuadm === "S") {
@@ -29,6 +29,8 @@ exports.minhasPermissoes = async (req, res) => {
         usuadm,
         usupv,
         usuest,
+        empusapv,
+        empusaest,
         telas: todas.rows.map((r) => r.telachave),
       });
     }
@@ -48,6 +50,8 @@ exports.minhasPermissoes = async (req, res) => {
       usuadm,
       usupv,
       usuest,
+      empusapv,
+      empusaest,
       telas: result.rows.map((r) => r.telachave),
     });
   } catch (error) {

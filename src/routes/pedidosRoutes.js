@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const pedidosController = require("../controllers/pedidosController");
 const autenticarToken = require("../middlewares/middlewares");
+const requireTela = require("../middlewares/telaMiddleware");
 
 router.get("/pedidos/sequencia", pedidosController.sequencia);
 // Stock decrement happens only on order confirmation via database trigger (atualizar_saldo)
@@ -9,6 +10,30 @@ router.post(
   "/pedidos/enviar",
   pedidosController.inserirPv,
   pedidosController.inserirPvi
+);
+router.use(
+  [
+    "/pedidos/listar",
+    "/pedidos/pendentescount",
+    "/pedidos/pendentescountNow",
+    "/pedidos/balcao",
+    "/pedidos/entrega",
+    "/pedidos/balcaoNow",
+    "/pedidos/vendaNow",
+    "/pedidos/entregaNow",
+    "/pedidos/total/confirmados",
+    "/pedidos/total/confirmadosNow",
+    "/pedidos/pendentes",
+    "/pedidos/confirmados",
+    "/pedidos/confirmar/:pvcod",
+    "/pedidos/cancelar/:pvcod",
+    "/pedidos/cancelar",
+    "/pedido/detalhe/:pvcod",
+    "/pedidos/itens/cancelar/:pvcod",
+    "/pedidos/itens/confirmar/:pvcod",
+    "/pedidos/confirmados/:pvcod/itens",
+  ],
+  requireTela("pedidos", { api: true, modulo: "pv" }),
 );
 router.get("/pedidos/listar", autenticarToken, pedidosController.listarPv);
 router.get(
