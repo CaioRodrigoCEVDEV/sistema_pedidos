@@ -312,6 +312,35 @@ main:focus {
   color: var(--ou-danger);
   border-color: var(--ou-danger);
 }
+.news-button {
+  position: relative;
+}
+.news-button.has-unseen {
+  border-color: var(--ou-danger);
+  animation: news-button-pulse 1.8s ease-out infinite;
+}
+.news-button.has-unseen::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ou-danger);
+  box-shadow: 0 0 0 2px var(--ou-surface);
+}
+@keyframes news-button-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
 .text-button {
   color: var(--ou-primary);
   padding: 0;

@@ -367,6 +367,29 @@ body.ou-has-shell #header-admin.ou-topbar {
   display: none;
 }
 
+/* Pulso suave enquanto houver novidade não vista. */
+@keyframes ou-badge-pulse {
+  0% {
+    box-shadow: 0 0 0 2px var(--ou-surface), 0 0 0 0 rgba(239, 68, 68, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 2px var(--ou-surface), 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 2px var(--ou-surface), 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.ou-icon-btn.is-unseen .ou-icon-btn__badge {
+  animation: ou-badge-pulse 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ou-icon-btn.is-unseen .ou-icon-btn__badge {
+    animation: none;
+  }
+}
+
 .ou-user-btn {
   display: inline-flex;
   align-items: center;

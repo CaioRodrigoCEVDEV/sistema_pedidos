@@ -1,13 +1,46 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useResource } from "../hooks/useResource.js";
+import { apiRequest } from "../api/client.js";
 import { Modal, Resource } from "./UI.jsx";
 import { date } from "../lib/format.js";
 export function NewsButton() {
   const [open, setOpen] = useState(false);
+  const [versaoVista, setVersaoVista] = useState(null);
+  const [versaoAtual, setVersaoAtual] = useState(null);
   const resource = useResource(open ? "/api/releases" : null);
+
+  useEffect(() => {
+    let active = true;
+    apiRequest("/usuario/viuversao")
+      .then((data) => {
+        if (!active) return;
+        setVersaoVista(data?.usuversaovista || null);
+        setVersaoAtual(data?.versaoAtual || null);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const hasUnseen = Boolean(versaoAtual) && versaoVista !== versaoAtual;
+
+  function openModal() {
+    setOpen(true);
+    if (!hasUnseen) return;
+    apiRequest("/usuario/viuversao/", { method: "POST", json: { versao: versaoAtual } }).catch(
+      () => {}
+    );
+    setVersaoVista(versaoAtual);
+  }
+
   return (
     <>
-      <button className="button secondary news-button" onClick={() => setOpen(true)}>
+      <button
+        className={`button secondary news-button${hasUnseen ? " has-unseen" : ""}`}
+        onClick={openModal}
+        aria-label={hasUnseen ? "Novidades — há atualizações não vistas" : "Novidades"}
+      >
         Novidades
       </button>
       {open && (

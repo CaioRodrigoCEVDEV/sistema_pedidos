@@ -52,6 +52,11 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.usu ADD IF NOT exists usuviuversao varchar(1) default 'N';`
     );
+    // Versão das atualizações que o usuário já visualizou. Comparada com a
+    // release mais recente para decidir se há novidade não vista.
+    await pool.query(
+      `ALTER TABLE public.usu ADD IF NOT exists usuversaovista varchar(64);`
+    );
     // Preferência por usuário: já visualizou o tour guiado da tela de Vitrines.
     await pool.query(
       `ALTER TABLE public.usu ADD IF NOT exists usuvitour varchar(1) default 'N';`

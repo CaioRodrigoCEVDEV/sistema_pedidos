@@ -1,6 +1,7 @@
 const pool = require("../config/db");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
+const releaseModels = require("../models/releaseModels");
 
 // Substitui as permissões de tela de um usuário. A presença da linha com
 // permitido='S' libera a tela; a ausência mantém o acesso negado.
@@ -222,13 +223,24 @@ exports.listarVendedores = async (req, res) => {
 };
 
 exports.viuVersao = async (req, res) => {
-  const { usucod,viuversao } = req.body;
+  const body = req.body || {};
+  let versao = typeof body.versao === "string" ? body.versao.trim() : "";
+
+  // Compatibilidade com clientes antigos em cache: sinalizam "visto" via
+  // viuversao = "S", sem informar a versão. Assume a mais recente.
+  if (!versao && body.viuversao === "S") {
+    versao = (await releaseModels.latestVersion()) || "";
+  }
+
+  if (!versao || versao.length > 64) {
+    return res.status(400).json({ error: "Versão inválida" });
+  }
 
   try {
-    await pool.query(`UPDATE usu SET usuviuversao = $1 WHERE usucod = $2`, [
-      viuversao,
-      usucod,
-    ]);
+    await pool.query(
+      `UPDATE usu SET usuversaovista = $1, usuviuversao = 'S' WHERE usucod = $2`,
+      [versao, req.token.usucod]
+    );
 
     res.status(200).json({ mensagem: "Versão visualizada com sucesso" });
   } catch (error) {
@@ -240,10 +252,20 @@ exports.viuVersao = async (req, res) => {
 exports.usuViuVersao = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT usucod,usuviuversao FROM usu WHERE usucod = $1`,
+      `SELECT usucod,usuviuversao,usuversaovista FROM usu WHERE usucod = $1`,
       [req.token.usucod]
     );
-    res.status(200).json(result.rows[0]);
+
+    let versaoAtual = releaseModels.versionCache.get();
+    if (!versaoAtual) {
+      const version = await releaseModels.latestVersion();
+      versaoAtual = releaseModels.versionCache.set({ version: version || null });
+    }
+
+    res.status(200).json({
+      ...(result.rows[0] || {}),
+      versaoAtual: versaoAtual ? versaoAtual.version : null,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao obter viuversao" });
