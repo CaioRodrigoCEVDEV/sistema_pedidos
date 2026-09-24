@@ -1377,3 +1377,33 @@ body.ou-has-shell .modal-backdrop.show {
   font-size: 0.85rem;
   color: var(--ou-text-muted);
 }
+
+/* Cards acionados por botões próprios (sem clique no card inteiro) */
+.ou-mobile-list--static .ou-mobile-card {
+  cursor: default;
+}
+.ou-mobile-list--static .ou-mobile-card:hover {
+  border-color: var(--ou-border);
+}
+.ou-mobile-list--static .ou-mobile-card:active {
+  transform: none;
+  background: var(--ou-surface);
+}
+
+/* Área de ações dentro do card (inputs/botões) */
+.ou-mobile-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--ou-border);
+}
+.ou-mobile-card__action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ou-mobile-card__action input {
+  flex: 1 1 auto;
+  min-width: 0;
+}

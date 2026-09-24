@@ -5,14 +5,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title id="title">OrderUp — Acesso ao sistema</title>
-  <link rel="shortcut icon" href="/uploads/logo.jpg" type="image/x-icon" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png" />
-  <script src="/js/theme-manager.js?v=2026.09.23.190257"></script>
-  <link rel="stylesheet" href="/html/auth/admin/css/style-login.css?v=2026.09.23.190257" data-turbo-track="dynamic" />
+  <link rel="shortcut icon" href="/uploads/logo.jpg?v=9d2557429d4e" type="image/x-icon" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/uploads/apple-touch-icon.png?v=9d2557429d4e" />
+  <script src="/js/theme-manager.js?v=2026.09.24.181659"></script>
+  <link rel="stylesheet" href="/html/auth/admin/css/style-login.css?v=2026.09.24.181659" data-turbo-track="dynamic" />
   <meta name="turbo-cache-control" content="no-cache" />
   <meta name="view-transition" content="same-origin" />
-  <script src="/js/ou-turbo.js?v=2026.09.23.190257"></script>
-  <script src="/js/turbo.js?v=2026.09.23.190257" defer></script>
+  <script src="/js/ou-turbo.js?v=2026.09.24.181659"></script>
+  <script src="/js/turbo.js?v=2026.09.24.181659" defer></script>
 </head>
 
 <body>
@@ -23,7 +23,7 @@
       <aside class="brand-panel">
         <div class="brand-panel__content">
           <span class="brand-pill">
-            <img class="brand-pill__logo" src="/uploads/logo.jpg" alt="" />
+            <img class="brand-pill__logo" src="/uploads/logo.jpg?v=9d2557429d4e" alt="" />
             OrderUp
           </span>
 
@@ -109,7 +109,7 @@
       <section class="form-panel">
         <div class="form-inner">
           <div class="mobile-brand">
-            <img src="/uploads/logo.jpg" alt="" />
+            <img src="/uploads/logo.jpg?v=9d2557429d4e" alt="" />
             <span>OrderUp</span>
           </div>
 
@@ -145,13 +145,14 @@
               </svg>
             </button>
 
-            <button type="button" class="btn-ghost" onclick="window.location.href='/index';">
+            <button type="button" class="btn-ghost"
+              onclick="window.location.href=(location.port==='5173'||location.port==='4173')?'/loja/':'/';">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M19 12H5" />
                 <path d="M11 18l-6-6 6-6" />
               </svg>
-              Ir para a loja
+              Voltar para a loja
             </button>
           </form>
         </div>
@@ -160,8 +161,8 @@
     </section>
   </main>
 
-  <script src="/config.js?v=2026.09.23.190257"></script>
-  <script src="/html/auth/js/login.js?v=2026.09.23.190257"></script>
+  <script src="/config.js?v=2026.09.24.181659"></script>
+  <script src="/html/auth/js/login.js?v=2026.09.24.181659"></script>
 </body>
 
 </html>

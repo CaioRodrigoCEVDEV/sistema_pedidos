@@ -4,7 +4,10 @@
   "description": "Sistama de pedidos",
   "main": "src/app.js",
   "scripts": {
-    "dev": "nodemon src/app.js",
+    "dev": "nodemon --ignore frontend/ src/app.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "test:frontend": "node --test tests/frontendFoundation.test.js tests/frontendPhase2.test.js tests/frontendPhase4.test.js tests/frontendPhase5.test.js tests/frontendPhase6.test.js tests/frontendPhase7.test.js tests/estoqueAjuste.test.js && npm --prefix frontend test && npm --prefix frontend run test:ui",
     "test": "node tests/partGroups.test.js",
     "test:reconciliacao": "node tests/reconciliacaoEstoqueGrupo.test.js",
     "test:estoque-grupos": "node --test tests/estoqueGruposPanel.test.js",

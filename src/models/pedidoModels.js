@@ -2,7 +2,7 @@ const pool = require("../config/db");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 
-async function topMarcasMes(dataInicio, dataFim) {
+async function topMarcasMes(dataInicio, dataFim, todos = false) {
   let whereExtra = "";
   const params = [];
   if (dataInicio && dataFim) {
@@ -14,7 +14,7 @@ async function topMarcasMes(dataInicio, dataFim) {
   } else if (dataFim) {
     params.push(dataFim);
     whereExtra = `and pvdtcad <= $1`;
-  } else {
+  } else if (!todos) {
     whereExtra = `and pvdtcad >= CURRENT_DATE - interval '29 days'`;
   }
   const result = await pool.query(`
@@ -35,7 +35,7 @@ async function topMarcasMes(dataInicio, dataFim) {
   return result.rows;
 }
 
-async function topProdutosMes(dataInicio, dataFim) {
+async function topProdutosMes(dataInicio, dataFim, todos = false) {
   let whereExtra = "";
   const params = [];
   if (dataInicio && dataFim) {
@@ -47,7 +47,7 @@ async function topProdutosMes(dataInicio, dataFim) {
   } else if (dataFim) {
     params.push(dataFim);
     whereExtra = `and pvdtcad <= $1`;
-  } else {
+  } else if (!todos) {
     whereExtra = `and pvdtcad >= CURRENT_DATE - interval '29 days'`;
   }
   const result = await pool.query(`
@@ -94,7 +94,7 @@ async function totalVendas(dataInicio, dataFim) {
   return result.rows;
 }
 
-async function totalVendasDia(dataInicio, dataFim) {
+async function totalVendasDia(dataInicio, dataFim, todos = false) {
   let whereClause = "";
   const params = [];
   if (dataInicio && dataFim) {
@@ -106,7 +106,7 @@ async function totalVendasDia(dataInicio, dataFim) {
   } else if (dataFim) {
     params.push(dataFim);
     whereClause = `WHERE pvdtcad <= $1`;
-  } else {
+  } else if (!todos) {
     whereClause = `WHERE pvdtcad = CURRENT_DATE`;
   }
   const result = await pool.query(`select
@@ -120,7 +120,7 @@ async function totalVendasDia(dataInicio, dataFim) {
   return result.rows;
 }
 
-async function totalVendasAnual(dataInicio, dataFim) {
+async function totalVendasAnual(dataInicio, dataFim, todos = false) {
   let whereClause = "";
   const params = [];
   if (dataInicio && dataFim) {
@@ -132,7 +132,7 @@ async function totalVendasAnual(dataInicio, dataFim) {
   } else if (dataFim) {
     params.push(dataFim);
     whereClause = `WHERE pvdtcad <= $1`;
-  } else {
+  } else if (!todos) {
     whereClause = `WHERE extract(year from pvdtcad) = extract(year from current_date)`;
   }
   const result = await pool.query(`select extract(month from pvdtcad ) as mes,

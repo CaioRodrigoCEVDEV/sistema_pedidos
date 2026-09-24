@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const usuarioController2 = require('../controllers/usuarioController2');
-const autenticarToken = require('../middlewares/middlewares');
-const requireAdmin = require("../middlewares/adminMiddleware");
+const requireTela = require('../middlewares/telaMiddleware');
 
-router.get('/api/v2/usuario/listar/',autenticarToken, usuarioController2.listarUsuarios);
-router.post('/api/v2/usuario/excluir/:id',requireAdmin, usuarioController2.excluirCadastro);
+const requireUsuarios = requireTela("usuarios", { api: true });
+
+router.get('/api/v2/usuario/listar/', requireUsuarios, usuarioController2.listarUsuarios);
+router.post('/api/v2/usuario/excluir/:id', requireUsuarios, usuarioController2.excluirCadastro);
 
 module.exports = router;

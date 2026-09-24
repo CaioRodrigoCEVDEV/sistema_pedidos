@@ -13,7 +13,7 @@ exports.totalVendas = async (req, res) => {
 exports.totalVendasDia = async (req, res) => {
   try {
     const { dataInicio, dataFim } = req.query || {};
-    const result = await pedidoModels.totalVendasDia(dataInicio, dataFim);
+    const result = await pedidoModels.totalVendasDia(dataInicio, dataFim, req.query.todos === '1');
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
@@ -23,7 +23,7 @@ exports.totalVendasDia = async (req, res) => {
 exports.totalVendasAnual = async (req, res) => {
   try {
     const { dataInicio, dataFim } = req.query || {};
-    const result = await pedidoModels.totalVendasAnual(dataInicio, dataFim);
+    const result = await pedidoModels.totalVendasAnual(dataInicio, dataFim, req.query.todos === '1');
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
@@ -33,7 +33,7 @@ exports.totalVendasAnual = async (req, res) => {
 exports.topMarcasMes = async (req, res) => {
   try {
     const { dataInicio, dataFim } = req.query || {};
-    const result = await pedidoModels.topMarcasMes(dataInicio, dataFim);
+    const result = await pedidoModels.topMarcasMes(dataInicio, dataFim, req.query.todos === '1');
     res.status(200).json(result);
   } catch (error) {
     console.error(error);
@@ -43,7 +43,7 @@ exports.topMarcasMes = async (req, res) => {
 exports.topProdutosMes = async (req, res) => {
   try {
     const { dataInicio, dataFim } = req.query || {};
-    const result = await pedidoModels.topProdutosMes(dataInicio, dataFim);
+    const result = await pedidoModels.topProdutosMes(dataInicio, dataFim, req.query.todos === '1');
     res.status(200).json(result);
   } catch (error) {
     console.error(error);

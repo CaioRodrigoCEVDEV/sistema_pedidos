@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Novo painel · OrderUp</title>
+    <!-- PWA: manifest e ícones compartilhados com o restante do sistema.
+         A versão (?v=) é aplicada pelo scripts/bump-asset-version.js. -->
+    <link rel="manifest" href="/manifest.json?v=9d2557429d4e" />
+    <link rel="shortcut icon" href="/uploads/logo.jpg?v=9d2557429d4e" type="image/x-icon" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/uploads/apple-touch-icon.png?v=9d2557429d4e"
+    />
+    <!-- Compartilhado com as páginas atuais e servido diretamente pelo Express. -->
+    <script vite-ignore src="/js/theme-manager.js?v=2026.09.24.181659"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Ative o JavaScript para acessar o novo painel.</noscript>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

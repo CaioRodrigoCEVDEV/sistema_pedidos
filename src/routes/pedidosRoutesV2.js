@@ -2,6 +2,13 @@ const express = require("express");
 const router = express.Router();
 const pedidosControllerV2 = require("../controllers/pedidosControllerV2");
 const autenticarToken = require("../middlewares/middlewares");
+const requireTela = require("../middlewares/telaMiddleware");
+
+// Indicadores usados exclusivamente pelo Dashboard; operações de pedidos mantêm suas regras.
+router.use([
+  "/v2/top/marcas/mes", "/v2/top/produtos/mes",
+  "/v2/pedidos/total/anual", "/v2/pedidos/total/dia",
+], requireTela("dashboard", { api: true }));
 
 router.get("/v2/top/marcas/mes",autenticarToken, pedidosControllerV2.topMarcasMes);
 router.get("/v2/top/produtos/mes",autenticarToken, pedidosControllerV2.topProdutosMes);

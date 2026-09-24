@@ -547,7 +547,7 @@ exports.confirmarPedido = async (req, res) => {
     // mesma transação. Qualquer insuficiência desfaz também as edições acima.
     const result = await client.query(
       "UPDATE pv SET pvconfirmado = 'S', pvrcacod = $2 WHERE pvcod = $1 AND pvconfirmado = 'N' RETURNING *",
-      [pvcod, body.pvrcacod]
+      [pvcod, req.token?.usucod || body.pvrcacod || null]
     );
 
     if (result.rows.length === 0) {

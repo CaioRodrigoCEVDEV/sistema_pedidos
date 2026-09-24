@@ -351,6 +351,21 @@ exports.listarPedidosCliente = async (req, res) => {
   }
 };
 
+// Detalhes acessados pela ficha: exige que o pedido pertença ao cliente informado.
+exports.listarItensPedidoCliente = async (req, res) => {
+  const id = parseId(req.params.id);
+  const pvcod = parseId(req.params.pvcod);
+  if (!id || !pvcod) return res.status(400).json({ error: "Parâmetros inválidos." });
+  try {
+    const result = await pool.query("SELECT 1 FROM pv WHERE pvcod = $1 AND pvparcod = $2", [pvcod, id]);
+    if (!result.rowCount) return res.status(404).json({ error: "Pedido não vinculado a este cliente." });
+    return require("./pedidosController").listarPedidosPendentesDetalhe(req, res);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Erro ao buscar itens do pedido." });
+  }
+};
+
 exports.listarPedidosDisponiveis = async (req, res) => {
   const q = (req.query.q || "").trim();
   const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);

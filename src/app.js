@@ -13,6 +13,7 @@ const sharp = require("sharp");
 const { atualizarDB } = require("./config/atualizardb");
 const { requestTimingMiddleware } = require("./middlewares/performanceMiddleware");
 const { getEmpresa } = require("./utils/empresaCache");
+const { logoVersion } = require("./utils/logoVersion");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,17 @@ express.response.sendFile = function (filePath, options, callback) {
   }
   return sendFileOriginal.call(this, filePath, options, callback);
 };
+
+// As páginas administrativas só podem ser entregues pelas rotas protegidas
+// (requireTela), que aplicam autenticação e a tela liberada do usuário.
+// Bloqueia o acesso direto via /public (ex.: /html/auth/admin/html/painel-usuarios.html),
+// que permitiria abrir qualquer painel sem checagem de tela.
+app.use((req, res, next) => {
+  if (/^\/html\/auth\/admin\/.+\.html$/i.test(req.path)) {
+    return res.status(404).send("Não encontrado");
+  }
+  next();
+});
 
 // Middleware para servir arquivos estáticos (inclui uploads)
 // Assets têm cache curto (as URLs mudam via ?v= a cada release).
@@ -57,8 +69,6 @@ app.use(
 
 // Middlewares
 const autenticarToken = require("./middlewares/middlewares");
-const requireAdmin = require("./middlewares/adminMiddleware");
-const requireAdminPages = require("./middlewares/adminPagesMiddleware");
 const requireTela = require("./middlewares/telaMiddleware");
 app.set("views", path.join(__dirname, "views"));
 
@@ -102,6 +112,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Rotas
+const createFrontendRouter = require("./routes/frontendRoutes");
+app.use("/app", createFrontendRouter());
+app.use("/loja", createFrontendRouter());
+
 const mainRoutes = require("./routes");
 app.use("/", mainRoutes);
 
@@ -190,7 +204,7 @@ app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/login.html"));
 });
 
-app.get("/users", requireAdminPages, (req, res) => {
+app.get("/users", requireTela("usuarios"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-usuarios.html")
   );
@@ -215,10 +229,10 @@ app.get("/carrinho", (req, res) => {
 app.get("/perfil", autenticarToken, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/auth/perfil.html"));
 });
-app.get("/configuracoes", requireAdminPages, (req, res) => {
+app.get("/configuracoes", requireTela("configuracoes"), (req, res) => {
   res.sendFile(path.join(__dirname, "../public/html/configuracoes.html"));
 });
-app.get("/vitrines", requireAdminPages, (req, res) => {
+app.get("/vitrines", requireTela("vitrines"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-vitrines.html")
   );
@@ -250,22 +264,22 @@ app.get("/estoque", requireTela("estoque"), (req, res) => {
   );
 });
 
-app.get("/dashboard", autenticarToken, (req, res) => {
+app.get("/dashboard", requireTela("dashboard"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/index.html")
   );
 });
-app.get("/dashboard/modelo", autenticarToken, (req, res) => {
+app.get("/dashboard/modelo", requireTela("dashboard"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/modelo.html")
   );
 });
-app.get("/dashboard/modelo/pecas", autenticarToken, (req, res) => {
+app.get("/dashboard/modelo/pecas", requireTela("dashboard"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/pecas.html")
   );
 });
-app.get("/dashboard/modelo/pecas/lista", autenticarToken, (req, res) => {
+app.get("/dashboard/modelo/pecas/lista", requireTela("dashboard"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/lista-pecas.html")
   );
@@ -316,7 +330,7 @@ const dirPathBackups = process.env.BACKUP_DIR || "/home/backup";
 
 // 🔹 LISTAR ARQUIVOS E PASTAS
 // 🔹 LISTAR APENAS AS PASTAS DE DIAS DA SEMANA
-app.get("/backups", requireAdminPages, async (req, res) => {
+app.get("/backups", requireTela("backups", { api: true }), async (req, res) => {
   try {
     const entries = await fs.promises.readdir(dirPathBackups, {
       withFileTypes: true,
@@ -356,7 +370,7 @@ app.get("/backups", requireAdminPages, async (req, res) => {
 });
 
 // 🔹 LISTAR CONTEÚDO DE UMA PASTA ESPECÍFICA
-app.get("/backups/folder/:folder", requireAdminPages, async (req, res) => {
+app.get("/backups/folder/:folder", requireTela("backups", { api: true }), async (req, res) => {
   try {
     const folderName = path.basename(decodeURIComponent(req.params.folder));
     const folderPath = path.join(dirPathBackups, folderName);
@@ -396,7 +410,7 @@ app.get("/backups/folder/:folder", requireAdminPages, async (req, res) => {
 
 
 // 🔹 DOWNLOAD DE ARQUIVO ESPECÍFICO
-app.get("/backups/download/:folder/:file", requireAdminPages, async (req, res) => {
+app.get("/backups/download/:folder/:file", requireTela("backups", { api: true }), async (req, res) => {
   try {
     const folder = path.basename(decodeURIComponent(req.params.folder));
     const file = path.basename(decodeURIComponent(req.params.file));
@@ -458,6 +472,11 @@ app.get("/manifest.json", async (req, res) => {
     console.error("EMP erro:", e);
   }
 
+  // Versão derivada do arquivo da logo: muda quando a logo é trocada, dando
+  // ao Chrome o sinal de atualização do ícone do app instalado (WebAPK).
+  const v = logoVersion();
+  const logoSrc = `/uploads/logo.jpg?v=${v}`;
+
   const manifest = {
     name: `${empresa} - App`,
     short_name: empresa.slice(0, 12) || "Pedidos",
@@ -468,13 +487,13 @@ app.get("/manifest.json", async (req, res) => {
     theme_color: "#ffffff",
     icons: [
       {
-        src: "/uploads/logo.jpg",
+        src: logoSrc,
         sizes: "192x192",
         type: "image/jpg",
         purpose: "any maskable",
       },
       {
-        src: "/uploads/logo.jpg",
+        src: logoSrc,
         sizes: "512x512",
         type: "image/jpg",
         purpose: "any maskable",
@@ -501,7 +520,7 @@ const upload = multer({ storage });
 
 app.post(
   "/upload-logo",
-  requireAdmin,
+  requireTela("configuracoes", { api: true }),
   upload.single("logo"),
   async (req, res) => {
     try {
@@ -523,6 +542,9 @@ app.post(
         .png()
         .toFile(pngPath);
 
+      if ((req.get("accept") || "").includes("application/json")) {
+        return res.json({ message: "Logo atualizada com sucesso." });
+      }
       res.redirect("/configuracoes");
     } catch (err) {
       console.error("Erro ao salvar logo:", err);

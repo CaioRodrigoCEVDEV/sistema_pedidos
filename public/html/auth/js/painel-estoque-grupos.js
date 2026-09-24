@@ -35,6 +35,7 @@ var marcaSelect = document.getElementById("marcaSelect");
 var btnFiltrar = document.getElementById("btnFiltrar");
 var btnLimpar = document.getElementById("btnLimpar");
 var gruposTableBody = document.getElementById("gruposTableBody");
+var gruposMobileList = document.getElementById("gruposMobileList");
 var emptyState = document.getElementById("emptyState");
 var loadingState = document.getElementById("loadingState");
 var resultsInfo = document.getElementById("resultsInfo");
@@ -42,7 +43,9 @@ var resultsInfo = document.getElementById("resultsInfo");
 // Carrega marcas para o select
 async function loadMarcas() {
   try {
-    const response = await fetch("/marcas");
+    const response = await fetch("/marcas", {
+      headers: { Accept: "application/json" },
+    });
     if (!response.ok) throw new Error("Erro ao carregar marcas");
     const marcas = await response.json();
 
@@ -223,8 +226,68 @@ function renderLista() {
 }
 
 // Renderiza os grupos na tabela
+// Monta o card mobile de um grupo. Usa as mesmas classes/controles da linha
+// da tabela para reaproveitar salvarIdeal/ajustarEstoque passando o card.
+function criarCardGrupoMobile(row, status, estoqueAtual, qtdeIdealVal) {
+  const card = document.createElement("div");
+  card.className = "ou-mobile-card";
+  card.dataset.groupId = row.id;
+  card.innerHTML = `
+    <div class="ou-mobile-card__head">
+      <span class="ou-mobile-card__avatar" aria-hidden="true"><i class="bi bi-collection"></i></span>
+      <span class="ou-mobile-card__identity">
+        <span class="ou-mobile-card__name">${escapeHtml(row.grupo || "-")}</span>
+        <span class="ou-mobile-card__fantasia">
+          <span class="badge ${status.badgeClass} status-badge">${status.label}</span>
+        </span>
+      </span>
+    </div>
+    <div class="ou-mobile-card__info">
+      <div class="ou-mobile-card__block">
+        <span class="ou-mobile-card__label">Qtde Vendida</span>
+        <span class="ou-mobile-card__value">${row.qtde_vendida != null ? parseInt(row.qtde_vendida, 10).toLocaleString("pt-BR") : "0"}</span>
+      </div>
+      <div class="ou-mobile-card__block">
+        <span class="ou-mobile-card__label">Estoque Atual</span>
+        <span class="ou-mobile-card__value"><span class="estoque-atual-display">${estoqueAtual.toLocaleString("pt-BR")}</span></span>
+      </div>
+    </div>
+    <div class="ou-mobile-card__actions">
+      <div class="ou-mobile-card__action">
+        <span class="ou-mobile-card__label">Ideal</span>
+        <input type="number" class="form-control form-control-sm input-ajuste input-ideal" value="${qtdeIdealVal}" min="0" placeholder="—" title="Quantidade ideal de estoque para este grupo" />
+        <button class="btn btn-outline-secondary btn-sm btn-salvar-ideal" title="Salvar quantidade ideal"><i class="bi bi-floppy"></i></button>
+      </div>
+      <div class="ou-mobile-card__action">
+        <span class="ou-mobile-card__label">Adicionar</span>
+        <input type="number" class="form-control form-control-sm input-ajuste input-adicionar" value="" min="1" placeholder="0" title="Quantidade a adicionar ao estoque" />
+        <button class="btn btn-success btn-sm btn-adicionar" title="Adicionar ao estoque"><i class="bi bi-plus-lg"></i></button>
+      </div>
+      <div class="ou-mobile-card__action">
+        <span class="ou-mobile-card__label">Reduzir</span>
+        <input type="number" class="form-control form-control-sm input-ajuste input-reduzir" value="" min="1" placeholder="0" title="Quantidade a reduzir do estoque" />
+        <button class="btn btn-danger btn-sm btn-reduzir" title="Reduzir do estoque"><i class="bi bi-dash-lg"></i></button>
+      </div>
+      <span class="spinner-border spinner-border-sm text-primary row-spinner" role="status" style="display:none"></span>
+    </div>
+  `;
+
+  card
+    .querySelector(".btn-salvar-ideal")
+    .addEventListener("click", () => salvarIdeal(card, row.id));
+  card
+    .querySelector(".btn-adicionar")
+    .addEventListener("click", () => ajustarEstoque(card, row.id, "adicionar"));
+  card
+    .querySelector(".btn-reduzir")
+    .addEventListener("click", () => ajustarEstoque(card, row.id, "reduzir"));
+
+  return card;
+}
+
 function renderTable(data) {
   gruposTableBody.innerHTML = "";
+  if (gruposMobileList) gruposMobileList.innerHTML = "";
 
   if (!data || data.length === 0) {
     emptyState.style.display = "block";
@@ -329,6 +392,11 @@ function renderTable(data) {
     );
 
     gruposTableBody.appendChild(tr);
+    if (gruposMobileList) {
+      gruposMobileList.appendChild(
+        criarCardGrupoMobile(row, status, estoqueAtual, qtdeIdealVal),
+      );
+    }
   });
 
   resultsInfo.textContent = `${data.length} grupo${data.length !== 1 ? "s" : ""}`;
@@ -471,8 +539,13 @@ async function fetchData() {
     if (currentFilters.dataFim) params.append("dataFim", currentFilters.dataFim);
     if (currentFilters.marca) params.append("marca", currentFilters.marca);
 
-    const response = await fetch(`/v2/relatorios/estoque-grupos?${params.toString()}`);
-    if (!response.ok) throw new Error("Erro ao buscar dados");
+    const response = await fetch(`/v2/relatorios/estoque-grupos?${params.toString()}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || "Erro ao buscar dados");
+    }
 
     const data = await response.json();
     currentData = data;
@@ -483,7 +556,7 @@ async function fetchData() {
     console.error("Erro ao buscar dados:", error);
     loadingState.style.display = "none";
     emptyState.style.display = "block";
-    alert("Erro ao carregar dados de estoque dos grupos");
+    alert(error.message || "Erro ao carregar dados de estoque dos grupos");
   }
 }
 

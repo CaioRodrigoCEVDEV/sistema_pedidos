@@ -4,6 +4,12 @@ var btnAplicarEstoque = document.getElementById("btnAplicarFiltroEstoque");
 var btnLimparEstoque = document.getElementById("btnLimparFiltroEstoque");
 var estoqueSelect = document.getElementById("filtroEstoqueSelect");
 var inputPesquisa = document.getElementById("pesquisa");
+var tabelaEstoqueMobile = document.getElementById("tabelaEstoqueMobile");
+
+// Limpa a lista mobile (usada quando a tabela mostra vazio/erro/loading).
+function limparListaEstoqueMobile() {
+  if (tabelaEstoqueMobile) tabelaEstoqueMobile.innerHTML = "";
+}
 
 // Toast helper (leve, sem dependências)
 function showToast(message, type = "success") {
@@ -58,6 +64,44 @@ function showToast(message, type = "success") {
   }, 2500);
 }
 
+// Monta o card mobile de um item de estoque (mesmos dados/ação da linha).
+function criarCardEstoqueMobile(dado, qtClass, isSemEstoque) {
+  const card = document.createElement("div");
+  card.className = "ou-mobile-card";
+  if (isSemEstoque) card.style.background = "var(--bs-warning-bg-subtle)";
+  card.innerHTML = `
+    <div class="ou-mobile-card__head">
+      <span class="ou-mobile-card__identity">
+        <span class="ou-mobile-card__name">${dado.prodes}</span>
+        <span class="ou-mobile-card__fantasia">${dado.tipodes || ""}</span>
+      </span>
+    </div>
+    <div class="ou-mobile-card__info">
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Marca</span><span class="ou-mobile-card__value">${dado.marcasdes || "-"}</span></div>
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Aparelho</span><span class="ou-mobile-card__value">${dado.moddes || "-"}</span></div>
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Peça</span><span class="ou-mobile-card__value">${dado.tipodes || "-"}</span></div>
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Cor</span><span class="ou-mobile-card__value">${dado.cordes || "Sem Cor"}</span></div>
+      <div class="ou-mobile-card__block"><span class="ou-mobile-card__label">Total</span><span class="ou-mobile-card__value"><span class="${qtClass} js-qtde-badge px-3">${dado.qtde ?? 0}</span></span></div>
+    </div>
+    <div class="ou-mobile-card__actions">
+      <div class="ou-mobile-card__action">
+        <input type="number" min="0" class="form-control form-control-sm" placeholder="Qtd">
+        <button class="btn btn-success btn-add-estoque btn-sm px-3" type="button" title="Adicionar" style="display:flex;align-items:center;gap:.35rem;">
+          <i class="fa-regular fa-square-plus"></i><span class="small">Add</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  card.querySelector(".btn-add-estoque").addEventListener("click", () => {
+    const qtd = card.querySelector("input").value;
+    if (qtd === "" || Number(qtd) < 0) return;
+    adicionarEstoque(dado.procod, Number(qtd), dado.procorcorescod ?? null);
+  });
+
+  return card;
+}
+
 if (inputPesquisa) {
   inputPesquisa.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -74,6 +118,7 @@ if (inputPesquisa) {
  */
 async function buscarEstoquePorPesquisa(termo) {
   const tabelaEstoque = document.getElementById("tabela-estoque");
+  limparListaEstoqueMobile();
 
   if (!termo || !termo.trim()) {
     // Se não há termo, não faz fetch — pode manter a tabela atual ou limpar
@@ -129,6 +174,7 @@ async function buscarEstoquePorPesquisa(termo) {
     // Reutiliza renderização semelhante à listagem principal
     const renderSearchRows = (tbody, dados) => {
       tbody.innerHTML = "";
+      if (tabelaEstoqueMobile) tabelaEstoqueMobile.innerHTML = "";
       dados.forEach((dado) => {
         const tr = document.createElement("tr");
         tr.className = "align-middle";
@@ -177,7 +223,7 @@ async function buscarEstoquePorPesquisa(termo) {
             </div>
           </td>
           <td class="text-center">
-            <span class="${qtClass} px-3">${dado.qtde ?? 0}</span>
+            <span class="${qtClass} js-qtde-badge px-3">${dado.qtde ?? 0}</span>
           </td>
         `;
 
@@ -193,6 +239,11 @@ async function buscarEstoquePorPesquisa(termo) {
         });
 
         tbody.appendChild(tr);
+        if (tabelaEstoqueMobile) {
+          tabelaEstoqueMobile.appendChild(
+            criarCardEstoqueMobile(dado, qtClass, false)
+          );
+        }
       });
     };
 
@@ -210,9 +261,9 @@ async function buscarEstoquePorPesquisa(termo) {
 async function adicionarEstoque(procod, quantidade, cor = null) {
   try {
     const clickedEl = document.activeElement || null;
-    const tr = clickedEl?.closest?.("tr") || null;
+    const tr = clickedEl?.closest?.("tr, .ou-mobile-card") || null;
     const inputQtd = tr?.querySelector?.('input[type="number"]') || null;
-    const badgeQtd = tr?.querySelector?.("td.text-center .badge") || null;
+    const badgeQtd = tr?.querySelector?.(".js-qtde-badge") || null;
 
     const response = await fetch(`${BASE_URL}/pro/estoque/${procod}`, {
       method: "PUT",
@@ -374,6 +425,7 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
   // função que faz fetch (adapte a URL / parâmetros conforme sua API)
   async function fetchBuscarEstoque(params = {}) {
     const tabelaEstoque = document.getElementById("tabela-estoque");
+    limparListaEstoqueMobile();
     const { marca, modelo, estoque } = params;
     const marcaParam =
       marca && marca !== "todas" ? encodeURIComponent(marca) : "todas";
@@ -417,6 +469,7 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
 
     const renderTabela = (tbody, dados) => {
       tbody.innerHTML = "";
+      if (tabelaEstoqueMobile) tabelaEstoqueMobile.innerHTML = "";
       if (!dados || dados.length === 0) {
         tbody.innerHTML =
           '<tr><td colspan="7" class="text-center">Nenhum produto encontrado.</td></tr>';
@@ -480,7 +533,7 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
         </div>
           </td>
           <td class="text-center">
-        <span class="${qtClass} px-3">${dado.qtde}</span>
+        <span class="${qtClass} js-qtde-badge px-3">${dado.qtde}</span>
           </td>
         `;
 
@@ -496,6 +549,11 @@ async function adicionarEstoque(procod, quantidade, cor = null) {
         });
 
         tbody.appendChild(tr);
+        if (tabelaEstoqueMobile) {
+          tabelaEstoqueMobile.appendChild(
+            criarCardEstoqueMobile(dado, qtClass, isSemEstoque)
+          );
+        }
       });
     };
 

@@ -1,10 +1,19 @@
 const jwt = require('jsonwebtoken');
 
+function rejeitarSessao(req, res, statusLegado) {
+    // Apenas clientes que pedem JSON explicitamente usam o contrato de API.
+    // Navegações HTML mantêm o redirecionamento já utilizado pelo sistema.
+    if ((req.get('accept') || '').includes('application/json')) {
+        return res.status(401).json({ error: 'Sessão ausente ou expirada. Faça login novamente.' });
+    }
+    return res.status(statusLegado).redirect('/login');
+}
+
 function autenticarToken(req, res, next) {
     const token = req.cookies.token;
 
     if (!token) {
-        return res.status(401).redirect('/login'); 
+        return rejeitarSessao(req, res, 401);
     }
 
     try {
@@ -26,7 +35,7 @@ function autenticarToken(req, res, next) {
         res.cookie('token', novoToken, {
         httpOnly: true,
         sameSite: 'Strict',
-        secure: process.env.HTTPS,
+        secure: process.env.HTTPS === 'true',
         });
         // Remove os outros cookies inseguros, se ainda existirem
         res.clearCookie('usucod');
@@ -40,7 +49,7 @@ function autenticarToken(req, res, next) {
 
         next();
     } catch (err) {
-        return res.status(500).redirect('/login');
+        return rejeitarSessao(req, res, 500);
     }
 }
 

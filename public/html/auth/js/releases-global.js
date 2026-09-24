@@ -3,8 +3,8 @@
 
    Carregado por public/html/auth/js/componentes.js em todas as páginas com
    #header-admin. Exibe um marcador no botão "Novidades" da topbar enquanto o
-   usuário ainda não visualizou as atualizações; ao abrir o modal o marcador
-   desaparece e a flag de "visto" é gravada (banco + localStorage).
+   usuário ainda não visualizou a versão mais recente; ao abrir o modal a
+   versão vista é gravada no banco e o marcador desaparece.
 
    A abertura automática do modal após o login está desativada no momento
    (AUTO_OPEN_ON_LOGIN = false) e pode ser reativada quando desejado.
@@ -14,8 +14,6 @@
    ========================================================================== */
 (function () {
   "use strict";
-
-  var SEEN_KEY = "releaseIDClose";
 
   // Abertura automática do modal após o login desativada por enquanto.
   // Basta voltar para true para reativar o fluxo de "visto uma vez".
@@ -34,9 +32,10 @@
 
   var loaded = false;
   var modalInstance = null;
-  var usucod = null;
   var seenChecked = false;
   var seen = false;
+  var versaoAtual = null;
+  var latestLoadedVersion = null;
 
   function baseUrl() {
     return typeof BASE_URL !== "undefined" ? BASE_URL : "";
@@ -83,30 +82,29 @@
     }
   }
 
-  // ---------- "Visto": flag no banco + localStorage (mesma lógica do painel) ----------
+  // ---------- "Visto": versão vista no banco (por usuário) ----------
   function setBadge(visible) {
     var badge = document.getElementById("ouReleasesBadge");
-    if (!badge) return;
-    badge.hidden = !visible;
+    var btn = document.getElementById("ouReleasesBtn");
+    if (badge) badge.hidden = !visible;
+    if (btn) btn.classList.toggle("is-unseen", visible);
   }
 
   function markSeen() {
     if (seen) return;
+
+    var versao = versaoAtual || latestLoadedVersion;
     seen = true;
     setBadge(false);
 
-    try {
-      localStorage.setItem(SEEN_KEY, "true");
-    } catch (err) {
-      /* noop */
-    }
+    if (!versao) return;
 
     try {
       fetch(baseUrl() + "/usuario/viuversao/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ viuversao: "S", usucod: usucod }),
+        body: JSON.stringify({ versao: versao }),
       });
     } catch (err) {
       console.error("Erro ao atualizar viuversao:", err);
@@ -134,19 +132,12 @@
         return response.json();
       })
       .then(function (data) {
-        usucod = data && data.usucod;
-        var viuversao = (data && data.usuviuversao) || "N";
+        versaoAtual = (data && data.versaoAtual) || null;
+        var versaoVista = (data && data.usuversaovista) || null;
 
-        var localSeen = false;
-        try {
-          localSeen = localStorage.getItem(SEEN_KEY) === "true";
-        } catch (err) {
-          /* noop */
-        }
-
-        // Já visto se o usuário marcou em qualquer dispositivo (flag no banco)
-        // ou neste navegador (localStorage).
-        seen = seen || viuversao === "S" || localSeen;
+        // Só há novidade quando existe uma versão publicada e ela difere da
+        // última versão que este usuário visualizou.
+        seen = !versaoAtual || (!!versaoVista && versaoVista === versaoAtual);
         setBadge(!seen);
 
         if (AUTO_OPEN_ON_LOGIN && !seen) {
@@ -251,6 +242,7 @@
     // A ordenação vem do backend (mais recente primeiro). O primeiro item é,
     // por definição, a release mais recente — nada fica hardcoded no frontend.
     var latest = releases[0];
+    latestLoadedVersion = latest.version || latest.tag_name || null;
     var history = releases.slice(1);
     listEl.appendChild(renderLatest(latest));
 

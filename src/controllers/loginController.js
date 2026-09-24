@@ -14,18 +14,9 @@ function getClientIp(req) {
 }
 
 // Define a rota inicial após o login. A tela de Pedidos é o destino padrão,
-// mas só é usada quando o usuário realmente pode acessá-la (módulo da empresa
-// ativo e tela liberada). Caso contrário, envia para o perfil, que é acessível
-// a qualquer usuário autenticado.
-async function resolverRotaInicial(usuario, empresa) {
-    if (!empresa || empresa.empusapv !== 'S') {
-        return '/perfil';
-    }
-
-    if (usuario.usuadm === 'S') {
-        return '/pedidos';
-    }
-
+// mas só é usada quando o usuário tem a tela liberada. Caso contrário, envia
+// para o perfil, que é acessível a qualquer usuário autenticado.
+async function resolverRotaInicial(usuario) {
     const permitido = await pool.query(
         `SELECT 1
            FROM usu_telas ut
@@ -88,7 +79,7 @@ exports.validarLogin = async (req, res) => {
 
         resetLoginAttempts(chaveTentativas);
 
-        const redirect = await resolverRotaInicial(usuario, empresa);
+        const redirect = await resolverRotaInicial(usuario);
 
         const token = jwt.sign({ 
             usuemail: usuario.usuemail,
@@ -102,7 +93,7 @@ exports.validarLogin = async (req, res) => {
             empusaest:empresa.empusaest }, 'chave-secreta', { expiresIn: '60m' });
         res.cookie('token',token,{
             httpOnly: true,
-            secure: process.env.HTTPS,
+            secure: process.env.HTTPS === 'true',
             sameSite: 'Strict',
         });
 
@@ -117,11 +108,18 @@ exports.atualizarCadastro = async (req, res) => {
     const { id } = req.params;
     const { usunome, usuemail, ususenha } = req.body;
 
+    if (String(req.token.usucod) !== String(id)) {
+        return res.status(403).json({ error: 'Você só pode alterar o próprio perfil.' });
+    }
+    if (!String(usunome || '').trim() || !String(ususenha || '')) {
+        return res.status(400).json({ error: 'Informe o nome e a nova senha.' });
+    }
+
     try {
         // Gera o hash MD5 da nova senha
         const newSenhaHash = crypto.createHash('md5').update(ususenha).digest('hex');
 
-        await pool.query('UPDATE usu SET usunome = $1, ususenha = $2 WHERE usucod = $3', [usunome, newSenhaHash, id]);
+        await pool.query('UPDATE usu SET usunome = $1, ususenha = $2 WHERE usucod = $3', [usunome.trim(), newSenhaHash, req.token.usucod]);
 
 
         res.status(200).json({ mensagem: 'Senha atualizada com sucesso' });

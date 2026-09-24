@@ -2,9 +2,10 @@ const express = require("express");
 const router = express.Router();
 const cliController = require("../controllers/cliController");
 const autenticarToken = require("../middlewares/middlewares");
+const requireTela = require("../middlewares/telaMiddleware");
 
 // Todas as rotas de clientes exigem autenticação.
-router.use("/cli", autenticarToken);
+router.use("/cli", requireTela("clientes", { api: true }), autenticarToken);
 
 // Rotas específicas antes de /cli/:id para não colidir.
 router.get("/cli/pedidos/disponiveis", cliController.listarPedidosDisponiveis);
@@ -17,6 +18,7 @@ router.delete("/cli/:id", cliController.remove);
 
 // Pedidos vinculados
 router.get("/cli/:id/pedidos", cliController.listarPedidosCliente);
+router.get("/cli/:id/pedidos/:pvcod/itens", cliController.listarItensPedidoCliente);
 router.post("/cli/:id/pedidos/:pvcod", cliController.vincularPedido);
 router.delete("/cli/:id/pedidos/:pvcod", cliController.desvincularPedido);
 

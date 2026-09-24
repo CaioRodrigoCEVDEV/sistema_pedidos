@@ -17,22 +17,12 @@ exports.listarTelas = async (req, res) => {
 };
 
 // Permissões do usuário logado (usado pelo shell para montar o menu).
+// A única fonte de autorização são as telas liberadas em usu_telas; não há
+// mais bypass de administrador nem flags de módulo.
 exports.minhasPermissoes = async (req, res) => {
-  const { usucod, usuadm, usupv, usuest } = req.token;
+  const { usucod, usuadm, usupv, usuest, empusapv, empusaest } = req.token;
 
   try {
-    if (usuadm === "S") {
-      const todas = await pool.query(
-        `SELECT telachave FROM public.telas WHERE telaativa = 'S' ORDER BY telaordem`
-      );
-      return res.status(200).json({
-        usuadm,
-        usupv,
-        usuest,
-        telas: todas.rows.map((r) => r.telachave),
-      });
-    }
-
     const result = await pool.query(
       `SELECT t.telachave
          FROM public.usu_telas ut
@@ -48,6 +38,8 @@ exports.minhasPermissoes = async (req, res) => {
       usuadm,
       usupv,
       usuest,
+      empusapv,
+      empusaest,
       telas: result.rows.map((r) => r.telachave),
     });
   } catch (error) {

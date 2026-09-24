@@ -3,7 +3,22 @@ const router = express.Router();
 const proController = require("../controllers/proController");
 const proControllerV2 = require("../controllers/proControllerV2");
 const autenticarToken = require("../middlewares/middlewares");
-const requireAdmin = require("../middlewares/adminMiddleware");
+const requireTela = require("../middlewares/telaMiddleware");
+const requireEstoque = requireTela("estoque", { api: true });
+const requireProdutos = requireTela("produtos", { api: true });
+
+router.use(
+  [
+    "/proComEstoque",
+    "/proSemEstoque",
+    "/v2/proComEstoque",
+    "/v2/proSemEstoque",
+    "/v2/proEstoqueAcabando",
+    "/v2/proEstoqueEmFalta",
+    "/pro/estoque/:id",
+  ],
+  requireEstoque,
+);
 
 // ==================  GET
 
@@ -75,7 +90,7 @@ router.get(
 // Fim V2 Routes com models
 
 // ==================  PUT
-router.put("/pro/:id", requireAdmin, proController.editarProduto);
+router.put("/pro/:id", requireProdutos, proController.editarProduto);
 router.put(
   "/proCoresDisponiveis/:id",
   autenticarToken,
@@ -83,7 +98,7 @@ router.put(
 );
 
 // ==================  POST
-router.post("/pro", requireAdmin, proController.inserirProduto);
+router.post("/pro", requireProdutos, proController.inserirProduto);
 router.post(
   "/pro/ordem",
   autenticarToken,
@@ -96,7 +111,7 @@ router.post(
 );
 
 // ==================  DELETE
-router.delete("/pro/:id", requireAdmin, proController.excluirProduto);
+router.delete("/pro/:id", requireProdutos, proController.excluirProduto);
 router.delete(
   "/proCoresDisponiveis/:id",
   autenticarToken,
@@ -104,7 +119,6 @@ router.delete(
 );
 router.put(
   "/pro/estoque/:id",
-  autenticarToken,
   proController.gravarEstoqueProduto
 );
 

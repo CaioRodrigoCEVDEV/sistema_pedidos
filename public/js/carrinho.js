@@ -378,11 +378,30 @@
 
   // Bloco de itens (título + grupos por contexto + observações). Fonte única
   // usada pelo orçamento e pelo pedido; só o título muda em cada fluxo.
+  // agrupar=true (orçamento) gera um cabeçalho tipo+modelo por contexto.
+  // agrupar=false (pedido do usuário final) lista os itens sem esse cabeçalho.
   // O carrinho pode misturar marcas/modelos/tipos: cada combinação única gera
   // seu próprio cabeçalho, na ordem da primeira ocorrência, sem perder itens.
-  function buildMensagemOrcamento(cart, observacoes, titulo) {
+  function buildMensagemOrcamento(cart, observacoes, titulo, agrupar) {
     var SEP = "\u0000";
     var blocos = [EMOJI.caixa + " " + (titulo || "ORÇAMENTO DE PEÇAS:")];
+
+    function pushItem(item) {
+      var nome = limparNomeOrcamento(item.nome);
+      var qtde = Number(item.qt) || 0;
+      var valor = parseFloat(item.preco) || 0;
+      blocos.push("(" + qtde + ") " + nome + " R$" + valor.toFixed(2));
+    }
+
+    // Pedido do usuário final: sem tratamento de tipo/modelo, apenas os itens
+    // na ordem do carrinho.
+    if (agrupar === false) {
+      cart.forEach(function (item) {
+        if (item) pushItem(item);
+      });
+      if (observacoes) blocos.push(EMOJI.obs + " Observações: " + observacoes);
+      return blocos.join("\n\n") + "\n";
+    }
 
     // Agrupa preservando a ordem de primeira ocorrência. A marca entra na
     // chave para não fundir modelos homônimos de marcas diferentes.
@@ -420,12 +439,7 @@
         }
         blocos.push(EMOJI.celular + " " + titulo);
       }
-      grupo.itens.forEach(function (item) {
-        var nome = limparNomeOrcamento(item.nome);
-        var qtde = Number(item.qt) || 0;
-        var valor = parseFloat(item.preco) || 0;
-        blocos.push("(" + qtde + ") " + nome + " R$" + valor.toFixed(2));
-      });
+      grupo.itens.forEach(pushItem);
     });
 
     if (observacoes) blocos.push(EMOJI.obs + " Observações: " + observacoes);
@@ -433,11 +447,13 @@
   }
 
   // Mensagem do pedido enviada pelo WhatsApp: reutiliza o MESMO bloco de itens,
-  // mas com o título "PEDIDO DE PEÇAS" e o total. Observações já vêm do bloco; o
-  // atendimento e o número do pedido são anexados por quem chama.
+  // mas com o título "PEDIDO DE PEÇAS" e o total. Não agrupa por tipo/modelo
+  // (agrupar=false): o usuário final recebe só os itens. Observações já vêm do
+  // bloco; o atendimento e o número do pedido são anexados por quem chama.
   function buildMensagem(cart, total, observacoes, canal) {
-    var msg = buildMensagemOrcamento(cart, observacoes, "PEDIDO DE PEÇAS:");
-    msg += EMOJI.dinheiro + " Total: R$ " + total.toFixed(2) + "\n";
+    var msg = buildMensagemOrcamento(cart, observacoes, "PEDIDO DE PEÇAS:", false);
+    // Linha em branco entre o último item (ou observações) e o total.
+    msg += "\n" + EMOJI.dinheiro + " Total: R$ " + total.toFixed(2) + "\n";
     return msg;
   }
 

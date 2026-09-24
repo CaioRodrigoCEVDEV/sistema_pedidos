@@ -91,6 +91,30 @@ const TELAS = [
     grupo: "Ferramentas",
     ordem: 11,
   },
+  {
+    chave: "vitrines",
+    nome: "Vitrines",
+    rota: "/vitrines",
+    icone: "bi-shop-window",
+    grupo: "Catálogo",
+    ordem: 12,
+  },
+  {
+    chave: "usuarios",
+    nome: "Usuários",
+    rota: "/users",
+    icone: "bi-person-badge",
+    grupo: "Ferramentas",
+    ordem: 13,
+  },
+  {
+    chave: "configuracoes",
+    nome: "Configurações",
+    rota: "/configuracoes",
+    icone: "bi-gear",
+    grupo: "Ferramentas",
+    ordem: 14,
+  },
 ];
 
 module.exports = TELAS;

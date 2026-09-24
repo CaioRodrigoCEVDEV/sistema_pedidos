@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const relatoriosController = require("../controllers/relatoriosController");
 const autenticarToken = require("../middlewares/middlewares");
+const requireTela = require("../middlewares/telaMiddleware");
+const requireEstoqueGrupos = requireTela("estoque-grupos", { api: true });
+const requireRelatorios = requireTela("relatorios", { api: true });
 
 /**
  * Rotas de Relatórios
@@ -23,6 +26,7 @@ const autenticarToken = require("../middlewares/middlewares");
 // Relatório Top Peças - JSON
 router.get(
   "/v2/relatorios/top-pecas",
+  requireRelatorios,
   autenticarToken,
   relatoriosController.getTopPecasJSON
 );
@@ -30,6 +34,7 @@ router.get(
 // Relatório Top Peças - PDF
 router.get(
   "/v2/relatorios/top-pecas/pdf",
+  requireRelatorios,
   autenticarToken,
   relatoriosController.getTopPecasPDF
 );
@@ -37,6 +42,7 @@ router.get(
 // Relatório Top Peças - Excel
 router.get(
   "/v2/relatorios/top-pecas/xls",
+  requireRelatorios,
   autenticarToken,
   relatoriosController.getTopPecasXLS
 );
@@ -44,6 +50,7 @@ router.get(
 // Relatório Estoque por Grupos (Top Peças) - JSON
 router.get(
   "/v2/relatorios/estoque-grupos",
+  requireEstoqueGrupos,
   autenticarToken,
   relatoriosController.getEstoqueGruposJSON
 );
@@ -51,6 +58,7 @@ router.get(
 // Relatório Peças Cadastradas - JSON
 router.get(
   "/v2/relatorios/pecas-cadastradas",
+  requireRelatorios,
   autenticarToken,
   relatoriosController.getPecasCadastradasJSON
 );
@@ -58,6 +66,7 @@ router.get(
 // Relatório Peças Cadastradas - PDF
 router.get(
   "/v2/relatorios/pecas-cadastradas/pdf",
+  requireRelatorios,
   autenticarToken,
   relatoriosController.getPecasCadastradasPDF
 );

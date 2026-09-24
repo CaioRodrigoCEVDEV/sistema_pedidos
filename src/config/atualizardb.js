@@ -52,6 +52,11 @@ async function atualizarDB() {
     await pool.query(
       `ALTER TABLE public.usu ADD IF NOT exists usuviuversao varchar(1) default 'N';`
     );
+    // Versão das atualizações que o usuário já visualizou. Comparada com a
+    // release mais recente para decidir se há novidade não vista.
+    await pool.query(
+      `ALTER TABLE public.usu ADD IF NOT exists usuversaovista varchar(64);`
+    );
     // Preferência por usuário: já visualizou o tour guiado da tela de Vitrines.
     await pool.query(
       `ALTER TABLE public.usu ADD IF NOT exists usuvitour varchar(1) default 'N';`
@@ -1561,8 +1566,9 @@ async function atualizarDB() {
     }
 
     // Na primeira carga preserva o acesso atual: libera as novas telas para os
-    // usuários existentes, exceto "grupos" (restrita a admins) e as telas que
-    // já tinham controle próprio (pedidos/estoque), migradas logo abaixo.
+    // usuários existentes, exceto as restritas (grupos/usuários/configurações/
+    // vitrines) e as que já tinham controle próprio (pedidos/estoque), migradas
+    // logo abaixo. As restritas são liberadas apenas para administradores.
     if (primeiraCargaTelas) {
       await pool.query(`
         INSERT INTO public.usu_telas
@@ -1570,7 +1576,8 @@ async function atualizarDB() {
         SELECT u.usucod, t.telacod, 'S'
         FROM public.usu u
         CROSS JOIN public.telas t
-        WHERE t.telachave NOT IN ('grupos', 'pedidos', 'estoque')
+        WHERE t.telachave NOT IN
+          ('grupos', 'pedidos', 'estoque', 'usuarios', 'configuracoes', 'vitrines')
         ON CONFLICT (usutelausucod, usutelatelacod) DO NOTHING;
 
         INSERT INTO public.usu_telas
@@ -1578,8 +1585,35 @@ async function atualizarDB() {
         SELECT u.usucod, t.telacod, 'S'
         FROM public.usu u
         CROSS JOIN public.telas t
-        WHERE t.telachave = 'grupos' AND u.usuadm = 'S'
+        WHERE t.telachave IN
+          ('grupos', 'usuarios', 'configuracoes', 'vitrines')
+          AND u.usuadm = 'S'
         ON CONFLICT (usutelausucod, usutelatelacod) DO NOTHING;
+      `);
+    }
+
+    // Migração única para bancos já existentes: libera as telas administrativas
+    // (usuarios/configuracoes/vitrines) para os administradores atuais, já que
+    // deixou de existir o bypass por usuadm. Roda apenas uma vez para não
+    // recriar acessos que o administrador venha a revogar.
+    const migracaoTelasAdmin = await pool.query(
+      `SELECT 1 FROM public.app_migrations WHERE migracao = $1`,
+      ["telas_admin_v2"]
+    );
+    if (migracaoTelasAdmin.rowCount === 0) {
+      await pool.query(`
+        INSERT INTO public.usu_telas
+          (usutelausucod, usutelatelacod, usutelapermitido)
+        SELECT u.usucod, t.telacod, 'S'
+        FROM public.usu u
+        CROSS JOIN public.telas t
+        WHERE u.usuadm = 'S'
+          AND t.telachave IN ('usuarios', 'configuracoes', 'vitrines')
+        ON CONFLICT (usutelausucod, usutelatelacod) DO NOTHING;
+
+        INSERT INTO public.app_migrations (migracao)
+        VALUES ('telas_admin_v2')
+        ON CONFLICT (migracao) DO NOTHING;
       `);
     }
 
