@@ -96,6 +96,7 @@ function panel() {
     addEventListener(event, callback) { if (event === "DOMContentLoaded") ready = callback; },
   };
   const context = vm.createContext({
+    ouOnLoad: (callback) => { ready = callback; },
     document, console: { error() {}, warn() {} }, URL, setTimeout, clearTimeout,
     BASE_URL: "http://localhost", confirm: () => true,
     bootstrap: { Modal: { getInstance: (el) => ({ hide: () => { el.hidden = true; } }) } },

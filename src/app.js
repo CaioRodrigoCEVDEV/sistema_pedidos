@@ -318,6 +318,10 @@ app.get("/relatorios", requireTela("relatorios"), (req, res) => {
   );
 });
 
+app.get("/estoque-historico", requireTela("estoque-historico"), (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/html/auth/admin/html/painel-estoque-historico.html"));
+});
+
 app.get("/estoque-grupos", requireTela("estoque-grupos"), (req, res) => {
   res.sendFile(
     path.join(__dirname, "../public/html/auth/admin/html/painel-estoque-grupos.html")

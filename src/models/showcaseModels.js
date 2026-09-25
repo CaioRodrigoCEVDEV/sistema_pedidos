@@ -1,6 +1,7 @@
 const pool = require("../config/db");
 const {
   disponibilidadeProdutoAutoSql,
+  menorSaldoDisponivelProdutoSql,
 } = require("../utils/disponibilidadeProdutoSql");
 const { precoPromocionalSql } = require("../utils/promocaoSql");
 
@@ -14,6 +15,8 @@ const MAX_MAX_ITEMS = 50;
 // modelo principal (promodcod legado ou primeiro vínculo em promod).
 const PRODUTO_SELECT = `
   pro.procod,
+  EXISTS (SELECT 1 FROM procor pc_cor WHERE pc_cor.procorprocod = pro.procod
+    AND COALESCE(pc_cor.procorcorescod, 0) <> 0) AS tem_cores,
   COALESCE(pro.prodes, '') AS prodes,
   COALESCE(pro.provl, 0) AS provl,
   ${precoPromocionalSql("pro")} AS provlpromo,
@@ -26,6 +29,7 @@ const PRODUTO_SELECT = `
   ${disponibilidadeProdutoAutoSql} AS prosemest_auto,
   COALESCE(pro.proacabando, 'N') AS proacabando,
   COALESCE(pro.proqtde, 0) AS proqtde,
+  ${menorSaldoDisponivelProdutoSql} AS estoque_menor_saldo,
   pro.prodtcad,
   modelo.modcod,
   modelo.moddes

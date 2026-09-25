@@ -1,6 +1,7 @@
 const {
   disponibilidadeProdutoSql,
   disponibilidadeProdutoAutoSql,
+  menorSaldoDisponivelProdutoSql,
 } = require("./disponibilidadeProdutoSql");
 
 // Monta as expressoes SQL das flags de estoque efetivas para a empresa.
@@ -8,7 +9,7 @@ const {
 // - Empresa que controla estoque (empusaest = 'S'): flags automaticas.
 //     prosemest  -> disponibilidade calculada em tempo real (estoque de cor/
 //                    grupo e, para pecas simples, o estoque geral);
-//     proacabando -> 'S' quando o estoque geral (pro.proqtde) esta entre 1 e
+//     proacabando -> 'S' quando alguma fonte (grupo/cor/produto) esta entre 1 e
 //                    a quantidade minima configurada em emp.empestoqmin.
 // - Empresa que nao controla estoque (empusaest = 'N'): as flags manuais do
 //   cadastro (pro.prosemest / pro.proacabando) continuam valendo e sao
@@ -28,7 +29,7 @@ function buildFlagsEstoqueSql({ usaEstoque, estoqueMin } = {}) {
   return {
     disponibilidadeSql: disponibilidadeProdutoAutoSql,
     acabandoSql:
-      `CASE WHEN COALESCE(pro.proqtde, 0) > 0 AND COALESCE(pro.proqtde, 0) <= ${min} ` +
+      `CASE WHEN ${menorSaldoDisponivelProdutoSql} > 0 AND ${menorSaldoDisponivelProdutoSql} <= ${min} ` +
       "THEN 'S' ELSE 'N' END",
   };
 }

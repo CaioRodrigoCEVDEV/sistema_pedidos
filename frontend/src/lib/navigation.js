@@ -29,6 +29,7 @@ export const navigation = [
       { label: "Devoluções", to: "/devolucoes", key: "devolucoes", icon: "↩" },
       { label: "Estoque", to: "/estoque", key: "estoque", icon: "▧" },
       { label: "Estoque Grupos", to: "/estoque-grupos", key: "estoque-grupos", icon: "▥" },
+      { label: "Histórico de movimentação", to: "/estoque-historico", key: "estoque-historico", icon: "◷" },
     ],
   },
   {

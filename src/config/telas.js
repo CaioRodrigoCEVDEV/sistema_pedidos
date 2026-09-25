@@ -76,6 +76,10 @@ const TELAS = [
     ordem: 9,
   },
   {
+    chave: "estoque-historico", nome: "Histórico de movimentação", rota: "/estoque-historico",
+    icone: "bi-clock-history", grupo: "Operações", ordem: 10,
+  },
+  {
     chave: "relatorios",
     nome: "Relatórios",
     rota: "/relatorios",

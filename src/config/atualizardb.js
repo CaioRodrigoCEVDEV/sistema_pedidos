@@ -1,5 +1,6 @@
 const pool = require("./db");
 const TELAS = require("./telas");
+const { ESTOQUE_HISTORICO_SQL } = require("./estoqueHistoricoSchema");
 const { ensureReleasesSchema } = require("./releasesSchema");
 const { ensureShowcasesSchema } = require("./showcasesSchema");
 const { ensurePromocoesSchema } = require("./promocoesSchema");
@@ -1680,6 +1681,19 @@ async function atualizarDB() {
     // FIM PERMISSÕES POR TELA
     // ==================================================================================================================================
 
+    await pool.query(ESTOQUE_HISTORICO_SQL);
+    // Nova tela herda apenas acessos existentes de estoque, uma unica vez.
+    await pool.query(`
+      INSERT INTO public.usu_telas (usutelausucod, usutelatelacod, usutelapermitido)
+      SELECT DISTINCT ut.usutelausucod, nova.telacod, 'S'
+      FROM public.usu_telas ut JOIN public.telas t ON t.telacod = ut.usutelatelacod
+      CROSS JOIN public.telas nova
+      WHERE t.telachave IN ('estoque','estoque-grupos') AND ut.usutelapermitido = 'S'
+        AND nova.telachave = 'estoque-historico'
+        AND NOT EXISTS (SELECT 1 FROM public.app_migrations WHERE migracao = 'estoque_historico_acesso_v1')
+      ON CONFLICT DO NOTHING;
+      INSERT INTO public.app_migrations(migracao) VALUES ('estoque_historico_acesso_v1') ON CONFLICT DO NOTHING;
+    `);
     await pool.query("COMMIT");
     console.log("✅ atualizardb: tabelas e registros padrão garantidos.");
   } catch (err) {

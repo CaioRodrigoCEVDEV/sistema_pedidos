@@ -37,7 +37,8 @@ exports.listarProduto = async (req, res) => {
       `select distinct procod, prodes, provl, procusto, tipodes,
         ${precoPromocionalSql("pro")} as provlpromo,
         ${flags.disponibilidadeSql} as prosemest,
-        ${flags.acabandoSql} as proacabando, proordem from pro
+        CASE WHEN EXISTS (SELECT 1 FROM procor pc_cor WHERE pc_cor.procorprocod = pro.procod AND COALESCE(pc_cor.procorcorescod, 0) <> 0)
+          THEN 'N' ELSE ${flags.acabandoSql} END as proacabando, proordem from pro
         join tipo on tipocod = protipocod
         left join promod on promodprocod = procod
         where promarcascod = $1 
@@ -124,6 +125,7 @@ exports.listarProdutos = async (req, res) => {
   const select = `
       select 
       procod,
+      EXISTS (SELECT 1 FROM procor pc_cor WHERE pc_cor.procorprocod = pro.procod AND COALESCE(pc_cor.procorcorescod, 0) <> 0) AS tem_cores,
       tipodes,
       marcasdes, 
       case when prodes is null then '' else prodes end as prodes, 
@@ -458,10 +460,12 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
   }
 
   try {
+    const config = await getEstoqueConfig();
     const result = await pool.query(
       `select procod, prodes, provl, tipodes, corcod,
         case when cornome is null then '' else cornome end as cornome,
         CASE
+          WHEN $3::boolean THEN CASE WHEN saldo.quantidade > 0 THEN 'N' ELSE 'S' END
           WHEN procor.procorid IS NULL THEN COALESCE(TRIM(pro.prosemest), 'N')
           WHEN EXISTS (
             SELECT 1 FROM part_group_items pgi_vinculo
@@ -475,13 +479,23 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
                 AND COALESCE(pg_estoque.stock_quantity, 0) > 0
             ) THEN 'N' ELSE 'S' END
           ELSE COALESCE(TRIM(procor.procorsemest), 'N')
-        END AS procorsemest
+        END AS procorsemest,
+        CASE WHEN $3::boolean AND saldo.quantidade > 0 AND saldo.quantidade <= $2
+          THEN 'S' ELSE 'N' END AS procoracabando
         from pro
         join tipo on tipocod = protipocod
         left join procor on procorprocod = procod
         left join cores on corcod = procorcorescod 
-        where procod  = $1 `,
-      [produtoId],
+        LEFT JOIN LATERAL (
+          SELECT CASE WHEN EXISTS (
+            SELECT 1 FROM part_group_items pgi WHERE pgi.procorid = procor.procorid
+          ) THEN COALESCE((
+            SELECT MAX(pg.stock_quantity) FROM part_group_items pgi
+            JOIN part_groups pg ON pg.id = pgi.group_id WHERE pgi.procorid = procor.procorid
+          ), 0) ELSE COALESCE(procor.procorqtde, pro.proqtde, 0) END AS quantidade
+        ) saldo ON TRUE
+        where procod = $1 `,
+      [produtoId, config.estoqueMin, config.usaEstoque],
     );
     res.status(200).json(result.rows);
   } catch (error) {

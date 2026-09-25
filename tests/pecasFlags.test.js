@@ -39,7 +39,7 @@ function createPanel() {
   vm.runInContext(source.slice(source.indexOf("function normalizarFlagPeca("),
     source.indexOf("function atualizarLinhaPecaEditada(")), context);
   const start = source.indexOf("async function carregarPecas(");
-  vm.runInContext(source.slice(start, source.indexOf('document.addEventListener("DOMContentLoaded"', start)), context);
+  vm.runInContext(source.slice(start, source.indexOf('ouOnLoad(', start)), context);
   return { context, requests, rows };
 }
 
@@ -154,10 +154,11 @@ test("API aplica flags efetivas de estoque na listagem, filtros e painel", async
     const [count, list] = queries;
 
     // Disponibilidade continua vindo da regra real (cor/grupo) e a flag de
-    // "acabando" e calculada a partir de proqtde x estoque minimo.
+    // "acabando" e calculada a partir do saldo efetivo x estoque minimo.
     assert.ok(list.sql.includes(`${flagsSql.disponibilidadeSql} as prosemest`));
     assert.ok(list.sql.includes(`${flagsSql.acabandoSql} as proacabando`));
-    assert.ok(list.sql.includes("COALESCE(pro.proqtde, 0) <= 5"));
+    assert.ok(list.sql.includes("pg.stock_quantity"));
+    assert.ok(list.sql.includes("<= 5"));
 
     const temFiltroSemest = list.sql.includes(`${flagsSql.disponibilidadeSql} = 'S'`);
     const temFiltroAcabando = list.sql.includes(`${flagsSql.acabandoSql} = 'S'`);
@@ -172,7 +173,8 @@ test("API aplica flags efetivas de estoque na listagem, filtros e painel", async
   await controller.listarProdutosPainelId({ params: { id: "1" } }, response());
   assert.ok(queries[0].sql.includes(`${flagsSql.disponibilidadeSql} as prosemest`));
   assert.ok(queries[0].sql.includes(`${flagsSql.acabandoSql} as proacabando`));
-  assert.ok(queries[0].sql.includes("COALESCE(pro.proqtde, 0) <= 5"));
+  assert.ok(queries[0].sql.includes("pg.stock_quantity"));
+  assert.ok(queries[0].sql.includes("<= 5"));
 });
 
 test("Empresa sem controle de estoque respeita as flags manuais", async () => {
@@ -311,7 +313,8 @@ test("Vitrine com controle de estoque usa as flags automaticas", async () => {
       prosemest: "S",
       prosemest_auto: "N",
       proacabando: "N",
-      proqtde: 3,
+      proqtde: 20,
+      estoque_menor_saldo: 5,
     })
   );
 
@@ -319,4 +322,13 @@ test("Vitrine com controle de estoque usa as flags automaticas", async () => {
   const item = payload.showcases[0].items[0];
   assert.equal(item.prosemest, "N");
   assert.equal(item.proacabando, "S");
+});
+
+test("Vitrine com cores deixa ultimas unidades para a selecao de cor", async () => {
+  estoqueConfigMock = { usaEstoque: true, empusaest: "S", estoqueMin: 5 };
+  showcaseRows.length = 0;
+  showcaseRows.push(itemShowcase({ tem_cores: true, estoque_menor_saldo: 4, prosemest_auto: "N", proacabando: "S" }));
+  const payload = await lerVitrinePublica();
+  assert.equal(payload.showcases[0].items[0].proacabando, "N");
+  assert.equal(payload.showcases[0].items[0].prosemest, "N");
 });

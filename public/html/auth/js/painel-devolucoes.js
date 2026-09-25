@@ -128,7 +128,7 @@ function renderSoldItems() {
 function renderHistory(items) {
   if (!items.length) {
     historyTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted p-4">Nenhuma devolução registrada.</td></tr>';
-    if (historyMobileList) historyMobileList.innerHTML = "";
+    if (historyMobileList) historyMobileList.innerHTML = '<p class="text-center text-muted p-4 mb-0">Nenhuma devolução registrada.</p>';
     return;
   }
   historyTableBody.innerHTML = items.map((item) => `
@@ -189,6 +189,8 @@ async function loadSoldItems() {
   if (dataInicio) params.set("dataInicio", dataInicio);
   if (dataFim) params.set("dataFim", dataFim);
 
+  salesEmpty.classList.add("d-none");
+  if (salesMobileList) salesMobileList.innerHTML = '<p class="text-center text-muted p-4 mb-0" role="status">Carregando itens...</p>';
   searchButton.disabled = true;
   searchButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Buscando';
   salesTableBody.innerHTML = '<tr><td colspan="9" class="text-center p-4"><span class="spinner-border spinner-border-sm me-2"></span>Carregando...</td></tr>';
@@ -206,11 +208,13 @@ async function loadSoldItems() {
 }
 
 async function loadHistory() {
+  if (historyMobileList) historyMobileList.innerHTML = '<p class="text-center text-muted p-4 mb-0" role="status">Carregando devoluções...</p>';
   try {
     const history = await requestJson(`${BASE_URL}/devolucoes/historico`);
     renderHistory(history);
   } catch (error) {
     historyTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger p-4">Erro ao carregar o histórico.</td></tr>';
+    if (historyMobileList) historyMobileList.innerHTML = '<p class="text-center text-danger p-4 mb-0" role="alert">Erro ao carregar o histórico.</p>';
   }
 }
 
