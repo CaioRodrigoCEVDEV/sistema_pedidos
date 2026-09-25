@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const { isMasterUser } = require("../config/masterUser");
 
 // Lista o catálogo de telas ativas (usado pelo modal de usuários).
 exports.listarTelas = async (req, res) => {
@@ -17,22 +18,28 @@ exports.listarTelas = async (req, res) => {
 };
 
 // Permissões do usuário logado (usado pelo shell para montar o menu).
-// A única fonte de autorização são as telas liberadas em usu_telas; não há
-// mais bypass de administrador nem flags de módulo.
+// A fonte de autorização é usu_telas; não há bypass de administrador nem flags
+// de módulo. Exceção: o usuário master recebe todas as telas ativas, para que
+// todas apareçam no menu sem depender de liberação manual.
 exports.minhasPermissoes = async (req, res) => {
   const { usucod, usuadm, usupv, usuest, empusapv, empusaest } = req.token;
 
   try {
-    const result = await pool.query(
-      `SELECT t.telachave
-         FROM public.usu_telas ut
-         JOIN public.telas t ON t.telacod = ut.usutelatelacod
-        WHERE ut.usutelausucod = $1
-          AND ut.usutelapermitido = 'S'
-          AND t.telaativa = 'S'
-        ORDER BY t.telaordem`,
-      [usucod]
-    );
+    const master = isMasterUser(req.token);
+    const sql = master
+      ? `SELECT telachave
+           FROM public.telas
+          WHERE telaativa = 'S'
+          ORDER BY telaordem`
+      : `SELECT t.telachave
+           FROM public.usu_telas ut
+           JOIN public.telas t ON t.telacod = ut.usutelatelacod
+          WHERE ut.usutelausucod = $1
+            AND ut.usutelapermitido = 'S'
+            AND t.telaativa = 'S'
+          ORDER BY t.telaordem`;
+
+    const result = await pool.query(sql, master ? [] : [usucod]);
 
     res.status(200).json({
       usuadm,

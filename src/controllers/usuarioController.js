@@ -2,6 +2,7 @@ const pool = require("../config/db");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const releaseModels = require("../models/releaseModels");
+const { MASTER_EMAIL } = require("../config/masterUser");
 
 // Substitui as permissões de tela de um usuário dentro de uma transação.
 // A presença da linha com permitido='S' libera a tela; a ausência mantém o
@@ -228,8 +229,9 @@ exports.listarUsuarios = async (req, res) => {
                    AND t.telaativa = 'S'
               ), '[]'::json) AS telas
          FROM usu u
-        WHERE u.ususta in ('A','I') and u.usuemail <> 'admin@orderup.com.br'
-        ORDER BY u.ususta,u.usucod DESC`
+        WHERE u.ususta in ('A','I') and u.usuemail <> $1
+        ORDER BY u.ususta,u.usucod DESC`,
+      [MASTER_EMAIL]
     );
     res.status(200).json(result.rows);
   } catch (error) {
@@ -262,7 +264,8 @@ exports.excluirCadastro = async (req, res) => {
 exports.listarVendedores = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT usucod,usunome,usuemail,usurca FROM usu WHERE ususta in ('A','I') and usurca = 'S' and usuemail <> 'admin@orderup.com.br' ORDER BY ususta,usucod DESC`
+      `SELECT usucod,usunome,usuemail,usurca FROM usu WHERE ususta in ('A','I') and usurca = 'S' and usuemail <> $1 ORDER BY ususta,usucod DESC`,
+      [MASTER_EMAIL]
     );
     res.status(200).json(result.rows);
   } catch (error) {
