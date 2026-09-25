@@ -1,11 +1,6 @@
 // Formato de mensagem compartilhado pelo pedido e catalogo.
 (function () {
   var EMOJI = { caixa: "📦", celular: "📱", obs: "📌" };
-  function limparNomeOrcamento(nome) {
-    return String(nome || "---")
-      .replace(/\s*\([^)]*\)/g, "")
-      .trim();
-  }
 
   // Bloco de itens (título + grupos por contexto + observações). Fonte única
   // usada pelo orçamento e pelo pedido; só o título muda em cada fluxo.
@@ -18,7 +13,7 @@
     var blocos = [EMOJI.caixa + " " + (titulo || "ORÇAMENTO DE PEÇAS:")];
 
     function pushItem(item) {
-      var nome = limparNomeOrcamento(item.nome);
+      var nome = String(item.nome || "---").trim();
       var qtde = Number(item.qt) || 0;
       var valor = parseFloat(item.preco) || 0;
       blocos.push("(" + qtde + ") " + nome + " R$" + valor.toFixed(2));

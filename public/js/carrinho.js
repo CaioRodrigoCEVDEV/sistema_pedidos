@@ -368,8 +368,8 @@
     obs: "📌",
   };
 
-  // Remove informações adicionais do nome apenas na mensagem compartilhada
-  // (ex.: cor entre parênteses). O nome original no carrinho/banco é preservado.
+  // Mensagem compartilhada (orçamento/pedido) preserva o nome completo do
+  // produto, incluindo a cor quando houver (ex.: "Tela (Preto)").
   function buildMensagemOrcamento(cart, observacoes, titulo, agrupar) {
     return window.OrderUpMensagemPecas(cart, observacoes, titulo, agrupar);
   }

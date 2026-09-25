@@ -73,6 +73,6 @@ test("Mensagem de pedido mantém quantidade, observação e formato antigo", () 
   const result = context.window.OrderUpMensagemPecas([
     { nome: "Tela (Preto)", qt: 2, preco: 50, tipo: "Tela", modelo: "A01" },
   ], "Retirada", "PEDIDO DE PEÇAS:", false);
-  assert.equal(result, "📦 PEDIDO DE PEÇAS:\n\n(2) Tela R$50.00\n\n📌 Observações: Retirada\n");
+  assert.equal(result, "📦 PEDIDO DE PEÇAS:\n\n(2) Tela (Preto) R$50.00\n\n📌 Observações: Retirada\n");
   assert.doesNotMatch(read("public/html/carrinho.html"), /botao-compartilhar-orcamento/);
 });
