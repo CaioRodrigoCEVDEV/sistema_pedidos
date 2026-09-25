@@ -70,6 +70,8 @@ var OU_NAV_GROUPS = [
         icon: "bi-collection",
         perm: "tela:estoque-grupos",
       },
+      { href: "/estoque-historico", route: "/estoque-historico", label: "Histórico de movimentação", icon: "bi-clock-history", perm: "tela:estoque-historico",
+      },
     ],
   },
   {

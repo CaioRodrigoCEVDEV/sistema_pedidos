@@ -1,5 +1,7 @@
 const relatoriosModels = require("../models/relatoriosModels");
+const { criarTopPecasPdf } = require("../utils/topPecasPdf");
 const ExcelJS = require("exceljs");
+const { formatarTopPecasExcel } = require("../utils/topPecasExcel");
 const PDFDocument = require("pdfkit");
 const { parseIntegerParam } = require("../utils/parseIntegerParam");
 
@@ -52,137 +54,10 @@ exports.getTopPecasPDF = async (req, res) => {
 
     const data = await relatoriosModels.getTopPecas(filters);
 
-    // Cria documento PDF
-    const doc = new PDFDocument({ margin: 50 });
-
-    // Define headers para download
+    const doc = criarTopPecasPdf(data, filters);
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      'attachment; filename="top-pecas.pdf"',
-    );
-
-    // Pipe o PDF para a resposta
+    res.setHeader("Content-Disposition", 'attachment; filename="top-pecas.pdf"');
     doc.pipe(res);
-
-    // Título
-    doc.fontSize(18).text("Relatório: Top Peças", { align: "center" });
-    doc.moveDown();
-
-    // Informações do filtro
-    doc.fontSize(10);
-    if (dataInicio) doc.text(`Data Início: ${dataInicio}`);
-    if (dataFim) doc.text(`Data Fim: ${dataFim}`);
-    if (marca) doc.text(`Marca: ${marca}`);
-    doc.text(`Agrupamento: ${groupBy === "grupo" ? "Por Grupo" : "Por Peça"}`);
-    doc.moveDown();
-
-    const tableColumns =
-      groupBy === "grupo"
-        ? [
-            { header: "Grupo", key: "grupo", width: 95, align: "left" },
-            {
-              header: "Qtde Vendida",
-              key: "qtde_vendida",
-              width: 70,
-              align: "center",
-            },
-            { header: "Modelo", key: "modelo", width: 110, align: "left" },
-            { header: "Peça", key: "peca", width: 160, align: "left" },
-            { header: "Custo", key: "custo", width: 60, align: "right" },
-          ]
-        : [
-            { header: "Peça", key: "peca", width: 160, align: "left" },
-            {
-              header: "Qtde Vendida",
-              key: "qtde_vendida",
-              width: 70,
-              align: "center",
-            },
-            { header: "Modelo", key: "modelo", width: 110, align: "left" },
-            { header: "Grupo", key: "grupo", width: 95, align: "left" },
-            { header: "Custo", key: "custo", width: 60, align: "right" },
-          ];
-    const ROW_PADDING_Y = 4;
-    const tableX = doc.page.margins.left;
-
-    function getRowHeight(values, fontName = "Helvetica", fontSize = 10) {
-      doc.font(fontName).fontSize(fontSize);
-      return Math.max(
-        ...values.map((value, index) =>
-          doc.heightOfString(String(value), {
-            width: tableColumns[index].width,
-            align: tableColumns[index].align,
-          }),
-        ),
-      );
-    }
-
-    function drawRow(values, y, fontName = "Helvetica", fontSize = 10) {
-      doc.font(fontName).fontSize(fontSize);
-      let currentX = tableX;
-
-      values.forEach((value, index) => {
-        const column = tableColumns[index];
-        doc.text(String(value), currentX, y, {
-          width: column.width,
-          align: column.align,
-        });
-        currentX += column.width;
-      });
-    }
-
-    const headerValues = tableColumns.map((column) => column.header);
-    const headerHeight = getRowHeight(headerValues, "Helvetica-Bold", 10);
-    const startY = doc.y;
-
-    drawRow(headerValues, startY, "Helvetica-Bold", 10);
-    doc.y = startY + headerHeight + ROW_PADDING_Y;
-
-    // Dados
-    data.forEach((row) => {
-      const qtde = Number(row.qtde_vendida);
-      const qtdeFormatada = Number.isFinite(qtde) ? String(Math.trunc(qtde)) : "0";
-      const custoFormatado =
-        row.custo != null
-          ? Number(row.custo).toLocaleString("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            })
-          : "-";
-
-      const rowValues =
-        groupBy === "grupo"
-          ? [
-              row.grupo || "-",
-              qtdeFormatada,
-              row.modelo || "-",
-              row.peca || "-",
-              custoFormatado,
-            ]
-          : [
-              row.peca || "-",
-              qtdeFormatada,
-              row.modelo || "-",
-              row.grupo || "-",
-              custoFormatado,
-            ];
-
-      const rowHeight = getRowHeight(rowValues);
-
-      if (doc.y + rowHeight > PDF_PAGE_BREAK_Y) {
-        doc.addPage();
-        const headerY = doc.y;
-        drawRow(headerValues, headerY, "Helvetica-Bold", 10);
-        doc.y = headerY + headerHeight + ROW_PADDING_Y;
-      }
-
-      const currentY = doc.y;
-      drawRow(rowValues, currentY);
-      doc.y = currentY + rowHeight + ROW_PADDING_Y;
-    });
-
-    // Finaliza o documento
     doc.end();
   } catch (error) {
     console.error("Erro ao gerar PDF:", error);
@@ -211,39 +86,7 @@ exports.getTopPecasXLS = async (req, res) => {
 
     // Cria workbook do Excel
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Top Peças");
-
-    // Define colunas baseado no tipo de agrupamento
-    if (groupBy === "grupo") {
-      worksheet.columns = [
-        { header: "Grupo", key: "grupo", width: 30 },
-        { header: "Qtde Vendida", key: "qtde_vendida", width: 15 },
-        { header: "Modelo", key: "modelo", width: 30 },
-        { header: "Peça", key: "peca", width: 30 },
-        { header: "Custo", key: "custo", width: 15 },
-      ];
-    } else {
-      worksheet.columns = [
-        { header: "Peça", key: "peca", width: 30 },
-        { header: "Qtde Vendida", key: "qtde_vendida", width: 15 },
-        { header: "Modelo", key: "modelo", width: 30 },
-        { header: "Grupo", key: "grupo", width: 20 },
-        { header: "Custo", key: "custo", width: 15 },
-      ];
-    }
-
-    // Estiliza o cabeçalho
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FFD3D3D3" },
-    };
-
-    // Adiciona os dados
-    data.forEach((row) => {
-      worksheet.addRow(row);
-    });
+    formatarTopPecasExcel(workbook, data, filters);
 
     // Define headers para download
     res.setHeader(

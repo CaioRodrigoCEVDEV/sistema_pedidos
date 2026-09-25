@@ -60,6 +60,8 @@ async function getTopPecas(filters = {}) {
         SELECT
           pg.id AS group_id,
           pg.name AS grupo,
+          STRING_AGG(DISTINCT t.tipodes, ', ' ORDER BY t.tipodes) AS tipo,
+          STRING_AGG(DISTINCT b.marcasdes, ', ' ORDER BY b.marcasdes) AS marca,
           SUM(pvi.pviqtde) AS qtde_vendida,
           STRING_AGG(DISTINCT m.moddes, ', ' ORDER BY m.moddes) AS modelo,
           STRING_AGG(DISTINCT p.prodes, ', ' ORDER BY p.prodes) AS peca,
@@ -68,6 +70,8 @@ async function getTopPecas(filters = {}) {
         JOIN pv ON pvcod = pvipvcod
         JOIN pro p ON pviprocod = p.procod
         LEFT JOIN modelo m ON m.modcod = p.promodcod
+        LEFT JOIN tipo t ON t.tipocod = p.protipocod
+        LEFT JOIN marcas b ON b.marcascod = p.promarcascod
         JOIN (
           SELECT DISTINCT pc2.procorprocod, pgi2.group_id
           FROM procor pc2
@@ -94,14 +98,14 @@ async function getTopPecas(filters = {}) {
         GROUP BY grp.group_id
       )
       SELECT
-        v.grupo,
+        v.grupo, v.tipo, v.marca,
         GREATEST(v.qtde_vendida - COALESCE(dv.qtde_devolvida, 0), 0) AS qtde_vendida,
         v.modelo,
         v.peca,
         v.custo
       FROM vendas v
       LEFT JOIN devolvidas dv ON dv.group_id = v.group_id
-      ORDER BY qtde_vendida DESC
+      ORDER BY LOWER(v.tipo) NULLS LAST, LOWER(v.marca) NULLS LAST, LOWER(v.peca) NULLS LAST, v.grupo
     `;
 
     const result = await pool.query(query, params);
@@ -110,7 +114,7 @@ async function getTopPecas(filters = {}) {
     // Agrupado por peça individual — grupo via part_group_items, sem depender de pro.part_group_id
     const query = `
       SELECT 
-        p.prodes as peca,
+        p.prodes as peca, t.tipodes AS tipo, b.marcasdes AS marca,
         SUM(pviqtde) as qtde_vendida,
         m.moddes as modelo,
         COALESCE(pg.name, '-') as grupo,
@@ -119,6 +123,8 @@ async function getTopPecas(filters = {}) {
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
       LEFT JOIN modelo m ON m.modcod = p.promodcod
+        LEFT JOIN tipo t ON t.tipocod = p.protipocod
+        LEFT JOIN marcas b ON b.marcascod = p.promarcascod
       LEFT JOIN procor pc ON pc.procorprocod = p.procod
         AND (
           (pvi.pviprocorid IS NOT NULL AND pc.procorcorescod = pvi.pviprocorid)
@@ -127,8 +133,8 @@ async function getTopPecas(filters = {}) {
       LEFT JOIN part_group_items pgi ON pgi.procorid = pc.procorid
       LEFT JOIN part_groups pg ON pg.id = pgi.group_id
       WHERE ${whereClause}
-      GROUP BY p.procod, p.prodes, m.moddes, pg.name, procusto
-      ORDER BY qtde_vendida DESC
+      GROUP BY p.procod, p.prodes, t.tipodes, b.marcasdes, m.moddes, pg.name, procusto
+      ORDER BY LOWER(t.tipodes) NULLS LAST, LOWER(b.marcasdes) NULLS LAST, LOWER(p.prodes) NULLS LAST, p.procod, pg.name
     `;
 
     const result = await pool.query(query, params);

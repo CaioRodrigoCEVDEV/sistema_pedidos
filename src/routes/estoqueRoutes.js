@@ -6,6 +6,8 @@ const requireTela = require("../middlewares/telaMiddleware");
 const relatoriosController = require("../controllers/relatoriosController");
 const partGroupController = require("../controllers/partGroupController");
 
+router.get("/api/estoque-historico", requireTela("estoque-historico", { api: true }), require("../controllers/estoqueHistoricoController").listar);
+
 const requireEstoque = requireTela("estoque", { api: true });
 const requireEstoqueGrupos = requireTela("estoque-grupos", { api: true });
 

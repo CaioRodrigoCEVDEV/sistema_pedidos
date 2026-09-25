@@ -15,6 +15,7 @@ const OrdersPage = lazy(() => import("./pages/OrdersPage.jsx"));
 const ReturnsPage = lazy(() => import("./pages/ReturnsPage.jsx"));
 const StockPage = lazy(() => import("./pages/StockPage.jsx"));
 const GroupStockPage = lazy(() => import("./pages/GroupStockPage.jsx"));
+const StockHistoryPage = lazy(() => import("./pages/StockHistoryPage.jsx"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage.jsx"));
 const BackupsPage = lazy(() => import("./pages/BackupsPage.jsx"));
 const UsersPage = lazy(() => import("./pages/UsersPage.jsx"));
@@ -123,6 +124,7 @@ function AuthenticatedApp() {
           }
         />
         {[
+          ["estoque-historico", "estoque-historico", <StockHistoryPage />],
           ["relatorios", "relatorios", <ReportsPage />],
           ["backup", "backups", <BackupsPage />],
           ["users", "usuarios", <UsersPage />],

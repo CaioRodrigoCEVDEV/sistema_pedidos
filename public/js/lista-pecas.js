@@ -76,6 +76,47 @@ let todasAsPecas = [];
 let pesquisaAtual = "";
 let ordenacaoAtual = "ordem-asc";
 let dadosCarregados = false;
+let pecasVisiveis = [];
+let podeCompartilharPecas = false;
+
+async function validarCompartilhamento() {
+  const botao = document.getElementById("compartilharPecas");
+  podeCompartilharPecas = false;
+  if (botao) botao.hidden = true;
+  try {
+    const resposta = await fetch(`${BASE_URL}/me/usuario`, {
+      credentials: "include", cache: "no-store",
+    });
+    const usuario = resposta.ok ? await resposta.json() : null;
+    podeCompartilharPecas = Boolean(usuario?.usunome);
+  } catch (_) {
+    podeCompartilharPecas = false;
+  }
+  if (botao) {
+    botao.hidden = !podeCompartilharPecas;
+    botao.disabled = !podeCompartilharPecas || pecasVisiveis.length === 0;
+  }
+}
+
+function compartilharPecas() {
+  if (!podeCompartilharPecas || !dadosCarregados || !pecasVisiveis.length) return;
+  const marca = document.getElementById("marcaTitulo")?.textContent || "";
+  const itens = pecasVisiveis.map((peca) => ({
+    nome: peca.prodes || "Peça",
+    tipo: peca.tipodes || "",
+    modelo: modeloAtual,
+    marca,
+    qt: 1,
+    preco: peca.provlpromo != null ? peca.provlpromo : peca.provl,
+  }));
+  const mensagem = window.OrderUpMensagemPecas(itens, "", "ORÇAMENTO DE PEÇAS:", true);
+  const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
+  const popup = window.open(url, "_blank");
+  if (popup) popup.opener = null;
+  else window.location.href = url;
+}
+
+document.getElementById("compartilharPecas")?.addEventListener("click", compartilharPecas);
 
 // Contador de resultados com concordância singular/plural.
 function atualizarContadorPecas(total) {
@@ -189,6 +230,9 @@ function renderPecas() {
     lista.sort((a, b) => (Number(a.provl) || 0) - (Number(b.provl) || 0));
   }
   if (direcao === "desc") lista.reverse();
+  pecasVisiveis = lista;
+  const compartilhar = document.getElementById("compartilharPecas");
+  if (compartilhar) compartilhar.disabled = !podeCompartilharPecas || lista.length === 0;
 
   corpoTabela.innerHTML = "";
   lista.forEach((dado) => corpoTabela.appendChild(criarCardPeca(dado)));
@@ -265,6 +309,7 @@ if (tipoUrl) {
 }
 
 ouOnLoad(function () {
+  validarCompartilhamento();
   const produtosUrl = buildProdutosUrl(id, marcascod, modelo);
 
   if (!produtosUrl) {
@@ -380,186 +425,14 @@ window.adicionarAoCarrinho = async function (procod) {
  * @param {number|null} precoOriginal - Preço original (para exibir desconto)
  */
 function exibirComboBoxCores(cores, procod, nome, tipo, marca, preco, qtde, precoOriginal) {
-  // Cria o backdrop (overlay cinza de fundo)
-  const backdrop = document.createElement("div");
-  backdrop.id = "modal-cor-backdrop";
-  backdrop.style.position = "fixed";
-  backdrop.style.top = "0";
-  backdrop.style.left = "0";
-  backdrop.style.width = "100%";
-  backdrop.style.height = "100%";
-  backdrop.style.backgroundColor = "rgba(0, 0, 0, 0.4)";
-  backdrop.style.zIndex = "9998";
-
-  // Cria o modal
-  const modal = document.createElement("div");
-  modal.id = "modal-cor-selecao";
-  modal.style.position = "fixed";
-  modal.style.top = "50%";
-  modal.style.left = "50%";
-  modal.style.transform = "translate(-50%, -50%)";
-  modal.style.background = "var(--ou-surface, #fff)";
-  modal.style.color = "var(--ou-text, #0f172a)";
-  modal.style.padding = "20px";
-  modal.style.borderRadius = "18px";
-  modal.style.border = "1px solid var(--ou-border-soft, #eaeef5)";
-  modal.style.boxShadow = "var(--ou-shadow-lg, 0 18px 48px rgba(15,23,42,.12))";
-  modal.style.zIndex = "9999";
-
-  // Monta HTML do modal com indicação de cores sem estoque
-  modal.innerHTML = `
-    <style>
-      #modal-cor-container {
-        max-width: 300px;
-        font-family: sans-serif;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      #modal-cor-container p {
-        font-size: 16px;
-        margin: 0;
-        font-weight: 600;
-        text-align: center;
-      }
-      #modal-cor-container select {
-        width: 100%;
-        padding: 8px;
-        font-size: 14px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-      }
-      #modal-cor-botoes {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-      }
-      #modal-cor-botoes button {
-        padding: 6px 12px;
-        font-size: 14px;
-        border-radius: 6px;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-      #btn-confirmar-cor {
-        background-color: #28a745;
-        color: white;
-      }
-      #btn-confirmar-cor:hover {
-        background-color: #218838;
-      }
-      #btn-cancelar-cor {
-        background-color: #dc3545;
-        color: white;
-      }
-      #btn-cancelar-cor:hover {
-        background-color: #c82333;
-      }
-      #select-cor option[disabled] {
-        color: #888;
-        background: #f5f5f5;
-        font-style: italic;
-      }
-    </style>
-
-    <div id="modal-cor-container">
-      <p>Escolha a cor do produto:</p>
-      <select id="select-cor">
-  ${cores
-    .map((cor) => {
-      const idCor = cor.corcod;
-
-      console.log("Cor id:",  idCor);
-      const semEstoque = cor.procorsemest === "S";
-      const label = `${cor.cornome}${semEstoque ? " (Sem estoque)" : ""}`;
-
-      return `
-        <option value="${idCor}" data-nome="${cor.cornome}"
-          ${semEstoque ? 'disabled data-semest="S"' : ""}>
-          ${label}
-        </option>
-      `;
-    })
-    .join("")}
-</select>
-      <div id="modal-cor-botoes">
-        <button id="btn-cancelar-cor">Cancelar</button>
-        <button id="btn-confirmar-cor">Confirmar</button>
-      </div>
-    </div>
-    <script>
-      (function(){
-        const select = document.getElementById('select-cor');
-        const confirmBtn = document.getElementById('btn-confirmar-cor');
-        // Se todas as opções estiverem sem estoque, desabilita confirmar
-        if ([...select.options].every(o => o.disabled)) {
-          confirmBtn.disabled = true;
-          confirmBtn.textContent = 'Indisponível';
-          confirmBtn.style.backgroundColor = '#999';
-          confirmBtn.style.cursor = 'not-allowed';
-        } else {
-          // Seleciona automaticamente a primeira opção disponível
-          const firstAvailable = [...select.options].find(o => !o.disabled);
-          if (firstAvailable) firstAvailable.selected = true;
-        }
-      })();
-    </script>
-  `;
-
-  document.body.appendChild(backdrop);
-  document.body.appendChild(modal);
-
-  /**
-   * Função para fechar o modal e remover o backdrop
-   * Garante que o overlay cinza seja removido corretamente
-   */
-  function fecharModalCores() {
-    if (modal && modal.parentNode) {
-      modal.remove();
-    }
-    if (backdrop && backdrop.parentNode) {
-      backdrop.remove();
-    }
-  }
-
-  // Fecha o modal ao clicar no backdrop (overlay cinza)
-  backdrop.addEventListener("click", function () {
-    fecharModalCores();
-  });
-
-  // Handler do botão Confirmar - usa addEventListener para consistência
-  const btnConfirmar = document.getElementById("btn-confirmar-cor");
-  btnConfirmar.addEventListener("click", function () {
-    const corSelecionada =
-      document.getElementById("select-cor").options[
-        document.getElementById("select-cor").selectedIndex
-      ].text;
-    const idComCor = `${procod}-${corSelecionada}`;
-    const nomeComCor = `${nome} (${corSelecionada})`;
-    const idCorSelecionada = Number(document.getElementById("select-cor").value) || null;
-
+  window.ouEscolherCor({ cores, nome, onConfirm(cor) {
+    const corSelecionada = cor.cornome;
     adicionarProdutoAoCarrinho(
-      idComCor,
-      nomeComCor,
-      tipo,
-      marca,
-      preco,
-      qtde,
-      corSelecionada,
-      idCorSelecionada,
-      precoOriginal
+      `${procod}-${corSelecionada}`, `${nome} (${corSelecionada})`,
+      tipo, marca, preco, qtde, corSelecionada, Number(cor.corcod) || null, precoOriginal
     );
-
     mostrarFeedbackAdicionado(procod);
-    fecharModalCores();
-  });
-
-  // Handler do botão Cancelar - usa addEventListener para consistência
-  const btnCancelar = document.getElementById("btn-cancelar-cor");
-  btnCancelar.addEventListener("click", function () {
-    fecharModalCores();
-  });
+  } });
 }
 
 /**

@@ -47,6 +47,7 @@ function updateTableHeader() {
   if (groupBy === "grupo") {
     tableHeader.innerHTML = `
           <tr>
+            <th>Tipo</th><th>Marca</th>
             <th>Grupo</th>
             <th class="text-center">Qtde Vendida</th>
             <th>Modelo</th>
@@ -57,6 +58,7 @@ function updateTableHeader() {
   } else {
     tableHeader.innerHTML = `
           <tr>
+            <th>Tipo</th><th>Marca</th>
             <th>Peça</th>
             <th class="text-center">Qtde Vendida</th>
             <th>Modelo</th>
@@ -84,7 +86,7 @@ function renderTable(data) {
     const tr = document.createElement("tr");
 
     if (groupBy === "grupo") {
-      tr.innerHTML = `
+      tr.innerHTML = `<td>${row.tipo || "-"}</td><td>${row.marca || "-"}</td>
         <td>${row.grupo || "-"}</td>
         <td class="text-center">${row.qtde_vendida != null ? parseInt(row.qtde_vendida, 10).toLocaleString("pt-BR") : "0"}</td>
         <td>${row.modelo || "-"}</td>
@@ -99,7 +101,7 @@ function renderTable(data) {
         }</td>
       `;
     } else {
-      tr.innerHTML = `
+      tr.innerHTML = `<td>${row.tipo || "-"}</td><td>${row.marca || "-"}</td>
             <td>${row.peca || "-"}</td>
             <td class="text-center">${row.qtde_vendida != null ? parseInt(row.qtde_vendida, 10) : 0}</td>
             <td>${row.modelo || "-"}</td>

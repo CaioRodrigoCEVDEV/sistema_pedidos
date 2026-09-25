@@ -37,17 +37,56 @@ const disponibilidadeProdutoSql = `
   END
 `;
 
-// Modo automatico: pecas simples sao calculadas a partir do estoque geral.
-const disponibilidadeProdutoAutoSql = `
-  CASE
-    WHEN EXISTS (
-      SELECT 1 FROM procor pc_existente
-      WHERE pc_existente.procorprocod = pro.procod
-    ) THEN
-      ${disponibilidadePorCorSql}
-    ELSE
-      CASE WHEN COALESCE(pro.proqtde, 0) <= 0 THEN 'S' ELSE 'N' END
-  END
+// Saldo vendavel: cada grupo entra uma vez, mesmo que varias cores da peca
+// compartilhem esse grupo. Cores independentes somam seus proprios saldos.
+// Sem cores reais nem grupo, a baixa do pedido usa pro.proqtde, inclusive
+// quando existe um cadastro auxiliar de procor com cor NULL/0.
+const fontesEstoqueProdutoSql = `
+    SELECT DISTINCT 'grupo' AS origem, pg.id AS id, pg.stock_quantity AS quantidade
+    FROM procor pc
+    JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+    JOIN part_groups pg ON pg.id = pgi.group_id
+    WHERE pc.procorprocod = pro.procod
+    UNION ALL
+    SELECT 'cor', pc.procorid, pc.procorqtde
+    FROM procor pc
+    WHERE pc.procorprocod = pro.procod
+      AND COALESCE(pc.procorcorescod, 0) <> 0
+      AND NOT EXISTS (
+        SELECT 1 FROM part_group_items pgi WHERE pgi.procorid = pc.procorid
+      )
+    UNION ALL
+    SELECT 'produto', pro.procod, pro.proqtde
+    WHERE NOT EXISTS (
+      SELECT 1 FROM procor pc
+      WHERE pc.procorprocod = pro.procod
+        AND COALESCE(pc.procorcorescod, 0) <> 0
+    ) AND NOT EXISTS (
+      SELECT 1 FROM procor pc
+      JOIN part_group_items pgi ON pgi.procorid = pc.procorid
+      WHERE pc.procorprocod = pro.procod
+    )
 `;
 
-module.exports = { disponibilidadeProdutoSql, disponibilidadeProdutoAutoSql };
+const estoqueEfetivoProdutoSql = `COALESCE((
+  SELECT SUM(GREATEST(COALESCE(saldos.quantidade, 0), 0))
+  FROM (${fontesEstoqueProdutoSql}) saldos
+), 0)`;
+
+// Uma opcao com saldo baixo precisa ser sinalizada mesmo quando outra tem
+// estoque alto. Opcoes zeradas nao geram "acabando".
+const menorSaldoDisponivelProdutoSql = `COALESCE((
+  SELECT MIN(saldos.quantidade) FILTER (WHERE saldos.quantidade > 0)
+  FROM (${fontesEstoqueProdutoSql}) saldos
+), 0)`;
+
+// Sem estoque geral somente quando nenhuma opcao tem saldo positivo.
+const disponibilidadeProdutoAutoSql =
+  `CASE WHEN ${estoqueEfetivoProdutoSql} <= 0 THEN 'S' ELSE 'N' END`;
+
+module.exports = {
+  disponibilidadeProdutoSql,
+  disponibilidadeProdutoAutoSql,
+  estoqueEfetivoProdutoSql,
+  menorSaldoDisponivelProdutoSql,
+};

@@ -19,6 +19,7 @@ var searchDebounceTimer = null;
 var groupColors = [];
 var detailsRequestId = 0;
 var historyRequestId = 0;
+var groupDetailsPreviousFocus = null;
 
 // Sorting state for groups table
 var sortCol = "created_at";
@@ -544,7 +545,20 @@ async function abrirDetalhes(id) {
   const requestId = ++detailsRequestId;
   currentGroupId = id;
   currentGroupData = null;
-  document.getElementById("detalhesGrupo").style.display = "block";
+  const details = document.getElementById("detalhesGrupo");
+  groupDetailsPreviousFocus = document.activeElement;
+  details.style.display = "block";
+  details.classList.add("is-open");
+  details.scrollTop = 0;
+  document.getElementById("nomeGrupoDetalhe").textContent = "Carregando grupo…";
+  document.getElementById("estoqueGrupoDetalhe").textContent = "—";
+  document.getElementById("tabela-pecas-grupo").innerHTML = "";
+  document.getElementById("pecasGrupoMobileList").innerHTML = "";
+  document.getElementById("tabela-historico").innerHTML = "";
+  document.getElementById("historicoMobileList").innerHTML = "";
+  if (globalThis.matchMedia?.("(max-width: 767.98px)").matches) {
+    details.focus({ preventScroll: true });
+  }
 
   try {
     const res = await fetch(`${BASE_URL}/part-groups/${id}`, {
@@ -571,6 +585,7 @@ async function abrirDetalhes(id) {
     if (requestId !== detailsRequestId || String(currentGroupId) !== String(id)) return;
     console.error(err);
     showToast("Erro ao carregar detalhes do grupo", "error");
+    fecharDetalhes();
   }
 }
 
@@ -744,6 +759,9 @@ function fecharDetalhes() {
   currentGroupId = null;
   currentGroupData = null;
   document.getElementById("detalhesGrupo").style.display = "none";
+  document.getElementById("detalhesGrupo").classList.remove("is-open");
+  groupDetailsPreviousFocus?.focus?.({ preventScroll: true });
+  groupDetailsPreviousFocus = null;
 }
 
 /**

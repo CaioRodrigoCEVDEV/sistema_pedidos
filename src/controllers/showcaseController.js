@@ -19,7 +19,7 @@ function mapearItemPublico(row, config) {
     : 5;
   const normalizar = (valor) =>
     String(valor || "N").trim().toUpperCase() === "S" ? "S" : "N";
-  const qtd = Number(row.proqtde) || 0;
+  const qtd = Number(row.estoque_menor_saldo) || 0;
   const acabandoAuto = qtd > 0 && qtd <= estoqueMin ? "S" : "N";
 
   return {
@@ -37,7 +37,7 @@ function mapearItemPublico(row, config) {
     modcod: row.modcod || null,
     moddes: row.moddes || "",
     prosemest: normalizar(usaEstoque ? row.prosemest_auto : row.prosemest),
-    proacabando: usaEstoque ? acabandoAuto : normalizar(row.proacabando),
+    proacabando: row.tem_cores ? 'N' : (usaEstoque ? acabandoAuto : normalizar(row.proacabando)),
   };
 }
 
