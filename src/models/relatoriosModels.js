@@ -50,16 +50,46 @@ async function getTopPecas(filters = {}) {
 
   const whereClause = whereClauses.join(" AND ");
 
+  // Relatório: marca > tipo > modelo > peça, nas posições do painel.
+  // Mantém todas as peças do mesmo tipo juntas dentro de cada marca.
+  // Peças com vários modelos ocupam a primeira posição em que aparecem no
+  // catálogo, sem duplicar vendas. IDs apenas desempatarão posições iguais.
+  const ordemCatalogo = `
+    ordem_catalogo AS (
+      SELECT p.procod,
+        ROW_NUMBER() OVER (ORDER BY
+          b.marcasordem NULLS LAST, b.marcascod,
+          t.tipoordem NULLS LAST, t.tipocod,
+          m.ordem NULLS LAST, m.modcod,
+          p.proordem NULLS LAST, p.procod
+        ) AS posicao
+      FROM pro p
+      LEFT JOIN marcas b ON b.marcascod = p.promarcascod
+      LEFT JOIN LATERAL (
+        SELECT modelo.modcod, modelo.ordem
+        FROM modelo
+        WHERE modelo.modcod IN (
+          SELECT p.promodcod
+          UNION
+          SELECT pm.promodmodcod FROM promod pm WHERE pm.promodprocod = p.procod
+        )
+        ORDER BY modelo.ordem NULLS LAST, modelo.modcod
+        LIMIT 1
+      ) m ON TRUE
+      LEFT JOIN tipo t ON t.tipocod = p.protipocod
+    )`;
+
   if (groupBy === "grupo") {
     // Agrupado por part_group — busca o vínculo de grupo pela peça (qualquer variante de cor),
     // evitando que vendas sem cor ou com cor diferente da cadastrada no grupo sejam excluídas.
     // A quantidade vendida é líquida: devoluções ativas da mesma peça são descontadas do
     // grupo correspondente (mesmo vínculo usado na venda), sem permitir valores negativos.
     const query = `
-      WITH vendas AS (
+      WITH ${ordemCatalogo}, vendas AS (
         SELECT
           pg.id AS group_id,
           pg.name AS grupo,
+          MIN(oc.posicao) AS posicao_catalogo,
           STRING_AGG(DISTINCT t.tipodes, ', ' ORDER BY t.tipodes) AS tipo,
           STRING_AGG(DISTINCT b.marcasdes, ', ' ORDER BY b.marcasdes) AS marca,
           SUM(pvi.pviqtde) AS qtde_vendida,
@@ -69,6 +99,7 @@ async function getTopPecas(filters = {}) {
         FROM pvi
         JOIN pv ON pvcod = pvipvcod
         JOIN pro p ON pviprocod = p.procod
+        JOIN ordem_catalogo oc ON oc.procod = p.procod
         LEFT JOIN modelo m ON m.modcod = p.promodcod
         LEFT JOIN tipo t ON t.tipocod = p.protipocod
         LEFT JOIN marcas b ON b.marcascod = p.promarcascod
@@ -105,7 +136,7 @@ async function getTopPecas(filters = {}) {
         v.custo
       FROM vendas v
       LEFT JOIN devolvidas dv ON dv.group_id = v.group_id
-      ORDER BY LOWER(v.tipo) NULLS LAST, LOWER(v.marca) NULLS LAST, LOWER(v.peca) NULLS LAST, v.grupo
+      ORDER BY v.posicao_catalogo, v.group_id
     `;
 
     const result = await pool.query(query, params);
@@ -113,6 +144,7 @@ async function getTopPecas(filters = {}) {
   } else {
     // Agrupado por peça individual — grupo via part_group_items, sem depender de pro.part_group_id
     const query = `
+      WITH ${ordemCatalogo}
       SELECT 
         p.prodes as peca, t.tipodes AS tipo, b.marcasdes AS marca,
         SUM(pviqtde) as qtde_vendida,
@@ -122,6 +154,7 @@ async function getTopPecas(filters = {}) {
       FROM pvi
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
+      JOIN ordem_catalogo oc ON oc.procod = p.procod
       LEFT JOIN modelo m ON m.modcod = p.promodcod
         LEFT JOIN tipo t ON t.tipocod = p.protipocod
         LEFT JOIN marcas b ON b.marcascod = p.promarcascod
@@ -133,8 +166,8 @@ async function getTopPecas(filters = {}) {
       LEFT JOIN part_group_items pgi ON pgi.procorid = pc.procorid
       LEFT JOIN part_groups pg ON pg.id = pgi.group_id
       WHERE ${whereClause}
-      GROUP BY p.procod, p.prodes, t.tipodes, b.marcasdes, m.moddes, pg.name, procusto
-      ORDER BY LOWER(t.tipodes) NULLS LAST, LOWER(b.marcasdes) NULLS LAST, LOWER(p.prodes) NULLS LAST, p.procod, pg.name
+      GROUP BY p.procod, p.prodes, t.tipodes, b.marcasdes, m.moddes, pg.name, procusto, oc.posicao
+      ORDER BY oc.posicao, pg.name
     `;
 
     const result = await pool.query(query, params);
