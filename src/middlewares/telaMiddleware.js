@@ -1,11 +1,16 @@
 const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
+const { isMasterUser } = require("../config/masterUser");
 
 /**
  * Única camada de autorização do sistema: exige que o usuário autenticado tenha
- * a tela liberada em usu_telas. Não há mais bypass de administrador nem gating
- * por módulo (empusapv/empusaest/usupv/usuest) — o acesso é definido
- * exclusivamente pelas "telas liberadas" do usuário (tela de Usuários).
+ * a tela liberada em usu_telas. Não há bypass de administrador nem gating por
+ * módulo (empusapv/empusaest/usupv/usuest) — o acesso é definido pelas "telas
+ * liberadas" do usuário (tela de Usuários).
+ *
+ * Exceção: o usuário master (admin@orderup.com.br) tem acesso a todas as telas,
+ * independentemente de usu_telas — inclusive telas novas, sem precisar liberar
+ * manualmente.
  *
  * Uso: app.get('/clientes', requireTela('clientes'), handler)
  *
@@ -30,6 +35,13 @@ function requireTela(chave, opts) {
     }
 
     req.token = decoded;
+
+    // O usuário master tem acesso a todas as telas; não consulta usu_telas para
+    // não depender de liberações manuais (inclusive telas novas).
+    if (isMasterUser(decoded)) {
+      req.user = decoded;
+      return next();
+    }
 
     try {
       const result = await pool.query(

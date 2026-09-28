@@ -1,6 +1,7 @@
 const pool = require("../config/db");
 const { getEstoqueConfig } = require("../utils/estoqueConfig");
 const { buildFlagsGestao } = require("../utils/estoqueFlagsSql");
+const { MASTER_EMAIL } = require("../config/masterUser");
 
 // Resumo do dashboard em uma única chamada.
 // Antes: 12 endpoints (5 counts de pedidos, 2 de produto, 3 listas completas e
@@ -55,8 +56,9 @@ exports.resumo = async (req, res) => {
            (select count(*) from cli) as clientes,
            (select count(*) from usu
              where ususta in ('A', 'I') and usurca = 'S'
-               and usuemail <> 'admin@orderup.com.br') as vendedores,
-           (select count(*) from marcas where marcassit = 'A') as marcas`
+               and usuemail <> $1) as vendedores,
+           (select count(*) from marcas where marcassit = 'A') as marcas`,
+        [MASTER_EMAIL]
       ),
     ]);
 

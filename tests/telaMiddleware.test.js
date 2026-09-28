@@ -99,3 +99,27 @@ test("administrador sem a tela liberada também é negado", async () => {
     db.query = original;
   }
 });
+
+test("usuário master acessa qualquer tela sem consultar usu_telas", async () => {
+  const original = db.query;
+  let consultou = false;
+  db.query = async () => {
+    consultou = true;
+    return { rowCount: 0 };
+  };
+  try {
+    const req = fakeReq(
+      token({
+        usucod: 1,
+        usuadm: "S",
+        usuemail: "ADMIN@orderup.com.br",
+      })
+    );
+    const res = await runMiddleware(req, fakeRes(), "tela-inexistente");
+    assert.equal(res.next, true);
+    assert.equal(res.statusCode, null);
+    assert.equal(consultou, false, "master não deve depender de usu_telas");
+  } finally {
+    db.query = original;
+  }
+});

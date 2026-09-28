@@ -27,9 +27,13 @@ RETURNS JSONB LANGUAGE sql STABLE AS $$
       'marca_id', p.promarcascod, 'marca', b.marcasdes,
       'tipo_id', p.protipocod, 'tipo', t.tipodes,
       'modelos', COALESCE((SELECT jsonb_agg(jsonb_build_object('id', m.modcod, 'nome', m.moddes) ORDER BY m.moddes)
-        FROM public.modelo m WHERE m.modcod = p.promodcod OR EXISTS (
-          SELECT 1 FROM public.promod pm WHERE pm.promodprocod = p.procod AND pm.promodmodcod = m.modcod
-        )), '[]'::jsonb),
+        FROM (
+          SELECT m2.modcod, m2.moddes FROM public.modelo m2 WHERE m2.modcod = p.promodcod
+          UNION
+          SELECT m3.modcod, m3.moddes FROM public.promod pm
+          JOIN public.modelo m3 ON m3.modcod = pm.promodmodcod
+          WHERE pm.promodprocod = p.procod
+        ) m), '[]'::jsonb),
       'cor', c.cornome
     ) AS item
     FROM public.pro p
@@ -45,13 +49,32 @@ $$;
 
 -- Importa somente a auditoria que existia na primeira instalacao. As proximas
 -- baixas sao capturadas pelo saldo, nao pelo audit, evitando duplicidade.
-DO $$ BEGIN
+DO $$
+DECLARE timeout_anterior TEXT := current_setting('statement_timeout');
+BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.estoque_historico_meta WHERE id = 1) THEN
+    -- Import unico e pesado: calcula os itens uma vez por grupo e desliga
+    -- temporariamente o statement_timeout para nao abortar em bases grandes,
+    -- restaurando em seguida.
+    PERFORM set_config('statement_timeout', '0', true);
+    -- Tabela temporaria garante avaliacao unica da funcao por grupo em qualquer
+    -- versao (a CTE seria inlined no PG12+ e voltaria a rodar por linha).
+    CREATE TEMP TABLE itens_grupo_import ON COMMIT DROP AS
+      SELECT g.group_id, public.estoque_historico_itens(NULL, g.group_id) AS itens
+      FROM (
+        SELECT DISTINCT a.part_group_id AS group_id
+        FROM public.part_group_audit a
+        WHERE a.change <> 0
+      ) g;
     INSERT INTO public.estoque_historico(ocorrido_em, origem, origem_id, descricao, variacao, motivo, itens, legado_id)
     SELECT a.created_at, 'grupo', a.part_group_id, pg.name, a.change, a.reason,
-      public.estoque_historico_itens(NULL, pg.id), a.id
-    FROM public.part_group_audit a JOIN public.part_groups pg ON pg.id = a.part_group_id
-    WHERE a.change <> 0 ON CONFLICT (legado_id) DO NOTHING;
+      ig.itens, a.id
+    FROM public.part_group_audit a
+    JOIN public.part_groups pg ON pg.id = a.part_group_id
+    JOIN itens_grupo_import ig ON ig.group_id = a.part_group_id
+    WHERE a.change <> 0
+    ON CONFLICT (legado_id) DO NOTHING;
+    PERFORM set_config('statement_timeout', timeout_anterior, true);
     INSERT INTO public.estoque_historico_meta(id) VALUES (1);
   END IF;
 END $$;

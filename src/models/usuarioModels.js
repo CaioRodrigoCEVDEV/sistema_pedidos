@@ -1,11 +1,12 @@
 const pool = require('../config/db');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const { MASTER_EMAIL } = require('../config/masterUser');
 
 
 
 async function listarUsuarios() {   
-        const result = await pool.query(`SELECT * FROM usu WHERE ususta in ('A','I') and usuemail <> 'admin@orderup.com.br' ORDER BY usucod DESC`);
+        const result = await pool.query(`SELECT * FROM usu WHERE ususta in ('A','I') and usuemail <> $1 ORDER BY usucod DESC`, [MASTER_EMAIL]);
         return result.rows;
 }
 
