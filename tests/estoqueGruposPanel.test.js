@@ -113,10 +113,12 @@ const grupos = () => [
   { id: 3, grupo: "A10 S/A", qtde_vendida: "5", estoque_atual: 10, qtde_ideal: null },
 ];
 
-test("Estado inicial usa Grupo crescente", () => {
+test("Estado inicial preserva a sequência do catálogo enviada pelo servidor", () => {
   const p = painel();
-  assert.equal(p.run("sortCol"), "grupo");
+  assert.equal(p.run("sortCol"), "catalogo");
   assert.equal(p.run("sortDir"), "asc");
+  p.run(`__dados = ${JSON.stringify(grupos())}`);
+  assert.deepEqual(p.run("ordenarGrupos(__dados, sortCol, sortDir).map(r => r.id)"), grupos().map(r => r.id));
 });
 
 test("ordenarGrupos ordena Grupo A→Z com dígitos por último", () => {

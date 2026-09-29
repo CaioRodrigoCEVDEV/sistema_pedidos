@@ -14,8 +14,8 @@ var currentFilters = {
 };
 
 // Ordenação atual da listagem (client-side, não altera a ordem no banco).
-// A coluna "Grupo" inicia selecionada em ordem alfabética crescente.
-var sortCol = "grupo";
+// Por padrão preserva a ordem do servidor: marca > tipo > modelo > peça.
+var sortCol = "catalogo";
 var sortDir = "asc"; // 'asc' | 'desc'
 
 // Peso de cada status para permitir ordenação estável sem alterar a regra.
@@ -185,6 +185,7 @@ function filtrarGrupos(data, termo) {
  */
 function ordenarGrupos(data, col, dir) {
   const ordenado = [...data];
+  if (col === "catalogo") return ordenado;
   ordenado.sort((a, b) => {
     const cmp = compararValores(valorOrdenacao(a, col), valorOrdenacao(b, col), dir, col);
     if (cmp !== 0) return cmp;
