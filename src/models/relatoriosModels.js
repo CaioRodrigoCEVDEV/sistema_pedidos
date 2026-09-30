@@ -5,6 +5,35 @@ const { buildFlagsEstoqueSql } = require("../utils/estoqueFlagsSql");
 // Constants
 const CONFIRMED_ORDER_STATUS = "S";
 
+// Relatório: marca > tipo > modelo > peça, nas posições do painel.
+// Mantém todas as peças do mesmo tipo juntas dentro de cada marca.
+// Peças com vários modelos ocupam a primeira posição em que aparecem no
+// catálogo, sem duplicar vendas. IDs apenas desempatarão posições iguais.
+const ordemCatalogo = `
+  ordem_catalogo AS (
+    SELECT p.procod,
+      ROW_NUMBER() OVER (ORDER BY
+        b.marcasordem NULLS LAST, b.marcascod,
+        t.tipoordem NULLS LAST, t.tipocod,
+        m.ordem NULLS LAST, m.modcod,
+        p.proordem NULLS LAST, p.procod
+      ) AS posicao
+    FROM pro p
+    LEFT JOIN marcas b ON b.marcascod = p.promarcascod
+    LEFT JOIN LATERAL (
+      SELECT modelo.modcod, modelo.ordem
+      FROM modelo
+      WHERE modelo.modcod IN (
+        SELECT p.promodcod
+        UNION
+        SELECT pm.promodmodcod FROM promod pm WHERE pm.promodprocod = p.procod
+      )
+      ORDER BY modelo.ordem NULLS LAST, modelo.modcod
+      LIMIT 1
+    ) m ON TRUE
+    LEFT JOIN tipo t ON t.tipocod = p.protipocod
+  )`;
+
 /**
  * Modelo de Relatórios
  *
@@ -49,35 +78,6 @@ async function getTopPecas(filters = {}) {
   }
 
   const whereClause = whereClauses.join(" AND ");
-
-  // Relatório: marca > tipo > modelo > peça, nas posições do painel.
-  // Mantém todas as peças do mesmo tipo juntas dentro de cada marca.
-  // Peças com vários modelos ocupam a primeira posição em que aparecem no
-  // catálogo, sem duplicar vendas. IDs apenas desempatarão posições iguais.
-  const ordemCatalogo = `
-    ordem_catalogo AS (
-      SELECT p.procod,
-        ROW_NUMBER() OVER (ORDER BY
-          b.marcasordem NULLS LAST, b.marcascod,
-          t.tipoordem NULLS LAST, t.tipocod,
-          m.ordem NULLS LAST, m.modcod,
-          p.proordem NULLS LAST, p.procod
-        ) AS posicao
-      FROM pro p
-      LEFT JOIN marcas b ON b.marcascod = p.promarcascod
-      LEFT JOIN LATERAL (
-        SELECT modelo.modcod, modelo.ordem
-        FROM modelo
-        WHERE modelo.modcod IN (
-          SELECT p.promodcod
-          UNION
-          SELECT pm.promodmodcod FROM promod pm WHERE pm.promodprocod = p.procod
-        )
-        ORDER BY modelo.ordem NULLS LAST, modelo.modcod
-        LIMIT 1
-      ) m ON TRUE
-      LEFT JOIN tipo t ON t.tipocod = p.protipocod
-    )`;
 
   if (groupBy === "grupo") {
     // Agrupado por part_group — busca o vínculo de grupo pela peça (qualquer variante de cor),
@@ -281,13 +281,15 @@ async function getEstoqueGruposTopPecas(filters = {}) {
   // Quantidade vendida líquida: devoluções ativas são descontadas do grupo vinculado
   // à peça/variação vendida (part_group_items + part_groups), sem valores negativos.
   const query = `
-    WITH vendas AS (
+    WITH ${ordemCatalogo}, vendas AS (
       SELECT
         pg.id AS group_id,
+        MIN(oc.posicao) AS posicao_catalogo,
         SUM(pvi.pviqtde) AS qtde_vendida
       FROM pvi
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
+      JOIN ordem_catalogo oc ON oc.procod = p.procod
       JOIN procor pc ON pc.procorprocod = p.procod
         AND (
           (pvi.pviprocorid IS NOT NULL AND pc.procorcorescod = pvi.pviprocorid)
@@ -328,7 +330,7 @@ async function getEstoqueGruposTopPecas(filters = {}) {
     FROM part_groups pg
     JOIN vendas v ON v.group_id = pg.id
     LEFT JOIN devolvidas dv ON dv.group_id = pg.id
-    ORDER BY qtde_vendida DESC
+    ORDER BY v.posicao_catalogo, pg.id
   `;
 
   const result = await pool.query(query, params);
