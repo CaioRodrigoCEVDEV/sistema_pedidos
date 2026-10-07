@@ -5,18 +5,14 @@ const vm = require("node:vm");
 const path = require("node:path");
 const read = (file) => fs.readFileSync(path.join(__dirname, "..", file), "utf8");
 
-test("Compartilha a lista filtrada somente com sessao confirmada pelo servidor", async () => {
+test("Compartilha a lista filtrada sem exigir sessao do usuario", () => {
+  assert.doesNotMatch(
+    read("public/html/lista-pecas.html"),
+    /id="compartilharPecas"[^>]*\shidden(?:\s|>)/
+  );
   const elements = new Map();
   const opened = [];
-  let sessionOk = false;
-  let networkError = false;
   const context = vm.createContext({ URLSearchParams, BASE_URL: "", console,
-    fetch: async (url, options) => {
-      assert.equal(url, "/me/usuario");
-      assert.equal(options.credentials, "include");
-      if (networkError) throw new Error("Falha de rede");
-      return { ok: sessionOk, json: async () => ({ usunome: "Operador" }) };
-    },
     window: { location: { search: "?id=1&modelo=2&marcascod=3" },
       OrderUpTipoIcon: () => "bi-phone", open: (url) => { opened.push(url); return {}; } },
     document: {
@@ -30,8 +26,6 @@ test("Compartilha a lista filtrada somente com sessao confirmada pelo servidor",
   vm.runInContext(read("public/js/mensagem-pecas.js"), context);
   const source = read("public/js/lista-pecas.js");
   vm.runInContext(source.slice(source.indexOf("const params"), source.indexOf("// Feedback rápido")), context);
-  await vm.runInContext("validarCompartilhamento()", context);
-  assert.equal(elements.get("compartilharPecas").hidden, true);
   vm.runInContext(`
     todasAsPecas = [
       { procod: 1, prodes: 'Tela B', tipodes: 'Tela', provl: 70, provlpromo: 50, prosemest: 'N' },
@@ -41,11 +35,6 @@ test("Compartilha a lista filtrada somente com sessao confirmada pelo servidor",
     dadosCarregados = true; modeloAtual = 'A01'; pesquisaAtual = 'Tela'; ordenacaoAtual = 'nome-asc';
     renderPecas(); compartilharPecas();
   `, context);
-  assert.equal(opened.length, 0);
-  sessionOk = true;
-  await vm.runInContext("validarCompartilhamento()", context);
-  assert.equal(elements.get("compartilharPecas").hidden, false);
-  vm.runInContext("compartilharPecas()", context);
   const url = new URL(opened[0]);
   assert.equal(url.origin, "https://api.whatsapp.com");
   assert.equal(url.searchParams.has("phone"), false);
@@ -60,11 +49,8 @@ test("Compartilha a lista filtrada somente com sessao confirmada pelo servidor",
   vm.runInContext(`pesquisaAtual = 'inexistente'; renderPecas(); compartilharPecas();`, context);
   assert.equal(opened.length, 1);
   assert.equal(elements.get("compartilharPecas").disabled, true);
-  networkError = true;
-  await vm.runInContext("validarCompartilhamento()", context);
-  assert.equal(elements.get("compartilharPecas").hidden, true);
   vm.runInContext("pesquisaAtual = ''; renderPecas(); compartilharPecas();", context);
-  assert.equal(opened.length, 1);
+  assert.equal(opened.length, 2);
 });
 
 test("Mensagem de pedido mantém quantidade, observação e formato antigo", () => {

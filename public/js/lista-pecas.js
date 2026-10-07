@@ -77,29 +77,9 @@ let pesquisaAtual = "";
 let ordenacaoAtual = "ordem-asc";
 let dadosCarregados = false;
 let pecasVisiveis = [];
-let podeCompartilharPecas = false;
-
-async function validarCompartilhamento() {
-  const botao = document.getElementById("compartilharPecas");
-  podeCompartilharPecas = false;
-  if (botao) botao.hidden = true;
-  try {
-    const resposta = await fetch(`${BASE_URL}/me/usuario`, {
-      credentials: "include", cache: "no-store",
-    });
-    const usuario = resposta.ok ? await resposta.json() : null;
-    podeCompartilharPecas = Boolean(usuario?.usunome);
-  } catch (_) {
-    podeCompartilharPecas = false;
-  }
-  if (botao) {
-    botao.hidden = !podeCompartilharPecas;
-    botao.disabled = !podeCompartilharPecas || pecasVisiveis.length === 0;
-  }
-}
 
 function compartilharPecas() {
-  if (!podeCompartilharPecas || !dadosCarregados || !pecasVisiveis.length) return;
+  if (!dadosCarregados || !pecasVisiveis.length) return;
   const marca = document.getElementById("marcaTitulo")?.textContent || "";
   const itens = pecasVisiveis.map((peca) => ({
     nome: peca.prodes || "Peça",
@@ -232,7 +212,7 @@ function renderPecas() {
   if (direcao === "desc") lista.reverse();
   pecasVisiveis = lista;
   const compartilhar = document.getElementById("compartilharPecas");
-  if (compartilhar) compartilhar.disabled = !podeCompartilharPecas || lista.length === 0;
+  if (compartilhar) compartilhar.disabled = lista.length === 0;
 
   corpoTabela.innerHTML = "";
   lista.forEach((dado) => corpoTabela.appendChild(criarCardPeca(dado)));
@@ -309,7 +289,6 @@ if (tipoUrl) {
 }
 
 ouOnLoad(function () {
-  validarCompartilhamento();
   const produtosUrl = buildProdutosUrl(id, marcascod, modelo);
 
   if (!produtosUrl) {
