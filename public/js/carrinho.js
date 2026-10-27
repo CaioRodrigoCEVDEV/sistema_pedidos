@@ -454,29 +454,67 @@
     janelaWhats = null;
   }
 
-  function montarUrlWhatsApp(numero, mensagem) {
-    var url = "https://api.whatsapp.com/send?";
-    if (numero) url += "phone=" + numero + "&";
-    return url + "text=" + encodeURIComponent(mensagem);
+  // O wa.me usa o número no formato internacional, apenas com dígitos.
+  function normalizarNumeroWhatsApp(numero) {
+    return String(numero == null ? "" : numero).replace(/\D/g, "");
   }
 
-  function redirecionarWhats(clearFirst, numero, mensagem) {
-    var url = montarUrlWhatsApp(numero, mensagem);
-    clearCartAndRender();
+  function montarUrlWhatsApp(numero, mensagem) {
+    var digitos = normalizarNumeroWhatsApp(numero);
+    // Sem número válido não gera link: evita abrir o WhatsApp sem destinatário.
+    if (digitos.length < 10 || digitos.length > 15) return "";
+    return (
+      "https://wa.me/" +
+      digitos +
+      "?text=" +
+      encodeURIComponent(String(mensagem == null ? "" : mensagem))
+    );
+  }
 
-    if (janelaWhats && !janelaWhats.closed) {
-      janelaWhats.location.href = url; // abre o WhatsApp em nova aba
-    } else {
-      // Fallback (aba não reservada): tenta nova aba; se bloqueada, aba atual.
-      var win = window.open(url, "_blank");
-      if (!win) window.location.href = url;
+  // Reserva a aba ainda dentro do clique do usuário. O Safari do iPhone só
+  // permite abrir a janela nesse momento; depois do pedido, apenas navegamos
+  // a aba já existente.
+  function reservarJanelaWhats() {
+    fecharJanelaWhats();
+    janelaWhats = window.open("about:blank", "_blank");
+    if (!janelaWhats) return;
+    try {
+      janelaWhats.document.title = "Abrindo WhatsApp...";
+      if (janelaWhats.document.body) {
+        janelaWhats.document.body.textContent = "Abrindo WhatsApp...";
+      }
+    } catch (e) {}
+    try {
+      janelaWhats.opener = null;
+    } catch (e) {}
+  }
+
+  // Retorna true quando a URL foi enviada para a aba reservada. Se a aba não
+  // existir mais, abre na aba atual e NÃO agenda o retorno ao catálogo, pois
+  // isso interromperia a navegação para o WhatsApp.
+  function redirecionarWhats(url) {
+    if (!url) {
+      fecharJanelaWhats();
+      return false;
     }
+
+    var destino = janelaWhats;
     janelaWhats = null;
 
-    // Retorna o usuário ao catálogo na aba atual.
-    setTimeout(function () {
-      window.location.href = "index";
-    }, 500);
+    if (destino && !destino.closed) {
+      try {
+        destino.location.href = url;
+        return true;
+      } catch (e) {
+        console.error("Erro ao redirecionar a aba do WhatsApp:", e);
+        try {
+          destino.close();
+        } catch (e2) {}
+      }
+    }
+
+    window.location.href = url;
+    return false;
   }
 
   async function finalizarViaWhatsApp(canal) {
@@ -507,13 +545,33 @@
         numero = await obterWhatsApp(canal === "ENTREGA" ? 2 : 1);
       } catch (e) {
         console.error("Erro ao buscar número do WhatsApp:", e);
-        notify(
-          "Pedido criado com sucesso! Não foi possível obter o número do WhatsApp. Você será redirecionado para selecionar um contato.",
-          "warning",
-          5000
-        );
       }
-      redirecionarWhats(true, numero, mensagem);
+
+      var url = montarUrlWhatsApp(numero, mensagem);
+      // O pedido já foi criado: esvazia o carrinho para que uma nova tentativa
+      // não gere um segundo pedido, mesmo se o WhatsApp não puder ser aberto.
+      clearCartAndRender();
+
+      if (!url) {
+        fecharJanelaWhats();
+        setCheckoutLoading(false);
+        notify(
+          "Pedido N° " +
+            pvcod +
+            " registrado, mas o WhatsApp da loja não está configurado. Entre em contato com a loja.",
+          "warning",
+          8000
+        );
+        return;
+      }
+
+      var abriuNovaAba = redirecionarWhats(url);
+      if (abriuNovaAba) {
+        // Retorna o usuário ao catálogo na aba atual.
+        setTimeout(function () {
+          window.location.href = "index";
+        }, 500);
+      }
     } catch (error) {
       console.error("Erro ao processar pedido:", error);
       fecharJanelaWhats();
@@ -585,7 +643,17 @@
       var modalEl = document.getElementById("confirmarRegistroModal");
       var btnConfirmar = document.getElementById("confirmarRegistroBtn");
       if (!modalEl || !btnConfirmar || !window.bootstrap) {
-        resolve(window.confirm(config.fallbackMessage || "Confirmar esta ação?"));
+        var confirmado = window.confirm(
+          config.fallbackMessage || "Confirmar esta ação?"
+        );
+        if (confirmado && typeof config.onConfirm === "function") {
+          try {
+            config.onConfirm();
+          } catch (e) {
+            console.error("Erro ao preparar a ação confirmada:", e);
+          }
+        }
+        resolve(confirmado);
         return;
       }
 
@@ -606,7 +674,16 @@
       var modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
       var confirmou = false;
       function onConfirmar() {
+        if (confirmou) return;
         confirmou = true;
+        // Executa ainda dentro do clique de confirmação (gesto do usuário).
+        if (typeof config.onConfirm === "function") {
+          try {
+            config.onConfirm();
+          } catch (e) {
+            console.error("Erro ao preparar a ação confirmada:", e);
+          }
+        }
         modal.hide();
       }
       function onHidden() {
@@ -650,17 +727,15 @@
       fallbackMessage: entrega
         ? "Confirmar pedido com entrega?"
         : "Confirmar pedido com retirada no balcão?",
+      // Reserva a aba do WhatsApp ainda no clique de confirmação; ela será
+      // navegada ao link somente após o pedido ser finalizado.
+      onConfirm: reservarJanelaWhats,
     });
-    if (!confirmou) return;
-    marcarCanalSelecionado(canal);
-    // Reserva a aba do WhatsApp ainda dentro do gesto do usuário; ela será
-    // navegada ao link somente após o pedido ser finalizado.
-    janelaWhats = window.open("about:blank", "_blank");
-    if (janelaWhats) {
-      try {
-        janelaWhats.opener = null;
-      } catch (e) {}
+    if (!confirmou) {
+      fecharJanelaWhats();
+      return;
     }
+    marcarCanalSelecionado(canal);
     if (entrega) return enviarWhatsAppEntrega();
     return enviarWhatsApp();
   }
