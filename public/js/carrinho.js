@@ -825,7 +825,8 @@
     var confirmou = await confirmarAcao({
       icon: entrega ? "bi-truck" : "bi-shop",
       title: entrega ? "Entrega" : "Retirada no balcão",
-      description: "O pedido será finalizado e enviado pelo WhatsApp.",
+      description:
+        "O pedido será finalizado, a mensagem copiada para a área de transferência e o WhatsApp aberto.",
       question: entrega
         ? "Deseja finalizar o pedido com entrega?"
         : "Deseja finalizar o pedido com retirada no balcão?",
