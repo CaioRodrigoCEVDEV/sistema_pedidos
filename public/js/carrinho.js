@@ -441,19 +441,6 @@
     return (data && (numero === 2 ? data.empwhatsapp2 : data.empwhatsapp1)) || "";
   }
 
-  // Aba reservada para o WhatsApp: aberta dentro do gesto do usuário (evita
-  // bloqueio de pop-up) e navegada ao link só depois de finalizar o pedido.
-  var janelaWhats = null;
-
-  function fecharJanelaWhats() {
-    if (janelaWhats && !janelaWhats.closed) {
-      try {
-        janelaWhats.close();
-      } catch (e) {}
-    }
-    janelaWhats = null;
-  }
-
   // O wa.me usa o número no formato internacional, apenas com dígitos.
   function normalizarNumeroWhatsApp(numero) {
     return String(numero == null ? "" : numero).replace(/\D/g, "");
@@ -471,48 +458,27 @@
     );
   }
 
-  // Reserva a aba ainda dentro do clique do usuário. O Safari do iPhone só
-  // permite abrir a janela nesse momento; depois do pedido, apenas navegamos
-  // a aba já existente.
-  function reservarJanelaWhats() {
-    fecharJanelaWhats();
-    janelaWhats = window.open("about:blank", "_blank");
-    if (!janelaWhats) return;
-    try {
-      janelaWhats.document.title = "Abrindo WhatsApp...";
-      if (janelaWhats.document.body) {
-        janelaWhats.document.body.textContent = "Abrindo WhatsApp...";
-      }
-    } catch (e) {}
-    try {
-      janelaWhats.opener = null;
-    } catch (e) {}
-  }
-
-  // Retorna true quando a URL foi enviada para a aba reservada. Se a aba não
-  // existir mais, abre na aba atual e NÃO agenda o retorno ao catálogo, pois
-  // isso interromperia a navegação para o WhatsApp.
+  // Abre o WhatsApp em nova aba. Se o navegador bloquear, usa a aba atual.
+  // Retorna true quando conseguiu abrir em nova aba.
   function redirecionarWhats(url) {
-    if (!url) {
-      fecharJanelaWhats();
-      return false;
+    if (!url) return false;
+
+    var destino = null;
+    try {
+      destino = window.open(url, "_blank");
+    } catch (e) {
+      destino = null;
     }
 
-    var destino = janelaWhats;
-    janelaWhats = null;
-
-    if (destino && !destino.closed) {
+    if (destino) {
       try {
-        destino.location.href = url;
-        return true;
-      } catch (e) {
-        console.error("Erro ao redirecionar a aba do WhatsApp:", e);
-        try {
-          destino.close();
-        } catch (e2) {}
-      }
+        destino.opener = null;
+      } catch (e) {}
+      return true;
     }
 
+    // Pop-up bloqueado: abre na aba atual e não agenda o retorno ao catálogo,
+    // pois isso interromperia a navegação para o WhatsApp.
     window.location.href = url;
     return false;
   }
@@ -522,7 +488,7 @@
     var obsEl = document.getElementById("observacoes");
     var observacoes = obsEl ? obsEl.value.trim() : "";
     if (cart.length === 0) {
-      fecharJanelaWhats();
+      cancelarCopiaDiferida();
       notify("Seu carrinho está vazio!", "warning");
       return;
     }
@@ -540,6 +506,11 @@
       }
       mensagem += "Pedido N°: " + pvcod + "\n";
 
+      // A cópia já foi reservada no clique de confirmação (Safari/iOS). Se o
+      // navegador não suportar ClipboardItem, copia agora como fallback.
+      var copiaMensagem = concluirCopiaDiferida(mensagem);
+      if (!copiaMensagem) copiaMensagem = copiarMensagemPedido(mensagem);
+
       var numero = "";
       try {
         numero = await obterWhatsApp(canal === "ENTREGA" ? 2 : 1);
@@ -553,7 +524,6 @@
       clearCartAndRender();
 
       if (!url) {
-        fecharJanelaWhats();
         setCheckoutLoading(false);
         notify(
           "Pedido N° " +
@@ -565,6 +535,15 @@
         return;
       }
 
+      // Aguarda a cópia terminar antes de navegar (com limite para não travar
+      // a abertura do WhatsApp caso o navegador peça permissão).
+      await Promise.race([
+        copiaMensagem,
+        new Promise(function (resolve) {
+          setTimeout(resolve, 1500);
+        }),
+      ]);
+
       var abriuNovaAba = redirecionarWhats(url);
       if (abriuNovaAba) {
         // Retorna o usuário ao catálogo na aba atual.
@@ -574,7 +553,7 @@
       }
     } catch (error) {
       console.error("Erro ao processar pedido:", error);
-      fecharJanelaWhats();
+      cancelarCopiaDiferida(error);
       notify(error.message || "Erro ao processar pedido. Tente novamente.", "error");
       setCheckoutLoading(false);
     }
@@ -604,21 +583,57 @@
   }
 
   function copiarTextoParaClipboard(mensagem, onOk, onFail) {
-    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      navigator.clipboard.writeText(mensagem).then(onOk, onFail);
-      return;
-    }
-    var ta = document.createElement("textarea");
-    ta.value = mensagem;
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand("copy");
-      onOk();
-    } catch (err) {
-      notify("Falha ao copiar o texto. Copie manualmente.", "error");
-    }
-    document.body.removeChild(ta);
+    return new Promise(function (resolve) {
+      var finalizado = false;
+
+      function concluir(ok, err) {
+        if (finalizado) return;
+        finalizado = true;
+        try {
+          if (ok && typeof onOk === "function") onOk();
+          else if (!ok && typeof onFail === "function") onFail(err);
+        } finally {
+          resolve(ok);
+        }
+      }
+
+      function copiarComSelecao() {
+        var ta = document.createElement("textarea");
+        ta.value = mensagem;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.top = "0";
+        ta.style.left = "0";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        var copiou = false;
+        try {
+          copiou = document.execCommand("copy");
+        } catch (err) {
+          copiou = false;
+        }
+        document.body.removeChild(ta);
+        if (copiou) concluir(true);
+        else concluir(false, new Error("Não foi possível copiar o texto."));
+      }
+
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        try {
+          navigator.clipboard.writeText(mensagem).then(
+            function () {
+              concluir(true);
+            },
+            copiarComSelecao
+          );
+          return;
+        } catch (err) {
+          // Cai no fallback síncrono abaixo.
+        }
+      }
+      copiarComSelecao();
+    });
   }
 
   function copiarOrcamentoParaClipboard() {
@@ -631,6 +646,97 @@
       },
       function (err) {
         notify("Erro ao copiar: " + err, "error");
+      }
+    );
+  }
+
+  function copiarMensagemPedido(mensagem) {
+    return copiarTextoParaClipboard(
+      mensagem,
+      function () {
+        notify("Mensagem do pedido copiada!", "success", 2500);
+      },
+      function (err) {
+        // A cópia é um apoio ao envio; uma falha não deve impedir o WhatsApp.
+        console.error("Erro ao copiar a mensagem do pedido:", err);
+      }
+    );
+  }
+
+  var copiaDiferida = null;
+
+  function suportaCopiaDiferida() {
+    return (
+      typeof window.ClipboardItem === "function" &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.write === "function"
+    );
+  }
+
+  function cancelarCopiaDiferida(err) {
+    if (!copiaDiferida) return;
+    var atual = copiaDiferida;
+    copiaDiferida = null;
+    try {
+      atual.rejeitar(err || new Error("Cópia cancelada."));
+    } catch (e) {}
+    if (atual.escrita && typeof atual.escrita.catch === "function") {
+      atual.escrita.catch(function () {});
+    }
+  }
+
+  // Inicia a escrita da área de transferência ainda dentro do gesto do
+  // usuário. O texto final (com o número do pedido) é resolvido somente
+  // depois que o servidor confirma a criação do pedido. Esse formato é
+  // necessário no Safari do iPhone, que rejeita writeText após um await.
+  function iniciarCopiaDiferida() {
+    cancelarCopiaDiferida();
+    if (!suportaCopiaDiferida()) return;
+
+    var resolver;
+    var rejeitar;
+    var conteudo = new Promise(function (resolve, reject) {
+      resolver = resolve;
+      rejeitar = reject;
+    });
+
+    var escrita;
+    try {
+      escrita = navigator.clipboard.write([
+        new window.ClipboardItem({ "text/plain": conteudo }),
+      ]);
+    } catch (e) {
+      return;
+    }
+
+    copiaDiferida = {
+      escrita: Promise.resolve(escrita),
+      resolver: resolver,
+      rejeitar: rejeitar,
+    };
+    copiaDiferida.escrita.catch(function () {});
+  }
+
+  function concluirCopiaDiferida(mensagem) {
+    if (!copiaDiferida) return null;
+    var atual = copiaDiferida;
+    copiaDiferida = null;
+
+    try {
+      atual.resolver(new Blob([mensagem], { type: "text/plain" }));
+    } catch (e) {
+      atual.rejeitar(e);
+    }
+
+    return atual.escrita.then(
+      function () {
+        notify("Mensagem do pedido copiada!", "success", 2500);
+        return true;
+      },
+      function (err) {
+        console.error("Erro ao copiar a mensagem do pedido:", err);
+        // Fallback para navegadores que não aceitaram a cópia diferida.
+        return copiarMensagemPedido(mensagem);
       }
     );
   }
@@ -727,14 +833,10 @@
       fallbackMessage: entrega
         ? "Confirmar pedido com entrega?"
         : "Confirmar pedido com retirada no balcão?",
-      // Reserva a aba do WhatsApp ainda no clique de confirmação; ela será
-      // navegada ao link somente após o pedido ser finalizado.
-      onConfirm: reservarJanelaWhats,
+      // Reserva a escrita na área de transferência dentro do gesto do usuário.
+      onConfirm: iniciarCopiaDiferida,
     });
-    if (!confirmou) {
-      fecharJanelaWhats();
-      return;
-    }
+    if (!confirmou) return;
     marcarCanalSelecionado(canal);
     if (entrega) return enviarWhatsAppEntrega();
     return enviarWhatsApp();
