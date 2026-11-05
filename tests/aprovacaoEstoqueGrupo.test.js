@@ -146,6 +146,9 @@ async function testConfirmationIsAtomic() {
       if (sql.startsWith("UPDATE pv SET pvconfirmado")) {
         return { rows: [{ pvcod: 123, pvconfirmado: "S" }] };
       }
+      if (sql.startsWith("INSERT INTO public.crm_order_approval_outbox")) {
+        return { rows: [] };
+      }
       throw new Error(`Consulta inesperada: ${sql}`);
     },
     {
@@ -160,6 +163,9 @@ async function testConfirmationIsAtomic() {
   assert.ok(statements.some((sql) => sql.startsWith("UPDATE pvi")));
   assert.ok(statements.some((sql) => sql.startsWith("UPDATE pv SET pvvl")));
   assert.ok(statements.some((sql) => sql.startsWith("UPDATE pv SET pvconfirmado")));
+  const outboxIndex = statements.findIndex((sql) => sql.startsWith("INSERT INTO public.crm_order_approval_outbox"));
+  assert.ok(outboxIndex > statements.findIndex((sql) => sql.startsWith("UPDATE pv SET pvconfirmado")));
+  assert.ok(statements.indexOf("COMMIT") > outboxIndex);
   assert.ok(statements.indexOf("COMMIT") > statements.findIndex((sql) => sql.startsWith("UPDATE pv SET pvconfirmado")));
   assert.strictEqual(statements.at(-1), "RELEASE");
 }
@@ -196,6 +202,7 @@ async function testInsufficientStockRollsBackApproval() {
   const statements = queries.map(({ sql }) => sql);
   assert.ok(statements.includes("ROLLBACK"));
   assert.ok(!statements.includes("COMMIT"));
+  assert.ok(!statements.some((sql) => sql.startsWith("INSERT INTO public.crm_order_approval_outbox")));
   assert.strictEqual(statements.at(-1), "RELEASE");
 }
 

@@ -558,6 +558,12 @@ exports.confirmarPedido = async (req, res) => {
       });
     }
 
+    await client.query(
+      `INSERT INTO public.crm_order_approval_outbox (pvcod, approved_at)
+       VALUES ($1, now()) ON CONFLICT (pvcod) DO NOTHING`,
+      [pvcod]
+    );
+
     await client.query("COMMIT");
     catalogoCache.invalidate();
     showcasesCache.invalidate();
