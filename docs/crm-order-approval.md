@@ -20,6 +20,14 @@ movimentação de estoque. A comunicação com o CRM ocorre em segundo plano a c
 envio é repetido com intervalo crescente, limitado a uma hora. Reenvios usam o mesmo
 `pvcod`; o CRM os reconhece como o mesmo pedido.
 
+Antes de cada envio, a loja lê os itens aprovados (`pvi`) e o total (`pvvl`) do próprio
+banco e inclui código, descrição, cor, quantidade, preço unitário e total por item.
+O CRM guarda esses dados para exibir no detalhe de Entregas. Valores são enviados como
+texto decimal para preservar os quatro dígitos decimais do banco. Se a saída já tiver
+sido entregue antes desta atualização, ela não é reenviada automaticamente.
+Atualize primeiro o banco e a API do CRM; a versão anterior rejeita os campos novos
+e a loja precisará repetir o envio pela fila.
+
 Sem as três variáveis, a fila permanece no banco e não tenta enviar. Ao configurá-las
 e reiniciar a aplicação, as saídas pendentes voltam a ser processadas. Para conferir
 o estado da integração nesta instalação:

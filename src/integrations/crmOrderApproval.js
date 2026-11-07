@@ -17,6 +17,31 @@ function config() {
 
 async function deliverOne(settings, row) {
   try {
+    const snapshot = await pool.query(
+      `SELECT COALESCE(pv.pvvl, 0)::text AS total_amount,
+              i.pviprocod::text AS product_code,
+              COALESCE(p.prodes, 'Peça ' || i.pviprocod::text) AS description,
+              c.cornome AS color_name,
+              COALESCE(i.pviqtde, 0)::text AS quantity,
+              COALESCE(i.pvivl, 0)::text AS unit_price,
+              ROUND(COALESCE(i.pviqtde, 0) * COALESCE(i.pvivl, 0), 4)::text AS line_total
+       FROM public.pv pv
+       LEFT JOIN public.pvi i ON i.pvipvcod = pv.pvcod
+       LEFT JOIN public.pro p ON p.procod = i.pviprocod
+       LEFT JOIN public.cores c ON c.corcod = i.pviprocorid
+       WHERE pv.pvcod = $1
+       ORDER BY i.pviprocod, i.pviprocorid`,
+      [row.pvcod]
+    );
+    if (snapshot.rows.length === 0) throw new Error('Pedido não encontrado para envio ao CRM');
+    const items = snapshot.rows.filter((item) => item.product_code !== null && Number(item.quantity) > 0)
+      .map((item) => ({
+        productCode: item.product_code,
+        description: item.color_name ? `${item.description} - ${item.color_name}` : item.description,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        lineTotal: item.line_total,
+      }));
     const response = await fetch(settings.url, {
       method: "POST",
       headers: {
@@ -26,6 +51,8 @@ async function deliverOne(settings, row) {
       body: JSON.stringify({
         externalOrderId: String(row.pvcod),
         approvedAt: row.approved_at.toISOString(),
+        items,
+        totalAmount: snapshot.rows[0].total_amount,
       }),
       signal: AbortSignal.timeout(10_000),
     });
