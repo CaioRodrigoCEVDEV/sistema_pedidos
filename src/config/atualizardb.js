@@ -12,6 +12,17 @@ async function atualizarDB() {
   try {
     await pool.query("BEGIN");
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.crm_order_approval_outbox (
+        pvcod integer PRIMARY KEY,
+        approved_at timestamptz NOT NULL,
+        delivered_at timestamptz,
+        attempts integer NOT NULL DEFAULT 0,
+        next_attempt_at timestamptz NOT NULL DEFAULT now(),
+        last_error text
+      )
+    `);
+
     // ==================================================================================================================================
     // NOVOS CAMPOS QUE FOMOS ADICIONANDO ADD AQUI: pleaSE
 

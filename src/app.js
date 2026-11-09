@@ -14,6 +14,7 @@ const { atualizarDB } = require("./config/atualizardb");
 const { requestTimingMiddleware } = require("./middlewares/performanceMiddleware");
 const { getEmpresa } = require("./utils/empresaCache");
 const { logoVersion } = require("./utils/logoVersion");
+const { startCrmOrderApprovalDispatch } = require("./integrations/crmOrderApproval");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -683,6 +684,7 @@ app.post(
 // Inicia o servidor
 (async () => {
   await atualizarDB();
+  startCrmOrderApprovalDispatch();
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${process.env.BASE_URL}/index`);
     console.log(`Diretório de backups: ${dirPathBackups}`);
