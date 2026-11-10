@@ -32,8 +32,10 @@ test("pedido abre prévia do WhatsApp com texto e emojis pré-preenchidos", () =
     assert.match(message, /^📦 PEDIDO DE PEÇAS:/);
     assert.match(message, /💰 Total: R\$ 50\.00/);
     assert.ok(message.includes(context.window.testEmoji[emojiKey] + " " + label));
-    assert.equal(url.origin, "https://wa.me");
-    assert.equal(url.pathname, "/5561983745728");
+    // wa.me corrompe emojis de 4 bytes no redirecionamento; usar api.whatsapp.com.
+    assert.equal(url.origin, "https://api.whatsapp.com");
+    assert.equal(url.pathname, "/send");
+    assert.equal(url.searchParams.get("phone"), "5561983745728");
     assert.equal(url.searchParams.get("text"), message);
     assert.match(url.href, /%F0%9F%/);
     assert.doesNotMatch(url.href, /%EF%BF%BD/);

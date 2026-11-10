@@ -441,19 +441,21 @@
     return (data && (numero === 2 ? data.empwhatsapp2 : data.empwhatsapp1)) || "";
   }
 
-  // O wa.me usa o número no formato internacional, apenas com dígitos.
+  // O WhatsApp usa o número no formato internacional, apenas com dígitos.
   function normalizarNumeroWhatsApp(numero) {
     return String(numero == null ? "" : numero).replace(/\D/g, "");
   }
 
+  // Usa api.whatsapp.com/send em vez de wa.me: o redirecionamento do wa.me
+  // corrompe emojis de 4 bytes (📦, 💰, 🚚...), que chegam como "�".
   function montarUrlWhatsApp(numero, mensagem) {
     var digitos = normalizarNumeroWhatsApp(numero);
     // Sem número válido não gera link: evita abrir o WhatsApp sem destinatário.
     if (digitos.length < 10 || digitos.length > 15) return "";
     return (
-      "https://wa.me/" +
+      "https://api.whatsapp.com/send?phone=" +
       digitos +
-      "?text=" +
+      "&text=" +
       encodeURIComponent(String(mensagem == null ? "" : mensagem))
     );
   }
