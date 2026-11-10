@@ -8,6 +8,10 @@ const source = fs.readFileSync(
   path.join(__dirname, "../public/html/auth/js/painel-estoque-grupos.js"),
   "utf8"
 );
+const htmlSource = fs.readFileSync(
+  path.join(__dirname, "../public/html/auth/admin/html/painel-estoque-grupos.html"),
+  "utf8"
+);
 
 // DOM mínimo para executar a tela sem acessar o navegador/banco.
 class Element {
@@ -99,18 +103,54 @@ function painel() {
 }
 
 const grupos = () => [
-  { id: 6, grupo: "11 PREMIUM", qtde_vendida: "3", estoque_atual: 0, qtde_ideal: null },
-  { id: 2, grupo: "A06 4G S/A", qtde_vendida: "10", estoque_atual: 2, qtde_ideal: 5 },
-  { id: 5, grupo: "G8 PLAY / ONE MACRO S/A", qtde_vendida: "1", estoque_atual: 4, qtde_ideal: 4 },
+  {
+    id: 6,
+    grupo: "11 PREMIUM",
+    qtde_vendida: "3",
+    estoque_atual: 0,
+    qtde_ideal: null,
+    valor_unitario: "50.00",
+  },
+  {
+    id: 2,
+    grupo: "A06 4G S/A",
+    qtde_vendida: "10",
+    estoque_atual: 2,
+    qtde_ideal: 5,
+    valor_unitario: "25.50",
+  },
+  {
+    id: 5,
+    grupo: "G8 PLAY / ONE MACRO S/A",
+    qtde_vendida: "1",
+    estoque_atual: 4,
+    qtde_ideal: 4,
+    valor_unitario: "30.00",
+  },
   {
     id: 1,
     grupo: "A02 / A12 / A32 5G / M12 S/A",
     qtde_vendida: "2",
     estoque_atual: 6,
     qtde_ideal: 8,
+    valor_unitario: "100.00",
   },
-  { id: 4, grupo: "11 ASUGAR", qtde_vendida: "20", estoque_atual: 1, qtde_ideal: 2 },
-  { id: 3, grupo: "A10 S/A", qtde_vendida: "5", estoque_atual: 10, qtde_ideal: null },
+  {
+    id: 4,
+    grupo: "11 ASUGAR",
+    qtde_vendida: "20",
+    estoque_atual: 1,
+    qtde_ideal: 2,
+    valor_unitario: "10.00",
+  },
+  {
+    id: 3,
+    grupo: "A10 S/A",
+    qtde_vendida: "5",
+    estoque_atual: 10,
+    qtde_ideal: null,
+    valor_unitario: "15.00",
+  },
 ];
 
 test("Estado inicial preserva a sequência do catálogo enviada pelo servidor", () => {
@@ -118,7 +158,10 @@ test("Estado inicial preserva a sequência do catálogo enviada pelo servidor", 
   assert.equal(p.run("sortCol"), "catalogo");
   assert.equal(p.run("sortDir"), "asc");
   p.run(`__dados = ${JSON.stringify(grupos())}`);
-  assert.deepEqual(p.run("ordenarGrupos(__dados, sortCol, sortDir).map(r => r.id)"), grupos().map(r => r.id));
+  assert.deepEqual(
+    p.run("ordenarGrupos(__dados, sortCol, sortDir).map(r => r.id)"),
+    grupos().map((r) => r.id)
+  );
 });
 
 test("ordenarGrupos ordena Grupo A→Z com dígitos por último", () => {
@@ -142,6 +185,33 @@ test("Ordenação numérica de Estoque Atual não é lexicográfica", () => {
   assert.deepEqual(asc, [0, 1, 2, 4, 6, 10]);
   const desc = p.run("ordenarGrupos(__dados, 'estoque_atual', 'desc').map((r) => r.estoque_atual)");
   assert.deepEqual(desc, [10, 6, 4, 2, 1, 0]);
+});
+
+test("Valor total multiplica a quantidade vendida pelo custo unitário", () => {
+  const p = painel();
+  assert.equal(p.run("calcularValorReposicao(3, '25.50')"), 76.5);
+  assert.equal(p.run("calcularValorReposicao('', '25.50')"), 0);
+
+  p.context.currentData = grupos();
+  p.run("atualizarQuantidadeReposicao(2, '3')");
+  assert.equal(p.run("atualizarTotalReposicao()"), 910);
+});
+
+test("Tabela exibe valor unitário, total por linha e mantém o total no rodapé", () => {
+  const cabecalho = htmlSource.match(/<thead[\s\S]*?<\/thead>/)?.[0] || "";
+  assert.match(cabecalho, /Valor Unitário/);
+  assert.match(cabecalho, /Valor Total/);
+  assert.doesNotMatch(cabecalho, />Ações</);
+  assert.match(htmlSource, /Total:\s*<span id="valorTotalReposicao">/);
+});
+
+test("Valor unitário é ordenado numericamente", () => {
+  const p = painel();
+  p.run(`__dados = ${JSON.stringify(grupos())}`);
+  assert.deepEqual(
+    p.run("ordenarGrupos(__dados, 'valor_unitario', 'asc').map((r) => Number(r.valor_unitario))"),
+    [10, 15, 25.5, 30, 50, 100]
+  );
 });
 
 test("Valores nulos de Qtde Ideal ficam por último nas duas direções", () => {
@@ -255,4 +325,33 @@ test("As ações de adicionar, reduzir e salvar ideal continuam sendo renderizad
   assert.match(html, /btn-reduzir/);
   assert.match(html, /btn-salvar-ideal/);
   assert.match(html, /input-ideal/);
+  assert.match(html, /R\$\s*50,00/);
+  assert.match(html, /R\$\s*150,00/);
+  assert.match(html, /valor-unitario-display/);
+  assert.match(html, /valor-total-display/);
+});
+
+test("Backend mantém a ordem marca, modelo, tipo e peça e retorna o valor unitário", async () => {
+  const dbPath = path.join(__dirname, "../src/config/db.js");
+  const modelPath = path.join(__dirname, "../src/models/relatoriosModels.js");
+  const pool = require(dbPath);
+  const originalQuery = pool.query;
+  let query = "";
+
+  pool.query = async (sql) => {
+    query = sql;
+    return { rows: [] };
+  };
+  delete require.cache[modelPath];
+
+  try {
+    const model = require(modelPath);
+    await model.getEstoqueGruposTopPecas({});
+  } finally {
+    pool.query = originalQuery;
+    delete require.cache[modelPath];
+  }
+
+  assert.match(query, /b\.marcasordem[\s\S]*m\.ordem[\s\S]*t\.tipoordem[\s\S]*p\.proordem/);
+  assert.match(query, /COALESCE\(pg\.grpcusto, v\.valor_unitario, 0\) AS valor_unitario/);
 });

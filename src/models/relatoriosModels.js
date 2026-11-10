@@ -5,8 +5,8 @@ const { buildFlagsEstoqueSql } = require("../utils/estoqueFlagsSql");
 // Constants
 const CONFIRMED_ORDER_STATUS = "S";
 
-// Relatório: marca > tipo > modelo > peça, nas posições do painel.
-// Mantém todas as peças do mesmo tipo juntas dentro de cada marca.
+// Relatório: marca > modelo > tipo > peça, nas posições do painel.
+// Mantém a mesma hierarquia exibida no catálogo inicial de produtos.
 // Peças com vários modelos ocupam a primeira posição em que aparecem no
 // catálogo, sem duplicar vendas. IDs apenas desempatarão posições iguais.
 const ordemCatalogo = `
@@ -14,8 +14,8 @@ const ordemCatalogo = `
     SELECT p.procod,
       ROW_NUMBER() OVER (ORDER BY
         b.marcasordem NULLS LAST, b.marcascod,
-        t.tipoordem NULLS LAST, t.tipocod,
         m.ordem NULLS LAST, m.modcod,
+        t.tipoordem NULLS LAST, t.tipocod,
         p.proordem NULLS LAST, p.procod
       ) AS posicao
     FROM pro p
@@ -198,7 +198,9 @@ async function getPecasCadastradas(filters = {}) {
   }
 
   if (modelo) {
-    whereClauses.push(`(pro.promodcod = $${paramIndex} OR EXISTS (SELECT 1 FROM promod pm WHERE pm.promodprocod = pro.procod AND pm.promodmodcod = $${paramIndex}))`);
+    whereClauses.push(
+      `(pro.promodcod = $${paramIndex} OR EXISTS (SELECT 1 FROM promod pm WHERE pm.promodprocod = pro.procod AND pm.promodmodcod = $${paramIndex}))`
+    );
     params.push(modelo);
     paramIndex++;
   }
@@ -285,7 +287,8 @@ async function getEstoqueGruposTopPecas(filters = {}) {
       SELECT
         pg.id AS group_id,
         MIN(oc.posicao) AS posicao_catalogo,
-        SUM(pvi.pviqtde) AS qtde_vendida
+        SUM(pvi.pviqtde) AS qtde_vendida,
+        MAX(p.procusto) AS valor_unitario
       FROM pvi
       JOIN pv ON pvcod = pvipvcod
       JOIN pro p ON pviprocod = p.procod
@@ -323,6 +326,7 @@ async function getEstoqueGruposTopPecas(filters = {}) {
       pg.name AS grupo,
       COALESCE(pg.stock_quantity, 0) AS estoque_atual,
       pg.qtde_ideal,
+      COALESCE(pg.grpcusto, v.valor_unitario, 0) AS valor_unitario,
       GREATEST(
         COALESCE(v.qtde_vendida, 0) - COALESCE(dv.qtde_devolvida, 0),
         0

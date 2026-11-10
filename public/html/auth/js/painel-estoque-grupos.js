@@ -14,9 +14,13 @@ var currentFilters = {
 };
 
 // Ordenação atual da listagem (client-side, não altera a ordem no banco).
-// Por padrão preserva a ordem do servidor: marca > tipo > modelo > peça.
+// Por padrão preserva a ordem do servidor: marca > modelo > tipo > peça.
 var sortCol = "catalogo";
 var sortDir = "asc"; // 'asc' | 'desc'
+
+// Quantidades que serão repostas. O valor é compartilhado entre as versões
+// desktop e mobile para que o total permaneça igual ao alternar de layout.
+var quantidadesReposicao = {};
 
 // Peso de cada status para permitir ordenação estável sem alterar a regra.
 var STATUS_RANK = {
@@ -39,6 +43,7 @@ var gruposMobileList = document.getElementById("gruposMobileList");
 var emptyState = document.getElementById("emptyState");
 var loadingState = document.getElementById("loadingState");
 var resultsInfo = document.getElementById("resultsInfo");
+var valorTotalReposicao = document.getElementById("valorTotalReposicao");
 
 // Carrega marcas para o select
 async function loadMarcas() {
@@ -90,6 +95,44 @@ function normalizarTexto(valor) {
     .trim();
 }
 
+function formatarMoeda(valor) {
+  return (Number(valor) || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+function calcularValorReposicao(quantidade, valorUnitario) {
+  const qtd = Number(quantidade) || 0;
+  const valor = Number(valorUnitario) || 0;
+  return qtd > 0 ? qtd * valor : 0;
+}
+
+function atualizarTotalReposicao() {
+  const total = currentData.reduce(
+    (soma, row) =>
+      soma + calcularValorReposicao(row.qtde_vendida, row.valor_unitario),
+    0,
+  );
+
+  if (valorTotalReposicao) valorTotalReposicao.textContent = formatarMoeda(total);
+  return total;
+}
+
+function atualizarQuantidadeReposicao(groupId, valor) {
+  const quantidade = parseInt(valor, 10);
+  if (Number.isInteger(quantidade) && quantidade > 0) {
+    quantidadesReposicao[groupId] = quantidade;
+  } else {
+    delete quantidadesReposicao[groupId];
+  }
+
+  document.querySelectorAll(`[data-group-id="${groupId}"]`).forEach((container) => {
+    const input = container.querySelector(".input-adicionar");
+    if (input) input.value = quantidadesReposicao[groupId] || "";
+  });
+}
+
 /**
  * Chave de ordenação do nome do grupo. Nomes iniciados por número ficam
  * depois dos iniciados por letra (ex.: ... G8, 11 ASUGAR), mantendo a
@@ -126,6 +169,10 @@ function valorOrdenacao(row, col) {
       return row.qtde_ideal === null || row.qtde_ideal === undefined
         ? null
         : Number(row.qtde_ideal);
+    case "valor_unitario":
+      return row.valor_unitario === null || row.valor_unitario === undefined
+        ? null
+        : Number(row.valor_unitario);
     case "status":
       return STATUS_RANK[calcularStatus(row.estoque_atual, row.qtde_ideal).label] ?? null;
     default:
@@ -233,6 +280,11 @@ function criarCardGrupoMobile(row, status, estoqueAtual, qtdeIdealVal) {
   const card = document.createElement("div");
   card.className = "ou-mobile-card";
   card.dataset.groupId = row.id;
+  const quantidadeReposicao = quantidadesReposicao[row.id] || "";
+  const valorTotalLinha = calcularValorReposicao(
+    row.qtde_vendida,
+    row.valor_unitario,
+  );
   card.innerHTML = `
     <div class="ou-mobile-card__head">
       <span class="ou-mobile-card__avatar" aria-hidden="true"><i class="bi bi-collection"></i></span>
@@ -252,6 +304,14 @@ function criarCardGrupoMobile(row, status, estoqueAtual, qtdeIdealVal) {
         <span class="ou-mobile-card__label">Estoque Atual</span>
         <span class="ou-mobile-card__value"><span class="estoque-atual-display">${estoqueAtual.toLocaleString("pt-BR")}</span></span>
       </div>
+      <div class="ou-mobile-card__block">
+        <span class="ou-mobile-card__label">Valor Unitário</span>
+        <span class="ou-mobile-card__value valor-unitario-display">${formatarMoeda(row.valor_unitario)}</span>
+      </div>
+      <div class="ou-mobile-card__block">
+        <span class="ou-mobile-card__label">Valor Total</span>
+        <span class="ou-mobile-card__value valor-total-display">${formatarMoeda(valorTotalLinha)}</span>
+      </div>
     </div>
     <div class="ou-mobile-card__actions">
       <div class="ou-mobile-card__action">
@@ -261,7 +321,7 @@ function criarCardGrupoMobile(row, status, estoqueAtual, qtdeIdealVal) {
       </div>
       <div class="ou-mobile-card__action">
         <span class="ou-mobile-card__label">Adicionar</span>
-        <input type="number" class="form-control form-control-sm input-ajuste input-adicionar" value="" min="1" placeholder="0" title="Quantidade a adicionar ao estoque" />
+        <input type="number" class="form-control form-control-sm input-ajuste input-adicionar" value="${quantidadeReposicao}" min="1" placeholder="0" title="Quantidade a adicionar ao estoque" />
         <button class="btn btn-success btn-sm btn-adicionar" title="Adicionar ao estoque"><i class="bi bi-plus-lg"></i></button>
       </div>
       <div class="ou-mobile-card__action">
@@ -282,6 +342,11 @@ function criarCardGrupoMobile(row, status, estoqueAtual, qtdeIdealVal) {
   card
     .querySelector(".btn-reduzir")
     .addEventListener("click", () => ajustarEstoque(card, row.id, "reduzir"));
+  card
+    .querySelector(".input-adicionar")
+    .addEventListener("input", (event) =>
+      atualizarQuantidadeReposicao(row.id, event.target.value),
+    );
 
   return card;
 }
@@ -305,6 +370,11 @@ function renderTable(data) {
       row.qtde_ideal !== null && row.qtde_ideal !== undefined
         ? Number(row.qtde_ideal)
         : "";
+    const quantidadeReposicao = quantidadesReposicao[row.id] || "";
+    const valorTotalLinha = calcularValorReposicao(
+      row.qtde_vendida,
+      row.valor_unitario,
+    );
 
     const tr = document.createElement("tr");
     tr.dataset.groupId = row.id;
@@ -336,12 +406,13 @@ function renderTable(data) {
       <td class="text-center">
         <span class="badge ${status.badgeClass} status-badge">${status.label}</span>
       </td>
+      <td class="text-end"><span class="valor-unitario-display">${formatarMoeda(row.valor_unitario)}</span></td>
       <td class="text-center">
         <div class="d-flex align-items-center justify-content-center gap-1">
           <input
             type="number"
             class="form-control form-control-sm input-ajuste input-adicionar"
-            value=""
+            value="${quantidadeReposicao}"
             min="1"
             placeholder="0"
             title="Quantidade a adicionar ao estoque"
@@ -371,10 +442,9 @@ function renderTable(data) {
             <i class="bi bi-dash-lg"></i>
           </button>
         </div>
+        <span class="spinner-border spinner-border-sm text-primary row-spinner ms-1" role="status" style="display:none"></span>
       </td>
-      <td class="text-center">
-        <span class="spinner-border spinner-border-sm text-primary row-spinner" role="status" style="display:none"></span>
-      </td>
+      <td class="text-end"><span class="valor-total-display">${formatarMoeda(valorTotalLinha)}</span></td>
     `;
 
     // Salvar quantidade ideal
@@ -392,6 +462,10 @@ function renderTable(data) {
       ajustarEstoque(tr, row.id, "reduzir"),
     );
 
+    tr.querySelector(".input-adicionar").addEventListener("input", (event) =>
+      atualizarQuantidadeReposicao(row.id, event.target.value),
+    );
+
     gruposTableBody.appendChild(tr);
     if (gruposMobileList) {
       gruposMobileList.appendChild(
@@ -401,6 +475,7 @@ function renderTable(data) {
   });
 
   resultsInfo.textContent = `${data.length} grupo${data.length !== 1 ? "s" : ""}`;
+  atualizarTotalReposicao();
 }
 
 /**
@@ -515,6 +590,7 @@ async function ajustarEstoque(tr, groupId, operacao) {
 
     // Limpa o input usado
     inputEl.value = "";
+    if (operacao === "adicionar") atualizarQuantidadeReposicao(groupId, "");
 
     showToast(
       `Estoque ${operacao === "adicionar" ? "adicionado" : "reduzido"} com sucesso! ${updated.message || ""}`,
@@ -550,6 +626,7 @@ async function fetchData() {
 
     const data = await response.json();
     currentData = data;
+    quantidadesReposicao = {};
 
     loadingState.style.display = "none";
     renderLista();
@@ -633,9 +710,12 @@ btnLimpar.addEventListener("click", () => {
   if (buscaGrupoInput) buscaGrupoInput.value = "";
   currentFilters = { dataInicio: "", dataFim: "", marca: "" };
   currentData = [];
+  quantidadesReposicao = {};
   gruposTableBody.innerHTML = "";
+  if (gruposMobileList) gruposMobileList.innerHTML = "";
   emptyState.style.display = "none";
   resultsInfo.textContent = "0 grupos";
+  atualizarTotalReposicao();
   atualizarIndicadoresOrdenacao();
 });
 
