@@ -466,6 +466,8 @@ exports.listarProdutoCoresDisponiveis = async (req, res) => {
         case when cornome is null then '' else cornome end as cornome,
         CASE
           WHEN $3::boolean THEN CASE WHEN saldo.quantidade > 0 THEN 'N' ELSE 'S' END
+          -- Sem controle de estoque, toda variacao fica disponivel na loja.
+          WHEN NOT $3::boolean THEN 'N'
           WHEN procor.procorid IS NULL THEN COALESCE(TRIM(pro.prosemest), 'N')
           WHEN EXISTS (
             SELECT 1 FROM part_group_items pgi_vinculo
