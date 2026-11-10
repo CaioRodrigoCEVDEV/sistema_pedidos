@@ -9,9 +9,9 @@ const TITULO_MAX_LENGTH = 100;
 // Formato enxuto dos itens das vitrines para a página pública.
 // Não expõe campos internos do cadastro (prosit, posições etc.).
 // Com o controle de estoque ativo (empusaest = 'S'), as flags são automáticas;
-// sem ele (empusaest = 'N'), a validação de estoque é ignorada e valem apenas
-// as flags manuais do cadastro: "sem estoque geral" (prosemest) e "acabando"
-// (proacabando).
+// sem ele (empusaest = 'N'), a validação de estoque é ignorada: todos os
+// produtos aparecem disponíveis e nenhum como "acabando", mesmo que o cadastro
+// tenha as flags manuais prosemest/proacabando marcadas.
 function mapearItemPublico(row, config) {
   const usaEstoque = Boolean(config && config.usaEstoque);
   const estoqueMin = config && Number.isInteger(config.estoqueMin)
@@ -36,8 +36,8 @@ function mapearItemPublico(row, config) {
     marcasdes: row.marcasdes || "",
     modcod: row.modcod || null,
     moddes: row.moddes || "",
-    prosemest: normalizar(usaEstoque ? row.prosemest_auto : row.prosemest),
-    proacabando: row.tem_cores ? 'N' : (usaEstoque ? acabandoAuto : normalizar(row.proacabando)),
+    prosemest: usaEstoque ? normalizar(row.prosemest_auto) : "N",
+    proacabando: usaEstoque && !row.tem_cores ? acabandoAuto : "N",
   };
 }
 

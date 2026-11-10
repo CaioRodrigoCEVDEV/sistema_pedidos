@@ -3,6 +3,7 @@ const partGroupModels = require("../models/partGroupModels");
 const promocaoModels = require("../models/promocaoModels");
 const catalogoCache = require("../utils/catalogoCache");
 const showcasesCache = require("../utils/showcasesCache");
+const { getEstoqueConfig } = require("../utils/estoqueConfig");
 
 exports.sequencia = async (req, res) => {
   try {
@@ -761,6 +762,10 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
 
     const resultadoItens = [];
 
+    // Sem controle de estoque a aprovação não baixou saldo (trigger
+    // atualizar_saldo), então a edição também não valida nem movimenta estoque.
+    const { usaEstoque } = await getEstoqueConfig();
+
     for (const item of itens) {
       const { procod, pviqtde } = item;
       // Normaliza pviprocorid: null/undefined/""/0/"0"/"null" → null
@@ -798,7 +803,7 @@ exports.editarItensPedidoConfirmado = async (req, res) => {
       const delta = novaQtde - qtdeAnterior;
 
       // Ajusta o estoque: delta > 0 deduz mais; delta < 0 devolve
-      if (delta !== 0) {
+      if (usaEstoque && delta !== 0) {
         const grupoResult = await client.query(
           `SELECT pg.id, pg.name, pg.stock_quantity
            FROM procor pc
