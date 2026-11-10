@@ -68,6 +68,33 @@
       .th-sortable[aria-sort="descending"] .sort-icon {
         opacity: 1;
       }
+      .valor-unitario-display,
+      .valor-total-display {
+        display: inline-block;
+        min-width: 88px;
+        padding: 0.3rem 0.55rem;
+        border-radius: 0.45rem;
+        font-weight: 700;
+        text-align: right;
+        white-space: nowrap;
+      }
+      .valor-unitario-display {
+        color: var(--ou-primary);
+        background-color: color-mix(in srgb, var(--ou-primary) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--ou-primary) 30%, transparent);
+      }
+      .valor-total-display,
+      .valor-total-geral {
+        color: var(--ou-success);
+        background-color: color-mix(in srgb, var(--ou-success) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--ou-success) 30%, transparent);
+      }
+      .valor-total-geral {
+        padding: 0.4rem 0.65rem;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        white-space: nowrap;
+      }
     </style>
     <link rel="stylesheet" href="/css/theme.css?v=2026.10.27.103402" data-turbo-track="dynamic" />
     <link rel="stylesheet" href="/css/shell.css?v=2026.10.27.103402" data-turbo-track="dynamic" />
@@ -242,9 +269,25 @@
                             aria-hidden="true"
                           ></i>
                         </th>
+                        <th
+                          scope="col"
+                          class="text-end th-sortable"
+                          data-col="valor_unitario"
+                          role="button"
+                          tabindex="0"
+                          aria-sort="none"
+                          aria-label="Ordenar por valor unitário"
+                        >
+                          Valor Unitário
+                          <i
+                            class="bi bi-arrow-down-up sort-icon"
+                            id="sort-icon-valor_unitario"
+                            aria-hidden="true"
+                          ></i>
+                        </th>
                         <th class="text-center">Adicionar</th>
                         <th class="text-center">Reduzir</th>
-                        <th class="text-center">Ações</th>
+                        <th class="text-end">Valor Total</th>
                       </tr>
                     </thead>
                     <tbody id="gruposTableBody">
@@ -271,12 +314,16 @@
                 </div>
               </div>
 
-              <div class="card-footer text-muted d-flex justify-content-between">
+              <div class="card-footer text-muted d-flex justify-content-between align-items-center gap-3 flex-wrap">
                 <small id="resultsInfo">0 grupos</small>
                 <small class="text-muted">
                   <i class="bi bi-info-circle me-1"></i>
                   Alterações de estoque são distribuídas para todas as peças do grupo
                 </small>
+                <strong class="valor-total-geral">
+                  Total:
+                  <span id="valorTotalReposicao">R$ 0,00</span>
+                </strong>
               </div>
             </div>
           </div>
@@ -299,6 +346,6 @@
     <script src="../js/nomeEmpresa.js?v=2026.10.27.103402"></script>
 
     <!-- Script da página -->
-    <script src="/html/auth/js/painel-estoque-grupos.js?v=2026.10.27.103402"></script>
+    <script src="/html/auth/js/painel-estoque-grupos.js?v=2026.11.10.estoque-valores-destaque"></script>
   </body>
 </html>
