@@ -44,6 +44,24 @@ async function test(name, fn) {
   }
 }
 
+// A movimentação de estoque na edição só ocorre com o controle de estoque
+// ativo (emp.empusaest = 'S'). Fixa a configuração para não depender do banco.
+let usaEstoqueMock = true;
+const estoqueConfigPath = require.resolve("../src/utils/estoqueConfig");
+require.cache[estoqueConfigPath] = {
+  id: estoqueConfigPath,
+  filename: estoqueConfigPath,
+  loaded: true,
+  exports: {
+    getEstoqueConfig: async () => ({
+      usaEstoque: usaEstoqueMock,
+      empusaest: usaEstoqueMock ? "S" : "N",
+      estoqueMin: 5,
+    }),
+    invalidateEstoqueConfigCache: () => {},
+  },
+};
+
 let pool;
 try {
   pool = require("../src/config/db");
@@ -335,6 +353,28 @@ async function runTests() {
     assertEqual(resp.status, 400, "Status deve ser 400");
 
     await cleanup(pvcod, [procod]);
+  });
+
+  // ── Teste 9: sem controle de estoque, a edição não valida nem movimenta ───
+  await test("Sem controle de estoque: edição não valida nem movimenta saldo", async () => {
+    usaEstoqueMock = false;
+    try {
+      const procod = await criarProdutoSemCor(0);
+      const pvcod  = await criarPedidoConfirmado();
+      await inserirItem(pvcod, procod, 1, null);
+
+      const resp = await chamarEditarItens(pvcod, [
+        { procod, pviqtde: 5, pviprocorid: null },
+      ]);
+      assertEqual(resp.status, 200, "Status deve ser 200 mesmo com saldo zerado");
+
+      const r = await pool.query("SELECT proqtde FROM pro WHERE procod = $1", [procod]);
+      assertEqual(Number(r.rows[0].proqtde), 0, "proqtde não deve ser alterado");
+
+      await cleanup(pvcod, [procod]);
+    } finally {
+      usaEstoqueMock = true;
+    }
   });
 
   // ── Resumo ────────────────────────────────────────────────────────────────

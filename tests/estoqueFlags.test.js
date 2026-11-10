@@ -3,11 +3,10 @@ const { test } = require("node:test");
 const { buildFlagsEstoqueSql } = require("../src/utils/estoqueFlagsSql");
 const { normalizar } = require("../src/utils/estoqueConfig");
 
-test("Empresa sem controle de estoque usa as flags manuais salvas", () => {
+test("Empresa sem controle de estoque deixa todos os produtos disponiveis na loja", () => {
   const flags = buildFlagsEstoqueSql({ usaEstoque: false, estoqueMin: 5 });
-  assert.match(flags.disponibilidadeSql, /pro\.prosemest/);
-  assert.match(flags.acabandoSql, /pro\.proacabando/);
-  assert.doesNotMatch(flags.acabandoSql, /pro\.proqtde/);
+  assert.equal(flags.disponibilidadeSql, "'N'");
+  assert.equal(flags.acabandoSql, "'N'");
 });
 
 test("Empresa com controle calcula as flags pelo estoque", () => {

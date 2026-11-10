@@ -49,14 +49,15 @@ const PRODUTO_JOINS = `FROM pro ${PRODUTO_JOIN_TABLES}`;
 
 // Disponibilidade efetiva usada pelas vitrines automáticas, espelhando o que
 // mapearItemPublico() expõe: com controle de estoque ativo (empusaest = 'S')
-// valem as flags automáticas; sem ele, a flag manual do cadastro. Produtos sem
+// valem as flags automáticas; sem ele, todos ficam disponíveis. Produtos sem
 // disponibilidade ('S') são descartados na própria consulta, de modo que o
 // LIMIT preencha a vitrine com os próximos itens disponíveis.
 function disponibilidadeVitrineSql(config) {
   if (config && config.usaEstoque) {
     return disponibilidadeProdutoAutoSql;
   }
-  return "COALESCE(UPPER(TRIM(pro.prosemest)), 'N')";
+  // Sem controle de estoque, nenhum produto e descartado por disponibilidade.
+  return "'N'";
 }
 
 async function listarShowcases({ somenteAtivas = true } = {}) {

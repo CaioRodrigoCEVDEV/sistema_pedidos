@@ -287,7 +287,7 @@ async function lerVitrinePublica() {
   return JSON.parse(res.body.toString());
 }
 
-test("Vitrine sem controle de estoque ignora validacao e usa flags manuais", async () => {
+test("Vitrine sem controle de estoque ignora validacao e flags manuais", async () => {
   estoqueConfigMock = { usaEstoque: false, empusaest: "N", estoqueMin: 5 };
   showcaseRows.length = 0;
   showcaseRows.push(
@@ -301,8 +301,8 @@ test("Vitrine sem controle de estoque ignora validacao e usa flags manuais", asy
 
   const payload = await lerVitrinePublica();
   const item = payload.showcases[0].items[0];
-  assert.equal(item.prosemest, "S");
-  assert.equal(item.proacabando, "S");
+  assert.equal(item.prosemest, "N");
+  assert.equal(item.proacabando, "N");
 });
 
 test("Vitrine com controle de estoque usa as flags automaticas", async () => {
